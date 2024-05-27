@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 import { dailycheckapp_contact_contactmessage as MessageModel } from '@prisma/client';
 import { MessageService } from './services/message/message.service';
@@ -16,7 +16,13 @@ export class AppController {
   }
 
   @Get('messages')
-  async getMessages(): Promise<MessageModel[]> {
-    return this.messageService.messages({});
+  async getMessages(
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ): Promise<MessageModel[]> {
+    return this.messageService.messages({
+      skip: parseInt(skip) ?? 0,
+      take: parseInt(take) ?? 10,
+    });
   }
 }
