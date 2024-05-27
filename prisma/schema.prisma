@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model EFMigrationsHistory {
+  MigrationId    String @id(map: "PK___EFMigrationsHistory") @db.VarChar(150)
+  ProductVersion String @db.VarChar(32)
+
+  @@map("__EFMigrationsHistory")
+}
+
+model dailycheckapp_contact_contactmessage {
+  id         Int       @id @default(autoincrement())
+  created    DateTime  @db.Timestamptz(6)
+  modified   DateTime  @db.Timestamptz(6)
+  firstname  String    @db.VarChar(256)
+  lastname   String    @db.VarChar(256)
+  school_id  String    @db.VarChar(256)
+  email      String    @db.VarChar(256)
+  message    String
+  created_at DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
+
+model dailycheckapp_country {
+  id         BigInt    @id @default(autoincrement())
+  code       String
+  name       String?
+  created    String?
+  country_id String?
+  created_at DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  code_iso3  String    @default("")
+}
+
+model dailycheckapp_flagged_school {
+  id               BigInt    @id @default(autoincrement())
+  detected_country String?
+  selected_country String?
+  school_id        String?
+  created          String?
+  giga_id_school   String?
+  created_at       DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
+
+model dailycheckapp_school {
+  id                  BigInt    @id @default(autoincrement())
+  user_id             String?
+  giga_id_school      String?
+  mac_address         String?
+  os                  String?
+  app_version         String?
+  created             String?
+  network_information String?   @db.VarChar
+  ip_address          String?
+  country_code        String?
+  is_blocked          Boolean   @default(false)
+  notify              Boolean   @default(false)
+  created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
+
+model giga_id_school_mapping_fix {
+  id                     Int       @id(map: "PK_giga_id_school_mapping_fix") @default(autoincrement())
+  giga_id_school_wrong   String
+  wrong_country          String
+  giga_id_school_correct String
+  correct_country        String
+  created_at             DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
+
+model measurements {
+  id             BigInt    @id(map: "PK_measurements") @default(autoincrement())
+  timestamp      DateTime? @db.Timestamptz(6)
+  uuid           String?
+  browser_id     String?
+  school_id      String
+  device_type    String?
+  notes          String?
+  client_info    Json?
+  server_info    Json?
+  annotation     String?
+  download       Float?
+  upload         Float?
+  latency        BigInt?
+  results        Json?
+  giga_id_school String?
+  country_code   String?
+  ip_address     String?
+  app_version    String?
+  source         String    @default("MLab")
+  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
+
+model measurements_failed {
+  id             BigInt    @id(map: "PK_measurements_failed") @default(autoincrement())
+  timestamp      DateTime? @db.Timestamptz(6)
+  uuid           String?
+  browser_id     String?
+  school_id      String
+  device_type    String?
+  notes          String?
+  client_info    Json?
+  server_info    Json?
+  annotation     String?
+  download       Float?
+  upload         Float?
+  latency        BigInt?
+  results        Json?
+  giga_id_school String?
+  country_code   String?
+  ip_address     String?
+  app_version    String?
+  source         String    @default("DailyCheckApp")
+  reason         String
+  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
