@@ -1,8 +1,8 @@
 {
   "name": "giga-meter-api",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "GIGA Meter API application developed by Nagarro for Unicef",
+  "author": "Nagarro",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -23,6 +23,7 @@
     "@nestjs/common": "^10.3.8",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
+    "@nestjs/swagger": "^7.3.1",
     "@nestjs/typeorm": "^10.0.2",
     "@prisma/client": "^5.14.0",
     "pg": "^8.11.5",
