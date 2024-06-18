@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_contact_contactmessage } from '@prisma/client';
 
 @Injectable()
