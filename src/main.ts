@@ -10,6 +10,12 @@ async function bootstrap() {
     )
     .setVersion('1.0')
     .addTag('messages')
+    .addBearerAuth({
+      type: 'http',
+      description: 'Enter api key',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+    })
     .build();
 
   const app = await NestFactory.create(AppModule);

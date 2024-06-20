@@ -1,7 +1,14 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { dailycheckapp_contact_contactmessage as MessageModel } from '@prisma/client';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @ApiTags('messages')
 @Controller('api/v1/messages')
@@ -9,6 +16,8 @@ export class MessagesController {
   constructor(private readonly msgsService: MessagesService) {}
 
   @Get('')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Returns the list of contact messages on the Daily Check App database',
