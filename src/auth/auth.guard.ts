@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { ValidateApiKeyDto } from './validate-api-key.dto';
+import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 
 @Injectable()
