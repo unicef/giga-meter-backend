@@ -1,15 +1,21 @@
-// import { Test, TestingModule } from '@nestjs/testing';
-// import { MessagesController } from './messages.controller';
-// import { MessagesService } from './services/messages/message.service';
-// import { PrismaService } from './services/prisma/prisma.service';
+import { Test, TestingModule } from '@nestjs/testing';
+import { MessagesController } from './messages.controller';
+import { MessagesService } from './messages.service';
+import { AuthGuard } from 'src/auth/auth.guard';
 
-// describe('AppController', () => {
-//   beforeEach(async () => {
-//     const app: TestingModule = await Test.createTestingModule({
-//       controllers: [MessagesController],
-//       providers: [MessagesService, PrismaService],
-//     }).compile();
+describe('MessagesController', () => {
+  let messagesController: MessagesController;
+  beforeEach(async () => {
+    const app: TestingModule = await Test.createTestingModule({
+      controllers: [MessagesController],
+      providers: [MessagesService],
+      imports: [AuthGuard],
+    }).compile();
 
-//     messagesController = app.get<MessagesController>(MessagesController);
-//   });
-// });
+    messagesController = app.get<MessagesController>(MessagesController);
+  });
+
+  it('should be defined', () => {
+    expect(messagesController).toBeDefined();
+  });
+});

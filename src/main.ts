@@ -10,6 +10,7 @@ async function bootstrap() {
     )
     .setVersion('1.0')
     .addTag('messages')
+    .addTag('flagged_dailycheckapp_schools')
     .addBearerAuth({
       type: 'http',
       description: 'Enter api key',

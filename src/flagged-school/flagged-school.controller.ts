@@ -6,27 +6,27 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { MessagesService } from './messages.service';
+import { FlaggedSchoolService } from './flagged-school.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
-import { MessagesDto } from './messages.dto';
+import { FlaggedSchoolDto } from './flagged-school.dto';
 
-@ApiTags('messages')
-@Controller('api/v1/messages')
-export class MessagesController {
-  constructor(private readonly msgsService: MessagesService) {}
+@ApiTags('flagged_dailycheckapp_schools')
+@Controller('api/v1/flagged_dailycheckapp_schools')
+export class FlaggedSchoolController {
+  constructor(private readonly schoolService: FlaggedSchoolService) {}
 
   @Get('')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of contact messages on the Daily Check App database',
+      'Returns the list of flagged schools on the Daily Check App database',
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns the list of contact messages',
-    type: ApiSuccessResponseDto<MessagesDto[]>,
+    description: 'Returns the list of flagged schools',
+    type: ApiSuccessResponseDto<FlaggedSchoolDto[]>,
   })
   @ApiResponse({
     status: 401,
@@ -34,7 +34,7 @@ export class MessagesController {
   })
   @ApiQuery({
     name: 'size',
-    description: 'The number of contact messages to return',
+    description: 'The number of flagged schools to return',
     required: false,
     type: 'number',
   })
@@ -45,18 +45,18 @@ export class MessagesController {
     required: false,
     type: 'number',
   })
-  async getMessages(
+  async getSchools(
     @Query('page') page?: number,
     @Query('size') size?: number,
-  ): Promise<ApiSuccessResponseDto<MessagesDto[]>> {
-    const messages = await this.msgsService.messages({
+  ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
+    const flaggedSchools = await this.schoolService.schools({
       skip: (page ?? 0) * (size ?? 10),
       take: (size ?? 10) * 1,
     });
 
     return {
       success: true,
-      data: messages,
+      data: flaggedSchools,
       timestamp: new Date().toISOString(),
       message: 'success',
     };
