@@ -1,7 +1,18 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
@@ -49,16 +60,95 @@ export class FlaggedSchoolController {
     @Query('page') page?: number,
     @Query('size') size?: number,
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
-    const flaggedSchools = await this.schoolService.schools({
-      skip: (page ?? 0) * (size ?? 10),
-      take: (size ?? 10) * 1,
-    });
+    try {
+      const flaggedSchools = await this.schoolService.schools({
+        skip: (page ?? 0) * (size ?? 10),
+        take: (size ?? 10) * 1,
+      });
 
-    return {
-      success: true,
-      data: flaggedSchools,
-      timestamp: new Date().toISOString(),
-      message: 'success',
-    };
+      return {
+        success: true,
+        data: flaggedSchools,
+        timestamp: new Date().toISOString(),
+        message: 'success',
+      };
+    } catch (error) {
+      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get('/:country_id')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Returns the list of flagged schools on the Daily Check App database by country id',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the list of flagged schools',
+    type: ApiSuccessResponseDto<FlaggedSchoolDto[]>,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiParam({
+    name: 'country_id',
+    description: 'The number of flagged schools to return',
+    required: true,
+    type: 'string',
+  })
+  async getSchoolsByCountryId(
+    @Param('country_id') country_id: string,
+  ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
+    try {
+      const flaggedSchools =
+        await this.schoolService.schoolsByCountryId(country_id);
+
+      return {
+        success: true,
+        data: flaggedSchools,
+        timestamp: new Date().toISOString(),
+        message: 'success',
+      };
+    } catch (error) {
+      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Post()
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Register a flagged school in to the Daily Check App database',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns Id of flagged school created',
+    type: ApiSuccessResponseDto<string>,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async createSchools(
+    @Body() schoolDto: FlaggedSchoolDto,
+  ): Promise<ApiSuccessResponseDto<string>> {
+    try {
+      const schoolId = await this.schoolService.createSchool(schoolDto);
+
+      return {
+        success: true,
+        data: schoolId,
+        timestamp: new Date().toISOString(),
+        message: 'success',
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to create school',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }

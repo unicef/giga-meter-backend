@@ -19,6 +19,23 @@ export class FlaggedSchoolService {
     return (await schools).map(this.toDto);
   }
 
+  async schoolsByCountryId(
+    detected_country: string,
+  ): Promise<FlaggedSchoolDto[]> {
+    const schools = this.prisma.dailycheckapp_flagged_school.findMany({
+      where: { detected_country },
+    });
+    return (await schools).map(this.toDto);
+  }
+
+  async createSchool(schoolDto: FlaggedSchoolDto): Promise<string> {
+    const model = this.toModel(schoolDto);
+    const school = await this.prisma.dailycheckapp_flagged_school.create({
+      data: model,
+    });
+    return school.id.toString();
+  }
+
   private toDto(school: FlaggedSchool): FlaggedSchoolDto {
     return {
       id: school.id.toString(),
@@ -28,6 +45,16 @@ export class FlaggedSchoolService {
       giga_id_school: school.giga_id_school,
       created: school.created,
       created_at: school.created_at,
+    };
+  }
+
+  private toModel(school: FlaggedSchoolDto): any {
+    return {
+      detected_country: school.detected_country,
+      selected_country: school.selected_country,
+      school_id: school.school_id,
+      giga_id_school: school.giga_id_school,
+      created: school.created,
     };
   }
 }
