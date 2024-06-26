@@ -50,8 +50,8 @@ export class FlaggedSchoolService {
 
   private toModel(school: FlaggedSchoolDto): any {
     return {
-      detected_country: school.detected_country,
-      selected_country: school.selected_country,
+      detected_country: school.detected_country.toUpperCase(),
+      selected_country: school.selected_country.toUpperCase(),
       school_id: school.school_id,
       giga_id_school: school.giga_id_school,
       created: school.created,

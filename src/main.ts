@@ -9,8 +9,8 @@ async function bootstrap() {
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
-    .addTag('messages')
-    .addTag('flagged_dailycheckapp_schools')
+    .addTag('Contact Messages')
+    .addTag('Flagged Schools')
     .addBearerAuth({
       type: 'http',
       description: 'Enter api key',

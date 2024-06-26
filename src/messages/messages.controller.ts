@@ -11,7 +11,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
 import { MessagesDto } from './messages.dto';
 
-@ApiTags('messages')
+@ApiTags('Contact Messages')
 @Controller('api/v1/messages')
 export class MessagesController {
   constructor(private readonly msgsService: MessagesService) {}
@@ -26,7 +26,8 @@ export class MessagesController {
   @ApiResponse({
     status: 200,
     description: 'Returns the list of contact messages',
-    type: ApiSuccessResponseDto<MessagesDto[]>,
+    type: MessagesDto,
+    isArray: true,
   })
   @ApiResponse({
     status: 401,
@@ -34,14 +35,14 @@ export class MessagesController {
   })
   @ApiQuery({
     name: 'size',
-    description: 'The number of contact messages to return',
+    description: 'The number of contact messages to return, default: 10',
     required: false,
     type: 'number',
   })
   @ApiQuery({
     name: 'page',
     description:
-      'The number of pages to skip before starting to collect the result, eg: if page=2 and size=10, it will skip 20 (2*10) records',
+      'The number of pages to skip before starting to collect the result, eg: if page=2 and size=10, it will skip 20 (2*10) records, default: 0',
     required: false,
     type: 'number',
   })
