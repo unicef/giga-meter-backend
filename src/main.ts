@@ -12,6 +12,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('Contact Messages')
     .addTag('Flagged Schools')
+    .addTag('Schools')
     .addBearerAuth({
       type: 'http',
       description: 'Enter api key',
