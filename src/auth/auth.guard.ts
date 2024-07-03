@@ -33,8 +33,7 @@ export class AuthGuard implements CanActivate {
 
   private validateToken(token: string): Observable<boolean> {
     try {
-      const url =
-        'https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/validate_api_key/DAILY_CHECK_APP';
+      const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
       return this.httpService
         .get<ValidateApiKeyDto>(url, {
           headers: { Authorization: `Bearer ${token}` },
