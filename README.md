@@ -27,9 +27,9 @@
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 Create a .env file in root folder and add below variables to run locally:
-DATABASE_URL="<database-url>"
-PROJECT_CONNECT_SERVICE_URL="<project-connect-service-url>"
-DAILY_CHECK_APP_API_CODE="<daily-check-app-code>"
+DATABASE_URL="database-url"
+PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
+DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 
 ## Installation
 
