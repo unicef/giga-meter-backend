@@ -11,6 +11,8 @@ import { SchoolController } from './school/school.controller';
 import { SchoolService } from './school/school.service';
 import { CountryController } from './country/country.controller';
 import { CountryService } from './country/country.service';
+import { AdminController } from './admin/admin.controller';
+import { AdminService } from './admin/admin.service';
 
 @Module({
   imports: [HttpModule],
@@ -20,6 +22,7 @@ import { CountryService } from './country/country.service';
     FlaggedSchoolController,
     SchoolController,
     CountryController,
+    AdminController,
   ],
   providers: [
     AppService,
@@ -28,6 +31,7 @@ import { CountryService } from './country/country.service';
     FlaggedSchoolService,
     SchoolService,
     CountryService,
+    AdminService,
   ],
 })
 export class AppModule {}

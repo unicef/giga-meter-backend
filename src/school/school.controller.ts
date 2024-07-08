@@ -62,14 +62,14 @@ export class SchoolController {
     @Query('size') size?: number,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
-      const flaggedSchools = await this.schoolService.schools({
+      const schools = await this.schoolService.schools({
         skip: (page ?? 0) * (size ?? 10),
         take: (size ?? 10) * 1,
       });
 
       return {
         success: true,
-        data: flaggedSchools,
+        data: schools,
         timestamp: new Date().toISOString(),
         message: 'success',
       };
@@ -105,13 +105,13 @@ export class SchoolController {
     @Param('giga_id_school') giga_id_school: string,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
-      const flaggedSchools = await this.schoolService.schoolsByGigaId(
+      const schools = await this.schoolService.schoolsByGigaId(
         giga_id_school.toLowerCase(),
       );
 
       return {
         success: true,
-        data: flaggedSchools,
+        data: schools,
         timestamp: new Date().toISOString(),
         message: 'success',
       };
@@ -147,11 +147,11 @@ export class SchoolController {
     @Param('id') id: string,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
-      const flaggedSchools = await this.schoolService.schoolsById(id);
+      const schools = await this.schoolService.schoolsById(id);
 
       return {
         success: true,
-        data: flaggedSchools,
+        data: schools,
         timestamp: new Date().toISOString(),
         message: 'success',
       };
@@ -187,13 +187,13 @@ export class SchoolController {
     @Param('country_id') country_id: string,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
-      const flaggedSchools = await this.schoolService.schoolsByCountryId(
+      const schools = await this.schoolService.schoolsByCountryId(
         country_id.toUpperCase(),
       );
 
       return {
         success: true,
-        data: flaggedSchools,
+        data: schools,
         timestamp: new Date().toISOString(),
         message: 'success',
       };
