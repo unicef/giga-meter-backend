@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiExcludeController,
   ApiOperation,
   ApiResponse,
@@ -62,6 +63,10 @@ export class AdminController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
+  @ApiBody({
+    type: Number,
+    isArray: true,
+  })
   async blockSchools(@Body() schoolIds: number[]): Promise<boolean> {
     try {
       return await this.adminService.blockSchools(schoolIds);
@@ -88,6 +93,10 @@ export class AdminController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
+  @ApiBody({
+    type: Number,
+    isArray: true,
+  })
   async unblockSchools(@Body() schoolIds: number[]): Promise<boolean> {
     try {
       return await this.adminService.unblockSchools(schoolIds);
@@ -113,6 +122,10 @@ export class AdminController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiBody({
+    type: Number,
+    isArray: true,
   })
   async notifySchools(@Body() schoolIds: number[]): Promise<boolean> {
     try {

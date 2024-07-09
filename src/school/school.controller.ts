@@ -83,7 +83,7 @@ export class SchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by country id',
+      'Returns the list of schools on the Daily Check App database by giga id school',
   })
   @ApiResponse({
     status: 200,
@@ -125,7 +125,7 @@ export class SchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by country id',
+      'Returns the list of schools on the Daily Check App database by id',
   })
   @ApiResponse({
     status: 200,
