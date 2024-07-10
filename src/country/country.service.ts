@@ -41,9 +41,8 @@ export class CountryService {
       return null;
     }
 
-    const model = this.toModel(schoolDto);
     const country = await this.prisma.dailycheckapp_country.create({
-      data: model,
+      data: this.toModel(schoolDto),
     });
     return country.id.toString();
   }

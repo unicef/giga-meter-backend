@@ -68,6 +68,21 @@ export class SchoolService {
     return (await schools).map(this.toDto);
   }
 
+  async checkNotify(user_id: string): Promise<boolean> {
+    const school = await this.prisma.dailycheckapp_school.findFirstOrThrow({
+      where: { user_id },
+    });
+
+    if (school.notify) {
+      await this.prisma.dailycheckapp_school.updateMany({
+        where: { user_id },
+        data: { notify: false },
+      });
+      return true;
+    }
+    return false;
+  }
+
   async createSchool(schoolDto: SchoolDto): Promise<string> {
     const model = this.toModel(schoolDto);
     const school = await this.prisma.dailycheckapp_school.create({

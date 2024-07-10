@@ -74,7 +74,10 @@ export class FlaggedSchoolController {
         message: 'success',
       };
     } catch (error) {
-      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to get flagged schools with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -105,6 +108,12 @@ export class FlaggedSchoolController {
     @Param('country_id') country_id: string,
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
     try {
+      if (!country_id || country_id.trim().length === 0)
+        throw new HttpException(
+          'country_id is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       const flaggedSchools = await this.schoolService.schoolsByCountryId(
         country_id.toUpperCase(),
       );
@@ -116,7 +125,10 @@ export class FlaggedSchoolController {
         message: 'success',
       };
     } catch (error) {
-      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to get flagged schools with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -149,7 +161,7 @@ export class FlaggedSchoolController {
       };
     } catch (error) {
       throw new HttpException(
-        'Failed to create school',
+        'Failed to create flagged school with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }

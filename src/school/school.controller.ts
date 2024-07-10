@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiExcludeEndpoint,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -20,7 +21,7 @@ import {
 import { SchoolService } from './school.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
-import { SchoolDto } from './school.dto';
+import { CheckNotifyDto, SchoolDto } from './school.dto';
 import { Countries, WriteAccess } from 'src/common/common.decorator';
 
 @ApiTags('Schools')
@@ -96,7 +97,10 @@ export class SchoolController {
         message: 'success',
       };
     } catch (error) {
-      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to get schools with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -127,6 +131,12 @@ export class SchoolController {
     @Param('giga_id_school') giga_id_school: string,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
+      if (!giga_id_school || giga_id_school.trim().length === 0)
+        throw new HttpException(
+          'giga_id_school is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       const schools = await this.schoolService.schoolsByGigaId(
         giga_id_school.toLowerCase(),
       );
@@ -138,7 +148,10 @@ export class SchoolController {
         message: 'success',
       };
     } catch (error) {
-      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to get schools with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -169,6 +182,9 @@ export class SchoolController {
     @Param('id') id: string,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
+      if (!id || id.trim().length === 0)
+        throw new HttpException('id is null/empty', HttpStatus.BAD_REQUEST);
+
       const schools = await this.schoolService.schoolsById(id);
 
       return {
@@ -178,7 +194,10 @@ export class SchoolController {
         message: 'success',
       };
     } catch (error) {
-      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to get schools with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -209,6 +228,12 @@ export class SchoolController {
     @Param('country_id') country_id: string,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
+      if (!country_id || country_id.trim().length === 0)
+        throw new HttpException(
+          'country_id is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       const schools = await this.schoolService.schoolsByCountryId(
         country_id.toUpperCase(),
       );
@@ -220,7 +245,59 @@ export class SchoolController {
         message: 'success',
       };
     } catch (error) {
-      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to get schools with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  @ApiExcludeEndpoint()
+  @Get('checkNotify/:user_id')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Check to notify a Daily Check App school',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'true if school needs to be notified else false along with app download url',
+    type: CheckNotifyDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiParam({
+    name: 'user_id',
+    description: 'The user id of school',
+    required: true,
+    type: 'string',
+  })
+  async checkNotify(
+    @Param('user_id') user_id: string,
+  ): Promise<ApiSuccessResponseDto<CheckNotifyDto>> {
+    try {
+      if (!user_id || user_id.trim().length === 0)
+        throw new HttpException(
+          'user_id is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
+      const notify = await this.schoolService.checkNotify(user_id);
+
+      return {
+        success: true,
+        data: { notify, download_url: process.env.PCDC_APP_DOWNLOAD_URL },
+        timestamp: new Date().toISOString(),
+        message: 'success',
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to check notify school with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -253,7 +330,7 @@ export class SchoolController {
       };
     } catch (error) {
       throw new HttpException(
-        'Failed to create school',
+        'Failed to create school with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }

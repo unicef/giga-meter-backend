@@ -37,3 +37,11 @@ export class SchoolDto {
   @ApiProperty()
   created_at: Date;
 }
+
+export class CheckNotifyDto {
+  @ApiProperty()
+  notify: boolean;
+
+  @ApiProperty()
+  download_url: string;
+}

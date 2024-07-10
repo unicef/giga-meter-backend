@@ -44,7 +44,10 @@ export class AdminController {
     try {
       return await this.adminService.schools();
     } catch (error) {
-      throw new HttpException('Failed to get schools', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Failed to get schools with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
@@ -69,10 +72,16 @@ export class AdminController {
   })
   async blockSchools(@Body() schoolIds: number[]): Promise<boolean> {
     try {
+      if (!schoolIds || schoolIds.length === 0)
+        throw new HttpException(
+          'schoolIds is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       return await this.adminService.blockSchools(schoolIds);
     } catch (error) {
       throw new HttpException(
-        'Failed to block schools',
+        'Failed to block schools with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -99,10 +108,16 @@ export class AdminController {
   })
   async unblockSchools(@Body() schoolIds: number[]): Promise<boolean> {
     try {
+      if (!schoolIds || schoolIds.length === 0)
+        throw new HttpException(
+          'schoolIds is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       return await this.adminService.unblockSchools(schoolIds);
     } catch (error) {
       throw new HttpException(
-        'Failed to unblock schools',
+        'Failed to unblock schools with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -129,10 +144,16 @@ export class AdminController {
   })
   async notifySchools(@Body() schoolIds: number[]): Promise<boolean> {
     try {
+      if (!schoolIds || schoolIds.length === 0)
+        throw new HttpException(
+          'schoolIds is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       return await this.adminService.notifySchools(schoolIds);
     } catch (error) {
       throw new HttpException(
-        'Failed to notify schools',
+        'Failed to notify schools with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }

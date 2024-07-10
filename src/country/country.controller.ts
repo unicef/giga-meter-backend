@@ -76,7 +76,7 @@ export class CountryController {
       };
     } catch (error) {
       throw new HttpException(
-        'Failed to get countries',
+        'Failed to get countries with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -124,7 +124,7 @@ export class CountryController {
       };
     } catch (error) {
       throw new HttpException(
-        'Failed to get countries',
+        'Failed to get countries with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -175,7 +175,7 @@ export class CountryController {
       };
     } catch (error) {
       throw new HttpException(
-        'Failed to get countries',
+        'Failed to get countries with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -230,7 +230,7 @@ export class CountryController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to create country: ${error}`,
+        'Failed to create country with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -263,6 +263,7 @@ export class CountryController {
     try {
       if (!code || code.trim().length === 0)
         throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
+
       await this.countryService.deleteCountry(code.trim().toUpperCase());
 
       return {
@@ -273,7 +274,7 @@ export class CountryController {
       };
     } catch (error) {
       throw new HttpException(
-        `Failed to delete country with error: ${error}`,
+        'Failed to delete country with ' + error,
         HttpStatus.BAD_REQUEST,
       );
     }

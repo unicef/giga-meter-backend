@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -50,16 +57,23 @@ export class MessagesController {
     @Query('page') page?: number,
     @Query('size') size?: number,
   ): Promise<ApiSuccessResponseDto<MessagesDto[]>> {
-    const messages = await this.msgsService.messages({
-      skip: (page ?? 0) * (size ?? 10),
-      take: (size ?? 10) * 1,
-    });
+    try {
+      const messages = await this.msgsService.messages({
+        skip: (page ?? 0) * (size ?? 10),
+        take: (size ?? 10) * 1,
+      });
 
-    return {
-      success: true,
-      data: messages,
-      timestamp: new Date().toISOString(),
-      message: 'success',
-    };
+      return {
+        success: true,
+        data: messages,
+        timestamp: new Date().toISOString(),
+        message: 'success',
+      };
+    } catch (error) {
+      throw new HttpException(
+        'Failed to get messages with ' + error,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
   }
 }
