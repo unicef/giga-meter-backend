@@ -21,6 +21,7 @@ import { SchoolService } from './school.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
 import { SchoolDto } from './school.dto';
+import { Countries, WriteAccess } from 'src/common/common.decorator';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')
@@ -45,6 +46,19 @@ export class SchoolController {
     description: 'Unauthorized; Invalid api key provided',
   })
   @ApiQuery({
+    name: 'country_iso3_code',
+    description: 'The ISO3 code of a country, eg: IND',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'giga_id_school',
+    description:
+      'The GIGA id of a school, eg: 2abb47dd-3fca-44b1-b6c8-0ec0c863c236',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
     name: 'size',
     description: 'The number of schools to return, default: 10',
     required: false,
@@ -60,12 +74,20 @@ export class SchoolController {
   async getSchools(
     @Query('page') page?: number,
     @Query('size') size?: number,
+    @Query('giga_id_school') giga_id_school?: string,
+    @Query('country_iso3_code') country_iso3_code?: string,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
-      const schools = await this.schoolService.schools({
-        skip: (page ?? 0) * (size ?? 10),
-        take: (size ?? 10) * 1,
-      });
+      const schools = await this.schoolService.schools(
+        (page ?? 0) * (size ?? 10),
+        (size ?? 10) * 1,
+        giga_id_school,
+        country_iso3_code,
+        write_access,
+        countries,
+      );
 
       return {
         success: true,

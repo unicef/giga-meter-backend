@@ -7,15 +7,43 @@ import { SchoolDto } from './school.dto';
 export class SchoolService {
   constructor(private prisma: PrismaService) {}
 
-  async schools(params: {
-    skip?: number;
-    take?: number;
-  }): Promise<SchoolDto[]> {
-    const { skip, take } = params;
-    const schools = this.prisma.dailycheckapp_school.findMany({
+  async schools(
+    skip?: number,
+    take?: number,
+    giga_id_school?: string,
+    country_iso3_code?: string,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<SchoolDto[]> {
+    const query = {
       skip,
       take,
-    });
+      where: {
+        giga_id_school,
+        country_code: { in: countries },
+      },
+    };
+
+    if (!giga_id_school) {
+      delete query.where.giga_id_school;
+    }
+    if (write_access) {
+      delete query.where.country_code;
+    }
+    if (country_iso3_code) {
+      const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
+        where: { code_iso3: country_iso3_code },
+      });
+      if (
+        !dbCountry?.code ||
+        (!write_access && !countries.includes(dbCountry.code))
+      ) {
+        return [];
+      }
+      query.where.country_code = { in: [dbCountry.code] };
+    }
+
+    const schools = this.prisma.dailycheckapp_school.findMany(query);
     return (await schools).map(this.toDto);
   }
 

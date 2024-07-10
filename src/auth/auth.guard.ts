@@ -4,8 +4,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 
@@ -13,42 +12,44 @@ import { HttpService } from '@nestjs/axios';
 export class AuthGuard implements CanActivate {
   constructor(private readonly httpService: HttpService) {}
 
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      return throwError(
-        () => new UnauthorizedException('Missing authorization token'),
-      );
+      throw new UnauthorizedException('Missing authorization token');
     }
 
-    return this.validateToken(token).pipe(
-      map((isValid) => isValid),
-      catchError((error) => throwError(error)),
-    );
+    const response = await this.validateToken(token, request);
+    if (!response) {
+      throw new UnauthorizedException(
+        'Invalid token or not authorized to access',
+      );
+    }
+    return true;
   }
 
-  private validateToken(token: string): Observable<boolean> {
+  private async validateToken(token: string, request: any): Promise<boolean> {
     try {
       const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
-      return this.httpService
-        .get<ValidateApiKeyDto>(url, {
+      const response = await firstValueFrom(
+        this.httpService.get<ValidateApiKeyDto>(url, {
           headers: { Authorization: `Bearer ${token}` },
-        })
-        .pipe(
-          map((response) => response.data.success), // Adapt to your API response structure
-          catchError((error) =>
-            throwError(
-              () =>
-                new UnauthorizedException(
-                  'Invalid token or token validation error: ' + error,
-                ),
-            ),
-          ),
-        );
+        }),
+      );
+
+      if (
+        !response.data.success ||
+        (request?.method != 'GET' && !response.data.data.has_write_access)
+      ) {
+        return false;
+      }
+
+      request.has_write_access = response.data.data.has_write_access;
+      request.allowed_countries = response.data.data.countries.map(
+        (c) => c.code,
+      );
+      return true;
     } catch (error) {
       console.error('Token validation failed:', error.message);
     }
