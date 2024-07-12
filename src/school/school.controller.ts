@@ -252,8 +252,8 @@ export class SchoolController {
     }
   }
 
-  @ApiExcludeEndpoint()
   @Get('checkNotify/:user_id')
+  @ApiExcludeEndpoint()
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({

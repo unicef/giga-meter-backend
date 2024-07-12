@@ -438,3 +438,8 @@ export class MeasurementV2Dto {
   @ApiProperty()
   created_at?: Date;
 }
+
+export class MeasurementFailedDto extends MeasurementDto {
+  @ApiProperty()
+  reason?: string;
+}
