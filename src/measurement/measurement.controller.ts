@@ -20,13 +20,17 @@ import {
 } from '@nestjs/swagger';
 import { MeasurementService } from './measurement.service';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { ApiSuccessResponseDto } from 'src/common/common.dto';
+import {
+  AddRecordResponseDto,
+  ApiSuccessResponseDto,
+} from 'src/common/common.dto';
 import {
   MeasurementDto,
   MeasurementFailedDto,
   MeasurementV2Dto,
 } from './measurement.dto';
 import { Countries, WriteAccess } from 'src/common/common.decorator';
+import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('Measurements')
 @Controller('api/v1/measurements')
@@ -51,6 +55,27 @@ export class MeasurementController {
     description: 'Unauthorized; Invalid api key provided',
   })
   @ApiQuery({
+    name: 'filterValue',
+    description:
+      'The filter value which needs to be compared with filterBy column, eg: 2024-01-14 or 2024-01-14T15:13:30.824Z',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'filterCondition',
+    description:
+      'The filter condition for the filterBy, accepted values are: lt, lte, gt, gte, eq',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'filterBy',
+    description:
+      'The column to which filter needs to be applied, eg: timestamp, created_at',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
     name: 'country_iso3_code',
     description: 'The ISO3 code of a country, eg: IND',
     required: false,
@@ -60,6 +85,13 @@ export class MeasurementController {
     name: 'giga_id_school',
     description:
       'The GIGA id of a measurement, eg: 2abb47dd-3fca-44b1-b6c8-0ec0c863c236',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'orderBy',
+    description:
+      'The column by which the list needs to be ordered, eg: pass "timestamp" or "created_at" to order by ASC and "-timestamp" or "created_at" to order by DESC, default: -timestamp',
     required: false,
     type: 'string',
   })
@@ -79,21 +111,53 @@ export class MeasurementController {
   async getMeasurements(
     @Query('page') page?: number,
     @Query('size') size?: number,
+    @Query('orderBy') orderBy?: string,
     @Query('giga_id_school') giga_id_school?: string,
     @Query('country_iso3_code') country_iso3_code?: string,
+    @Query('filterBy') filterBy?: string,
+    @Query('filterCondition') filterCondition?: string,
+    @Query('filterValue') filterValue?: Date,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     try {
+      if (
+        orderBy &&
+        !(orderBy?.includes('timestamp') || orderBy?.includes('created_at'))
+      ) {
+        throw new HttpException(
+          'Invalid orderBy value provided, accepted values are: timestamp, -timestamp, created_at, -created_at',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (filterBy && filterBy != 'timestamp' && filterBy != 'created_at') {
+        throw new HttpException(
+          'Invalid filterBy value provided',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (filterBy && !filterCondition) {
+        throw new HttpException(
+          'Please provide a valid filterCondition with filterBy column ${filterBy}',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (filterBy && filterCondition && filterValue == null) {
+        throw new HttpException(
+          'No filterValue provided with filterBy and filterCondition values',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       const measurements = await this.measurementService.measurements(
         (page ?? 0) * (size ?? 10),
         (size ?? 10) * 1,
-        '',
+        orderBy ?? '-timestamp',
         giga_id_school,
         country_iso3_code,
-        '',
-        '',
-        null,
+        filterBy ?? '',
+        filterCondition ?? '',
+        filterValue ?? null,
         write_access,
         countries,
       );
@@ -112,7 +176,7 @@ export class MeasurementController {
     }
   }
 
-  @Get('')
+  @Get('v2')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -130,6 +194,27 @@ export class MeasurementController {
     description: 'Unauthorized; Invalid api key provided',
   })
   @ApiQuery({
+    name: 'filterValue',
+    description:
+      'The filter value which needs to be compared with filterBy column, eg: 2024-01-14 or 2024-01-14T15:13:30.824Z',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'filterCondition',
+    description:
+      'The filter condition for the filterBy, accepted values are: lt, lte, gt, gte, eq',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'filterBy',
+    description:
+      'The column to which filter needs to be applied, eg: timestamp, created_at',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
     name: 'country_iso3_code',
     description: 'The ISO3 code of a country, eg: IND',
     required: false,
@@ -139,6 +224,13 @@ export class MeasurementController {
     name: 'giga_id_school',
     description:
       'The GIGA id of a measurement, eg: 2abb47dd-3fca-44b1-b6c8-0ec0c863c236',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'orderBy',
+    description:
+      'The column by which the list needs to be ordered, eg: pass "timestamp" or "created_at" to order by ASC and "-timestamp" or "created_at" to order by DESC',
     required: false,
     type: 'string',
   })
@@ -158,21 +250,53 @@ export class MeasurementController {
   async getMeasurementsV2(
     @Query('page') page?: number,
     @Query('size') size?: number,
+    @Query('orderBy') orderBy?: string,
     @Query('giga_id_school') giga_id_school?: string,
     @Query('country_iso3_code') country_iso3_code?: string,
+    @Query('filterBy') filterBy?: string,
+    @Query('filterCondition') filterCondition?: string,
+    @Query('filterValue') filterValue?: Date,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<MeasurementV2Dto[]> {
     try {
+      if (
+        orderBy &&
+        !(orderBy?.includes('timestamp') || orderBy?.includes('created_at'))
+      ) {
+        throw new HttpException(
+          'Invalid orderBy value provided, accepted values are: timestamp, -timestamp, created_at, -created_at',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (filterBy && filterBy != 'timestamp' && filterBy != 'created_at') {
+        throw new HttpException(
+          'Invalid filterBy value provided',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (filterBy && !filterCondition) {
+        throw new HttpException(
+          'Please provide a valid filterCondition with filterBy column ${filterBy}',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (filterBy && filterCondition && filterValue == null) {
+        throw new HttpException(
+          'No filterValue provided with filterBy and filterCondition values',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       return await this.measurementService.measurementsV2(
         (page ?? 0) * (size ?? 10),
         (size ?? 10) * 1,
-        '',
+        orderBy ?? '-timestamp',
         giga_id_school,
         country_iso3_code,
-        '',
-        '',
-        null,
+        filterBy ?? '',
+        filterCondition ?? '',
+        filterValue ?? null,
         write_access,
         countries,
       );
@@ -346,9 +470,9 @@ export class MeasurementController {
     summary: 'Register a measurement in to the Daily Check App database',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Returns Id of measurement created',
-    type: String,
+    type: ApiSuccessResponseDto<AddRecordResponseDto>,
   })
   @ApiResponse({
     status: 401,
@@ -356,14 +480,20 @@ export class MeasurementController {
   })
   async createMeasurements(
     @Body() measurementDto: MeasurementDto,
-  ): Promise<ApiSuccessResponseDto<string>> {
+  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
     try {
-      const measurementId =
+      const response =
         await this.measurementService.createMeasurement(measurementDto);
 
+      if (response.length) {
+        throw new HttpException(
+          'Failed to add measurement with error: ' + response,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       return {
         success: true,
-        data: measurementId,
+        data: { user_id: uuidv4() },
         timestamp: new Date().toISOString(),
         message: 'success',
       };
