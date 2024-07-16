@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
 import { SchoolDto } from './school.dto';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class SchoolService {
@@ -88,7 +89,7 @@ export class SchoolService {
     const school = await this.prisma.dailycheckapp_school.create({
       data: model,
     });
-    return school.id.toString();
+    return school.user_id;
   }
 
   private toDto(school: School): SchoolDto {
@@ -110,7 +111,7 @@ export class SchoolService {
 
   private toModel(school: SchoolDto): any {
     return {
-      user_id: school.user_id,
+      user_id: uuidv4(),
       giga_id_school: school.giga_id_school?.toLowerCase().trim(),
       mac_address: school.mac_address,
       os: school.os,

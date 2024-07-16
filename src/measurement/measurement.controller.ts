@@ -390,7 +390,7 @@ export class MeasurementController {
     required: true,
     type: 'string',
   })
-  async getMeasurementsByGigaId(
+  async getMeasurementsById(
     @Param('id') id: string,
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     try {
@@ -436,7 +436,7 @@ export class MeasurementController {
     required: true,
     type: 'string',
   })
-  async getMeasurementsById(
+  async getMeasurementsBySchoolId(
     @Param('school_id') school_id: string,
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     try {
@@ -478,7 +478,7 @@ export class MeasurementController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
-  async createMeasurements(
+  async createMeasurement(
     @Body() measurementDto: MeasurementDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
     try {

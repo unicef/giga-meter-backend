@@ -54,8 +54,6 @@ export class MeasurementService {
       filter.country_code = { in: [dbCountry.code] };
     }
 
-    console.log('filter is', JSON.stringify(filter));
-
     const measurements = this.prisma.measurements.findMany({
       where: filter,
       skip,
