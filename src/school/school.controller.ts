@@ -20,7 +20,10 @@ import {
 } from '@nestjs/swagger';
 import { SchoolService } from './school.service';
 import { AuthGuard } from 'src/auth/auth.guard';
-import { ApiSuccessResponseDto } from 'src/common/common.dto';
+import {
+  AddRecordResponseDto,
+  ApiSuccessResponseDto,
+} from 'src/common/common.dto';
 import { CheckNotifyDto, SchoolDto } from './school.dto';
 import { Countries, WriteAccess } from 'src/common/common.decorator';
 
@@ -252,8 +255,8 @@ export class SchoolController {
     }
   }
 
-  @ApiExcludeEndpoint()
   @Get('checkNotify/:user_id')
+  @ApiExcludeEndpoint()
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -316,15 +319,15 @@ export class SchoolController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
-  async createSchools(
+  async createSchool(
     @Body() schoolDto: SchoolDto,
-  ): Promise<ApiSuccessResponseDto<string>> {
+  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
     try {
       const schoolId = await this.schoolService.createSchool(schoolDto);
 
       return {
         success: true,
-        data: schoolId,
+        data: { user_id: schoolId },
         timestamp: new Date().toISOString(),
         message: 'success',
       };

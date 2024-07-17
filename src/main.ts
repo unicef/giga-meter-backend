@@ -14,6 +14,7 @@ async function bootstrap() {
     .addTag('Flagged Schools')
     .addTag('Schools')
     .addTag('Country')
+    .addTag('Measurements')
     .addBearerAuth({
       type: 'http',
       description: 'Enter api key',

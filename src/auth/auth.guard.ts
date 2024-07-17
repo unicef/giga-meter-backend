@@ -40,7 +40,9 @@ export class AuthGuard implements CanActivate {
 
       if (
         !response.data.success ||
-        (request?.method != 'GET' && !response.data.data.has_write_access)
+        (!response.data.data.has_write_access &&
+          (request?.method != 'GET' ||
+            response.data.data.countries?.length === 0))
       ) {
         return false;
       }

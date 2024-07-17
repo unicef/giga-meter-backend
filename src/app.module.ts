@@ -13,6 +13,8 @@ import { CountryController } from './country/country.controller';
 import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
+import { MeasurementController } from './measurement/measurement.controller';
+import { MeasurementService } from './measurement/measurement.service';
 
 @Module({
   imports: [HttpModule],
@@ -22,6 +24,7 @@ import { AdminService } from './admin/admin.service';
     FlaggedSchoolController,
     SchoolController,
     CountryController,
+    MeasurementController,
     AdminController,
   ],
   providers: [
@@ -31,6 +34,7 @@ import { AdminService } from './admin/admin.service';
     FlaggedSchoolService,
     SchoolService,
     CountryService,
+    MeasurementService,
     AdminService,
   ],
 })
