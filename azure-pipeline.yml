@@ -1,0 +1,28 @@
+name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
+
+pool:
+  vmImage: 'ubuntu-22.04'
+variables:
+  dockerRegistryServiceConnection: $(DOCKER_SERVICE_CONNECTION)
+  dockerfilePath: './Dockerfile'
+  app: $(DOCKER_REPOSITORY)
+  imageRepositoryDev: 'dev/$(app)'
+  imageRepositoryStg: 'stg/$(app)'
+  imageRepositoryProd: 'prod/$(app)'
+  tag: '$(Build.BuildId)'
+
+steps:
+# TODO: Unit Tests
+
+# TODO: Sonar Scan
+
+# Docker Build and Push
+- task: Docker@2
+  displayName: Dev - Build image
+  inputs:
+    command: build
+    repository: $(imageRepositoryDev)
+    containerRegistry: $(dockerRegistryServiceConnection)
+    dockerfile: $(dockerfilePath)
+    tags: |
+      $(tag)
