@@ -247,6 +247,10 @@ export class MeasurementService {
   }
 
   private toDto(measurement: Measurement): MeasurementDto {
+    const clientInfo = plainToInstance(
+      ClientInfoDto,
+      measurement.client_info ?? '',
+    );
     return {
       id: measurement.id.toString(),
       Timestamp: measurement.timestamp,
@@ -255,7 +259,7 @@ export class MeasurementService {
       school_id: measurement.school_id,
       DeviceType: measurement.device_type,
       Notes: measurement.notes,
-      ClientInfo: plainToInstance(ClientInfoDto, measurement.client_info ?? ''),
+      ClientInfo: clientInfo,
       ServerInfo: plainToInstance(ServerInfoDto, measurement.server_info ?? ''),
       annotation: measurement.annotation,
       Download: measurement.download,
@@ -263,7 +267,10 @@ export class MeasurementService {
       Latency: parseInt(measurement.latency.toString()),
       Results: plainToInstance(ResultsDto, measurement.results ?? ''),
       giga_id_school: measurement.giga_id_school,
-      country_code: measurement.country_code,
+      country_code:
+        measurement.source.toLowerCase() === 'mlab'
+          ? clientInfo?.Country
+          : measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: measurement.source,
@@ -272,6 +279,10 @@ export class MeasurementService {
   }
 
   private toV2Dto(measurement: Measurement): MeasurementV2Dto {
+    const clientInfo =
+      measurement.source.toLowerCase() === 'mlab'
+        ? plainToInstance(ClientInfoDto, measurement.client_info ?? '')
+        : {};
     return {
       Timestamp: measurement.timestamp,
       BrowserID: measurement.browser_id,
@@ -280,7 +291,10 @@ export class MeasurementService {
       Upload: measurement.upload,
       Latency: parseInt(measurement.latency.toString()),
       giga_id_school: measurement.giga_id_school,
-      country_code: measurement.country_code,
+      country_code:
+        measurement.source.toLowerCase() === 'mlab'
+          ? clientInfo?.Country
+          : measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: measurement.source,
