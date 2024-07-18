@@ -21,6 +21,7 @@ import { FlaggedSchoolService } from './flagged-school.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
 import { FlaggedSchoolDto } from './flagged-school.dto';
+import { Countries, WriteAccess } from 'src/common/common.decorator';
 
 @ApiTags('Flagged Schools')
 @Controller('api/v1/flagged_dailycheckapp_schools')
@@ -60,11 +61,15 @@ export class FlaggedSchoolController {
   async getSchools(
     @Query('page') page?: number,
     @Query('size') size?: number,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
     try {
       const flaggedSchools = await this.schoolService.schools({
         skip: (page ?? 0) * (size ?? 10),
         take: (size ?? 10) * 1,
+        write_access,
+        countries,
       });
 
       return {
@@ -106,8 +111,16 @@ export class FlaggedSchoolController {
   })
   async getSchoolsByCountryId(
     @Param('country_id') country_id: string,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
     try {
+      if (!countries.includes(country_id.trim().toUpperCase())) {
+        throw new HttpException(
+          'not authorized to access',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       if (!country_id || country_id.trim().length === 0)
         throw new HttpException(
           'country_id is null/empty',

@@ -7,6 +7,13 @@ export const Countries = createParamDecorator(
   },
 );
 
+export const CountriesIso3 = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.allowed_countries_iso3;
+  },
+);
+
 export const WriteAccess = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();

@@ -29,7 +29,11 @@ import {
   MeasurementFailedDto,
   MeasurementV2Dto,
 } from './measurement.dto';
-import { Countries, WriteAccess } from 'src/common/common.decorator';
+import {
+  Countries,
+  CountriesIso3,
+  WriteAccess,
+} from 'src/common/common.decorator';
 import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('Measurements')
@@ -119,6 +123,7 @@ export class MeasurementController {
     @Query('filterValue') filterValue?: Date,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
+    @CountriesIso3() countries_iso3?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     try {
       if (
@@ -145,6 +150,16 @@ export class MeasurementController {
       if (filterBy && filterCondition && filterValue == null) {
         throw new HttpException(
           'No filterValue provided with filterBy and filterCondition values',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (
+        !write_access &&
+        country_iso3_code &&
+        !countries_iso3.includes(country_iso3_code)
+      ) {
+        throw new HttpException(
+          'not authorized to access',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -258,6 +273,7 @@ export class MeasurementController {
     @Query('filterValue') filterValue?: Date,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
+    @CountriesIso3() countries_iso3?: string[],
   ): Promise<MeasurementV2Dto[]> {
     try {
       if (
@@ -284,6 +300,16 @@ export class MeasurementController {
       if (filterBy && filterCondition && filterValue == null) {
         throw new HttpException(
           'No filterValue provided with filterBy and filterCondition values',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      if (
+        !write_access &&
+        country_iso3_code &&
+        !countries_iso3.includes(country_iso3_code)
+      ) {
+        throw new HttpException(
+          'not authorized to access',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -392,12 +418,18 @@ export class MeasurementController {
   })
   async getMeasurementsById(
     @Param('id') id: string,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     try {
       if (!id || id.trim().length === 0)
         throw new HttpException('id is null/empty', HttpStatus.BAD_REQUEST);
 
-      const measurements = await this.measurementService.measurementsById(id);
+      const measurements = await this.measurementService.measurementsById(
+        id,
+        write_access,
+        countries,
+      );
 
       return {
         success: true,
@@ -438,6 +470,8 @@ export class MeasurementController {
   })
   async getMeasurementsBySchoolId(
     @Param('school_id') school_id: string,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     try {
       if (!school_id || school_id.trim().length === 0)
@@ -446,8 +480,11 @@ export class MeasurementController {
           HttpStatus.BAD_REQUEST,
         );
 
-      const measurements =
-        await this.measurementService.measurementsBySchoolId(school_id);
+      const measurements = await this.measurementService.measurementsBySchoolId(
+        school_id,
+        write_access,
+        countries,
+      );
 
       return {
         success: true,

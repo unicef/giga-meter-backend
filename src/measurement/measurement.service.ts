@@ -138,17 +138,41 @@ export class MeasurementService {
     return (await measurements).map(this.toFailedDto);
   }
 
-  async measurementsById(id: string): Promise<MeasurementDto[]> {
-    const measurements = this.prisma.measurements.findMany({
-      where: { id: parseInt(id) },
-    });
+  async measurementsById(
+    id: string,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<MeasurementDto[]> {
+    const query = {
+      where: {
+        id: parseInt(id),
+        country_code: { in: countries },
+      },
+    };
+    if (write_access) {
+      delete query.where.country_code;
+    }
+
+    const measurements = this.prisma.measurements.findMany(query);
     return (await measurements).map(this.toDto);
   }
 
-  async measurementsBySchoolId(school_id: string): Promise<MeasurementDto[]> {
-    const measurements = this.prisma.measurements.findMany({
-      where: { school_id },
-    });
+  async measurementsBySchoolId(
+    school_id: string,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<MeasurementDto[]> {
+    const query = {
+      where: {
+        school_id,
+        country_code: { in: countries },
+      },
+    };
+    if (write_access) {
+      delete query.where.country_code;
+    }
+
+    const measurements = this.prisma.measurements.findMany(query);
     return (await measurements).map(this.toDto);
   }
 

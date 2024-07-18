@@ -48,9 +48,14 @@ export class AuthGuard implements CanActivate {
       }
 
       request.has_write_access = response.data.data.has_write_access;
-      request.allowed_countries = response.data.data.countries.map(
-        (c) => c.code,
-      );
+      if (request?.method == 'GET') {
+        request.allowed_countries = response.data.data.countries.map(
+          (c) => c.code,
+        );
+        request.allowed_countries_iso3 = response.data.data.countries.map(
+          (c) => c.iso3_format,
+        );
+      }
       return true;
     } catch (error) {
       console.error('Token validation failed:', error.message);
