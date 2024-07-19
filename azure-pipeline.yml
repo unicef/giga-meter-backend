@@ -16,7 +16,7 @@ steps:
 
 # Docker Build and Push
 - task: Docker@2
-  displayName: Dev - Build image
+  displayName: Build image
   inputs:
     command: build
     repository: $(imageRepository)
