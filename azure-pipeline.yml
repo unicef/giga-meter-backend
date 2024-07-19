@@ -7,7 +7,7 @@ variables:
   dockerfilePath: './Dockerfile'
   app: $(DOCKER_REPOSITORY)
   imageRepository: 'main/$(app)'
-  tag: '$(SourceBranchName)-$(Build.BuildId)'
+  tag: '$(Build.BuildId)'
 
 steps:
 # TODO: Unit Tests
