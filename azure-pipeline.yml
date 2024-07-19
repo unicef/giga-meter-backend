@@ -6,10 +6,8 @@ variables:
   dockerRegistryServiceConnection: $(DOCKER_SERVICE_CONNECTION)
   dockerfilePath: './Dockerfile'
   app: $(DOCKER_REPOSITORY)
-  imageRepositoryDev: 'dev/$(app)'
-  imageRepositoryStg: 'stg/$(app)'
-  imageRepositoryProd: 'prod/$(app)'
-  tag: '$(Build.BuildId)'
+  imageRepository: 'main/$(app)'
+  tag: '$(SourceBranchName)-$(Build.BuildId)'
 
 steps:
 # TODO: Unit Tests
@@ -21,7 +19,7 @@ steps:
   displayName: Dev - Build image
   inputs:
     command: build
-    repository: $(imageRepositoryDev)
+    repository: $(imageRepository)
     containerRegistry: $(dockerRegistryServiceConnection)
     dockerfile: $(dockerfilePath)
     tags: |
