@@ -48,7 +48,7 @@ export class AuthGuard implements CanActivate {
       }
 
       request.has_write_access = response.data.data.has_write_access;
-      if (request?.method == 'GET') {
+      if (request?.method == 'GET' && !response.data.data.has_write_access) {
         request.allowed_countries = response.data.data.countries.map(
           (c) => c.code,
         );
