@@ -23,6 +23,7 @@ export class SchoolService {
         giga_id_school,
         country_code: { in: countries },
       },
+      orderBy: { created: 'desc' },
     };
 
     if (!giga_id_school) {
@@ -48,17 +49,41 @@ export class SchoolService {
     return (await schools).map(this.toDto);
   }
 
-  async schoolsByGigaId(giga_id_school: string): Promise<SchoolDto[]> {
-    const schools = this.prisma.dailycheckapp_school.findMany({
-      where: { giga_id_school },
-    });
+  async schoolsByGigaId(
+    giga_id_school: string,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<SchoolDto[]> {
+    const query = {
+      where: {
+        giga_id_school,
+        country_code: { in: countries },
+      },
+    };
+    if (write_access) {
+      delete query.where.country_code;
+    }
+
+    const schools = this.prisma.dailycheckapp_school.findMany(query);
     return (await schools).map(this.toDto);
   }
 
-  async schoolsById(id: string): Promise<SchoolDto[]> {
-    const schools = this.prisma.dailycheckapp_school.findMany({
-      where: { id: parseInt(id) },
-    });
+  async schoolsById(
+    id: string,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<SchoolDto[]> {
+    const query = {
+      where: {
+        id: parseInt(id),
+        country_code: { in: countries },
+      },
+    };
+    if (write_access) {
+      delete query.where.country_code;
+    }
+
+    const schools = this.prisma.dailycheckapp_school.findMany(query);
     return (await schools).map(this.toDto);
   }
 

@@ -10,11 +10,24 @@ export class FlaggedSchoolService {
   async schools(params: {
     skip?: number;
     take?: number;
+    write_access?: boolean;
+    countries?: string[];
   }): Promise<FlaggedSchoolDto[]> {
-    const { skip, take } = params;
+    const { skip, take, write_access, countries } = params;
+    const filter: Record<string, any> = {
+      detected_country: {
+        in: countries,
+      },
+    };
+    if (write_access) {
+      delete filter.country_code;
+    }
+
     const schools = this.prisma.dailycheckapp_flagged_school.findMany({
+      where: filter,
       skip,
       take,
+      orderBy: { created: 'desc' },
     });
     return (await schools).map(this.toDto);
   }

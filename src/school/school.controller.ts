@@ -132,6 +132,8 @@ export class SchoolController {
   })
   async getSchoolsByGigaId(
     @Param('giga_id_school') giga_id_school: string,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
       if (!giga_id_school || giga_id_school.trim().length === 0)
@@ -142,6 +144,8 @@ export class SchoolController {
 
       const schools = await this.schoolService.schoolsByGigaId(
         giga_id_school.toLowerCase(),
+        write_access,
+        countries,
       );
 
       return {
@@ -229,6 +233,8 @@ export class SchoolController {
   })
   async getSchoolsByCountryId(
     @Param('country_id') country_id: string,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
       if (!country_id || country_id.trim().length === 0)
@@ -236,6 +242,13 @@ export class SchoolController {
           'country_id is null/empty',
           HttpStatus.BAD_REQUEST,
         );
+
+      if (!write_access && !countries.includes(country_id.toUpperCase())) {
+        throw new HttpException(
+          'not authorized to access',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
       const schools = await this.schoolService.schoolsByCountryId(
         country_id.toUpperCase(),
@@ -311,7 +324,7 @@ export class SchoolController {
     summary: 'Register a school in to the Daily Check App database',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Returns Id of school created',
     type: String,
   })

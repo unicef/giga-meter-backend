@@ -10,13 +10,26 @@ export class CountryService {
   async countries(params: {
     skip?: number;
     take?: number;
+    write_access?: boolean;
+    countries?: string[];
   }): Promise<CountryDto[]> {
-    const { skip, take } = params;
-    const countries = this.prisma.dailycheckapp_country.findMany({
+    const { skip, take, write_access, countries } = params;
+    const filter: Record<string, any> = {
+      code: {
+        in: countries,
+      },
+    };
+    if (write_access) {
+      delete filter.country_code;
+    }
+
+    const records = this.prisma.dailycheckapp_country.findMany({
+      where: filter,
       skip,
       take,
+      orderBy: { name: 'asc' },
     });
-    return (await countries).map(this.toDto);
+    return (await records).map(this.toDto);
   }
 
   async countriesByCode(code: string): Promise<CountryDto[]> {
@@ -74,7 +87,7 @@ export class CountryService {
       code_iso3: country.code_iso3?.trim().toUpperCase(),
       name: country.name,
       country_id: country.country_id,
-      created: new Date().toISOString(),
+      created: new Date().toISOString().split('T')[0],
     };
   }
 }

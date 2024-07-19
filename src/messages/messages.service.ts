@@ -15,6 +15,7 @@ export class MessagesService {
     const messages = this.prisma.dailycheckapp_contact_contactmessage.findMany({
       skip,
       take,
+      orderBy: { created: 'asc' },
     });
     return (await messages).map(this.toDto);
   }

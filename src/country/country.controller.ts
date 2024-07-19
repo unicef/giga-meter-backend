@@ -22,6 +22,11 @@ import { CountryService } from './country.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
 import { CountryDto } from './country.dto';
+import {
+  Countries,
+  CountriesIso3,
+  WriteAccess,
+} from 'src/common/common.decorator';
 
 @ApiTags('Country')
 @Controller('api/v1/dailycheckapp_countries')
@@ -61,16 +66,20 @@ export class CountryController {
   async getCountries(
     @Query('page') page?: number,
     @Query('size') size?: number,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<CountryDto[]>> {
     try {
-      const countries = await this.countryService.countries({
+      const records = await this.countryService.countries({
         skip: (page ?? 0) * (size ?? 10),
         take: (size ?? 10) * 1,
+        write_access,
+        countries,
       });
 
       return {
         success: true,
-        data: countries,
+        data: records,
         timestamp: new Date().toISOString(),
         message: 'success',
       };
@@ -107,18 +116,27 @@ export class CountryController {
   })
   async getCountriesByCode(
     @Param('code') code: string,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<CountryDto[]>> {
     try {
       if (!code || code.trim().length === 0)
         throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
 
-      const countries = await this.countryService.countriesByCode(
+      if (!write_access && !countries.includes(code.trim().toUpperCase())) {
+        throw new HttpException(
+          'not authorized to access',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const records = await this.countryService.countriesByCode(
         code.trim().toUpperCase(),
       );
 
       return {
         success: true,
-        data: countries,
+        data: records,
         timestamp: new Date().toISOString(),
         message: 'success',
       };
@@ -155,6 +173,8 @@ export class CountryController {
   })
   async getCountriesByCodeIso3(
     @Param('code_iso3') code_iso3: string,
+    @WriteAccess() write_access?: boolean,
+    @CountriesIso3() countries?: string[],
   ): Promise<ApiSuccessResponseDto<CountryDto[]>> {
     try {
       if (!code_iso3 || code_iso3.trim().length === 0)
@@ -162,14 +182,23 @@ export class CountryController {
           'code_iso3 is null/empty',
           HttpStatus.BAD_REQUEST,
         );
+      if (
+        !write_access &&
+        !countries.includes(code_iso3.trim().toUpperCase())
+      ) {
+        throw new HttpException(
+          'not authorized to access',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-      const countries = await this.countryService.countriesByCodeIso3(
+      const records = await this.countryService.countriesByCodeIso3(
         code_iso3.trim().toUpperCase(),
       );
 
       return {
         success: true,
-        data: countries,
+        data: records,
         timestamp: new Date().toISOString(),
         message: 'success',
       };
@@ -188,7 +217,7 @@ export class CountryController {
     summary: 'Register a country in to the Daily Check App database',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Returns Id of country created',
     type: String,
   })

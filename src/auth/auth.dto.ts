@@ -11,4 +11,5 @@ class ValidateKeyDto {
 
 class CountryKeyDto {
   readonly code: string;
+  readonly iso3_format: string;
 }
