@@ -23,6 +23,7 @@ export class SchoolService {
         giga_id_school,
         country_code: { in: countries },
       },
+      orderBy: { created: 'desc' },
     };
 
     if (!giga_id_school) {

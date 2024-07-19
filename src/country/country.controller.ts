@@ -217,7 +217,7 @@ export class CountryController {
     summary: 'Register a country in to the Daily Check App database',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Returns Id of country created',
     type: String,
   })

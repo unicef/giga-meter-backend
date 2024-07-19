@@ -27,6 +27,7 @@ export class FlaggedSchoolService {
       where: filter,
       skip,
       take,
+      orderBy: { created: 'desc' },
     });
     return (await schools).map(this.toDto);
   }

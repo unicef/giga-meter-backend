@@ -27,6 +27,7 @@ export class CountryService {
       where: filter,
       skip,
       take,
+      orderBy: { name: 'asc' },
     });
     return (await records).map(this.toDto);
   }
@@ -86,7 +87,7 @@ export class CountryService {
       code_iso3: country.code_iso3?.trim().toUpperCase(),
       name: country.name,
       country_id: country.country_id,
-      created: new Date().toISOString(),
+      created: new Date().toISOString().split('T')[0],
     };
   }
 }

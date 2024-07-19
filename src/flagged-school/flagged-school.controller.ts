@@ -152,7 +152,7 @@ export class FlaggedSchoolController {
     summary: 'Register a flagged school in to the Daily Check App database',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Returns Id of flagged school created',
     type: String,
   })
@@ -160,7 +160,7 @@ export class FlaggedSchoolController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
-  async createSchools(
+  async createSchool(
     @Body() schoolDto: FlaggedSchoolDto,
   ): Promise<ApiSuccessResponseDto<string>> {
     try {

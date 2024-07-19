@@ -324,7 +324,7 @@ export class SchoolController {
     summary: 'Register a school in to the Daily Check App database',
   })
   @ApiResponse({
-    status: 200,
+    status: 201,
     description: 'Returns Id of school created',
     type: String,
   })
