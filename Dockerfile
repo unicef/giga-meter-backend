@@ -2,8 +2,9 @@ from node:22.2.0
 
 WORKDIR /APP
 COPY . .
-RUN npm install
-RUN npm run build
+RUN npm install \
+      && npx prisma generate \
+      && npm run build
 
 # Remove everything except dist
 RUN mkdir tmp \
