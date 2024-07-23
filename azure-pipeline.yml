@@ -18,7 +18,7 @@ steps:
 - task: Docker@2
   displayName: Build image
   inputs:
-    command: build
+    command: buildAndPush
     repository: $(imageRepository)
     containerRegistry: $(dockerRegistryServiceConnection)
     dockerfile: $(dockerfilePath)
