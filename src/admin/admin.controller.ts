@@ -15,7 +15,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 import { AdminSchoolDto } from './admin.dto';
 
 @ApiExcludeController()

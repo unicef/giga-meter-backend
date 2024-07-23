@@ -1,4 +1,4 @@
-// NOTE: mockMessagesModel objects are the ones fetched from database and mockMessagesDto objects are the ones mapped mockMessageModel objects
+// NOTE: mockMessagesModel objects are the ones fetched from database and mockMessagesDto objects are the ones mapped which are returned from service
 
 export const mockMessagesModel = [
   {

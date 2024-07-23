@@ -19,11 +19,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { MeasurementService } from './measurement.service';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 import {
   AddRecordResponseDto,
   ApiSuccessResponseDto,
-} from 'src/common/common.dto';
+} from '../common/common.dto';
 import {
   MeasurementDto,
   MeasurementFailedDto,
@@ -33,7 +33,7 @@ import {
   Countries,
   CountriesIso3,
   WriteAccess,
-} from 'src/common/common.decorator';
+} from '../common/common.decorator';
 import { v4 as uuidv4 } from 'uuid';
 
 @ApiTags('Measurements')
