@@ -7,9 +7,9 @@ RUN npm install \
       && npm run build
 
 # Remove everything except dist
-RUN mkdir tmp
-RUN mv * tmp
-RUN mv tmp/dist .
-RUN rm -rf tmp
+RUN mkdir /temp
+RUN mv * /temp
+RUN mv /temp/dist .
+RUN rm -rf /temp
 
 ENTRYPOINT ["node", "dist/main"]
