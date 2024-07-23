@@ -15,7 +15,7 @@ import {
 } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { AuthGuard } from '../auth/auth.guard';
-import { ApiSuccessResponseDto } from 'src/common/common.dto';
+import { ApiSuccessResponseDto } from '../common/common.dto';
 import { MessagesDto } from './messages.dto';
 
 @ApiTags('Contact Messages')
