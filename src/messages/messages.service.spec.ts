@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MessagesService } from './messages.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { mockMessagesDto, mockMessagesModel } from './mock-objects';
+import { mockMessagesDto, mockMessagesModel } from '../common/mock-objects';
 
 describe('MessagesService', () => {
   let service: MessagesService;
@@ -30,14 +30,6 @@ describe('MessagesService', () => {
       expect(messages).toEqual(mockMessagesDto);
     });
 
-    it('should handle database error', async () => {
-      jest
-        .spyOn(prisma.dailycheckapp_contact_contactmessage, 'findMany')
-        .mockRejectedValue(new Error('Database error'));
-
-      await expect(service.messages({})).rejects.toThrowError('Database error');
-    });
-
     it('should handle empty result set', async () => {
       jest
         .spyOn(prisma.dailycheckapp_contact_contactmessage, 'findMany')
@@ -45,6 +37,14 @@ describe('MessagesService', () => {
 
       const messages = await service.messages({});
       expect(messages).toEqual([]);
+    });
+
+    it('should handle database error', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_contact_contactmessage, 'findMany')
+        .mockRejectedValue(new Error('Database error'));
+
+      await expect(service.messages({})).rejects.toThrow('Database error');
     });
   });
 });
