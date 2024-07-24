@@ -19,14 +19,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CountryService } from './country.service';
-import { AuthGuard } from 'src/auth/auth.guard';
-import { ApiSuccessResponseDto } from 'src/common/common.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { ApiSuccessResponseDto } from '../common/common.dto';
 import { CountryDto } from './country.dto';
 import {
   Countries,
   CountriesIso3,
   WriteAccess,
-} from 'src/common/common.decorator';
+} from '../common/common.decorator';
 
 @ApiTags('Country')
 @Controller('api/v1/dailycheckapp_countries')

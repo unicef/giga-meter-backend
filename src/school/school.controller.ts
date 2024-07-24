@@ -19,13 +19,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SchoolService } from './school.service';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 import {
   AddRecordResponseDto,
   ApiSuccessResponseDto,
-} from 'src/common/common.dto';
+} from '../common/common.dto';
 import { CheckNotifyDto, SchoolDto } from './school.dto';
-import { Countries, WriteAccess } from 'src/common/common.decorator';
+import { Countries, WriteAccess } from '../common/common.decorator';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')

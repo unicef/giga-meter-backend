@@ -18,10 +18,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FlaggedSchoolService } from './flagged-school.service';
-import { AuthGuard } from 'src/auth/auth.guard';
-import { ApiSuccessResponseDto } from 'src/common/common.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { ApiSuccessResponseDto } from '../common/common.dto';
 import { FlaggedSchoolDto } from './flagged-school.dto';
-import { Countries, WriteAccess } from 'src/common/common.decorator';
+import { Countries, WriteAccess } from '../common/common.decorator';
 
 @ApiTags('Flagged Schools')
 @Controller('api/v1/flagged_dailycheckapp_schools')

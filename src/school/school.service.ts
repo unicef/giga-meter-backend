@@ -16,21 +16,16 @@ export class SchoolService {
     write_access?: boolean,
     countries?: string[],
   ): Promise<SchoolDto[]> {
-    const query = {
-      skip,
-      take,
-      where: {
-        giga_id_school,
-        country_code: { in: countries },
-      },
-      orderBy: { created: 'desc' },
+    const filter = {
+      giga_id_school,
+      country_code: { in: countries },
     };
 
     if (!giga_id_school) {
-      delete query.where.giga_id_school;
+      delete filter.giga_id_school;
     }
     if (write_access) {
-      delete query.where.country_code;
+      delete filter.country_code;
     }
     if (country_iso3_code) {
       const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
@@ -42,10 +37,15 @@ export class SchoolService {
       ) {
         return [];
       }
-      query.where.country_code = { in: [dbCountry.code] };
+      filter.country_code = { in: [dbCountry.code] };
     }
 
-    const schools = this.prisma.dailycheckapp_school.findMany(query);
+    const schools = this.prisma.dailycheckapp_school.findMany({
+      skip,
+      take,
+      where: filter,
+      orderBy: { created: 'desc' },
+    });
     return (await schools).map(this.toDto);
   }
 
