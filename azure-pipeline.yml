@@ -15,7 +15,7 @@ variables:
 steps:
 # TODO: Unit Tests
 
-# TODO: Sonar Scan
+# Sonar Scan
 - task: Bash@3
   displayName: Sonar Scan
   condition: eq(variables['Build.SourceBranch'], 'main')
