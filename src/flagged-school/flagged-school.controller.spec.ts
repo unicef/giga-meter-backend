@@ -51,4 +51,22 @@ describe('FlaggedSchoolController', () => {
       await expect(controller.getSchools()).rejects.toThrow('Database error');
     });
   });
+
+  describe('CreateSchool', () => {
+    it('should create school', async () => {
+      jest.spyOn(service, 'createSchool').mockResolvedValue('1');
+
+      const response = await controller.createSchool(mockFlaggedSchoolDto[0]);
+      expect(response.data).toStrictEqual('1');
+    });
+
+    it('should handle database error', async () => {
+      jest
+        .spyOn(service, 'createSchool')
+        .mockRejectedValue(new Error('Database error'));
+      await expect(
+        controller.createSchool(mockFlaggedSchoolDto[0]),
+      ).rejects.toThrow('Database error');
+    });
+  });
 });

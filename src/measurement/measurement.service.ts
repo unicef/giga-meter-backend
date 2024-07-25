@@ -47,7 +47,7 @@ export class MeasurementService {
       });
       if (
         !dbCountry?.code ||
-        (!write_access && !countries.includes(dbCountry.code))
+        (!write_access && !countries?.includes(dbCountry.code))
       ) {
         return [];
       }
@@ -98,7 +98,7 @@ export class MeasurementService {
       });
       if (
         !dbCountry?.code ||
-        (!write_access && !countries.includes(dbCountry.code))
+        (!write_access && !countries?.includes(dbCountry.code))
       ) {
         return [];
       }

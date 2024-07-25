@@ -243,7 +243,7 @@ export class SchoolController {
           HttpStatus.BAD_REQUEST,
         );
 
-      if (!write_access && !countries.includes(country_id.toUpperCase())) {
+      if (!write_access && !countries?.includes(country_id.toUpperCase())) {
         throw new HttpException(
           'not authorized to access',
           HttpStatus.BAD_REQUEST,

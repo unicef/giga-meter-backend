@@ -33,7 +33,7 @@ export class SchoolService {
       });
       if (
         !dbCountry?.code ||
-        (!write_access && !countries.includes(dbCountry.code))
+        (!write_access && !countries?.includes(dbCountry.code))
       ) {
         return [];
       }
