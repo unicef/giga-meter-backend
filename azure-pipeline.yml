@@ -18,7 +18,7 @@ steps:
 # TODO: Sonar Scan
 - task: Bash@3
   displayName: Sonar Scan
-  #condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
+  condition: eq(variables['Build.SourceBranch'], 'main')
   inputs:
     targetType: 'inline'
     script: |
