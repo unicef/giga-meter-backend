@@ -1,3 +1,6 @@
+trigger:
+  - main
+
 name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
 
 pool:
@@ -6,22 +9,39 @@ variables:
   dockerRegistryServiceConnection: $(DOCKER_SERVICE_CONNECTION)
   dockerfilePath: './Dockerfile'
   app: $(DOCKER_REPOSITORY)
-  imageRepositoryDev: 'dev/$(app)'
-  imageRepositoryStg: 'stg/$(app)'
-  imageRepositoryProd: 'prod/$(app)'
+  imageRepository: 'main/$(app)'
   tag: '$(Build.BuildId)'
 
 steps:
 # TODO: Unit Tests
 
-# TODO: Sonar Scan
+# Sonar Scan
+- task: Bash@3
+  displayName: Sonar Scan
+  condition: eq(variables['Build.SourceBranch'], 'main')
+  inputs:
+    targetType: 'inline'
+    script: |
+      export SONAR_SCANNER_VERSION=5.0.1.3006
+      export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
+      curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+      unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+      export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+      export SONAR_SCANNER_OPTS="-server"
+      export SONAR_TOKEN=$(SONAR_TOKEN)
+      sonar-scanner \
+        -Dsonar.projectKey=${{ lower(variables['Build.DefinitionName']) }} \
+        -Dsonar.sources=src \
+        -Dsonar.host.url=$(SONAR_HOST) \
+        -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info \
+        -Dsonar.exclusions=**/test/**
 
 # Docker Build and Push
 - task: Docker@2
-  displayName: Dev - Build image
+  displayName: Build image
   inputs:
-    command: build
-    repository: $(imageRepositoryDev)
+    command: buildAndPush
+    repository: $(imageRepository)
     containerRegistry: $(dockerRegistryServiceConnection)
     dockerfile: $(dockerfilePath)
     tags: |
