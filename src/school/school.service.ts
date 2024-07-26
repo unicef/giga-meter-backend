@@ -99,7 +99,7 @@ export class SchoolService {
       where: { user_id },
     });
 
-    if (school.notify) {
+    if (school?.notify) {
       await this.prisma.dailycheckapp_school.updateMany({
         where: { user_id },
         data: { notify: false },
