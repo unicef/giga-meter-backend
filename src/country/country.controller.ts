@@ -123,7 +123,7 @@ export class CountryController {
       if (!code || code.trim().length === 0)
         throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
 
-      if (!write_access && !countries.includes(code.trim().toUpperCase())) {
+      if (!write_access && !countries?.includes(code.trim().toUpperCase())) {
         throw new HttpException(
           'not authorized to access',
           HttpStatus.BAD_REQUEST,
@@ -184,7 +184,7 @@ export class CountryController {
         );
       if (
         !write_access &&
-        !countries.includes(code_iso3.trim().toUpperCase())
+        !countries?.includes(code_iso3.trim().toUpperCase())
       ) {
         throw new HttpException(
           'not authorized to access',

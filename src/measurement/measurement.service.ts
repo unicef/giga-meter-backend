@@ -47,7 +47,7 @@ export class MeasurementService {
       });
       if (
         !dbCountry?.code ||
-        (!write_access && !countries.includes(dbCountry.code))
+        (!write_access && !countries?.includes(dbCountry.code))
       ) {
         return [];
       }
@@ -59,7 +59,7 @@ export class MeasurementService {
       skip,
       take,
       orderBy: {
-        [order_by.replace('-', '')]: order_by.includes('-') ? 'desc' : 'asc',
+        [order_by?.replace('-', '')]: order_by?.includes('-') ? 'desc' : 'asc',
       },
     });
     return (await measurements).map(this.toDto);
@@ -98,7 +98,7 @@ export class MeasurementService {
       });
       if (
         !dbCountry?.code ||
-        (!write_access && !countries.includes(dbCountry.code))
+        (!write_access && !countries?.includes(dbCountry.code))
       ) {
         return [];
       }
@@ -271,10 +271,7 @@ export class MeasurementService {
   }
 
   private toDto(measurement: Measurement): MeasurementDto {
-    const clientInfo = plainToInstance(
-      ClientInfoDto,
-      measurement.client_info ?? '',
-    );
+    const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
     return {
       id: measurement.id.toString(),
       Timestamp: measurement.timestamp,
@@ -284,12 +281,12 @@ export class MeasurementService {
       DeviceType: measurement.device_type,
       Notes: measurement.notes,
       ClientInfo: clientInfo,
-      ServerInfo: plainToInstance(ServerInfoDto, measurement.server_info ?? ''),
+      ServerInfo: plainToInstance(ServerInfoDto, measurement.server_info),
       annotation: measurement.annotation,
       Download: measurement.download,
       Upload: measurement.upload,
       Latency: parseInt(measurement.latency.toString()),
-      Results: plainToInstance(ResultsDto, measurement.results ?? ''),
+      Results: plainToInstance(ResultsDto, measurement.results),
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
@@ -335,13 +332,13 @@ export class MeasurementService {
       school_id: measurement.school_id,
       DeviceType: measurement.device_type,
       Notes: measurement.notes,
-      ClientInfo: plainToInstance(ClientInfoDto, measurement.client_info ?? ''),
-      ServerInfo: plainToInstance(ServerInfoDto, measurement.server_info ?? ''),
+      ClientInfo: plainToInstance(ClientInfoDto, measurement.client_info),
+      ServerInfo: plainToInstance(ServerInfoDto, measurement.server_info),
       annotation: measurement.annotation,
       Download: measurement.download,
       Upload: measurement.upload,
       Latency: parseInt(measurement.latency.toString()),
-      Results: plainToInstance(ResultsDto, measurement.results ?? ''),
+      Results: plainToInstance(ResultsDto, measurement.results),
       giga_id_school: measurement.giga_id_school,
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,

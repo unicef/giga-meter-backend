@@ -4,7 +4,7 @@ import { MessagesService } from './messages.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import { AuthGuard } from '../auth/auth.guard';
-import { mockMessagesDto } from './mock-objects';
+import { mockMessagesDto } from '../common/mock-objects';
 
 describe('MessagesController', () => {
   let controller: MessagesController;
@@ -33,19 +33,22 @@ describe('MessagesController', () => {
     it('should get messages', async () => {
       jest.spyOn(service, 'messages').mockResolvedValue(mockMessagesDto);
 
-      expect(await service.messages({})).toBe(mockMessagesDto);
+      const response = await controller.getMessages();
+      expect(response.data).toStrictEqual(mockMessagesDto);
     });
 
     it('should handle empty result set', async () => {
       jest.spyOn(service, 'messages').mockResolvedValue([]);
 
-      expect(await service.messages({})).toStrictEqual([]);
+      const response = await controller.getMessages();
+      expect(response.data).toStrictEqual([]);
     });
 
     it('should handle database error', async () => {
       jest
         .spyOn(service, 'messages')
         .mockRejectedValue(new Error('Database error'));
+
       await expect(controller.getMessages()).rejects.toThrow('Database error');
     });
   });

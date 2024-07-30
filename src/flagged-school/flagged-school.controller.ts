@@ -115,7 +115,10 @@ export class FlaggedSchoolController {
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
     try {
-      if (!countries.includes(country_id.trim().toUpperCase())) {
+      if (
+        !write_access &&
+        !countries?.includes(country_id.trim().toUpperCase())
+      ) {
         throw new HttpException(
           'not authorized to access',
           HttpStatus.BAD_REQUEST,
