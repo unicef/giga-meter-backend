@@ -408,7 +408,7 @@ export const mockCountryDto = [
   {
     id: '1',
     code: 'GB',
-    code_iso3: '',
+    code_iso3: 'GBR',
     name: 'Great Britain',
     country_id: '343',
     created_at: new Date('2024-12-31T18:05:16.365Z'),
@@ -427,7 +427,7 @@ export const mockCountryModel = [
   {
     id: toBigInt(1),
     code: 'GB',
-    code_iso3: '',
+    code_iso3: 'GBR',
     name: 'Great Britain',
     country_id: '343',
     created_at: new Date('2024-12-31T18:05:16.365Z'),

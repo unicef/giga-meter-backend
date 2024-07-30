@@ -52,6 +52,33 @@ describe('FlaggedSchoolController', () => {
     });
   });
 
+  describe('GetSchoolsByCountryId', () => {
+    it('should get schools', async () => {
+      jest
+        .spyOn(service, 'schoolsByCountryId')
+        .mockResolvedValue(mockFlaggedSchoolDto);
+
+      const response = await controller.getSchoolsByCountryId('IN', true);
+      expect(response.data).toStrictEqual(mockFlaggedSchoolDto);
+    });
+
+    it('should handle empty result set', async () => {
+      jest.spyOn(service, 'schoolsByCountryId').mockResolvedValue([]);
+
+      const response = await controller.getSchoolsByCountryId('IN', true);
+      expect(response.data).toStrictEqual([]);
+    });
+
+    it('should handle database error', async () => {
+      jest
+        .spyOn(service, 'schoolsByCountryId')
+        .mockRejectedValue(new Error('Database error'));
+      await expect(
+        controller.getSchoolsByCountryId('IN', true),
+      ).rejects.toThrow('Database error');
+    });
+  });
+
   describe('CreateSchool', () => {
     it('should create school', async () => {
       jest.spyOn(service, 'createSchool').mockResolvedValue('1');
