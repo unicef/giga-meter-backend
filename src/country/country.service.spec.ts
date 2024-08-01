@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CountryService } from './country.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { mockCountryDto, mockCountryModel } from '../common/mock-objects';
-import { toBigInt } from 'src/common/common.utils';
 
 describe('CountryService', () => {
   let service: CountryService;

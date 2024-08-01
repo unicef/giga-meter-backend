@@ -181,20 +181,22 @@ export class MeasurementService {
 
     switch (processedResponse) {
       case this.SCHOOL_DOESNT_EXIST_ERR:
-      case this.WRONG_COUNTRY_CODE_ERR:
+      case this.WRONG_COUNTRY_CODE_ERR: {
         const failedModel = this.toFailedModel(
           measurementDto,
           processedResponse,
         );
         await this.prisma.measurements_failed.create({ data: failedModel });
         return processedResponse;
+      }
 
-      default:
+      default: {
         const model = this.toModel(measurementDto);
         await this.prisma.measurements.create({
           data: model,
         });
         return '';
+      }
     }
   }
 
