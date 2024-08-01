@@ -17,4 +17,4 @@ RUN apt-get update \
 
 COPY sshd_config /etc/ssh/
 
-ENTRYPOINT ["/bin/bash", "/start.sh"]
+ENTRYPOINT ["/bin/bash", "./start.sh"]
