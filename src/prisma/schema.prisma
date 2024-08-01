@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model EFMigrationsHistory {
+  MigrationId    String @id(map: "PK___EFMigrationsHistory") @db.VarChar(150)
+  ProductVersion String @db.VarChar(32)
+
+  @@map("__EFMigrationsHistory")
+}
+
 model dailycheckapp_contact_contactmessage {
   id         Int       @id @default(autoincrement())
   created    DateTime  @db.Timestamptz(6)
