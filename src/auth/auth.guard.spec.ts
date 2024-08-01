@@ -62,24 +62,6 @@ describe('AuthGuard', () => {
       UnauthorizedException,
     );
   });
-
-//   it('should return true for valid bearer token', async () => {
-//     const mockExecutionContext = {
-//       switchToHttp: () => ({
-//         getRequest: () => ({
-//           headers: { authorization: 'Bearer valid_token' },
-//         }),
-//       }),
-//     } as ExecutionContext;
-
-//     mockHttpService().get.mockResolvedValueOnce(
-//       of({
-//         data: mockApiKeyDto(true),
-//       }),
-//     );
-
-//     expect(await guard.canActivate(mockExecutionContext)).toBe(true);
-//   });
 });
 
 function mockApiKeyDto(is_success = false): ValidateApiKeyDto {
