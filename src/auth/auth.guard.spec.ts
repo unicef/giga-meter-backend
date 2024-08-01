@@ -62,6 +62,7 @@ describe('AuthGuard', () => {
       UnauthorizedException,
     );
   });
+});
 
 function mockApiKeyDto(is_success = false): ValidateApiKeyDto {
   return {
