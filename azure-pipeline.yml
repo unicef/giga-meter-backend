@@ -22,6 +22,7 @@ steps:
     targetType: 'inline'
     script: |
       sudo npm install
+      sudo npx prisma generate --schema=./src/prisma/schema.prisma
       sudo npm run test:covpip
 
 # Sonar Scan
