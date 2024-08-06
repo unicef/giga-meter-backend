@@ -44,7 +44,7 @@ steps:
         -Dsonar.sources=src \
         -Dsonar.host.url=$(SONAR_HOST) \
         -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info \
-        -Dsonar.exclusions=**/*spec.ts,**/prisma/**
+        -Dsonar.exclusions=**/*/*.spec.ts,**/prisma/**
 
 # Docker Build and Push
 - task: Docker@2
