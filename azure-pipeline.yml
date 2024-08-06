@@ -16,7 +16,7 @@ steps:
 # TODO: Unit Tests
 - task: Bash@3
   displayName: Unit Tests
-  condition: eq(variables['Build.SourceBranch'], 'main')
+  #: eq(variables['Build.SourceBranch'], 'main')
   continueOnError: true
   inputs:
     targetType: 'inline'
@@ -28,7 +28,7 @@ steps:
 # Sonar Scan
 - task: Bash@3
   displayName: Sonar Scan
-  condition: eq(variables['Build.SourceBranch'], 'main')
+  #condition: eq(variables['Build.SourceBranch'], 'main')
   inputs:
     targetType: 'inline'
     script: |
