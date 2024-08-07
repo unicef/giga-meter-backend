@@ -247,23 +247,45 @@ export class MeasurementService {
       delete filter.country_code;
     }
     if (filter_by && filter_condition && filter_value != null) {
+      const parsedDate = new Date(filter_value);
+      const hasTime =
+        parsedDate.getUTCHours() > 0 ||
+        parsedDate.getUTCMinutes() > 0 ||
+        parsedDate.getUTCSeconds() > 0 ||
+        parsedDate.getUTCMilliseconds() > 0;
+      const endOfDay = new Date(filter_value);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
       switch (filter_condition) {
         case 'lt':
-          filter[filter_by] = { lt: filter_value };
+          filter[filter_by] = {
+            lt: hasTime ? filter_value : parsedDate,
+          };
           break;
         case 'lte':
-          filter[filter_by] = { lte: filter_value };
+          filter[filter_by] = {
+            lte: hasTime ? filter_value : endOfDay,
+          };
           break;
         case 'gt':
-          filter[filter_by] = { gt: filter_value };
+          filter[filter_by] = {
+            gt: hasTime ? filter_value : endOfDay,
+          };
           break;
         case 'gte':
-          filter[filter_by] = { gte: filter_value };
+          filter[filter_by] = {
+            gte: hasTime ? filter_value : parsedDate,
+          };
           break;
         case 'eq':
-          filter[filter_by] = {
-            equals: filter_value,
-          };
+          filter[filter_by] = hasTime
+            ? {
+                equals: filter_value,
+              }
+            : {
+                gte: parsedDate,
+                lte: endOfDay,
+              };
           break;
         default:
           break;

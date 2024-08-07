@@ -46,6 +46,9 @@ async function bootstrap() {
           (acc, path) => ({ ...acc, [path]: defaultDocument.paths[path] }),
           {},
         );
+      delete defaultDocument.components.schemas['MessagesDto'];
+      delete defaultDocument.components.schemas['FlaggedSchoolDto'];
+      delete defaultDocument.components.schemas['MeasurementV2Dto'];
     }
     next();
   });
