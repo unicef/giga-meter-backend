@@ -10,15 +10,20 @@ Giga Meter Backend is a NestJS based Web API to expose the Daily Check App data 
 
 <div align="center">
 
-<!--- These are examples. See https://shields.io for others or to customize this set of shields. You might want to include dependencies, project status and licence info here --->
-
 ![Twitter Follow](https://img.shields.io/twitter/follow/gigaglobal)
 
 </div>
 
-## Description
+## Folder Structure
+- /src
+  - /admin /country /flagged-school /measurement /messages /school: contains the API controller, service, dto, and test files for each module.
+  - /auth: contains the authentication guard and dto files.
+  - /common: contains the common decorator, utils, dto, and mock-object files.
+  - /prisma: contains the prisma schema, service, and db migration files.
 
-Create a .env file in root folder and add below variables to run locally: <br />
+## Setup and installation
+Create a .env file in root folder and add below variables to run locally:
+
 ```bash
 DATABASE_URL="database-url"
 PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
@@ -27,10 +32,27 @@ PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 SCHOOLS_EXTERNAL_API="school-external-api-url-OR-empty-string"
 ```
 
-## Installation
+Install required packages by running below command:
 
 ```bash
 $ npm install
+```
+
+## Database setup and migration
+
+Please make sure tha DATABASE_URL is set correctly in the .env file above like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>
+
+Run below command(s) inside src/prisma folder to generate prisma client
+
+```bash
+$ npx prisma generate
+```
+
+Make the required changes in the prisma.schema file (present inside src/prisma folder)
+Run below command(s) inside src/prisma folder to migrate database changes
+
+```bash
+$ npx prisma migrate dev
 ```
 
 ## Running the app
@@ -52,13 +74,18 @@ $ npm run start:prod
 # unit tests
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
-
 # test coverage
 $ npm run test:cov
 ```
 
-## Support
+## Build
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Each commit to ```main``` branch will trigger a build in [```OOI-Giga-Meter-Backend```](https://unicef.visualstudio.com/OI-Connect/_build?definitionId=1386) pipeline and the Docker image will be pushed to Azure Container Registry as ```azure_container_registry/main/giga-meter-backend:build_id```.
+
+## Deployment
+
+The API can be deployed to the following 3 stages with [```OOI-Giga-Meter-Backend```](https://unicef.visualstudio.com/OI-Connect/_release?_a=releases&definitionId=8) deployment pipeline:
+
+- **Development**: The API will be deployed automatially with each successful build for ```main``` branch.
+- **Staging**: The API can be deployed by triggering the release manually on this environment.
+- **Production**: The API can be deployed manually on this stage but will require approvals.
