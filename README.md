@@ -42,21 +42,22 @@ $ npm install
 
 Please make sure tha DATABASE_URL is set correctly in the .env file above like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>
 
-Run below command(s) inside src/prisma folder to generate prisma client
+Run below command(s) inside src/prisma folder to generate prisma client:
 
 ```bash
 $ npx prisma generate
 ```
-
-Make the required changes in the prisma.schema file (present inside src/prisma folder)
-Run below command(s) inside src/prisma folder to migrate database changes
+<br />
+Make the required changes in the prisma.schema file (present inside src/prisma folder).
+<br />
+Run below command(s) inside src/prisma folder to migrate database changes:
 
 ```bash
 $ npx prisma migrate dev
 ```
 
-## Running the app
-
+## Running the app and unit tests
+To run the app:
 ```bash
 # development
 $ npm run start
@@ -68,7 +69,7 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
-## Test
+To run the unit tests and check coverage:
 
 ```bash
 # unit tests
