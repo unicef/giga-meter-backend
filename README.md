@@ -30,9 +30,14 @@ USE_AUTH="true"
 PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
 DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
-SCHOOLS_EXTERNAL_API="school-external-api-url-OR-empty-string"
 ```
+- DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
+- USE_AUTH: set "true" if APIs should use authentication which uses project connect service API to validate a Giga Maps generated api key.
+- PROJECT_CONNECT_SERVICE_URL: Base API URL of the project connect service used for authentication.
+- DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling project connect service API.
+- PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of PCDC Windows application.
 
+<br />
 Install required packages by running below command:
 
 ```bash
@@ -41,16 +46,14 @@ npm install
 
 ## Database setup and migration
 
-Please make sure tha DATABASE_URL is set correctly in the .env file above like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>
-
-Run below command(s) inside src/prisma folder to generate prisma client:
+Please make sure tha DATABASE_URL is set correctly in the .env file above.<br />
+Then run below command(s) inside src/prisma folder to generate prisma client:
 
 ```bash
 npx prisma generate
 ```
-<br />
-Make the required changes in the prisma.schema file (present inside src/prisma folder).
-<br />
+
+Make the required changes in the prisma.schema file (present inside src/prisma folder). <br />
 Run below command(s) inside src/prisma folder to migrate database changes:
 
 ```bash

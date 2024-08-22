@@ -13,6 +13,10 @@ export class AuthGuard implements CanActivate {
   constructor(private readonly httpService: HttpService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const useAuth = process.env.USE_AUTH === 'true';
+
+    if (!useAuth) return true;
+
     const request = context.switchToHttp().getRequest();
     const token = request.headers.authorization?.split(' ')[1];
 
