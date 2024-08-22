@@ -26,6 +26,7 @@ Create a .env file in root folder and add below variables to run locally:
 
 ```bash
 DATABASE_URL="database-url"
+USE_AUTH="true"
 PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
 DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
@@ -35,7 +36,7 @@ SCHOOLS_EXTERNAL_API="school-external-api-url-OR-empty-string"
 Install required packages by running below command:
 
 ```bash
-$ npm install
+npm install
 ```
 
 ## Database setup and migration
@@ -45,7 +46,7 @@ Please make sure tha DATABASE_URL is set correctly in the .env file above like <
 Run below command(s) inside src/prisma folder to generate prisma client:
 
 ```bash
-$ npx prisma generate
+npx prisma generate
 ```
 <br />
 Make the required changes in the prisma.schema file (present inside src/prisma folder).
@@ -53,30 +54,35 @@ Make the required changes in the prisma.schema file (present inside src/prisma f
 Run below command(s) inside src/prisma folder to migrate database changes:
 
 ```bash
-$ npx prisma migrate dev
+npx prisma migrate dev
 ```
 
 ## Running the app and unit tests
 To run the app:
 ```bash
 # development
-$ npm run start
+npm run start
 
 # watch mode
-$ npm run start:dev
+npm run start:dev
 
 # production mode
-$ npm run start:prod
+npm run start:prod
 ```
+The app will run locally on [localhost:3000](http://localhost:3000/).
+<br />
+To open Swagger UI documentation for the API, add <i>/api</i> to the url.
+<br />
+To access all endpoints, add <i>/api/all</i> to the url.
 
 To run the unit tests and check coverage:
 
 ```bash
 # unit tests
-$ npm run test
+npm run test
 
 # test coverage
-$ npm run test:cov
+npm run test:cov
 ```
 
 ## Build
