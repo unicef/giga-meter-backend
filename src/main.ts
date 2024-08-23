@@ -67,6 +67,7 @@ async function bootstrap() {
     .addTag('Contact Messages')
     .addTag('Flagged Schools')
     .addTag('Schools')
+    .addTag('SchoolsMaster')
     .addTag('Country')
     .addTag('Measurements')
     .addBearerAuth({
