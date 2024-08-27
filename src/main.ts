@@ -48,6 +48,7 @@ async function bootstrap() {
         );
       delete defaultDocument.components.schemas['MessagesDto'];
       delete defaultDocument.components.schemas['FlaggedSchoolDto'];
+      delete defaultDocument.components.schemas['FeatureFlagDto'];
       delete defaultDocument.components.schemas['MeasurementV2Dto'];
     }
     next();

@@ -62,6 +62,36 @@ model dailycheckapp_school {
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
 
+model school {
+  id                        BigInt    @id @default(autoincrement())
+  created                   DateTime? @db.Timestamptz(6)
+  modified                  DateTime? @db.Timestamptz(6)
+  name                      String?   @db.VarChar
+  timezone                  String?   @db.VarChar
+  geopoint                  String?   @db.VarChar
+  gps_confidence            Float?
+  altitude                  Int?
+  address                   String?   @db.VarChar
+  postal_code               String?   @db.VarChar
+  email                     String?   @db.VarChar
+  education_level           String?   @db.VarChar
+  environment               String?   @db.VarChar
+  school_type               String?   @db.VarChar
+  country_id                Int?
+  location_id               Int?
+  admin_2_name              String?   @db.VarChar
+  admin_3_name              String?   @db.VarChar
+  admin_4_name              String?   @db.VarChar
+  external_id               String?   @db.VarChar
+  admin_1_name              String?   @db.VarChar
+  last_weekly_status_id     Int?
+  name_lower                String?   @db.VarChar
+  giga_id_school            String?   @db.VarChar
+  education_level_regional  String?   @db.VarChar
+  feature_flags             Json?
+  created_at                DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
+
 model giga_id_school_mapping_fix {
   id                     Int       @id(map: "PK_giga_id_school_mapping_fix") @default(autoincrement())
   giga_id_school_wrong   String

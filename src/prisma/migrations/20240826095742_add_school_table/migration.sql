@@ -1,0 +1,32 @@
+-- CreateTable
+CREATE TABLE "school" (
+    "id" BIGSERIAL NOT NULL,
+    "created" TIMESTAMPTZ(6),
+    "modified" TIMESTAMPTZ(6),
+    "name" VARCHAR,
+    "timezone" VARCHAR,
+    "geopoint" VARCHAR,
+    "gps_confidence" DOUBLE PRECISION,
+    "altitude" INTEGER,
+    "address" VARCHAR,
+    "postal_code" VARCHAR,
+    "email" VARCHAR,
+    "education_level" VARCHAR,
+    "environment" VARCHAR,
+    "school_type" VARCHAR,
+    "country_id" INTEGER,
+    "location_id" INTEGER,
+    "admin_2_name" VARCHAR,
+    "admin_3_name" VARCHAR,
+    "admin_4_name" VARCHAR,
+    "external_id" VARCHAR,
+    "admin_1_name" VARCHAR,
+    "last_weekly_status_id" INTEGER,
+    "name_lower" VARCHAR,
+    "giga_id_school" VARCHAR,
+    "education_level_regional" VARCHAR,
+    "feature_flags" JSONB,
+    "created_at" TIMESTAMPTZ(6) DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text),
+
+    CONSTRAINT "school_pkey" PRIMARY KEY ("id")
+);

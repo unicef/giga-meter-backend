@@ -1,90 +1,79 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { dailycheckapp_school as School } from '@prisma/client';
-import { SchoolMasterDto } from './school-master.dto';
-import { v4 as uuidv4 } from 'uuid';
+import { school as School } from '@prisma/client';
+import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class SchoolMasterService {
   constructor(private prisma: PrismaService) {}
 
-  async schools(
-    skip?: number,
-    take?: number,
-    write_access?: boolean,
-    countries?: string[],
-  ): Promise<SchoolMasterDto[]> {
-    const filter = {
-      country_code: { in: countries },
-    };
-
-    if (write_access) {
-      delete filter.country_code;
-    }
-
-    const schools = this.prisma.dailycheckapp_school.findMany({
-      skip,
-      take,
-      where: filter,
-      orderBy: { created: 'desc' },
+  async checkSchool(country_code: string, school_id: string): Promise<boolean> {
+    const schools = await this.prisma.school.findFirst({
+      where: { external_id: school_id },
     });
-    return (await schools).map(this.toDto);
+
+    return schools ? true : false;
   }
 
-  async schoolsById(
-    id: string,
-    write_access?: boolean,
-    countries?: string[],
-  ): Promise<SchoolMasterDto[]> {
+  async flagsByGigaId(giga_id_school: string): Promise<FeatureFlagDto> {
     const query = {
       where: {
-        id: parseInt(id),
-        country_code: { in: countries },
+        giga_id_school,
       },
     };
-    if (write_access) {
-      delete query.where.country_code;
-    }
 
-    const schools = this.prisma.dailycheckapp_school.findMany(query);
-    return (await schools).map(this.toDto);
+    const school = await this.prisma.school.findFirstOrThrow(query);
+    return plainToInstance(FeatureFlagDto, school.feature_flags);
   }
 
-  async createSchool(schoolDto: SchoolMasterDto): Promise<string> {
-    const model = this.toModel(schoolDto);
-    const school = await this.prisma.dailycheckapp_school.create({
-      data: model,
+  async setFlagsByGigaId(
+    giga_id_school: string,
+    flagDto: FeatureFlagDto,
+  ): Promise<boolean> {
+    const school = await this.prisma.school.findFirstOrThrow({
+      where: { giga_id_school },
     });
-    return school.user_id;
+
+    if (school) {
+      await this.prisma.school.updateMany({
+        where: { giga_id_school },
+        data: { feature_flags: JSON.stringify(flagDto) },
+      });
+      return true;
+    }
+    return false;
   }
 
   private toDto(school: School): SchoolMasterDto {
     return {
       id: school.id.toString(),
-      user_id: school.user_id,
+      name: school.name,
+      created: school.created,
+      modified: school.modified,
+      timezone: school.timezone,
+      geopoint: school.geopoint,
+      gps_confidence: school.gps_confidence,
+      altitude: school.altitude,
+      address: school.address,
+      postal_code: school.postal_code,
+      email: school.email,
+      education_level: school.education_level,
+      environment: school.environment,
+      school_type: school.school_type,
+      country_id: school.country_id,
+      location_id: school.location_id,
+      admin_1_name: school.admin_1_name,
+      admin_2_name: school.admin_2_name,
+      admin_3_name: school.admin_3_name,
+      admin_4_name: school.admin_4_name,
+      external_id: school.external_id,
       giga_id_school: school.giga_id_school,
-      mac_address: school.mac_address,
-      os: school.os,
-      app_version: school.app_version,
-      created: school.created,
-      network_information: school.network_information,
-      ip_address: school.ip_address,
-      country_code: school.country_code,
-      is_blocked: school.is_blocked,
+      last_weekly_status_id: school.last_weekly_status_id,
+      name_lower: school.name_lower,
+      education_level_regional: school.education_level_regional,
+      feature_flags: plainToInstance(FeatureFlagDto, school.feature_flags),
       created_at: school.created_at,
-    };
-  }
-
-  private toModel(school: SchoolMasterDto): any {
-    return {
-      user_id: uuidv4(),
-      giga_id_school: school.giga_id_school?.toLowerCase().trim(),
-      mac_address: school.mac_address,
-      os: school.os,
-      app_version: school.app_version,
-      created: school.created,
-      ip_address: school.ip_address,
-      country_code: school.country_code,
     };
   }
 }
