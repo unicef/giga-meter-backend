@@ -105,7 +105,7 @@ model country {
   code       String    @unique
   created_at DateTime  @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   
-  // Relation back to school (optional)
+  // Relation back to school
   schools     school[]
 }
 
