@@ -25,7 +25,7 @@ import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
 export class SchoolMasterController {
   constructor(private readonly schoolService: SchoolMasterService) {}
 
-  @Get('country_code_school_id/{country_code}/{school_id}')
+  @Get('country_code_school_id/:country_code/:school_id')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -59,6 +59,17 @@ export class SchoolMasterController {
     @Param('school_id') school_id: string,
   ): Promise<ApiSuccessResponseDto<boolean>> {
     try {
+      if (!country_code || country_code.trim().length === 0)
+        throw new HttpException(
+          'country_code is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+      if (!school_id || school_id.trim().length === 0)
+        throw new HttpException(
+          'school_id is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       const response = await this.schoolService.checkSchool(
         country_code,
         school_id,
@@ -78,7 +89,7 @@ export class SchoolMasterController {
     }
   }
 
-  @Get('features_flags/{giga_id_school}')
+  @Get('features_flags/:giga_id_school')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -126,7 +137,7 @@ export class SchoolMasterController {
     }
   }
 
-  @Put('features_flags/{giga_id_school}')
+  @Put('features_flags/:giga_id_school')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -153,6 +164,12 @@ export class SchoolMasterController {
     @Body() featureFlagDto: FeatureFlagDto,
   ): Promise<ApiSuccessResponseDto<boolean>> {
     try {
+      if (!giga_id_school || giga_id_school.trim().length === 0)
+        throw new HttpException(
+          'giga_id_school is null/empty',
+          HttpStatus.BAD_REQUEST,
+        );
+
       const response = await this.schoolService.setFlagsByGigaId(
         giga_id_school,
         featureFlagDto,
