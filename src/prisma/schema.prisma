@@ -67,7 +67,7 @@ model school {
   created                   DateTime? @db.Timestamptz(6)
   modified                  DateTime? @db.Timestamptz(6)
   name                      String?   @db.VarChar
-  country_code              String    @db.VarChar
+  country_code              String?   @db.VarChar
   timezone                  String?   @db.VarChar
   geopoint                  String?   @db.VarChar
   gps_confidence            Float?
@@ -93,7 +93,7 @@ model school {
   created_at                DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 
   // Foreign key relation to country
-  country      country      @relation(fields: [country_code], references: [code])
+  country      country?      @relation(fields: [country_code], references: [code])
 
   // Ensure country_code is indexed and enforce referential integrity
   @@index([country_code])
