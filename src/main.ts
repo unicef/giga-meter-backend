@@ -48,6 +48,7 @@ async function bootstrap() {
         );
       delete defaultDocument.components.schemas['MessagesDto'];
       delete defaultDocument.components.schemas['FlaggedSchoolDto'];
+      delete defaultDocument.components.schemas['FeatureFlagDto'];
       delete defaultDocument.components.schemas['MeasurementV2Dto'];
     }
     next();
@@ -67,6 +68,7 @@ async function bootstrap() {
     .addTag('Contact Messages')
     .addTag('Flagged Schools')
     .addTag('Schools')
+    .addTag('SchoolsMaster')
     .addTag('Country')
     .addTag('Measurements')
     .addBearerAuth({

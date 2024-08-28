@@ -146,6 +146,42 @@ export const mockSchoolModel = [
   },
 ];
 
+export const mockFeatureFlagsDto = {
+  feature_flag: true,
+  feature_flag_2: false,
+};
+
+export const mockSchoolMasterModel = {
+  id: toBigInt(1),
+  name: 'school1',
+  created: new Date('2024-04-12T04:13:37.300Z'),
+  modified: new Date('2024-04-12T04:13:37.300Z'),
+  country_code: 'IN',
+  timezone: 'UTC',
+  geopoint: 'ab',
+  gps_confidence: 1,
+  altitude: 2,
+  address: '',
+  postal_code: '11',
+  email: 'test',
+  education_level: 'aa',
+  environment: '',
+  school_type: 'test',
+  country_id: 1,
+  location_id: 1,
+  admin_1_name: '',
+  admin_2_name: '',
+  admin_3_name: '',
+  admin_4_name: '',
+  external_id: '11',
+  name_lower: 'ss',
+  education_level_regional: '',
+  last_weekly_status_id: 1,
+  feature_flags: mockFeatureFlagsDto,
+  giga_id_school: 'gigaid1',
+  created_at: new Date('2024-04-12T04:13:37.300Z'),
+};
+
 export const mockFlaggedSchoolDto = [
   {
     id: '1',

@@ -15,6 +15,8 @@ import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
 import { MeasurementService } from './measurement/measurement.service';
+import { SchoolMasterController } from './school-master/school-master.controller';
+import { SchoolMasterService } from './school-master/school-master.service';
 
 @Module({
   imports: [HttpModule],
@@ -23,6 +25,7 @@ import { MeasurementService } from './measurement/measurement.service';
     MessagesController,
     FlaggedSchoolController,
     SchoolController,
+    SchoolMasterController,
     CountryController,
     MeasurementController,
     AdminController,
@@ -33,6 +36,7 @@ import { MeasurementService } from './measurement/measurement.service';
     MessagesService,
     FlaggedSchoolService,
     SchoolService,
+    SchoolMasterService,
     CountryService,
     MeasurementService,
     AdminService,
