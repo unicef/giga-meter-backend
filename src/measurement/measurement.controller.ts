@@ -95,7 +95,7 @@ export class MeasurementController {
   @ApiQuery({
     name: 'orderBy',
     description:
-      'The column by which the list needs to be ordered, eg: pass "created_at" to order by ASC and "created_at" to order by DESC, default: -timestamp',
+      'The column by which the list needs to be ordered, eg: pass "created_at" to order by ASC and "-created_at" to order by DESC, default: -timestamp',
     required: false,
     type: 'string',
   })
@@ -217,7 +217,7 @@ export class MeasurementController {
   @ApiQuery({
     name: 'orderBy',
     description:
-      'The column by which the list needs to be ordered, eg: pass "created_at" to order by ASC and "created_at" to order by DESC, default: -timestamp',
+      'The column by which the list needs to be ordered, eg: pass "created_at" to order by ASC and "-created_at" to order by DESC, default: -timestamp',
     required: false,
     type: 'string',
   })

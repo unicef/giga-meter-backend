@@ -25,6 +25,7 @@ describe('AuthGuard', () => {
     }).compile();
 
     guard = module.get<AuthGuard>(AuthGuard);
+    process.env.USE_AUTH = 'true';
   });
 
   it('guard should be defined', () => {

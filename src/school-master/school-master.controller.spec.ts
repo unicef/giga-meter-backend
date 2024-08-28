@@ -1,24 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SchoolMasterController } from './school-master.controller';
-import { SchoolService } from './school-master.service';
+import { SchoolMasterService } from './school-master.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockSchoolDto } from '../common/mock-objects';
+import { mockFeatureFlagsDto, mockSchoolDto } from '../common/mock-objects';
 
 describe('SchoolMasterController', () => {
   let controller: SchoolMasterController;
-  let service: SchoolService;
+  let service: SchoolMasterService;
 
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [SchoolMasterController],
-      providers: [SchoolService, PrismaService, AuthGuard],
+      providers: [SchoolMasterService, PrismaService, AuthGuard],
       imports: [HttpModule],
     }).compile();
 
     controller = app.get<SchoolMasterController>(SchoolMasterController);
-    service = app.get<SchoolService>(SchoolService);
+    service = app.get<SchoolMasterService>(SchoolMasterService);
   });
 
   it('controller should be defined', () => {
@@ -29,146 +29,76 @@ describe('SchoolMasterController', () => {
     expect(service).toBeDefined();
   });
 
-  describe('GetSchools', () => {
-    it('should get schools', async () => {
-      jest.spyOn(service, 'schools').mockResolvedValue(mockSchoolDto);
+  describe('CheckSchool', () => {
+    it('should check school', async () => {
+      jest.spyOn(service, 'checkSchool').mockResolvedValue(true);
 
-      const response = await controller.getSchools();
-      expect(response.data).toStrictEqual(mockSchoolDto);
+      const response = await controller.checkSchool('IN', '11');
+      expect(response.data).toStrictEqual(true);
     });
 
-    it('should handle empty result set', async () => {
-      jest.spyOn(service, 'schools').mockResolvedValue([]);
+    it('should handle false response', async () => {
+      jest.spyOn(service, 'checkSchool').mockResolvedValue(false);
 
-      const response = await controller.getSchools();
-      expect(response.data).toStrictEqual([]);
-    });
-
-    it('should handle database error', async () => {
-      jest
-        .spyOn(service, 'schools')
-        .mockRejectedValue(new Error('Database error'));
-      await expect(controller.getSchools()).rejects.toThrow('Database error');
-    });
-  });
-
-  describe('GetSchoolsByGigaId', () => {
-    it('should get schools', async () => {
-      jest.spyOn(service, 'schoolsByGigaId').mockResolvedValue(mockSchoolDto);
-
-      const response = await controller.getSchoolsByGigaId('1234');
-      expect(response.data).toStrictEqual(mockSchoolDto);
-    });
-
-    it('should handle empty result set', async () => {
-      jest.spyOn(service, 'schoolsByGigaId').mockResolvedValue([]);
-
-      const response = await controller.getSchoolsByGigaId('1234');
-      expect(response.data).toStrictEqual([]);
+      const response = await controller.checkSchool('IN', '22');
+      expect(response.data).toStrictEqual(false);
     });
 
     it('should handle database error', async () => {
       jest
-        .spyOn(service, 'schoolsByGigaId')
+        .spyOn(service, 'checkSchool')
         .mockRejectedValue(new Error('Database error'));
-      await expect(controller.getSchoolsByGigaId('1234')).rejects.toThrow(
+      await expect(controller.checkSchool('IN', '11')).rejects.toThrow(
         'Database error',
       );
     });
   });
 
-  describe('GetSchoolsById', () => {
-    it('should get schools', async () => {
-      jest.spyOn(service, 'schoolsById').mockResolvedValue(mockSchoolDto);
+  describe('GetFlagsByGigaId', () => {
+    it('should get flags', async () => {
+      jest
+        .spyOn(service, 'flagsByGigaId')
+        .mockResolvedValue(mockFeatureFlagsDto);
 
-      const response = await controller.getSchoolsById('1234');
-      expect(response.data).toStrictEqual(mockSchoolDto);
+      const response = await controller.getFlagsByGigaId('1234');
+      expect(response.data).toStrictEqual(mockFeatureFlagsDto);
     });
 
-    it('should handle empty result set', async () => {
-      jest.spyOn(service, 'schoolsById').mockResolvedValue([]);
+    it('should handle empty object', async () => {
+      jest.spyOn(service, 'flagsByGigaId').mockResolvedValue({});
 
-      const response = await controller.getSchoolsById('1234');
-      expect(response.data).toStrictEqual([]);
+      const response = await controller.getFlagsByGigaId('1234');
+      expect(response.data).toStrictEqual({});
     });
 
     it('should handle database error', async () => {
       jest
-        .spyOn(service, 'schoolsById')
+        .spyOn(service, 'flagsByGigaId')
         .mockRejectedValue(new Error('Database error'));
-      await expect(controller.getSchoolsById('1234')).rejects.toThrow(
+      await expect(controller.getFlagsByGigaId('1234')).rejects.toThrow(
         'Database error',
       );
     });
   });
 
-  describe('GetSchoolsByCountryId', () => {
-    it('should get schools', async () => {
-      jest
-        .spyOn(service, 'schoolsByCountryId')
-        .mockResolvedValue(mockSchoolDto);
+  describe('SetFlagsByGigaId', () => {
+    it('should set flags', async () => {
+      jest.spyOn(service, 'setFlagsByGigaId').mockResolvedValue(true);
 
-      const response = await controller.getSchoolsByCountryId('IN', true);
-      expect(response.data).toStrictEqual(mockSchoolDto);
-    });
-
-    it('should handle empty result set', async () => {
-      jest.spyOn(service, 'schoolsByCountryId').mockResolvedValue([]);
-
-      const response = await controller.getSchoolsByCountryId('IN', true);
-      expect(response.data).toStrictEqual([]);
+      const response = await controller.setFlagsByGigaId(
+        '1234',
+        mockFeatureFlagsDto,
+      );
+      expect(response.data).toStrictEqual(true);
     });
 
     it('should handle database error', async () => {
       jest
-        .spyOn(service, 'schoolsByCountryId')
+        .spyOn(service, 'setFlagsByGigaId')
         .mockRejectedValue(new Error('Database error'));
       await expect(
-        controller.getSchoolsByCountryId('IN', true),
+        controller.setFlagsByGigaId('1234', mockFeatureFlagsDto),
       ).rejects.toThrow('Database error');
-    });
-  });
-
-  describe('CheckNotify', () => {
-    it('should get notify true', async () => {
-      jest.spyOn(service, 'checkNotify').mockResolvedValue(true);
-
-      const response = await controller.checkNotify('1234');
-      expect(response.data.notify).toStrictEqual(true);
-    });
-
-    it('should get notify false', async () => {
-      jest.spyOn(service, 'checkNotify').mockResolvedValue(false);
-
-      const response = await controller.checkNotify('1234');
-      expect(response.data.notify).toStrictEqual(false);
-    });
-
-    it('should handle database error', async () => {
-      jest
-        .spyOn(service, 'checkNotify')
-        .mockRejectedValue(new Error('Database error'));
-      await expect(controller.checkNotify('1234')).rejects.toThrow(
-        'Database error',
-      );
-    });
-  });
-
-  describe('CreateSchool', () => {
-    it('should create school', async () => {
-      jest.spyOn(service, 'createSchool').mockResolvedValue('1');
-
-      const response = await controller.createSchool(mockSchoolDto[0]);
-      expect(response.data).toStrictEqual({ user_id: '1' });
-    });
-
-    it('should handle database error', async () => {
-      jest
-        .spyOn(service, 'createSchool')
-        .mockRejectedValue(new Error('Database error'));
-      await expect(controller.createSchool(mockSchoolDto[0])).rejects.toThrow(
-        'Database error',
-      );
     });
   });
 });
