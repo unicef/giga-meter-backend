@@ -10,7 +10,7 @@ export class SchoolMasterService {
 
   async checkSchool(country_code: string, school_id: string): Promise<boolean> {
     const schools = await this.prisma.school.findFirst({
-      where: { external_id: school_id },
+      where: { external_id: school_id, country_code },
     });
 
     return schools ? true : false;
