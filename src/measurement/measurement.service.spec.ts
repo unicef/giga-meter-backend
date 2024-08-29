@@ -115,7 +115,7 @@ describe('MeasurementService', () => {
         .spyOn(prisma.measurements, 'findMany')
         .mockResolvedValue(mockMeasurementModel);
 
-      expect(await service.measurementsById('1')).toMatchObject(
+      expect(await service.measurementsById(1)).toMatchObject(
         mockMeasurementDto,
       );
     });
@@ -123,7 +123,7 @@ describe('MeasurementService', () => {
     it('should handle empty result set', async () => {
       jest.spyOn(prisma.measurements, 'findMany').mockResolvedValue([]);
 
-      expect(await service.measurementsById('1')).toEqual([]);
+      expect(await service.measurementsById(1)).toEqual([]);
     });
 
     it('should handle database error', async () => {
@@ -131,7 +131,7 @@ describe('MeasurementService', () => {
         .spyOn(prisma.measurements, 'findMany')
         .mockRejectedValue(new Error('Database error'));
 
-      await expect(service.measurementsById('1')).rejects.toThrow(
+      await expect(service.measurementsById(1)).rejects.toThrow(
         'Database error',
       );
     });

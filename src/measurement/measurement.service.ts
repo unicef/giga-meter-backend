@@ -139,13 +139,13 @@ export class MeasurementService {
   }
 
   async measurementsById(
-    id: string,
+    id: number,
     write_access?: boolean,
     countries?: string[],
   ): Promise<MeasurementDto[]> {
     const query = {
       where: {
-        id: parseInt(id),
+        id,
         country_code: { in: countries },
       },
     };

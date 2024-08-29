@@ -183,14 +183,14 @@ export class SchoolController {
     name: 'id',
     description: 'The id of school',
     required: true,
-    type: 'string',
+    type: 'number',
   })
   async getSchoolsById(
-    @Param('id') id: string,
+    @Param('id') id: number,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
     try {
-      if (!id || id.trim().length === 0)
-        throw new HttpException('id is null/empty', HttpStatus.BAD_REQUEST);
+      if (!id || id === 0)
+        throw new HttpException('id is zero/empty', HttpStatus.BAD_REQUEST);
 
       const schools = await this.schoolService.schoolsById(id);
 
