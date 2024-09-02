@@ -57,7 +57,7 @@ export class SchoolMasterController {
   async checkSchool(
     @Param('country_code') country_code: string,
     @Param('school_id') school_id: string,
-  ): Promise<ApiSuccessResponseDto<boolean>> {
+  ): Promise<ApiSuccessResponseDto<SchoolMasterDto[]>> {
     try {
       if (!country_code || country_code.trim().length === 0)
         throw new HttpException(
