@@ -358,16 +358,16 @@ export class MeasurementController {
     name: 'id',
     description: 'The id of measurement',
     required: true,
-    type: 'string',
+    type: 'number',
   })
   async getMeasurementsById(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     try {
-      if (!id || id.trim().length === 0)
-        throw new HttpException('id is null/empty', HttpStatus.BAD_REQUEST);
+      if (!id || id === 0)
+        throw new HttpException('id is zero/empty', HttpStatus.BAD_REQUEST);
 
       const measurements = await this.measurementService.measurementsById(
         id,

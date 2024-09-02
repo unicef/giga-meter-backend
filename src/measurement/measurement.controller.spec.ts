@@ -116,14 +116,14 @@ describe('MeasurementController', () => {
       const record = mockMeasurementDto.filter((x) => x.id === '1');
       jest.spyOn(service, 'measurementsById').mockResolvedValue(record);
 
-      const response = await controller.getMeasurementsById('1');
+      const response = await controller.getMeasurementsById(1);
       expect(response.data).toStrictEqual(record);
     });
 
     it('should handle empty result set', async () => {
       jest.spyOn(service, 'measurementsById').mockResolvedValue([]);
 
-      const response = await controller.getMeasurementsById('1');
+      const response = await controller.getMeasurementsById(1);
       expect(response.data).toStrictEqual([]);
     });
 
@@ -131,7 +131,7 @@ describe('MeasurementController', () => {
       jest
         .spyOn(service, 'measurementsById')
         .mockRejectedValue(new Error('Database error'));
-      await expect(controller.getMeasurementsById('1')).rejects.toThrow(
+      await expect(controller.getMeasurementsById(1)).rejects.toThrow(
         'Database error',
       );
     });

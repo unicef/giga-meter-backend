@@ -17,6 +17,7 @@ import { MeasurementController } from './measurement/measurement.controller';
 import { MeasurementService } from './measurement/measurement.service';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
+import { DataFixController } from './data-fix/data-fix.controller';
 
 @Module({
   imports: [HttpModule],
@@ -29,6 +30,7 @@ import { SchoolMasterService } from './school-master/school-master.service';
     CountryController,
     MeasurementController,
     AdminController,
+    DataFixController,
   ],
   providers: [
     AppService,

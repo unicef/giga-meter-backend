@@ -69,13 +69,13 @@ export class SchoolService {
   }
 
   async schoolsById(
-    id: string,
+    id: number,
     write_access?: boolean,
     countries?: string[],
   ): Promise<SchoolDto[]> {
     const query = {
       where: {
-        id: parseInt(id),
+        id,
         country_code: { in: countries },
       },
     };

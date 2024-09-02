@@ -81,14 +81,14 @@ describe('SchoolController', () => {
     it('should get schools', async () => {
       jest.spyOn(service, 'schoolsById').mockResolvedValue(mockSchoolDto);
 
-      const response = await controller.getSchoolsById('1234');
+      const response = await controller.getSchoolsById(1234);
       expect(response.data).toStrictEqual(mockSchoolDto);
     });
 
     it('should handle empty result set', async () => {
       jest.spyOn(service, 'schoolsById').mockResolvedValue([]);
 
-      const response = await controller.getSchoolsById('1234');
+      const response = await controller.getSchoolsById(1234);
       expect(response.data).toStrictEqual([]);
     });
 
@@ -96,7 +96,7 @@ describe('SchoolController', () => {
       jest
         .spyOn(service, 'schoolsById')
         .mockRejectedValue(new Error('Database error'));
-      await expect(controller.getSchoolsById('1234')).rejects.toThrow(
+      await expect(controller.getSchoolsById(1234)).rejects.toThrow(
         'Database error',
       );
     });

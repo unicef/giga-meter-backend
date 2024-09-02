@@ -78,14 +78,14 @@ describe('SchoolService', () => {
         .spyOn(prisma.dailycheckapp_school, 'findMany')
         .mockResolvedValue(mockSchoolModel);
 
-      const schools = await service.schoolsById('1');
+      const schools = await service.schoolsById(1);
       expect(schools).toEqual(mockSchoolDto);
     });
 
     it('should handle empty result set', async () => {
       jest.spyOn(prisma.dailycheckapp_school, 'findMany').mockResolvedValue([]);
 
-      const schools = await service.schoolsById('4');
+      const schools = await service.schoolsById(4);
       expect(schools).toEqual([]);
     });
 
@@ -94,7 +94,7 @@ describe('SchoolService', () => {
         .spyOn(prisma.dailycheckapp_school, 'findMany')
         .mockRejectedValue(new Error('Database error'));
 
-      await expect(service.schoolsById('0')).rejects.toThrow('Database error');
+      await expect(service.schoolsById(0)).rejects.toThrow('Database error');
     });
   });
 
