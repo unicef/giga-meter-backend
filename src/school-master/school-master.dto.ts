@@ -10,52 +10,40 @@ export class FeatureFlagDto {
 
 export class SchoolMasterDto {
   @ApiProperty()
-  id: string;
+  id: number;
 
   @ApiProperty()
-  name?: string;
+  school_id: string;
 
   @ApiProperty()
-  created?: Date;
+  code: string;
 
   @ApiProperty()
-  modified?: Date;
+  name: string;
 
   @ApiProperty()
-  timezone?: string;
+  country_id?: number;
 
   @ApiProperty()
-  geopoint?: string;
+  country: string;
 
   @ApiProperty()
-  gps_confidence?: number;
-
-  @ApiProperty()
-  altitude?: number;
+  location_id?: number;
 
   @ApiProperty()
   address?: string;
 
   @ApiProperty()
-  postal_code?: string;
+  email?: string;
 
   @ApiProperty()
-  email?: string;
+  postal_code?: string;
 
   @ApiProperty()
   education_level?: string;
 
   @ApiProperty()
   environment?: string;
-
-  @ApiProperty()
-  school_type?: string;
-
-  @ApiProperty()
-  country_id?: number;
-
-  @ApiProperty()
-  location_id?: number;
 
   @ApiProperty()
   admin_1_name?: string;
@@ -70,23 +58,5 @@ export class SchoolMasterDto {
   admin_4_name?: string;
 
   @ApiProperty()
-  external_id?: string;
-
-  @ApiProperty()
-  name_lower?: string;
-
-  @ApiProperty()
   giga_id_school?: string;
-
-  @ApiProperty()
-  education_level_regional?: string;
-
-  @ApiProperty()
-  last_weekly_status_id?: number;
-
-  @ApiProperty()
-  feature_flags?: FeatureFlagDto;
-
-  @ApiProperty()
-  created_at?: Date;
 }
