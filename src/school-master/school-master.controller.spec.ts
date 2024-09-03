@@ -4,7 +4,11 @@ import { SchoolMasterService } from './school-master.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockFeatureFlagsDto, mockSchoolDto } from '../common/mock-objects';
+import {
+  mockFeatureFlagsDto,
+  mockSchoolDto,
+  mockSchoolMasterDto,
+} from '../common/mock-objects';
 
 describe('SchoolMasterController', () => {
   let controller: SchoolMasterController;
@@ -31,17 +35,17 @@ describe('SchoolMasterController', () => {
 
   describe('CheckSchool', () => {
     it('should check school', async () => {
-      jest.spyOn(service, 'checkSchool').mockResolvedValue(true);
+      jest.spyOn(service, 'checkSchool').mockResolvedValue(mockSchoolMasterDto);
 
       const response = await controller.checkSchool('IN', '11');
-      expect(response.data).toStrictEqual(true);
+      expect(response.data).toStrictEqual(mockSchoolMasterDto);
     });
 
-    it('should handle false response', async () => {
-      jest.spyOn(service, 'checkSchool').mockResolvedValue(false);
+    it('should handle empty result set', async () => {
+      jest.spyOn(service, 'checkSchool').mockResolvedValue([]);
 
       const response = await controller.checkSchool('IN', '22');
-      expect(response.data).toStrictEqual(false);
+      expect(response.data).toStrictEqual([]);
     });
 
     it('should handle database error', async () => {

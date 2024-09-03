@@ -182,6 +182,28 @@ export const mockSchoolMasterModel = {
   created_at: new Date('2024-04-12T04:13:37.300Z'),
 };
 
+export const mockSchoolMasterDto = [
+  {
+    id: 1,
+    school_id: '11',
+    code: '',
+    name: 'school1',
+    country_id: 1,
+    country: 'IN',
+    location_id: 1,
+    address: '',
+    email: 'test',
+    postal_code: '11',
+    education_level: 'aa',
+    environment: '',
+    admin_1_name: '',
+    admin_2_name: '',
+    admin_3_name: '',
+    admin_4_name: '',
+    giga_id_school: 'gigaid1',
+  },
+];
+
 export const mockFlaggedSchoolDto = [
   {
     id: '1',

@@ -3,6 +3,7 @@ import { SchoolMasterService } from './school-master.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   mockFeatureFlagsDto,
+  mockSchoolMasterDto,
   mockSchoolMasterModel,
 } from '../common/mock-objects';
 
@@ -25,20 +26,24 @@ describe('SchoolMasterService', () => {
 
   describe('checkSchool', () => {
     it('should check school', async () => {
-      jest.spyOn(prisma.school, 'count').mockResolvedValue(1);
+      jest
+        .spyOn(prisma.school, 'findMany')
+        .mockResolvedValue([mockSchoolMasterModel]);
 
-      expect(await service.checkSchool('IN', '11')).toEqual(true);
+      expect(await service.checkSchool('IN', '11')).toEqual(
+        mockSchoolMasterDto,
+      );
     });
 
     it('should handle false response', async () => {
-      jest.spyOn(prisma.school, 'count').mockResolvedValue(0);
+      jest.spyOn(prisma.school, 'findMany').mockResolvedValue([]);
 
-      expect(await service.checkSchool('IN', '11')).toEqual(false);
+      expect(await service.checkSchool('IN', '11')).toEqual([]);
     });
 
     it('should handle database error', async () => {
       jest
-        .spyOn(prisma.school, 'count')
+        .spyOn(prisma.school, 'findMany')
         .mockRejectedValue(new Error('Database error'));
 
       await expect(service.checkSchool('IN', '11')).rejects.toThrow(
