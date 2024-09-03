@@ -30,11 +30,11 @@ export class SchoolMasterController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns true/false if the school is registered on the Daily Check App database',
+      'Returns the list of schools registered on the Daily Check App database filtered by country_code and school_id',
   })
   @ApiResponse({
     status: 200,
-    description: 'Returns the true/false',
+    description: 'Returns the list of schools',
     type: SchoolMasterDto,
     isArray: true,
   })
@@ -46,7 +46,7 @@ export class SchoolMasterController {
   })
   @ApiParam({
     name: 'country_code',
-    description: 'Country code',
+    description: 'The country code',
     required: true,
     type: 'string',
   })
