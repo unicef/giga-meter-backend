@@ -85,6 +85,12 @@ async function bootstrap() {
     customJs: '/swagger-custom.js',
   });
 
+  app.enableCors({
+    origin: ['capacitor-electron://-', 'http://localhost:4200/'],
+    methods: ['GET', 'POST', 'PUT'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   dotenv.config();
   await app.listen(3000);
 }
