@@ -86,9 +86,9 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: ['capacitor-electron://-', 'http://localhost:4200/'],
+    origin: true,
     methods: ['GET', 'POST', 'PUT'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: '*',
   });
 
   dotenv.config();
