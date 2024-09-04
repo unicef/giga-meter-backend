@@ -34,10 +34,18 @@ export class SchoolMasterService {
     giga_id_school: string,
     flagDto: FeatureFlagDto,
   ): Promise<boolean> {
+    await this.prisma.$executeRaw`INSERT INTO public.school(
+	id, created, modified, name, timezone, geopoint, gps_confidence, altitude, address, postal_code, email, education_level, environment, school_type, country_id, location_id, admin_2_name, admin_3_name, admin_4_name, external_id, admin_1_name, last_weekly_status_id, name_lower, giga_id_school, education_level_regional, feature_flags, country_code)
+	VALUES (1, null, null, 'Test school 1', null, null, null, null, 'India', '400001', null, null, null, null, 45, null, null, null, null,
+		    19102023, null, null, null, '5ff8f4cc-9f74-3f48-8cb1-e68e063a7c03', null, null, 'IN');`;
+    await this.prisma.$executeRaw`INSERT INTO public.school(
+	id, created, modified, name, timezone, geopoint, gps_confidence, altitude, address, postal_code, email, education_level, environment, school_type, country_id, location_id, admin_2_name, admin_3_name, admin_4_name, external_id, admin_1_name, last_weekly_status_id, name_lower, giga_id_school, education_level_regional, feature_flags, country_code)
+	VALUES (2, null, null, 'Test school 2', null, null, null, null, 'India', '400001', null, null, null, null, 45, null, null, null, null,
+		    19102024, null, null, null, '5ff8f4cc-9f74-3f48-8cb1-e68e063a7c04', null, null, 'IN');`;
+
     const school = await this.prisma.school.findFirstOrThrow({
       where: { giga_id_school },
     });
-
     if (school) {
       await this.prisma.school.updateMany({
         where: { giga_id_school },
