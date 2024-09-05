@@ -85,7 +85,7 @@ describe('SchoolMasterService', () => {
       jest
         .spyOn(prisma.school, 'findFirstOrThrow')
         .mockResolvedValue(mockSchoolMasterModel);
-      jest.spyOn(prisma.school, 'updateMany').mockResolvedValue(null);
+      jest.spyOn(prisma.school, 'update').mockResolvedValue(null);
 
       const result = await service.setFlagsByGigaId('11', mockFeatureFlagsDto);
       expect(result).toEqual(true);
@@ -106,7 +106,7 @@ describe('SchoolMasterService', () => {
         .spyOn(prisma.school, 'findFirstOrThrow')
         .mockResolvedValue(mockSchoolMasterModel);
       jest
-        .spyOn(prisma.school, 'updateMany')
+        .spyOn(prisma.school, 'update')
         .mockRejectedValue(new Error('Database error'));
 
       await expect(
