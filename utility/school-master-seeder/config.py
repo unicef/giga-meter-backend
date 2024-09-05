@@ -1,4 +1,4 @@
-DATABASE_URL = "postgresql://test:test@localhost:7432/proco"
+DATABASE_URL = "postgresql://username:password@localhost:port/proco"
 DEFAULT_COUNTRY_CODE = "AF"
 SOURCE_API="source-api-url"
 SOURCE_API_TOKEN="source-api-token"
