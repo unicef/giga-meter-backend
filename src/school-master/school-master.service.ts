@@ -38,9 +38,10 @@ export class SchoolMasterService {
       where: { giga_id_school },
     });
     if (school) {
-      await this.prisma.school.updateMany({
-        where: { giga_id_school },
-        data: { feature_flags: JSON.stringify(flagDto) },
+      const updatedSchool = this.updateFlags(school, flagDto);
+      await this.prisma.school.update({
+        where: { id: school.id },
+        data: updatedSchool,
       });
       return true;
     }
@@ -67,5 +68,9 @@ export class SchoolMasterService {
       admin_4_name: school.admin_4_name,
       giga_id_school: school.giga_id_school,
     };
+  }
+
+  private updateFlags(school: school, flags: FeatureFlagDto): any {
+    return { ...school, feature_flags: flags };
   }
 }
