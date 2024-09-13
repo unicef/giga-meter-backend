@@ -47,22 +47,38 @@ npm install
 ## Database setup and migration
 
 Please make sure tha DATABASE_URL is set correctly in the .env file above.<br />
-Then run below command(s) inside src/prisma folder to generate prisma client:
+### Setup
+Run below command(s) inside src/prisma folder to create the database (if not present already) and the tables:
+
+```bash
+npx prisma migrate dev
+```
+
+Then run below command(s) inside src/prisma folder to generate prisma client which is required to run the app locally:
 
 ```bash
 npx prisma generate
 ```
 
+### Migration
 Make the required changes in the prisma.schema file (present inside src/prisma folder). <br />
 Run below command(s) inside src/prisma folder to migrate database changes:
 
 ```bash
 npx prisma migrate dev
 ```
+<i>NOTE: Please make sure to commit the database migration file generated inside prisma/migrations folder to move the change to Dev and further environments.</i>
 
-To seed country master data, you can run the INSERT script present [here](https://github.com/unicef/giga-meter-backend/blob/main/src/prisma/scripts/country-insert-script.sql).
+Then run below command(s) inside src/prisma folder to re-generate prisma client to reflect the changes in schema:
+
+```bash
+npx prisma generate
+```
+
+### Seeding
+To seed country master table, you can run the INSERT script present [here](https://github.com/unicef/giga-meter-backend/blob/main/src/prisma/scripts/country-insert-script.sql).
 <br/>
-To seed school master data, you can run the school-master-seeder utility present [here](https://github.com/unicef/giga-meter-backend/tree/main/utility/school-master-seeder). Please have a look at its readme.md file for prerequisites and configuration steps.
+To seed school master table, you can run the school-master-seeder utility present [here](https://github.com/unicef/giga-meter-backend/tree/main/utility/school-master-seeder). Please have a look at its readme.md file for prerequisites and configuration steps.
 
 ## Running the app and unit tests
 To run the app:
@@ -101,5 +117,4 @@ Each commit to ```main``` branch will trigger a build in [```OOI-Giga-Meter-Back
 The API can be deployed to the following 3 stages with [```OOI-Giga-Meter-Backend```](https://unicef.visualstudio.com/OI-Connect/_release?_a=releases&definitionId=8) deployment pipeline:
 
 - **Development**: The API will be deployed automatially with each successful build for ```main``` branch.
-- **Staging**: The API can be deployed by triggering the release manually on this environment.
 - **Production**: The API can be deployed manually on this stage but will require approvals.
