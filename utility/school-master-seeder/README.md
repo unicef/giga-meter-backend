@@ -57,8 +57,23 @@ pip install -r requirements.txt
 ## Configuration
 #### Edit the config.py file:
 Before running the script, configure your settings in the config.py file. 
-This file contains variables such as your API token, database connection URL,
-lookup fields, and column mappings.
+This file contains variables such as your database connection URL, API URL, lookup fields, and column mappings. For example:
+```bash
+DATABASE_URL = "postgresql://username:password@localhost:port/proco"
+DEFAULT_COUNTRY_CODE = "AF"
+SOURCE_API="source-api-url-which-exposes-schools-data"
+SOURCE_API_TOKEN="source-api-token-for-above-api"
+SOURCE_LOOKUP_FIELDS=["giga_id_school",]
+DESTINATION_TABLE="school"
+DESTINATION_TABLE_LOOKUP_FIELDS=["giga_id_school",]
+column_mapping={
+    'school_id': 'external_id',
+    'school_name': 'name',
+    'longitude': 'geopoint',
+    'education_level': 'education_level',
+    'giga_id_school': 'giga_id_school',
+}
+```
 
 ## Running-the-script
 ### 5. How to run
