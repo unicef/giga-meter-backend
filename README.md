@@ -32,9 +32,9 @@ DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 ```
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
-- USE_AUTH: set "true" if APIs should use authentication which uses project connect service API to validate a Giga Maps generated api key.
-- PROJECT_CONNECT_SERVICE_URL: Base API URL of the project connect service used for authentication.
-- DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling project connect service API.
+- USE_AUTH: set "true" if APIs should use authentication which uses project connect service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode_) endpoint.
+- PROJECT_CONNECT_SERVICE_URL: Base API URL of the project connect service used for authentication. For Dev, it should be pointed to https://uni-ooi-giga-maps-service-dev.azurewebsites.net
+- DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling project connect service API. Ideally, it should always <i>DAILY_CHECK_APP</i> but check with the Giga Maps team if this doesn't work.
 - PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of PCDC Windows application.
 
 <br />
@@ -59,6 +59,10 @@ Run below command(s) inside src/prisma folder to migrate database changes:
 ```bash
 npx prisma migrate dev
 ```
+
+To seed country master data, you can run the INSERT script present [here](https://github.com/unicef/giga-meter-backend/blob/main/src/prisma/scripts/country-insert-script.sql).
+<br/>
+To seed school master data, you can run the school-master-seeder utility present [here](https://github.com/unicef/giga-meter-backend/tree/main/utility/school-master-seeder). Please have a look at its readme.md file for prerequisites and configuration steps.
 
 ## Running the app and unit tests
 To run the app:
