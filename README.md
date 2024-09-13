@@ -48,7 +48,7 @@ npm install
 
 Please make sure tha DATABASE_URL is set correctly in the .env file above.<br />
 ### Setup
-Run below command(s) inside src/prisma folder to create the tables in the database:
+Run below command(s) inside src/prisma folder to create the database (if not present already) and the tables:
 
 ```bash
 npx prisma migrate dev
