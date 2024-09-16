@@ -78,7 +78,7 @@ column_mapping={
 ## Running-the-script
 ### 5. How to run
 ```bash
-python3 file_name.py
+python3 sync_data.py
 ```
 
 
