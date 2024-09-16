@@ -377,7 +377,16 @@ export class MeasurementDto {
   Latency?: number;
 
   @ApiProperty()
-  Results?: ResultsDto;
+  DataUploaded?: number;
+
+  @ApiProperty()
+  DataDownloaded?: number;
+
+  @ApiProperty()
+  DataUsage?: number;
+
+  @ApiProperty()
+  Results?: ResultsDto | ResultsNdt7Dto;
 
   @ApiProperty()
   school_id: string;
@@ -442,4 +451,236 @@ export class MeasurementV2Dto {
 export class MeasurementFailedDto extends MeasurementDto {
   @ApiProperty()
   reason?: string;
+}
+class LastClientMeasurementDto {
+  @ApiProperty({ description: 'Elapsed time in seconds' })
+  ElapsedTime: number;
+
+  @ApiProperty({ description: 'Number of bytes transferred' })
+  NumBytes: number;
+
+  @ApiProperty({ description: 'Mean client Mbps' })
+  MeanClientMbps: number;
+}
+
+class ConnectionInfoDto {
+  @ApiProperty({ description: 'Client IP and port' })
+  Client: string;
+
+  @ApiProperty({ description: 'Server IP and port' })
+  Server: string;
+
+  @ApiProperty({ description: 'UUID of the connection' })
+  UUID: string;
+}
+
+class BBRInfoDto {
+  @ApiProperty({ description: 'Bandwidth in bits per second' })
+  BW: number;
+
+  @ApiProperty({ description: 'Minimum RTT in microseconds' })
+  MinRTT: number;
+
+  @ApiProperty({ description: 'Pacing gain' })
+  PacingGain: number;
+
+  @ApiProperty({ description: 'Congestion window gain' })
+  CwndGain: number;
+
+  @ApiProperty({ description: 'Elapsed time in microseconds' })
+  ElapsedTime: number;
+}
+
+export class TCPInfoDto {
+  @ApiProperty({ description: 'TCP state' })
+  State: number;
+
+  @ApiProperty({ description: 'Congestion avoidance state' })
+  CAState: number;
+
+  @ApiProperty({ description: 'Number of retransmissions' })
+  Retransmits: number;
+
+  @ApiProperty({ description: 'Number of probes' })
+  Probes: number;
+
+  @ApiProperty({ description: 'Backoff value' })
+  Backoff: number;
+
+  @ApiProperty({ description: 'Options' })
+  Options: number;
+
+  @ApiProperty({ description: 'Window scale' })
+  WScale: number;
+
+  @ApiProperty({ description: 'Whether the application is limited' })
+  AppLimited: number;
+
+  @ApiProperty({ description: 'Retransmission timeout in microseconds' })
+  RTO: number;
+
+  @ApiProperty({ description: 'Ack timeout in microseconds' })
+  ATO: number;
+
+  @ApiProperty({ description: 'Sender MSS (Maximum Segment Size)' })
+  SndMSS: number;
+
+  @ApiProperty({ description: 'Receiver MSS (Maximum Segment Size)' })
+  RcvMSS: number;
+
+  @ApiProperty({ description: 'Number of unacknowledged packets' })
+  Unacked: number;
+
+  @ApiProperty({ description: 'Number of selectively acknowledged packets' })
+  Sacked: number;
+
+  @ApiProperty({ description: 'Number of lost packets' })
+  Lost: number;
+
+  @ApiProperty({ description: 'Number of retransmitted packets' })
+  Retrans: number;
+
+  @ApiProperty({ description: 'Number of forward acknowledgments' })
+  Fackets: number;
+
+  @ApiProperty({ description: 'Time since last data was sent' })
+  LastDataSent: number;
+
+  @ApiProperty({ description: 'Time since last ACK was sent' })
+  LastAckSent: number;
+
+  @ApiProperty({ description: 'Time since last data was received' })
+  LastDataRecv: number;
+
+  @ApiProperty({ description: 'Time since last ACK was received' })
+  LastAckRecv: number;
+
+  @ApiProperty({ description: 'Path MTU (Maximum Transmission Unit)' })
+  PMTU: number;
+
+  @ApiProperty({ description: 'Receiver ssthresh (slow start threshold)' })
+  RcvSsThresh: number;
+
+  @ApiProperty({ description: 'Round-trip time in microseconds' })
+  RTT: number;
+
+  @ApiProperty({ description: 'Round-trip time variance in microseconds' })
+  RTTVar: number;
+
+  @ApiProperty({ description: 'Sender slow start threshold' })
+  SndSsThresh: number;
+
+  @ApiProperty({ description: 'Sender congestion window' })
+  SndCwnd: number;
+
+  @ApiProperty({ description: 'Advertised MSS' })
+  AdvMSS: number;
+
+  @ApiProperty({ description: 'Reordering value' })
+  Reordering: number;
+
+  @ApiProperty({ description: 'Receiver round-trip time' })
+  RcvRTT: number;
+
+  @ApiProperty({ description: 'Receiver space' })
+  RcvSpace: number;
+
+  @ApiProperty({ description: 'Total retransmitted bytes' })
+  TotalRetrans: number;
+
+  @ApiProperty({ description: 'Pacing rate' })
+  PacingRate: number;
+
+  @ApiProperty({ description: 'Maximum pacing rate' })
+  MaxPacingRate: number;
+
+  @ApiProperty({ description: 'Bytes acknowledged' })
+  BytesAcked: number;
+
+  @ApiProperty({ description: 'Bytes received' })
+  BytesReceived: number;
+
+  @ApiProperty({ description: 'Number of segments sent' })
+  SegsOut: number;
+
+  @ApiProperty({ description: 'Number of segments received' })
+  SegsIn: number;
+
+  @ApiProperty({ description: 'Not sent bytes' })
+  NotsentBytes: number;
+
+  @ApiProperty({ description: 'Minimum RTT in microseconds' })
+  MinRTT: number;
+
+  @ApiProperty({ description: 'Number of data segments in' })
+  DataSegsIn: number;
+
+  @ApiProperty({ description: 'Number of data segments out' })
+  DataSegsOut: number;
+
+  @ApiProperty({ description: 'Delivery rate' })
+  DeliveryRate: number;
+
+  @ApiProperty({ description: 'Busy time in microseconds' })
+  BusyTime: number;
+
+  @ApiProperty({ description: 'Receive window limited' })
+  RWndLimited: number;
+
+  @ApiProperty({ description: 'Send buffer limited' })
+  SndBufLimited: number;
+
+  @ApiProperty({ description: 'Number of delivered packets' })
+  Delivered: number;
+
+  @ApiProperty({ description: 'Delivered CE (Congestion Experienced)' })
+  DeliveredCE: number;
+
+  @ApiProperty({ description: 'Bytes sent' })
+  BytesSent: number;
+
+  @ApiProperty({ description: 'Bytes retransmitted' })
+  BytesRetrans: number;
+
+  @ApiProperty({ description: 'Number of DSACK (Duplicate SACK)' })
+  DSackDups: number;
+
+  @ApiProperty({ description: 'Reordering seen' })
+  ReordSeen: number;
+
+  @ApiProperty({ description: 'Out-of-order received packets' })
+  RcvOooPack: number;
+
+  @ApiProperty({ description: 'Sender window size' })
+  SndWnd: number;
+
+  @ApiProperty({ description: 'Elapsed time in microseconds' })
+  ElapsedTime: number;
+}
+
+class LastServerMeasurementDto {
+  @ApiProperty({ type: ConnectionInfoDto })
+  ConnectionInfo: ConnectionInfoDto;
+
+  @ApiProperty({ type: BBRInfoDto })
+  BBRInfo: BBRInfoDto;
+
+  @ApiProperty({ type: TCPInfoDto })
+  TCPInfo: TCPInfoDto;
+}
+
+class NDTResultDto {
+  @ApiProperty({ type: LastClientMeasurementDto })
+  LastClientMeasurement: LastClientMeasurementDto;
+
+  @ApiProperty({ type: LastServerMeasurementDto })
+  LastServerMeasurement: LastServerMeasurementDto;
+}
+
+class ResultsNdt7Dto {
+  @ApiProperty({ type: NDTResultDto })
+  'NDTResult.S2C': NDTResultDto;
+
+  @ApiProperty({ type: NDTResultDto })
+  'NDTResult.C2S': NDTResultDto;
 }
