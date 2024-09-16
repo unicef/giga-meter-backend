@@ -17,4 +17,6 @@ RUN apt-get update \
 
 COPY sshd_config /etc/ssh/
 
+EXPOSE 3000 2222
+
 ENTRYPOINT ["/bin/bash", "./start.sh"]
