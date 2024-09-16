@@ -16,7 +16,7 @@ Giga Meter Backend is a NestJS based Web API to expose the Daily Check App data 
 
 ## Folder Structure
 - /src
-  - /admin /country /flagged-school /measurement /messages /school: contains the API controller, service, dto, and test files for each module.
+  - /admin /country /flagged-school /measurement /messages /school /school-master: contains the API controller, service, dto, and test files for each module.
   - /auth: contains the authentication guard and dto files.
   - /common: contains the common decorator, utils, dto, and mock-object files.
   - /prisma: contains the prisma schema, service, and db migration files.
