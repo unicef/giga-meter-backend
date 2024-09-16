@@ -23,17 +23,22 @@ def get_next_id(engine):
 
 def check_data_exists(data, engine):
     try:
+        filtered_data = data[data['country_code'].notna() & (data['country_code'] != '')]
         existing_data = pd.read_sql(
             f"SELECT {', '.join(DESTINATION_TABLE_LOOKUP_FIELDS)} FROM {DESTINATION_TABLE}",
             engine
         )
         for id_source_field, id_dest_field in zip(SOURCE_LOOKUP_FIELDS, DESTINATION_TABLE_LOOKUP_FIELDS):
-            if data[id_source_field].isnull().any():
+            if id_source_field not in filtered_data.columns:
+                raise ValueError(f"Source field '{id_source_field}' is missing in the data.")
+
+            if filtered_data[id_source_field].isnull().any():
                 raise ValueError(f"Source field '{id_source_field}' contains null values.")
+
             if existing_data[id_dest_field].isnull().any():
                 raise ValueError(f"Destination field '{id_dest_field}' contains null values.")
 
-            new_data = data[~data[id_source_field].isin(existing_data[id_dest_field])]
+            new_data = filtered_data[~filtered_data[id_source_field].isin(existing_data[id_dest_field])]
             if not new_data.empty:
                 break
         return new_data
@@ -42,7 +47,7 @@ def check_data_exists(data, engine):
 
 def insert_data(data, engine):
     data = data.rename(columns=column_mapping)
-    data['country_code'] = DEFAULT_COUNTRY_CODE
+    data = data[data['country_code'].notna() & (data['country_code'] != '')]
     if 'feature_flags' in data.columns:
         data['feature_flags'] = data['feature_flags'].apply(json.dumps)
     data.to_sql(DESTINATION_TABLE, engine, index=False, if_exists="append")
