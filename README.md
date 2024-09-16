@@ -16,7 +16,7 @@ Giga Meter Backend is a NestJS based Web API to expose the Daily Check App data 
 
 ## Folder Structure
 - /src
-  - /admin /country /flagged-school /measurement /messages /school: contains the API controller, service, dto, and test files for each module.
+  - /admin /country /flagged-school /measurement /messages /school /school-master: contains the API controller, service, dto, and test files for each module.
   - /auth: contains the authentication guard and dto files.
   - /common: contains the common decorator, utils, dto, and mock-object files.
   - /prisma: contains the prisma schema, service, and db migration files.
@@ -35,7 +35,7 @@ PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 - USE_AUTH: set "true" if APIs should use authentication which uses Giga Maps service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode_) endpoint.
 - PROJECT_CONNECT_SERVICE_URL: Base API URL of the Giga Maps service used for authentication. For Dev, it should be pointed to https://uni-ooi-giga-maps-service-dev.azurewebsites.net
 - DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling Giga Maps service API. Ideally, it should always <i>DAILY_CHECK_APP</i> but check with the Giga Maps team if this doesn't work.
-- PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of PCDC Windows application.
+- PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [PCDC](https://github.com/unicef/project-connect-daily-check-app) Windows application.
 
 <br />
 Install required packages by running below command:
@@ -48,13 +48,13 @@ npm install
 
 Please make sure tha DATABASE_URL is set correctly in the .env file above.<br />
 ### Setup
-Run below command(s) inside src/prisma folder to create the database (if not present already) and the tables:
+Run below command(s) in root folder to create the database (if not present already) and the tables:
 
 ```bash
 npx prisma migrate dev
 ```
 
-Then run below command(s) inside src/prisma folder to generate prisma client which is required to run the app locally:
+Then run below command(s) in root folder to generate prisma client which is required to run the app locally:
 
 ```bash
 npx prisma generate
@@ -62,14 +62,14 @@ npx prisma generate
 
 ### Migration
 Make the required changes in the prisma.schema file (present inside src/prisma folder). <br />
-Run below command(s) inside src/prisma folder to migrate database changes:
+Run below command(s) in root folder to migrate database changes:
 
 ```bash
 npx prisma migrate dev
 ```
 <i>NOTE: Please make sure to commit the database migration file generated inside prisma/migrations folder to move the change to Dev and further environments.</i>
 
-Then run below command(s) inside src/prisma folder to re-generate prisma client to reflect the changes in schema:
+Then run below command(s) in root folder to re-generate prisma client to reflect the changes in schema:
 
 ```bash
 npx prisma generate
@@ -94,9 +94,9 @@ npm run start:prod
 ```
 The app will run locally on [localhost:3000](http://localhost:3000/).
 <br />
-To open Swagger UI documentation for the API, add <i>/api</i> to the url.
+To open Swagger UI documentation for the API, open [http://localhost:3000/api](http://localhost:3000/api).
 <br />
-To access all endpoints, add <i>/api/all</i> to the url.
+To access all endpoints,  open [http://localhost:3000/api/all](http://localhost:3000/api/all).
 
 To run the unit tests and check coverage:
 
