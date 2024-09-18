@@ -311,6 +311,9 @@ export class MeasurementService {
       Upload: measurement.upload,
       Latency: parseInt(measurement.latency.toString()),
       Results: plainToInstance(ResultsDto, measurement.results),
+      DataDownloaded: parseInt(measurement.data_downloaded.toString()),
+      DataUploaded: parseInt(measurement.data_uploaded.toString()),
+      DataUsage: parseInt(measurement.data_usage.toString()),
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
@@ -362,6 +365,9 @@ export class MeasurementService {
       Download: measurement.download,
       Upload: measurement.upload,
       Latency: parseInt(measurement.latency.toString()),
+      DataDownloaded: parseInt(measurement.data_downloaded.toString()),
+      DataUploaded: parseInt(measurement.data_uploaded.toString()),
+      DataUsage: parseInt(measurement.data_usage.toString()),
       Results: plainToInstance(ResultsDto, measurement.results),
       giga_id_school: measurement.giga_id_school,
       country_code: measurement.country_code,
