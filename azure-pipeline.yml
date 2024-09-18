@@ -93,7 +93,8 @@ stages:
         DockerImageTag: '$(Build.BuildId)'        
 - stage: prod_deploy
   displayName: Deploy To Prouction
-  trigger: manual
+  dependsOn: build_test
+  trigger: none
   pool: 
     vmImage: 'ubuntu-22.04'
   jobs:
