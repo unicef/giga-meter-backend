@@ -3,8 +3,6 @@ trigger:
 
 name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
 
-pool:
-  vmImage: 'ubuntu-22.04'
 variables:
   dockerRegistryServiceConnection: $(DOCKER_SERVICE_CONNECTION)
   dockerfilePath: './Dockerfile'
@@ -12,47 +10,52 @@ variables:
   imageRepository: 'main/$(app)'
   tag: '$(Build.BuildId)'
 
-steps:
-# TODO: Unit Tests
-- task: Bash@3
-  displayName: Unit Tests
-  condition: eq(variables['Build.SourceBranch'], 'main')
-  continueOnError: true
-  inputs:
-    targetType: 'inline'
-    script: |
-      sudo npm install
-      sudo npx prisma generate --schema=./src/prisma/schema.prisma
-      sudo npm run test:covpip
+stages:
 
-# Sonar Scan
-- task: Bash@3
-  displayName: Sonar Scan
-  condition: eq(variables['Build.SourceBranch'], 'main')
-  inputs:
-    targetType: 'inline'
-    script: |
-      export SONAR_SCANNER_VERSION=5.0.1.3006
-      export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
-      curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
-      unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
-      export PATH=$SONAR_SCANNER_HOME/bin:$PATH
-      export SONAR_SCANNER_OPTS="-server"
-      export SONAR_TOKEN=$(SONAR_TOKEN)
-      sonar-scanner \
-        -Dsonar.projectKey=${{ lower(variables['Build.DefinitionName']) }} \
-        -Dsonar.sources=src \
-        -Dsonar.host.url=$(SONAR_HOST) \
-        -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info \
-        -Dsonar.exclusions=**/*/*.spec.ts,**/prisma/**
-
-# Docker Build and Push
-- task: Docker@2
-  displayName: Build image
-  inputs:
-    command: buildAndPush
-    repository: $(imageRepository)
-    containerRegistry: $(dockerRegistryServiceConnection)
-    dockerfile: $(dockerfilePath)
-    tags: |
-      $(tag)
+- stage: build_test
+  displayName: Build and Test
+  pool: 
+    vmImage: 'ubuntu-22.04'
+  jobs:
+  - job: Test
+    steps:
+    - task: Bash@3
+      displayName: Unit Tests
+      #condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      continueOnError: true
+      inputs:
+        targetType: 'inline'
+        script: |
+          sudo npm install
+          sudo npx prisma generate --schema=./src/prisma/schema.prisma
+          sudo npm run test:covpip
+    - task: Bash@3
+      displayName: Sonar Scan
+      #condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      inputs:
+        targetType: 'inline'
+        script: |
+          export SONAR_SCANNER_VERSION=5.0.1.3006
+          export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
+          curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux.zip
+          unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+          export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+          export SONAR_SCANNER_OPTS="-server"
+          export SONAR_TOKEN=$(SONAR_TOKEN)
+          sonar-scanner \
+            -Dsonar.projectKey=${{ lower(variables['Build.DefinitionName']) }} \
+            -Dsonar.sources=src \
+            -Dsonar.host.url=$(SONAR_HOST) \
+            -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info \
+            -Dsonar.exclusions=**/*/*.spec.ts,**/prisma/**   
+  - job: Build
+    steps:
+    - task: Docker@2
+      displayName: Build image
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        dockerfile: $(dockerfilePath)
+        tags: |
+          $(tag)
