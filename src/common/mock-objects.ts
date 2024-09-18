@@ -1,4 +1,6 @@
+import { measurements, measurements_failed } from '@prisma/client';
 import { toBigInt } from './common.utils';
+import { MeasurementDto } from 'src/measurement/measurement.dto';
 
 // NOTE: mock<>Model objects are the ones fetched from database and mock<>Dto objects are the ones mapped which are returned from service
 export const mockMessagesModel = [
@@ -339,6 +341,49 @@ export const mockMeasurementDto = [
     source: 'DailyCheckApp',
     created_at: null,
   },
+  {
+    id: '3',
+    Timestamp: new Date('2024-12-31T18:05:16.365Z'),
+    UUID: 'ndt-rzmq5_1678933405_0000000000324160',
+    BrowserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
+    school_id: '123',
+    DeviceType: 'windows',
+    Notes: '',
+    ClientInfo: {
+      IP: '0',
+      ASN: 'AS919',
+      ISP: ' JSC Kazakhtelecom',
+      City: 'Taldykorgan',
+      Region: 'Jetisu Region',
+      Country: 'KZ',
+      Hostname: '0.megaline.telecom.kz',
+      Latitude: 45.0156,
+      Timezone: 'Asia/Almaty',
+      Longitude: 78.3739,
+    },
+    ServerInfo: {
+      URL: 'https://ndt-iupui-mlab1-del01.mlab-oti.measurement-lab.org:7123',
+      City: 'New Delhi',
+      FQDN: 'ndt-iupui-mlab1-del01.mlab-oti.measurement-lab.org',
+      IPv4: '0',
+      IPv6: '0',
+      Site: 'del01',
+      Label: 'New Delhi',
+      Metro: 'del',
+      Country: 'IN',
+    },
+    annotation: null,
+    Download: 6935.637333333333,
+    Upload: 11,
+    Latency: 277,
+    Results: null,
+    giga_id_school: 'b8e7d315-08f9-3665-9173-0d465744e4fe',
+    country_code: 'KZ',
+    ip_address: '0',
+    app_version: '1.0.0',
+    source: 'DailyCheckApp',
+    created_at: null,
+  }
 ];
 
 export const mockMeasurementV2Dto = [
@@ -370,9 +415,23 @@ export const mockMeasurementV2Dto = [
     source: 'DailyCheckApp',
     created_at: null,
   },
+  {
+    Timestamp: new Date('2024-12-31T18:05:16.365Z'),
+    BrowserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
+    school_id: '123',
+    Download: 6935.637333333333,
+    Upload: 11,
+    Latency: 277,
+    giga_id_school: 'b8e7d315-08f9-3665-9173-0d465744e4fe',
+    country_code: 'KZ',
+    ip_address: '0',
+    app_version: '1.0.0',
+    source: 'DailyCheckApp',
+    created_at: null,
+  },
 ];
 
-export const mockMeasurementModel = [
+export const mockMeasurementModel: measurements[] = [
   {
     id: toBigInt(1),
     timestamp: new Date('2024-12-31T18:05:16.365Z'),
@@ -423,9 +482,34 @@ export const mockMeasurementModel = [
     source: 'DailyCheckApp',
     created_at: null,
   },
+  {
+    id: toBigInt(3),
+    timestamp: new Date('2024-12-31T18:05:16.365Z'),
+    uuid: 'ndt-rzmq5_1678933405_0000000000324160',
+    browser_id: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
+    school_id: '123',
+    device_type: 'windows',
+    notes: '',
+    client_info: mockMeasurementDto[2].ClientInfo,
+    server_info: mockMeasurementDto[2].ServerInfo,
+    annotation: null,
+    download: 6935.637333333333,
+    upload: 11,
+    latency: toBigInt(277),
+    data_uploaded: null,
+    data_downloaded: null,
+    data_usage: null,
+    results: null,
+    giga_id_school: 'b8e7d315-08f9-3665-9173-0d465744e4fe',
+    country_code: 'KZ',
+    ip_address: '0',
+    app_version: '1.0.0',
+    source: 'DailyCheckApp',
+    created_at: null,
+  }
 ];
 
-export const mockMeasurementFailedModel = [
+export const mockMeasurementFailedModel: measurements_failed[] = [
   {
     id: toBigInt(1),
     timestamp: new Date('2024-12-31T18:05:16.365Z'),
@@ -478,6 +562,32 @@ export const mockMeasurementFailedModel = [
     created_at: null,
     reason: 'Wrong country code',
   },
+  {
+    id: toBigInt(3),
+    timestamp: new Date('2024-12-31T18:05:16.365Z'),
+    uuid: 'ndt-rzmq5_1678933405_0000000000324160',
+    browser_id: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
+    school_id: '123',
+    device_type: 'windows',
+    notes: '',
+    client_info: mockMeasurementDto[2].ClientInfo,
+    server_info: mockMeasurementDto[2].ServerInfo,
+    annotation: null,
+    download: 6935.637333333333,
+    upload: 11,
+    latency: toBigInt(277),
+    data_uploaded: null,
+    data_downloaded: null,
+    data_usage: null,
+    results: null,
+    giga_id_school: 'b8e7d315-08f9-3665-9173-0d465744e4fe',
+    country_code: 'KZ',
+    ip_address: '0',
+    app_version: '1.0.0',
+    source: 'DailyCheckApp',
+    created_at: null,
+    reason: 'Wrong country code',
+  }
 ];
 
 export const mockCountryDto = [
