@@ -11,7 +11,6 @@ variables:
   tag: '$(Build.BuildId)'
 
 stages:
-
 - stage: build_test
   displayName: Build and Test
   pool: 
@@ -52,6 +51,7 @@ stages:
     steps:
     - task: Docker@2
       displayName: Build image
+      dependsOn: Test
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
@@ -59,3 +59,12 @@ stages:
         dockerfile: $(dockerfilePath)
         tags: |
           $(tag)
+- stage: deploy
+  displayName: Deployment
+  dependsOn: build_test
+  pool: 
+    vmImage: 'ubuntu-22.04'
+  jobs:
+  - job: Development
+    steps: 
+    - script: echo Hi!
