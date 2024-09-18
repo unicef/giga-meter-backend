@@ -48,10 +48,10 @@ stages:
             -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info \
             -Dsonar.exclusions=**/*/*.spec.ts,**/prisma/**   
   - job: Build
+    dependsOn: Test
     steps:
     - task: Docker@2
       displayName: Build image
-      dependsOn: Test
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
