@@ -58,13 +58,13 @@ stages:
         dockerfile: $(dockerfilePath)
         tags: |
           $(tag)
-- stage: deploy
-  displayName: Deployment
+- stage: dev_deploy
+  displayName: Deploy To Development
   dependsOn: build_test
   pool: 
     vmImage: 'ubuntu-22.04'
   jobs:
-  - job: Development
+  - job: Deploy Meter App to Development
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     steps: 
     - task: AzureRmWebAppDeployment@4
@@ -91,3 +91,14 @@ stages:
         DockerNamespace: uniconnectacr.azurecr.io
         DockerRepository: 'main/giga-meter-backend'
         DockerImageTag: '$(Build.BuildId)'        
+- stage: prod_deploy
+  displayName: Deploy To Prouction
+  trigger: manual
+  dependsOn: build_test
+  pool: 
+    vmImage: 'ubuntu-22.04'
+  jobs:
+  - job: Deploy Meter App to Production
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    steps: 
+    - script: script: echo 'hello, world'
