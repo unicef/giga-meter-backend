@@ -94,7 +94,6 @@ stages:
 - stage: prod_deploy
   displayName: Deploy To Prouction
   trigger: manual
-  dependsOn: build_test
   pool: 
     vmImage: 'ubuntu-22.04'
   jobs:
