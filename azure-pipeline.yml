@@ -64,7 +64,7 @@ stages:
   pool: 
     vmImage: 'ubuntu-22.04'
   jobs:
-  - job: Deploy Meter App to Development
+  - job: Development
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     steps: 
     - task: AzureRmWebAppDeployment@4
@@ -97,7 +97,7 @@ stages:
   pool: 
     vmImage: 'ubuntu-22.04'
   jobs:
-  - job: Deploy Meter App to Production
+  - job: Production
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     steps: 
     - script: echo 'hello, world'
