@@ -101,4 +101,4 @@ stages:
   - job: Deploy Meter App to Production
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     steps: 
-    - script: script: echo 'hello, world'
+    - script: echo 'hello, world'
