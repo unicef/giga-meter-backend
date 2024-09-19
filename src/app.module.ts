@@ -18,9 +18,17 @@ import { MeasurementService } from './measurement/measurement.service';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
+import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 
 @Module({
-  imports: [HttpModule],
+  imports: [
+    HttpModule,
+    PrometheusModule.register({
+      defaultMetrics: {
+        enabled: true, // Enable collection of default metrics like CPU, memory, etc.
+      },
+    }),
+  ],
   controllers: [
     AppController,
     MessagesController,
