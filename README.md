@@ -22,6 +22,10 @@ Giga Meter Backend is a NestJS based Web API to expose the Daily Check App data 
   - /prisma: contains the prisma schema, service, and db migration files.
 
 ## Setup and installation
+### Prerequisites
+It is recommended to use [Node.js](https://nodejs.org/) 20+ and [PostgreSQL](https://www.postgresql.org/) 15+ version for the app setup.
+
+### Setup
 Create a .env file in root folder and add below variables to run locally, please check .env.example file for reference:
 
 ```bash
