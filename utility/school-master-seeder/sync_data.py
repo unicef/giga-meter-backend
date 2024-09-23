@@ -30,8 +30,6 @@ def fetch_data_from_api(engine, skip_by_pages=True):
             print("No more data found.")
             has_records = False
 
-    return all_data
-
 def get_next_id(engine):
     max_id_query = text(f"SELECT COALESCE(MAX(id), 0) AS max_id FROM {DESTINATION_TABLE}")
     try:
