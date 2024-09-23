@@ -78,6 +78,7 @@ column_mapping={
     'country_code': 'country_code',
 }
 ```
+#### NOTE: As country_code column in school table is a FOREIGN key, please make sure that correct value is passed to it else insert will fail, it accepts country iso 2 code values like IN, AF, etc.
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/proco?schema=public</i>.
 - SOURCE_API: The base URL for the source API where data can be retrieved.
 - SOURCE_API_TOKEN: Token for authenticating requests to the source API. Replace with your actual token.
