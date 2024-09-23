@@ -5,11 +5,34 @@ from config import *
 import json
 
 def fetch_data_from_api():
-    headers = {'Authorization': f'Bearer {SOURCE_API_TOKEN}'}
-    response = requests.get(SOURCE_API, headers=headers)
-    response.raise_for_status()
-    data = response.json()
-    return data
+    all_data = []
+    skip = SOURCE_API_SKIP_DEFAULT_VALUE
+    limit = SOURCE_API_LIMIT_DEFAULT_VALUE
+    has_records = True
+
+    while has_records:
+        api_url = f"{SOURCE_API}?{SOURCE_API_SKIP_PARAM}={skip}&{SOURCE_API_LIMIT_PARAM}={limit}"
+        headers = {'Authorization': f'Bearer {SOURCE_API_TOKEN}'}
+        response = requests.get(api_url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            print("DATA: ", data)
+            if not data.get('data'):
+                break
+
+            df = pd.DataFrame(data['data'])
+            process_data(df[list(column_mapping.keys())], engine)
+            all_data.extend(data['data'])
+            has_records = len(data['data']) >= limit
+            if skip_by_pages:
+                skip += 1  # Skip the number of pages
+            else:
+                skip += limit # Skip the number of records
+        else:
+            print("No more data found.")
+            has_records = False
+
+    return all_data
 
 def get_next_id(engine):
     max_id_query = text(f"SELECT COALESCE(MAX(id), 0) AS max_id FROM {DESTINATION_TABLE}")
@@ -23,6 +46,9 @@ def get_next_id(engine):
 
 def check_data_exists(data, engine):
     try:
+        if 'country_code' not in data.columns:
+            raise ValueError("The 'country_code' column is missing from the provided data.")
+
         filtered_data = data[data['country_code'].notna() & (data['country_code'] != '')]
         existing_data = pd.read_sql(
             f"SELECT {', '.join(DESTINATION_TABLE_LOOKUP_FIELDS)} FROM {DESTINATION_TABLE}",
@@ -60,21 +86,31 @@ def connect_to_db():
     except exc.SQLAlchemyError as e:
         print(f"Error connecting to database: {e}")
 
+def process_data(df, engine):
+    if 'country_code' not in df.columns:
+        print("Error: 'country_code' column is missing from the DataFrame.")
+        return
+
+    new_data_to_insert = pd.DataFrame()
+
+    for index, row in df.iterrows():
+        row_df = pd.DataFrame([row])
+
+        new_data = check_data_exists(row_df, engine)
+        if new_data is not None and not new_data.empty:
+            new_data_to_insert = pd.concat([new_data_to_insert, new_data], ignore_index=True)
+
+    if not new_data_to_insert.empty:
+        print("New data found, inserting...")
+        insert_data(new_data_to_insert, engine)
+    else:
+        print("No new data to insert.")
+
 def main():
-    api_data = fetch_data_from_api()
-    data = api_data['data']
-    df = pd.DataFrame(data)
-    school_data = df[list(column_mapping.keys())]
     engine = connect_to_db()
     if not engine:
         return
-
-    new_data = check_data_exists(school_data, engine)
-    if new_data is not None and not new_data.empty:
-        print("New data found, inserting...")
-        insert_data(new_data, engine)
-    else:
-        print("No new data to insert.")
+    fetch_data_from_api(engine)
 
 if __name__ == "__main__":
     main()

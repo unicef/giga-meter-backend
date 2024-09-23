@@ -60,9 +60,12 @@ Before running the script, configure your settings in the config.py file.
 This file contains variables such as your database connection URL, API URL, lookup fields, and column mappings. For example:
 ```bash
 DATABASE_URL = "postgresql://username:password@localhost:port/proco"
-DEFAULT_COUNTRY_CODE = "AF"
 SOURCE_API="source-api-url-which-exposes-schools-data"
 SOURCE_API_TOKEN="source-api-token-for-above-api"
+SOURCE_API_SKIP_PARAM="page"
+SOURCE_API_LIMIT_PARAM="size"
+SOURCE_API_SKIP_DEFAULT_VALUE=1
+SOURCE_API_LIMIT_DEFAULT_VALUE=100
 SOURCE_LOOKUP_FIELDS=["giga_id_school",]
 DESTINATION_TABLE="school"
 DESTINATION_TABLE_LOOKUP_FIELDS=["giga_id_school",]
@@ -72,8 +75,20 @@ column_mapping={
     'longitude': 'geopoint',
     'education_level': 'education_level',
     'giga_id_school': 'giga_id_school',
+    'country_code': 'country_code',
 }
 ```
+- DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/proco?schema=public</i>.
+- SOURCE_API: The base URL for the source API where data can be retrieved.
+- SOURCE_API_TOKEN: Token for authenticating requests to the source API. Replace with your actual token.
+- SOURCE_API_SKIP_PARAM: The query parameter used for pagination in the source API, indicating which page of results to fetch.
+- SOURCE_API_LIMIT_PARAM: The query parameter for specifying the maximum number of results to return in a single API request.
+- SOURCE_API_SKIP_DEFAULT_VALUE: The default value for the pagination parameter (usually starts at 1).
+- SOURCE_API_LIMIT_DEFAULT_VALUE: The default number of results to return per request (can be adjusted based on API limits).
+- SOURCE_LOOKUP_FIELDS: List of fields used to match records from the source data, enabling lookup operations.
+- DESTINATION_TABLE: The name of the table in the database where data will be stored.
+- DESTINATION_TABLE_LOOKUP_FIELDS: Fields in the destination table that correspond to lookup fields from the source.
+- COLUMN_MAPPING: Mapping of columns from the source data to the destination table.
 
 ## Running-the-script
 ### 5. How to run
