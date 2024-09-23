@@ -5,7 +5,6 @@ from config import *
 import json
 
 def fetch_data_from_api(engine, skip_by_pages=True):
-    all_data = []
     skip = SOURCE_API_SKIP_DEFAULT_VALUE
     limit = SOURCE_API_LIMIT_DEFAULT_VALUE
     has_records = True
