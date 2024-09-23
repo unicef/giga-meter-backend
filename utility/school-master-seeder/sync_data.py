@@ -4,25 +4,23 @@ from sqlalchemy import create_engine, exc, text
 from config import *
 import json
 
-def fetch_data_from_api():
+def fetch_data_from_api(engine, skip_by_pages=True):
     all_data = []
     skip = SOURCE_API_SKIP_DEFAULT_VALUE
     limit = SOURCE_API_LIMIT_DEFAULT_VALUE
     has_records = True
 
     while has_records:
-        api_url = f"{SOURCE_API}?{SOURCE_API_SKIP_PARAM}={skip}&{SOURCE_API_LIMIT_PARAM}={limit}"
+        api_url = f"{SOURCE_API_URL}?{SOURCE_API_SKIP_PARAM}={skip}&{SOURCE_API_LIMIT_PARAM}={limit}"
         headers = {'Authorization': f'Bearer {SOURCE_API_TOKEN}'}
         response = requests.get(api_url, headers=headers)
         if response.status_code == 200:
             data = response.json()
-            print("DATA: ", data)
             if not data.get('data'):
                 break
 
             df = pd.DataFrame(data['data'])
             process_data(df[list(column_mapping.keys())], engine)
-            all_data.extend(data['data'])
             has_records = len(data['data']) >= limit
             if skip_by_pages:
                 skip += 1  # Skip the number of pages
@@ -73,7 +71,6 @@ def check_data_exists(data, engine):
 
 def insert_data(data, engine):
     data = data.rename(columns=column_mapping)
-    data = data[data['country_code'].notna() & (data['country_code'] != '')]
     if 'feature_flags' in data.columns:
         data['feature_flags'] = data['feature_flags'].apply(json.dumps)
     data.to_sql(DESTINATION_TABLE, engine, index=False, if_exists="append")

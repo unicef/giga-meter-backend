@@ -60,7 +60,7 @@ Before running the script, configure your settings in the config.py file.
 This file contains variables such as your database connection URL, API URL, lookup fields, and column mappings. For example:
 ```bash
 DATABASE_URL = "postgresql://username:password@localhost:port/proco"
-SOURCE_API="source-api-url-which-exposes-schools-data"
+SOURCE_API_URL="source-api-url-which-exposes-schools-data"
 SOURCE_API_TOKEN="source-api-token-for-above-api"
 SOURCE_API_SKIP_PARAM="page"
 SOURCE_API_LIMIT_PARAM="size"
@@ -78,9 +78,9 @@ column_mapping={
     'country_code': 'country_code',
 }
 ```
-#### NOTE: As country_code column in school table is a FOREIGN key, please make sure that correct value is passed to it else insert will fail, it accepts country iso 2 code values like IN, AF, etc.
+
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/proco?schema=public</i>.
-- SOURCE_API: The base URL for the source API where data can be retrieved.
+- SOURCE_API_URL: The base URL for the source API where data can be retrieved.
 - SOURCE_API_TOKEN: Token for authenticating requests to the source API. Replace with your actual token.
 - SOURCE_API_SKIP_PARAM: The query parameter used for pagination in the source API, indicating which page of results to fetch.
 - SOURCE_API_LIMIT_PARAM: The query parameter for specifying the maximum number of results to return in a single API request.
@@ -90,12 +90,14 @@ column_mapping={
 - DESTINATION_TABLE: The name of the table in the database where data will be stored.
 - DESTINATION_TABLE_LOOKUP_FIELDS: Fields in the destination table that correspond to lookup fields from the source.
 - COLUMN_MAPPING: Mapping of columns from the source data to the destination table.
-
+<br/> 
+<br/> 
+<b>NOTES:</b>
+1. As country_code column in school table is a FOREIGN key, please make sure that correct value is passed to it else insert will fail, it accepts country iso 2 code values like IN, AF, etc.
+2. In sync_data.py we are processing the data by number of pages, if you want to procees by records then set the <i>skip_by_pages</i> value to FALSE (<i>skip_by_pages=False</i>) at line number 7 in sync_data.py
+<br/> 
 ## Running-the-script
 ### 5. How to run
 ```bash
 python3 sync_data.py
 ```
-
-
-

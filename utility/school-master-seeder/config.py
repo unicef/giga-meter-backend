@@ -1,5 +1,5 @@
 DATABASE_URL = "postgresql://username:password@localhost:port/proco"
-SOURCE_API="source-api-url"
+SOURCE_API_URL="source-api-url"
 SOURCE_API_TOKEN="source-api-token"
 SOURCE_API_SKIP_PARAM="page"
 SOURCE_API_LIMIT_PARAM="size"
@@ -17,4 +17,4 @@ column_mapping={
     'country_code': 'country_code',
 }
 
-# As country_code column in school table is a FOREIGN key, please make sure that correct value is passed to it else insert will fail
+# As country_code column in school table is a FOREIGN key, please make sure that correct value is passed to it else insert will fail, it accepts country iso 2 code values like IN, AF, etc.
