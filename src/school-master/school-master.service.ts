@@ -13,7 +13,10 @@ export class SchoolMasterService {
     school_id: string,
   ): Promise<SchoolMasterDto[]> {
     const schools = this.prisma.school.findMany({
-      where: { external_id: school_id, country_code },
+      where: {
+        external_id: { equals: school_id, mode: 'insensitive' },
+        country_code,
+      },
     });
 
     return (await schools).map(this.toDto);
