@@ -4,6 +4,9 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
+import * as Sentry from '@sentry/nestjs';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import { AllExceptionFilter } from './common/common.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -89,6 +92,25 @@ async function bootstrap() {
     origin: true,
     methods: ['GET', 'POST', 'PUT'],
     allowedHeaders: '*',
+  });
+
+  app.useGlobalFilters(new AllExceptionFilter());
+
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    integrations: [
+      // Add our Profiling integration
+      nodeProfilingIntegration(),
+      Sentry.prismaIntegration(),
+    ],
+
+    // Add Tracing by setting tracesSampleRate
+    // We recommend adjusting this value in production
+    tracesSampleRate: 1.0,
+
+    // Set sampling rate for profiling
+    // This is relative to tracesSampleRate
+    profilesSampleRate: 1.0,
   });
 
   dotenv.config();
