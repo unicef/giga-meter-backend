@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import {
   mockMeasurementDto,
+  mockMeasurementFailedDto,
   mockMeasurementV2Dto,
 } from '../common/mock-objects';
 
@@ -88,10 +89,10 @@ describe('MeasurementController', () => {
     it('should get measurements', async () => {
       jest
         .spyOn(service, 'measurementsFailed')
-        .mockResolvedValue(mockMeasurementDto);
+        .mockResolvedValue(mockMeasurementFailedDto);
 
       const response = await controller.getMeasurementsFailed();
-      expect(response.data).toStrictEqual(mockMeasurementDto);
+      expect(response.data).toStrictEqual(mockMeasurementFailedDto);
     });
 
     it('should handle empty result set', async () => {

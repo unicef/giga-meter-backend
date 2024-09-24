@@ -3,6 +3,7 @@ import { MeasurementService } from './measurement.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   mockMeasurementDto,
+  mockMeasurementFailedDto,
   mockMeasurementFailedModel,
   mockMeasurementModel,
   mockMeasurementV2Dto,
@@ -88,7 +89,7 @@ describe('MeasurementService', () => {
         .mockResolvedValue(mockMeasurementFailedModel);
 
       expect(await service.measurementsFailed()).toMatchObject(
-        mockMeasurementDto,
+        mockMeasurementFailedDto,
       );
     });
 
