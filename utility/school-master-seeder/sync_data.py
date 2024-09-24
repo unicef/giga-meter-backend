@@ -49,6 +49,7 @@ def check_data_exists(data, engine):
             f"SELECT {', '.join(DESTINATION_TABLE_LOOKUP_FIELDS)} FROM {DESTINATION_TABLE}",
             engine
         )
+
         for id_source_field, id_dest_field in zip(SOURCE_LOOKUP_FIELDS, DESTINATION_TABLE_LOOKUP_FIELDS):
             if id_source_field not in filtered_data.columns:
                 raise ValueError(f"Source field '{id_source_field}' is missing in the data.")
@@ -60,8 +61,10 @@ def check_data_exists(data, engine):
                 raise ValueError(f"Destination field '{id_dest_field}' contains null values.")
 
             new_data = filtered_data[~filtered_data[id_source_field].isin(existing_data[id_dest_field])]
+
             if not new_data.empty:
                 break
+
         return new_data
     except Exception as ex:
         print(f"Error in check_data_exists: {ex}")
@@ -86,13 +89,25 @@ def process_data(df, engine):
         return
 
     new_data_to_insert = pd.DataFrame()
+    rows_with_missing_country_code = 0
 
     for index, row in df.iterrows():
         row_df = pd.DataFrame([row])
 
+        if pd.isna(row['country_code']) or row['country_code'] == '':
+            print(f"Skipping record with index: {index} due to missing 'country_code'.")
+            rows_with_missing_country_code += 1
+            continue
+
         new_data = check_data_exists(row_df, engine)
         if new_data is not None and not new_data.empty:
             new_data_to_insert = pd.concat([new_data_to_insert, new_data], ignore_index=True)
+
+    if rows_with_missing_country_code > 0:
+        user_input = input("country_code not found in some API responses. Do you want to continue with the insertion of valid records? (y/n): ")
+        if user_input.lower() != 'y':
+            print("Aborting the insertion of records.")
+            return
 
     if not new_data_to_insert.empty:
         print("New data found, inserting...")
