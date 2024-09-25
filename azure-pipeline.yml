@@ -20,7 +20,10 @@ stages:
     steps:
     - task: Bash@3
       displayName: Unit Tests
-      #condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      condition: or (
+        eq(variables['Build.Reason'], 'PullRequest'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      }
       inputs:
         targetType: 'inline'
         script: |
@@ -29,7 +32,10 @@ stages:
           sudo npm run test:covpip
     - task: Bash@3
       displayName: Sonar Scan
-      #condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      condition: or (
+        eq(variables['Build.Reason'], 'PullRequest'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/main')
+      }
       inputs:
         targetType: 'inline'
         script: |
@@ -100,4 +106,4 @@ stages:
   - job: Production
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     steps: 
-    - script: echo 'hello, world'
+    - script: echo 'Production Deployment, will be enabled post Dev deployment success.'
