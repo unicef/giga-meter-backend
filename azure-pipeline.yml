@@ -24,6 +24,7 @@ stages:
           eq(variables['Build.Reason'], 'PullRequest'),
           eq(variables['Build.SourceBranch'], 'refs/heads/main')
         )
+      continueOnError: false
       inputs:
         targetType: 'inline'
         script: |
