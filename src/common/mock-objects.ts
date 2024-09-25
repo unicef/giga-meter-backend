@@ -1,6 +1,7 @@
 import { measurements, measurements_failed } from '@prisma/client';
 import { toBigInt } from './common.utils';
 import { MeasurementDto } from 'src/measurement/measurement.dto';
+import { MetricsDto } from 'src/metrics/metrics.dto';
 
 // NOTE: mock<>Model objects are the ones fetched from database and mock<>Dto objects are the ones mapped which are returned from service
 export const mockMessagesModel = [
@@ -770,3 +771,9 @@ export const mockCountryModel = [
     created: '',
   },
 ];
+
+export const mockMetricsDto: MetricsDto = {
+  countries: 10,
+  schools: 7000,
+  measurements: 100000,
+};

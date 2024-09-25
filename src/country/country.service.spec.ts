@@ -111,6 +111,9 @@ describe('CountryService', () => {
   describe('CreateCountry', () => {
     it('should create country', async () => {
       jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(null);
+      jest
         .spyOn(prisma.dailycheckapp_country, 'create')
         .mockResolvedValue(mockCountryModel[0]);
 
@@ -119,6 +122,9 @@ describe('CountryService', () => {
     });
 
     it('should handle database error', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(null);
       jest
         .spyOn(prisma.dailycheckapp_country, 'create')
         .mockRejectedValue(new Error('Database error'));
@@ -132,6 +138,9 @@ describe('CountryService', () => {
   describe('DeleteCountry', () => {
     it('should delete country', async () => {
       jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirstOrThrow')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
         .spyOn(prisma.dailycheckapp_country, 'delete')
         .mockResolvedValue(mockCountryModel[0]);
 
@@ -142,6 +151,9 @@ describe('CountryService', () => {
       jest
         .spyOn(prisma.dailycheckapp_country, 'findFirstOrThrow')
         .mockRejectedValue(new Error('Country not found'));
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'delete')
+        .mockResolvedValue(null);
 
       await expect(service.deleteCountry('IN')).rejects.toThrow(
         'Country not found',
@@ -150,8 +162,11 @@ describe('CountryService', () => {
 
     it('should handle database error', async () => {
       jest
-        .spyOn(prisma.dailycheckapp_country, 'delete')
+        .spyOn(prisma.dailycheckapp_country, 'findFirstOrThrow')
         .mockRejectedValue(new Error('Database error'));
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'delete')
+        .mockRejectedValue(null);
 
       await expect(service.deleteCountry('IN')).rejects.toThrow(
         'Database error',
