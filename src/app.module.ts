@@ -20,6 +20,8 @@ import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { SentryModule } from '@sentry/nestjs/setup';
+import { MetricsController } from './metrics/metrics.controller';
+import { MetricsService } from './metrics/metrics.service';
 
 @Module({
   imports: [
@@ -41,6 +43,7 @@ import { SentryModule } from '@sentry/nestjs/setup';
     MeasurementController,
     AdminController,
     DataFixController,
+    MetricsController,
   ],
   providers: [
     AppService,
@@ -52,6 +55,7 @@ import { SentryModule } from '@sentry/nestjs/setup';
     CountryService,
     MeasurementService,
     AdminService,
+    MetricsService,
   ],
 })
 export class AppModule {}
