@@ -23,7 +23,7 @@ stages:
       condition: or (
         eq(variables['Build.Reason'], 'PullRequest'),
         eq(variables['Build.SourceBranch'], 'refs/heads/main')
-      }
+      )
       inputs:
         targetType: 'inline'
         script: |
@@ -35,7 +35,7 @@ stages:
       condition: or (
         eq(variables['Build.Reason'], 'PullRequest'),
         eq(variables['Build.SourceBranch'], 'refs/heads/main')
-      }
+      )
       inputs:
         targetType: 'inline'
         script: |
