@@ -19,6 +19,8 @@ import { SchoolMasterController } from './school-master/school-master.controller
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
+import { MetricsController } from './metrics/metrics.controller';
+import { MetricsService } from './metrics/metrics.service';
 
 @Module({
   imports: [
@@ -39,6 +41,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     MeasurementController,
     AdminController,
     DataFixController,
+    MetricsController,
   ],
   providers: [
     AppService,
@@ -50,6 +53,7 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
     CountryService,
     MeasurementService,
     AdminService,
+    MetricsService,
   ],
 })
 export class AppModule {}
