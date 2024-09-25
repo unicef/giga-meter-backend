@@ -21,9 +21,9 @@ stages:
     - task: Bash@3
       displayName: Unit Tests
       condition: or(
-        eq(variables['Build.Reason'], 'PullRequest'),
-        eq(variables['Build.SourceBranch'], 'refs/heads/main')
-      )
+          eq(variables['Build.Reason'], 'PullRequest'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        )
       inputs:
         targetType: 'inline'
         script: |
@@ -33,9 +33,9 @@ stages:
     - task: Bash@3
       displayName: Sonar Scan
       condition: or(
-        eq(variables['Build.Reason'], 'PullRequest'),
-        eq(variables['Build.SourceBranch'], 'refs/heads/main')
-      )
+          eq(variables['Build.Reason'], 'PullRequest'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+        )
       inputs:
         targetType: 'inline'
         script: |
