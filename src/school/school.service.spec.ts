@@ -131,6 +131,9 @@ describe('SchoolService', () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirstOrThrow')
         .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'updateMany')
+        .mockResolvedValue(null);
 
       const notify = await service.checkNotify(mockSchoolModel[0].user_id);
       expect(notify).toEqual(true);
