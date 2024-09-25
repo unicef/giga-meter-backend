@@ -20,7 +20,7 @@ stages:
     steps:
     - task: Bash@3
       displayName: Unit Tests
-      condition: or (
+      condition: or(
         eq(variables['Build.Reason'], 'PullRequest'),
         eq(variables['Build.SourceBranch'], 'refs/heads/main')
       )
@@ -32,7 +32,7 @@ stages:
           sudo npm run test:covpip
     - task: Bash@3
       displayName: Sonar Scan
-      condition: or (
+      condition: or(
         eq(variables['Build.Reason'], 'PullRequest'),
         eq(variables['Build.SourceBranch'], 'refs/heads/main')
       )
