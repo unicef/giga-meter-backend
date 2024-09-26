@@ -69,26 +69,19 @@ export class CountryController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<CountryDto[]>> {
-    try {
-      const records = await this.countryService.countries({
-        skip: (page ?? 0) * (size ?? 10),
-        take: (size ?? 10) * 1,
-        write_access,
-        countries,
-      });
+    const records = await this.countryService.countries({
+      skip: (page ?? 0) * (size ?? 10),
+      take: (size ?? 10) * 1,
+      write_access,
+      countries,
+    });
 
-      return {
-        success: true,
-        data: records,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get countries with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: records,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get(':code')
@@ -119,33 +112,26 @@ export class CountryController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<CountryDto[]>> {
-    try {
-      if (!code || code.trim().length === 0)
-        throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
+    if (!code || code.trim().length === 0)
+      throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
 
-      if (!write_access && !countries?.includes(code.trim().toUpperCase())) {
-        throw new HttpException(
-          'not authorized to access',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const records = await this.countryService.countriesByCode(
-        code.trim().toUpperCase(),
-      );
-
-      return {
-        success: true,
-        data: records,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (!write_access && !countries?.includes(code.trim().toUpperCase())) {
       throw new HttpException(
-        'Failed to get countries with ' + error,
+        'not authorized to access',
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const records = await this.countryService.countriesByCode(
+      code.trim().toUpperCase(),
+    );
+
+    return {
+      success: true,
+      data: records,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get('code_iso3/:code_iso3')
@@ -176,38 +162,28 @@ export class CountryController {
     @WriteAccess() write_access?: boolean,
     @CountriesIso3() countries?: string[],
   ): Promise<ApiSuccessResponseDto<CountryDto[]>> {
-    try {
-      if (!code_iso3 || code_iso3.trim().length === 0)
-        throw new HttpException(
-          'code_iso3 is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-      if (
-        !write_access &&
-        !countries?.includes(code_iso3.trim().toUpperCase())
-      ) {
-        throw new HttpException(
-          'not authorized to access',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const records = await this.countryService.countriesByCodeIso3(
-        code_iso3.trim().toUpperCase(),
-      );
-
-      return {
-        success: true,
-        data: records,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (!code_iso3 || code_iso3.trim().length === 0)
       throw new HttpException(
-        'Failed to get countries with ' + error,
+        'code_iso3 is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    if (!write_access && !countries?.includes(code_iso3.trim().toUpperCase())) {
+      throw new HttpException(
+        'not authorized to access',
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const records = await this.countryService.countriesByCodeIso3(
+      code_iso3.trim().toUpperCase(),
+    );
+
+    return {
+      success: true,
+      data: records,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Post()
@@ -228,41 +204,34 @@ export class CountryController {
   async createCountry(
     @Body() countryDto: CountryDto,
   ): Promise<ApiSuccessResponseDto<string>> {
-    try {
-      if (countryDto == null)
-        throw new HttpException('countryDto is null', HttpStatus.BAD_REQUEST);
-      if (!countryDto.code || countryDto.code.trim().length == 0)
-        throw new HttpException(
-          'countryDto.code is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-      if (!countryDto.code_iso3 || countryDto.code_iso3.trim().length == 0)
-        throw new HttpException(
-          'countryDto.code_iso3 is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const countryId = await this.countryService.createCountry(countryDto);
-
-      if (countryId == null) {
-        throw new HttpException(
-          `country with code: ${countryDto.code} already exists`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      return {
-        success: true,
-        data: countryId,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (countryDto == null)
+      throw new HttpException('countryDto is null', HttpStatus.BAD_REQUEST);
+    if (!countryDto.code || countryDto.code.trim().length == 0)
       throw new HttpException(
-        'Failed to create country with ' + error,
+        'countryDto.code is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    if (!countryDto.code_iso3 || countryDto.code_iso3.trim().length == 0)
+      throw new HttpException(
+        'countryDto.code_iso3 is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const countryId = await this.countryService.createCountry(countryDto);
+
+    if (countryId == null) {
+      throw new HttpException(
+        `country with code: ${countryDto.code} already exists`,
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    return {
+      success: true,
+      data: countryId,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Delete(':code')
@@ -289,23 +258,16 @@ export class CountryController {
   async deleteCountry(
     @Param('code') code: string,
   ): Promise<ApiSuccessResponseDto<string>> {
-    try {
-      if (!code || code.trim().length === 0)
-        throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
+    if (!code || code.trim().length === 0)
+      throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
 
-      await this.countryService.deleteCountry(code.trim().toUpperCase());
+    await this.countryService.deleteCountry(code.trim().toUpperCase());
 
-      return {
-        success: true,
-        data: `country with code: ${code} deleted`,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to delete country with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: `country with code: ${code} deleted`,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 }

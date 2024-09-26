@@ -64,26 +64,19 @@ export class FlaggedSchoolController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
-    try {
-      const flaggedSchools = await this.schoolService.schools({
-        skip: (page ?? 0) * (size ?? 10),
-        take: (size ?? 10) * 1,
-        write_access,
-        countries,
-      });
+    const flaggedSchools = await this.schoolService.schools({
+      skip: (page ?? 0) * (size ?? 10),
+      take: (size ?? 10) * 1,
+      write_access,
+      countries,
+    });
 
-      return {
-        success: true,
-        data: flaggedSchools,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get flagged schools with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: flaggedSchools,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get('/:country_id')
@@ -114,38 +107,31 @@ export class FlaggedSchoolController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
-    try {
-      if (
-        !write_access &&
-        !countries?.includes(country_id.trim().toUpperCase())
-      ) {
-        throw new HttpException(
-          'not authorized to access',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      if (!country_id || country_id.trim().length === 0)
-        throw new HttpException(
-          'country_id is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const flaggedSchools = await this.schoolService.schoolsByCountryId(
-        country_id.toUpperCase(),
-      );
-
-      return {
-        success: true,
-        data: flaggedSchools,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (
+      !write_access &&
+      !countries?.includes(country_id.trim().toUpperCase())
+    ) {
       throw new HttpException(
-        'Failed to get flagged schools with ' + error,
+        'not authorized to access',
         HttpStatus.BAD_REQUEST,
       );
     }
+    if (!country_id || country_id.trim().length === 0)
+      throw new HttpException(
+        'country_id is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const flaggedSchools = await this.schoolService.schoolsByCountryId(
+      country_id.toUpperCase(),
+    );
+
+    return {
+      success: true,
+      data: flaggedSchools,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Post()
@@ -166,20 +152,13 @@ export class FlaggedSchoolController {
   async createSchool(
     @Body() schoolDto: FlaggedSchoolDto,
   ): Promise<ApiSuccessResponseDto<string>> {
-    try {
-      const schoolId = await this.schoolService.createSchool(schoolDto);
+    const schoolId = await this.schoolService.createSchool(schoolDto);
 
-      return {
-        success: true,
-        data: schoolId,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to create flagged school with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: schoolId,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 }

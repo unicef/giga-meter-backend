@@ -20,20 +20,13 @@ export class MetricsController {
     isArray: false,
   })
   async getMetrics(): Promise<ApiSuccessResponseDto<MetricsDto>> {
-    try {
-      const metrics = await this.metricsService.get();
+    const metrics = await this.metricsService.get();
 
-      return {
-        success: true,
-        data: metrics,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get metrics with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: metrics,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 }

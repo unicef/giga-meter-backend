@@ -125,42 +125,35 @@ export class MeasurementController {
     @Countries() countries?: string[],
     @CountriesIso3() countries_iso3?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
-    try {
-      validateGetMeasurementsParams(
-        orderBy,
-        country_iso3_code,
-        filterBy,
-        filterCondition,
-        filterValue,
-        write_access,
-        countries_iso3,
-      );
+    validateGetMeasurementsParams(
+      orderBy,
+      country_iso3_code,
+      filterBy,
+      filterCondition,
+      filterValue,
+      write_access,
+      countries_iso3,
+    );
 
-      const measurements = await this.measurementService.measurements(
-        (page ?? 0) * (size ?? 10),
-        (size ?? 10) * 1,
-        orderBy ?? '-timestamp',
-        giga_id_school,
-        country_iso3_code,
-        filterBy ?? '',
-        filterCondition ?? '',
-        filterValue ?? null,
-        write_access,
-        countries,
-      );
+    const measurements = await this.measurementService.measurements(
+      (page ?? 0) * (size ?? 10),
+      (size ?? 10) * 1,
+      orderBy ?? '-timestamp',
+      giga_id_school,
+      country_iso3_code,
+      filterBy ?? '',
+      filterCondition ?? '',
+      filterValue ?? null,
+      write_access,
+      countries,
+    );
 
-      return {
-        success: true,
-        data: measurements,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get measurements with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: measurements,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get('v2')
@@ -247,35 +240,28 @@ export class MeasurementController {
     @Countries() countries?: string[],
     @CountriesIso3() countries_iso3?: string[],
   ): Promise<MeasurementV2Dto[]> {
-    try {
-      validateGetMeasurementsParams(
-        orderBy,
-        country_iso3_code,
-        filterBy,
-        filterCondition,
-        filterValue,
-        write_access,
-        countries_iso3,
-      );
+    validateGetMeasurementsParams(
+      orderBy,
+      country_iso3_code,
+      filterBy,
+      filterCondition,
+      filterValue,
+      write_access,
+      countries_iso3,
+    );
 
-      return await this.measurementService.measurementsV2(
-        (page ?? 0) * (size ?? 10),
-        (size ?? 10) * 1,
-        orderBy ?? '-timestamp',
-        giga_id_school,
-        country_iso3_code,
-        filterBy ?? '',
-        filterCondition ?? '',
-        filterValue ?? null,
-        write_access,
-        countries,
-      );
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get measurements with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return await this.measurementService.measurementsV2(
+      (page ?? 0) * (size ?? 10),
+      (size ?? 10) * 1,
+      orderBy ?? '-timestamp',
+      giga_id_school,
+      country_iso3_code,
+      filterBy ?? '',
+      filterCondition ?? '',
+      filterValue ?? null,
+      write_access,
+      countries,
+    );
   }
 
   @Get('failed')
@@ -315,26 +301,19 @@ export class MeasurementController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementFailedDto[]>> {
-    try {
-      const measurements = await this.measurementService.measurementsFailed(
-        (page ?? 0) * (size ?? 10),
-        (size ?? 10) * 1,
-        write_access,
-        countries,
-      );
+    const measurements = await this.measurementService.measurementsFailed(
+      (page ?? 0) * (size ?? 10),
+      (size ?? 10) * 1,
+      write_access,
+      countries,
+    );
 
-      return {
-        success: true,
-        data: measurements,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get measurements with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: measurements,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get(':id')
@@ -365,28 +344,21 @@ export class MeasurementController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
-    try {
-      if (!id || id === 0)
-        throw new HttpException('id is zero/empty', HttpStatus.BAD_REQUEST);
+    if (!id || id === 0)
+      throw new HttpException('id is zero/empty', HttpStatus.BAD_REQUEST);
 
-      const measurements = await this.measurementService.measurementsById(
-        id,
-        write_access,
-        countries,
-      );
+    const measurements = await this.measurementService.measurementsById(
+      id,
+      write_access,
+      countries,
+    );
 
-      return {
-        success: true,
-        data: measurements,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get measurements with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: measurements,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get('school_id/:school_id')
@@ -417,31 +389,24 @@ export class MeasurementController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
-    try {
-      if (!school_id || school_id.trim().length === 0)
-        throw new HttpException(
-          'school_id is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const measurements = await this.measurementService.measurementsBySchoolId(
-        school_id,
-        write_access,
-        countries,
-      );
-
-      return {
-        success: true,
-        data: measurements,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (!school_id || school_id.trim().length === 0)
       throw new HttpException(
-        'Failed to get measurements with ' + error,
+        'school_id is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+
+    const measurements = await this.measurementService.measurementsBySchoolId(
+      school_id,
+      write_access,
+      countries,
+    );
+
+    return {
+      success: true,
+      data: measurements,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Post()
@@ -462,28 +427,21 @@ export class MeasurementController {
   async createMeasurement(
     @Body() measurementDto: MeasurementDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
-    try {
-      const response =
-        await this.measurementService.createMeasurement(measurementDto);
+    const response =
+      await this.measurementService.createMeasurement(measurementDto);
 
-      if (response.length) {
-        throw new HttpException(
-          'Failed to add measurement with error: ' + response,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      return {
-        success: true,
-        data: { user_id: uuidv4() },
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (response.length) {
       throw new HttpException(
-        'Failed to create measurement with ' + error,
+        'Failed to add measurement with error: ' + response,
         HttpStatus.BAD_REQUEST,
       );
     }
+    return {
+      success: true,
+      data: { user_id: uuidv4() },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 }
 

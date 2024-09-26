@@ -83,28 +83,21 @@ export class SchoolController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
-    try {
-      const schools = await this.schoolService.schools(
-        (page ?? 0) * (size ?? 10),
-        (size ?? 10) * 1,
-        giga_id_school,
-        country_iso3_code,
-        write_access,
-        countries,
-      );
+    const schools = await this.schoolService.schools(
+      (page ?? 0) * (size ?? 10),
+      (size ?? 10) * 1,
+      giga_id_school,
+      country_iso3_code,
+      write_access,
+      countries,
+    );
 
-      return {
-        success: true,
-        data: schools,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get schools with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: schools,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get(':giga_id_school')
@@ -135,31 +128,24 @@ export class SchoolController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
-    try {
-      if (!giga_id_school || giga_id_school.trim().length === 0)
-        throw new HttpException(
-          'giga_id_school is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const schools = await this.schoolService.schoolsByGigaId(
-        giga_id_school.toLowerCase(),
-        write_access,
-        countries,
-      );
-
-      return {
-        success: true,
-        data: schools,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (!giga_id_school || giga_id_school.trim().length === 0)
       throw new HttpException(
-        'Failed to get schools with ' + error,
+        'giga_id_school is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+
+    const schools = await this.schoolService.schoolsByGigaId(
+      giga_id_school.toLowerCase(),
+      write_access,
+      countries,
+    );
+
+    return {
+      success: true,
+      data: schools,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get('id/:id')
@@ -188,24 +174,17 @@ export class SchoolController {
   async getSchoolsById(
     @Param('id') id: number,
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
-    try {
-      if (!id || id === 0)
-        throw new HttpException('id is zero/empty', HttpStatus.BAD_REQUEST);
+    if (!id || id === 0)
+      throw new HttpException('id is zero/empty', HttpStatus.BAD_REQUEST);
 
-      const schools = await this.schoolService.schoolsById(id);
+    const schools = await this.schoolService.schoolsById(id);
 
-      return {
-        success: true,
-        data: schools,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get schools with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: schools,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get('country_id/:country_id')
@@ -236,36 +215,29 @@ export class SchoolController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<SchoolDto[]>> {
-    try {
-      if (!country_id || country_id.trim().length === 0)
-        throw new HttpException(
-          'country_id is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      if (!write_access && !countries?.includes(country_id.toUpperCase())) {
-        throw new HttpException(
-          'not authorized to access',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      const schools = await this.schoolService.schoolsByCountryId(
-        country_id.toUpperCase(),
+    if (!country_id || country_id.trim().length === 0)
+      throw new HttpException(
+        'country_id is null/empty',
+        HttpStatus.BAD_REQUEST,
       );
 
-      return {
-        success: true,
-        data: schools,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (!write_access && !countries?.includes(country_id.toUpperCase())) {
       throw new HttpException(
-        'Failed to get schools with ' + error,
+        'not authorized to access',
         HttpStatus.BAD_REQUEST,
       );
     }
+
+    const schools = await this.schoolService.schoolsByCountryId(
+      country_id.toUpperCase(),
+    );
+
+    return {
+      success: true,
+      data: schools,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Get('checkNotify/:user_id')
@@ -294,27 +266,17 @@ export class SchoolController {
   async checkNotify(
     @Param('user_id') user_id: string,
   ): Promise<ApiSuccessResponseDto<CheckNotifyDto>> {
-    try {
-      if (!user_id || user_id.trim().length === 0)
-        throw new HttpException(
-          'user_id is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
+    if (!user_id || user_id.trim().length === 0)
+      throw new HttpException('user_id is null/empty', HttpStatus.BAD_REQUEST);
 
-      const notify = await this.schoolService.checkNotify(user_id);
+    const notify = await this.schoolService.checkNotify(user_id);
 
-      return {
-        success: true,
-        data: { notify, download_url: process.env.PCDC_APP_DOWNLOAD_URL },
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to check notify school with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: { notify, download_url: process.env.PCDC_APP_DOWNLOAD_URL },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Post()
@@ -335,20 +297,13 @@ export class SchoolController {
   async createSchool(
     @Body() schoolDto: SchoolDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
-    try {
-      const schoolId = await this.schoolService.createSchool(schoolDto);
+    const schoolId = await this.schoolService.createSchool(schoolDto);
 
-      return {
-        success: true,
-        data: { user_id: schoolId },
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
-      throw new HttpException(
-        'Failed to create school with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return {
+      success: true,
+      data: { user_id: schoolId },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 }
