@@ -58,35 +58,28 @@ export class SchoolMasterController {
     @Param('country_code') country_code: string,
     @Param('school_id') school_id: string,
   ): Promise<ApiSuccessResponseDto<SchoolMasterDto[]>> {
-    try {
-      if (!country_code || country_code.trim().length === 0)
-        throw new HttpException(
-          'country_code is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-      if (!school_id || school_id.trim().length === 0)
-        throw new HttpException(
-          'school_id is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const response = await this.schoolService.checkSchool(
-        country_code,
-        school_id,
-      );
-
-      return {
-        success: true,
-        data: response,
-        timestamp: new Date().toISOString(),
-        message: '',
-      };
-    } catch (error) {
+    if (!country_code || country_code.trim().length === 0)
       throw new HttpException(
-        'Failed to check school with ' + error,
+        'country_code is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+    if (!school_id || school_id.trim().length === 0)
+      throw new HttpException(
+        'school_id is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const response = await this.schoolService.checkSchool(
+      country_code,
+      school_id,
+    );
+
+    return {
+      success: true,
+      data: response,
+      timestamp: new Date().toISOString(),
+      message: '',
+    };
   }
 
   @Get('features_flags/:giga_id_school')
@@ -114,27 +107,20 @@ export class SchoolMasterController {
   async getFlagsByGigaId(
     @Param('giga_id_school') giga_id_school: string,
   ): Promise<ApiSuccessResponseDto<FeatureFlagDto>> {
-    try {
-      if (!giga_id_school || giga_id_school.trim().length === 0)
-        throw new HttpException(
-          'giga_id_school is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const flags = await this.schoolService.flagsByGigaId(giga_id_school);
-
-      return {
-        success: true,
-        data: flags,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (!giga_id_school || giga_id_school.trim().length === 0)
       throw new HttpException(
-        'Failed to get feature flags with ' + error,
+        'giga_id_school is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+
+    const flags = await this.schoolService.flagsByGigaId(giga_id_school);
+
+    return {
+      success: true,
+      data: flags,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 
   @Put('features_flags/:giga_id_school')
@@ -163,29 +149,22 @@ export class SchoolMasterController {
     @Param('giga_id_school') giga_id_school: string,
     @Body() featureFlagDto: FeatureFlagDto,
   ): Promise<ApiSuccessResponseDto<boolean>> {
-    try {
-      if (!giga_id_school || giga_id_school.trim().length === 0)
-        throw new HttpException(
-          'giga_id_school is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      const response = await this.schoolService.setFlagsByGigaId(
-        giga_id_school,
-        featureFlagDto,
-      );
-
-      return {
-        success: true,
-        data: response,
-        timestamp: new Date().toISOString(),
-        message: 'success',
-      };
-    } catch (error) {
+    if (!giga_id_school || giga_id_school.trim().length === 0)
       throw new HttpException(
-        'Failed to create school with ' + error,
+        'giga_id_school is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+
+    const response = await this.schoolService.setFlagsByGigaId(
+      giga_id_school,
+      featureFlagDto,
+    );
+
+    return {
+      success: true,
+      data: response,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
   }
 }

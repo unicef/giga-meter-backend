@@ -36,15 +36,11 @@ export class DataFixController {
     description: 'Unauthorized; Invalid api key provided',
   })
   async dataFix() {
-    try {
-      return {
-        code: 200,
-        success: true,
-        timestamp: new Date().toISOString(),
-        data: [],
-      };
-    } catch (error) {
-      throw new HttpException('Failed  with ' + error, HttpStatus.BAD_REQUEST);
-    }
+    return {
+      code: 200,
+      success: true,
+      timestamp: new Date().toISOString(),
+      data: [],
+    };
   }
 }

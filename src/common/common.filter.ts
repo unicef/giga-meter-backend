@@ -22,7 +22,7 @@ export class AllExceptionFilter implements ExceptionFilter {
     Sentry.captureException(exception);
     response.status(httpStatus).json({
       statusCode: httpStatus,
-      message: exception.message,
+      message: exception?.message,
     });
   }
 }

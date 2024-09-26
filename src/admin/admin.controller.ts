@@ -41,14 +41,7 @@ export class AdminController {
     description: 'Unauthorized; Invalid api key provided',
   })
   async getSchools(): Promise<AdminSchoolDto[]> {
-    try {
-      return await this.adminService.schools();
-    } catch (error) {
-      throw new HttpException(
-        'Failed to get schools with ' + error,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
+    return await this.adminService.schools();
   }
 
   @Put('blockSchools')
@@ -71,20 +64,13 @@ export class AdminController {
     isArray: true,
   })
   async blockSchools(@Body() schoolIds: number[]): Promise<boolean> {
-    try {
-      if (!schoolIds || schoolIds.length === 0)
-        throw new HttpException(
-          'schoolIds is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      return await this.adminService.blockSchools(schoolIds);
-    } catch (error) {
+    if (!schoolIds || schoolIds.length === 0)
       throw new HttpException(
-        'Failed to block schools with ' + error,
+        'schoolIds is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+
+    return await this.adminService.blockSchools(schoolIds);
   }
 
   @Put('unblockSchools')
@@ -107,20 +93,13 @@ export class AdminController {
     isArray: true,
   })
   async unblockSchools(@Body() schoolIds: number[]): Promise<boolean> {
-    try {
-      if (!schoolIds || schoolIds.length === 0)
-        throw new HttpException(
-          'schoolIds is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      return await this.adminService.unblockSchools(schoolIds);
-    } catch (error) {
+    if (!schoolIds || schoolIds.length === 0)
       throw new HttpException(
-        'Failed to unblock schools with ' + error,
+        'schoolIds is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+
+    return await this.adminService.unblockSchools(schoolIds);
   }
 
   @Put('notifySchools')
@@ -143,19 +122,12 @@ export class AdminController {
     isArray: true,
   })
   async notifySchools(@Body() schoolIds: number[]): Promise<boolean> {
-    try {
-      if (!schoolIds || schoolIds.length === 0)
-        throw new HttpException(
-          'schoolIds is null/empty',
-          HttpStatus.BAD_REQUEST,
-        );
-
-      return await this.adminService.notifySchools(schoolIds);
-    } catch (error) {
+    if (!schoolIds || schoolIds.length === 0)
       throw new HttpException(
-        'Failed to notify schools with ' + error,
+        'schoolIds is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    }
+
+    return await this.adminService.notifySchools(schoolIds);
   }
 }
