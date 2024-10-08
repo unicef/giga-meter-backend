@@ -107,16 +107,16 @@ stages:
   - job: Production
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     steps: 
-    - task: AzureRmWebAppDeployment@4
-      inputs:
-        ConnectionType: 'AzureRM'
-        azureSubscription: 'UNI_DATA RS-UNI-OI-CONNECT'
-        appType: 'webAppContainer'
-        WebAppName: 'uni-connect-services'
-        DockerNamespace: 'uniconnectacr.azurecr.io'
-        DockerRepository: 'main/giga-meter-backend'
-        DockerImageTag: '$(Build.BuildId)'
-        AppSettings: '-DAILY_CHECK_APP_API_CODE $(DAILY_CHECK_APP_API_CODE) -DATABASE_URL $(DATABASE_URL) -PCDC_APP_DOWNLOAD_URL $(PCDC_APP_DOWNLOAD_URL) -PROJECT_CONNECT_SERVICE_URL $(PROJECT_CONNECT_SERVICE_URL) -SENTRY_DSN $(SENTRY_DSN) -USE_AUTH $(USE_AUTH) -WEBSITES_PORT $(WEBSITES_PORT)'
+#    - task: AzureRmWebAppDeployment@4
+#      inputs:
+#        ConnectionType: 'AzureRM'
+#        azureSubscription: 'UNI_DATA RS-UNI-OI-CONNECT'
+#        appType: 'webAppContainer'
+#        WebAppName: 'uni-connect-services'
+#        DockerNamespace: 'uniconnectacr.azurecr.io'
+#        DockerRepository: 'main/giga-meter-backend'
+#        DockerImageTag: '$(Build.BuildId)'
+#        AppSettings: '-DAILY_CHECK_APP_API_CODE $(DAILY_CHECK_APP_API_CODE) -DATABASE_URL $(DATABASE_URL) -PCDC_APP_DOWNLOAD_URL $(PCDC_APP_DOWNLOAD_URL) -PROJECT_CONNECT_SERVICE_URL $(PROJECT_CONNECT_SERVICE_URL) -SENTRY_DSN $(SENTRY_DSN) -USE_AUTH $(USE_AUTH) -WEBSITES_PORT $(WEBSITES_PORT)'
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: uni-ooi-giga-meter-backend'
       inputs:
