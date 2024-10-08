@@ -97,7 +97,7 @@ stages:
         SlotName: dev
         DockerNamespace: uniconnectacr.azurecr.io
         DockerRepository: 'main/giga-meter-backend'
-        DockerImageTag: '$(Build.BuildId)'        
+        DockerImageTag: '$(Build.BuildId)'
 - stage: prod_deploy
   displayName: Deploy To Prouction
   trigger: manual
