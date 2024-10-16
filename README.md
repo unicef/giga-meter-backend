@@ -41,7 +41,7 @@ PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 ```
 
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
-- USE_AUTH: set "true" if APIs should use authentication which uses Giga Maps service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode_) endpoint.
+- USE*AUTH: set "true" if APIs should use authentication which uses Giga Maps service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode*) endpoint.
 - PROJECT_CONNECT_SERVICE_URL: Base API URL of the Giga Maps service used for authentication. For Dev, it should be pointed to https://uni-ooi-giga-maps-service-dev.azurewebsites.net
 - DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling Giga Maps service API. Ideally, it should always <i>DAILY_CHECK_APP</i> but check with the Giga Maps team if this doesn't work.
 - PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [PCDC](https://github.com/unicef/project-connect-daily-check-app) Windows application.
@@ -126,13 +126,29 @@ npm run test
 npm run test:cov
 ```
 
-## Build
+## Build and Deployment
 
 Each commit to `main` branch will trigger a build in [`OOI-Giga-Meter-Backend`](https://unicef.visualstudio.com/OI-Connect/_build?definitionId=1386) pipeline and the Docker image will be pushed to Azure Container Registry as `azure_container_registry/main/giga-meter-backend:build_id`.
 
-## Deployment
+The API can be deployed to the following 2 stages in the build generated after commit to `main` branch:
 
-The API can be deployed to the following 3 stages with [`OOI-Giga-Meter-Backend`](https://unicef.visualstudio.com/OI-Connect/_release?_a=releases&definitionId=8) deployment pipeline:
+- **Deploy To Development**: The API will be deployed automatially with each successful build.
+- **Deploy To Production**: The API can be deployed manually on this stage.
 
-- **Development**: The API will be deployed automatially with each successful build for `main` branch.
-- **Production**: The API can be deployed manually on this stage but will require approvals.
+## Legal
+
+GIGA Meter Backend
+Copyright (c) UNICEF
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
