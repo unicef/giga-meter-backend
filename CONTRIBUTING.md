@@ -18,7 +18,7 @@ Prerequisites:
 
 Every pull requests should contain tests to coverage the functionality.
 
-- Coverage of 80% on written lines is required in order to merge.
+- All the test cases should pass in order to merge.
 - One review is needed before merging PRs
 
 ## Get started
@@ -38,6 +38,7 @@ SENTRY_DSN="your-sentry-dsn"
 ```
 
 5. Test by running the app using $`npm run start` and opening the url http://localhost:3000/api, you will see the swagger page with 3 endpoints. To access all endpoints, open http://localhost:3000/api/all.
+6. Run the unit tests using `npm run test` and check code coverage `npm run test:cov`
 
 ## Database migration:
 
