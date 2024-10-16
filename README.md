@@ -38,6 +38,7 @@ USE_AUTH="true"
 PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
 DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
+SENTRY_DSN="your-sentry-dsn"
 ```
 
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
