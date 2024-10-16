@@ -38,6 +38,7 @@ USE_AUTH="true"
 PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
 DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
+SENTRY_DSN="your-sentry-dsn"
 ```
 
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
@@ -126,13 +127,29 @@ npm run test
 npm run test:cov
 ```
 
-## Build
+## Build and Deployment
 
 Each commit to `main` branch will trigger a build in [`OOI-Giga-Meter-Backend`](https://unicef.visualstudio.com/OI-Connect/_build?definitionId=1386) pipeline and the Docker image will be pushed to Azure Container Registry as `azure_container_registry/main/giga-meter-backend:build_id`.
 
-## Deployment
+The API can be deployed to the following 2 stages in the build generated after commit to `main` branch:
 
-The API can be deployed to the following 3 stages with [`OOI-Giga-Meter-Backend`](https://unicef.visualstudio.com/OI-Connect/_release?_a=releases&definitionId=8) deployment pipeline:
+- **Deploy To Development**: The API will be deployed automatially with each successful build.
+- **Deploy To Production**: The API can be deployed manually on this stage.
 
-- **Development**: The API will be deployed automatially with each successful build for `main` branch.
-- **Production**: The API can be deployed manually on this stage but will require approvals.
+## Legal
+
+GIGA Meter Backend
+Copyright (c) UNICEF
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <http://www.gnu.org/licenses/>.
