@@ -84,7 +84,7 @@ describe('CountryService', () => {
         .spyOn(prisma.dailycheckapp_country, 'findMany')
         .mockResolvedValue(mockCountryModel);
 
-      const countries = await service.countriesByCode('IND');
+      const countries = await service.countriesByCodeIso3('IND');
       expect(countries).toEqual(mockCountryDto);
     });
 
@@ -93,7 +93,7 @@ describe('CountryService', () => {
         .spyOn(prisma.dailycheckapp_country, 'findMany')
         .mockResolvedValue([]);
 
-      const countries = await service.countriesByCode('IND');
+      const countries = await service.countriesByCodeIso3('IND');
       expect(countries).toEqual([]);
     });
 
@@ -102,7 +102,7 @@ describe('CountryService', () => {
         .spyOn(prisma.dailycheckapp_country, 'findMany')
         .mockRejectedValue(new Error('Database error'));
 
-      await expect(service.countriesByCode('IND')).rejects.toThrow(
+      await expect(service.countriesByCodeIso3('IND')).rejects.toThrow(
         'Database error',
       );
     });

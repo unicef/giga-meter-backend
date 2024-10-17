@@ -776,3 +776,22 @@ export const mockMetricsDto: MetricsDto = {
   schools: 7000,
   measurements: 100000,
 };
+
+export const mockGigaSchoolMappingModel = [
+  {
+    id: 1,
+    giga_id_school_wrong: 'test',
+    wrong_country: 'in',
+    giga_id_school_correct: 'test1',
+    correct_country: 'us',
+    created_at: null,
+  },
+  {
+    id: 2,
+    giga_id_school_wrong: 'b8e7d315-08f9-3665-9173-0d465744e4fe',
+    wrong_country: 'in',
+    giga_id_school_correct: 'b8e7d315-08f9-3665-9173-0d465744e4ff',
+    correct_country: 'kz',
+    created_at: null,
+  },
+];

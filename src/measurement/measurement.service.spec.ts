@@ -2,11 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MeasurementService } from './measurement.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  mockCountryModel,
+  mockGigaSchoolMappingModel,
   mockMeasurementDto,
   mockMeasurementFailedDto,
   mockMeasurementFailedModel,
   mockMeasurementModel,
   mockMeasurementV2Dto,
+  mockSchoolModel,
 } from '../common/mock-objects';
 
 describe('MeasurementService', () => {
@@ -37,6 +40,135 @@ describe('MeasurementService', () => {
       );
     });
 
+    it('should return measurements with lt timestamp filter', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurements(
+          0,
+          5,
+          'timestamp',
+          null,
+          null,
+          'timestamp',
+          'lt',
+          new Date('2024-01-14'),
+        ),
+      ).toMatchObject(mockMeasurementDto);
+    });
+
+    it('should return measurements with lte timestamp filter', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurements(
+          0,
+          5,
+          'timestamp',
+          null,
+          null,
+          'timestamp',
+          'lte',
+          new Date('2024-01-14'),
+        ),
+      ).toMatchObject(mockMeasurementDto);
+    });
+
+    it('should return measurements with gt timestamp filter', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurements(
+          0,
+          5,
+          'timestamp',
+          null,
+          null,
+          'timestamp',
+          'gt',
+          new Date('2024-01-14'),
+        ),
+      ).toMatchObject(mockMeasurementDto);
+    });
+
+    it('should return measurements with gte timestamp filter', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurements(
+          0,
+          5,
+          'timestamp',
+          null,
+          null,
+          'timestamp',
+          'gte',
+          new Date('2024-01-14'),
+        ),
+      ).toMatchObject(mockMeasurementDto);
+    });
+
+    it('should return measurements with eq timestamp filter', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurements(
+          0,
+          5,
+          'timestamp',
+          null,
+          null,
+          'timestamp',
+          'eq',
+          new Date('2024-01-14'),
+        ),
+      ).toMatchObject(mockMeasurementDto);
+    });
+
+    it('should return no measurements with country_iso3_code filter and no write_access', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurements(
+          0,
+          5,
+          'timestamp',
+          'b8e7d315-08f9-3665-9173-0d465744e4fe',
+          'IND',
+        ),
+      ).toMatchObject([]);
+    });
+
     it('should handle empty result set', async () => {
       jest.spyOn(prisma.measurements, 'findMany').mockResolvedValue([]);
 
@@ -63,6 +195,47 @@ describe('MeasurementService', () => {
       expect(await service.measurementsV2(0, 5, 'timestamp')).toMatchObject(
         mockMeasurementV2Dto,
       );
+    });
+
+    it('should return measurements with timestamp filter', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurementsV2(
+          0,
+          5,
+          'timestamp',
+          null,
+          null,
+          'timestamp',
+          'eq',
+          new Date('2024-01-14'),
+        ),
+      ).toMatchObject(mockMeasurementV2Dto);
+    });
+
+    it('should return no measurements with country_iso3_code filter and no write_access', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      expect(
+        await service.measurementsV2(
+          0,
+          5,
+          'timestamp',
+          'b8e7d315-08f9-3665-9173-0d465744e4fe',
+          'IND',
+        ),
+      ).toMatchObject([]);
     });
 
     it('should handle empty result set', async () => {
@@ -163,6 +336,81 @@ describe('MeasurementService', () => {
       await expect(service.measurementsBySchoolId('123')).rejects.toThrow(
         'Database error',
       );
+    });
+  });
+
+  describe('CreateMeasurement', () => {
+    it('should create measurement', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const response = await service.createMeasurement(mockMeasurementDto[0]);
+      expect(response).toEqual('');
+    });
+
+    it('should create measurement with correct giga mapping', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(mockGigaSchoolMappingModel[1]);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[1]);
+
+      const response = await service.createMeasurement(mockMeasurementDto[1]);
+      expect(response).toEqual('');
+    });
+
+    it('should create failed measurement if school doesnt exist', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements_failed, 'create')
+        .mockResolvedValue(mockMeasurementFailedModel[0]);
+
+      const response = await service.createMeasurement(mockMeasurementDto[0]);
+      expect(response).toEqual('PCDC school does not exist');
+    });
+
+    it('should create failed measurement if wrong country code', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(mockGigaSchoolMappingModel[0]);
+      jest
+        .spyOn(prisma.measurements_failed, 'create')
+        .mockResolvedValue(mockMeasurementFailedModel[0]);
+
+      const response = await service.createMeasurement(mockMeasurementDto[0]);
+      expect(response).toEqual('Wrong country code');
+    });
+
+    it('should handle database error', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockRejectedValue(new Error('Database error'));
+
+      await expect(
+        service.createMeasurement(mockMeasurementDto[0]),
+      ).rejects.toThrow('Database error');
     });
   });
 });
