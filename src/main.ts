@@ -91,9 +91,9 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: true,
+    origin: 'capacitor-electron://-',
     methods: ['GET', 'POST', 'PUT'],
-    allowedHeaders: '*',
+    preflightContinue: true,
   });
 
   app.useGlobalFilters(new AllExceptionFilter());
