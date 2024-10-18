@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SchoolService } from './school.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { mockSchoolDto, mockSchoolModel } from '../common/mock-objects';
+import {
+  mockCountryModel,
+  mockSchoolDto,
+  mockSchoolModel,
+} from '../common/mock-objects';
 
 describe('SchoolService', () => {
   let service: SchoolService;
@@ -27,6 +31,17 @@ describe('SchoolService', () => {
         .mockResolvedValue(mockSchoolModel);
 
       expect(await service.schools()).toEqual(mockSchoolDto);
+    });
+
+    it('should return no school with country_iso3_code filter and no write_access', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_country, 'findFirst')
+        .mockResolvedValue(mockCountryModel[0]);
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findMany')
+        .mockResolvedValue(mockSchoolModel);
+
+      expect(await service.schools(0, 5, null, 'IND')).toEqual([]);
     });
 
     it('should handle empty result set', async () => {

@@ -1,7 +1,12 @@
-import { measurements, measurements_failed } from '@prisma/client';
 import { toBigInt } from './common.utils';
-import { MeasurementDto } from 'src/measurement/measurement.dto';
 import { MetricsDto } from 'src/metrics/metrics.dto';
+import { MessagesDto } from 'src/messages/messages.dto';
+import { AdminSchoolDto } from 'src/admin/admin.dto';
+import { SchoolDto } from 'src/school/school.dto';
+import { SchoolMasterDto } from 'src/school-master/school-master.dto';
+import { FlaggedSchoolDto } from 'src/flagged-school/flagged-school.dto';
+import { MeasurementV2Dto } from 'src/measurement/measurement.dto';
+import { CountryDto } from 'src/country/country.dto';
 
 // NOTE: mock<>Model objects are the ones fetched from database and mock<>Dto objects are the ones mapped which are returned from service
 export const mockMessagesModel = [
@@ -29,7 +34,7 @@ export const mockMessagesModel = [
   },
 ];
 
-export const mockMessagesDto = [
+export const mockMessagesDto: MessagesDto[] = [
   {
     id: '1',
     created_date: '2022-10-03T20:42:34.343Z',
@@ -54,7 +59,7 @@ export const mockMessagesDto = [
   },
 ];
 
-export const mockAdminSchoolDto = [
+export const mockAdminSchoolDto: AdminSchoolDto[] = [
   {
     id: 1,
     user_id: 'test_id1',
@@ -85,7 +90,7 @@ export const mockAdminSchoolDto = [
   },
 ];
 
-export const mockSchoolDto = [
+export const mockSchoolDto: SchoolDto[] = [
   {
     id: '1',
     user_id: 'test_id1',
@@ -185,7 +190,7 @@ export const mockSchoolMasterModel = {
   created_at: new Date('2024-04-12T04:13:37.300Z'),
 };
 
-export const mockSchoolMasterDto = [
+export const mockSchoolMasterDto: SchoolMasterDto[] = [
   {
     id: 1,
     school_id: '11',
@@ -207,7 +212,7 @@ export const mockSchoolMasterDto = [
   },
 ];
 
-export const mockFlaggedSchoolDto = [
+export const mockFlaggedSchoolDto: FlaggedSchoolDto[] = [
   {
     id: '1',
     detected_country: 'us',
@@ -528,7 +533,7 @@ export const mockMeasurementFailedDto = [
   },
 ];
 
-export const mockMeasurementV2Dto = [
+export const mockMeasurementV2Dto: MeasurementV2Dto[] = [
   {
     Timestamp: new Date('2024-12-31T18:05:16.365Z'),
     BrowserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
@@ -573,7 +578,7 @@ export const mockMeasurementV2Dto = [
   },
 ];
 
-export const mockMeasurementModel: measurements[] = [
+export const mockMeasurementModel = [
   {
     id: toBigInt(1),
     timestamp: new Date('2024-12-31T18:05:16.365Z'),
@@ -651,7 +656,7 @@ export const mockMeasurementModel: measurements[] = [
   },
 ];
 
-export const mockMeasurementFailedModel: measurements_failed[] = [
+export const mockMeasurementFailedModel = [
   {
     id: toBigInt(1),
     timestamp: new Date('2024-12-31T18:05:16.365Z'),
@@ -732,7 +737,7 @@ export const mockMeasurementFailedModel: measurements_failed[] = [
   },
 ];
 
-export const mockCountryDto = [
+export const mockCountryDto: CountryDto[] = [
   {
     id: '1',
     code: 'GB',
@@ -777,3 +782,22 @@ export const mockMetricsDto: MetricsDto = {
   schools: 7000,
   measurements: 100000,
 };
+
+export const mockGigaSchoolMappingModel = [
+  {
+    id: 1,
+    giga_id_school_wrong: 'test',
+    wrong_country: 'in',
+    giga_id_school_correct: 'test1',
+    correct_country: 'us',
+    created_at: null,
+  },
+  {
+    id: 2,
+    giga_id_school_wrong: 'b8e7d315-08f9-3665-9173-0d465744e4fe',
+    wrong_country: 'in',
+    giga_id_school_correct: 'b8e7d315-08f9-3665-9173-0d465744e4ff',
+    correct_country: 'kz',
+    created_at: null,
+  },
+];

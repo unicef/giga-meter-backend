@@ -18,7 +18,7 @@ import { plainToInstance } from 'class-transformer';
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async measurements(
     skip?: number,
@@ -280,12 +280,12 @@ export class MeasurementService {
         case 'eq':
           filter[filter_by] = hasTime
             ? {
-              equals: filter_value,
-            }
+                equals: filter_value,
+              }
             : {
-              gte: parsedDate,
-              lte: endOfDay,
-            };
+                gte: parsedDate,
+                lte: endOfDay,
+              };
           break;
         default:
           break;
