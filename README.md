@@ -93,11 +93,24 @@ npm install
 
 Create an .env file in root folder and add below variables to run locally:
 
-1. Set database url equal to the prisma connection string
+```bash
+DATABASE_URL="database-url"
+USE_AUTH="true"
+PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
+DAILY_CHECK_APP_API_CODE="daily-check-app-code"
+SENTRY_DSN="your-sentry-dsn"
+```
 
-```
-DATABASE_URL="postgresql://username:password@localhost:5432/pcdc?schema=public"
-```
+- DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
+- USE_AUTH: set "true" if APIs should use authentication which uses Giga Maps service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode_) endpoint.
+- PROJECT_CONNECT_SERVICE_URL: Base API URL of the Giga Maps service used for authentication. For Dev, it should be pointed to https://uni-ooi-giga-maps-service-dev.azurewebsites.net
+- DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling Giga Maps service API. Ideally, it should always <i>DAILY_CHECK_APP</i> but check with the Giga Maps team if this doesn't work.
+- SENTRY_DSN: To send data to [Sentry](https://docs.sentry.io/) you will set a client key, usually referred to as the SENTRY_DSN value.
+<br />
+NOTE: <i>PROJECT_CONNECT_SERVICE_URL</i> and
+  <i> DAILY_CHECK_APP_API_CODE</i> values are only required if you
+  want to use in-built Giga Meter authentication and
+  <i> USE_AUTH</i> is set "true" else you can skip them.
 
 #### Database Setup
 
