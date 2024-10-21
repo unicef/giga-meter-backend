@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "description": "GIGA Meter API application developed by Nagarro for Unicef",
   "author": "Nagarro",
-  "private": true,
-  "license": "UNLICENSED",
+  "private": "false",
+  "license": "AGPL-3.0-only",
   "prisma": {
     "schema": "src/prisma/schema.prisma"
   },

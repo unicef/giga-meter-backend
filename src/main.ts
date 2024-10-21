@@ -99,18 +99,8 @@ async function bootstrap() {
 
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    integrations: [
-      // Add our Profiling integration
-      nodeProfilingIntegration(),
-      Sentry.prismaIntegration(),
-    ],
-
-    // Add Tracing by setting tracesSampleRate
-    // We recommend adjusting this value in production
+    integrations: [nodeProfilingIntegration(), Sentry.prismaIntegration()],
     tracesSampleRate: 1.0,
-
-    // Set sampling rate for profiling
-    // This is relative to tracesSampleRate
     profilesSampleRate: 1.0,
   });
 
