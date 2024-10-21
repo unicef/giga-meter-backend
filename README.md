@@ -7,7 +7,7 @@
 <h1><a id="gigameter" class="anchor" aria-hidden="true" href="#gigablocks"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"></svg></a>
 Giga Meter Backend </h1>
 
-<div text-align="center" >
+<div align="center" >
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/unicef/giga-meter-backend)
 ![GitHub stars](https://img.shields.io/github/stars/unicef/giga-meter-backend)
