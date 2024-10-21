@@ -109,6 +109,7 @@ NODE_ENV="ENVIRONMENT"
 - DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling Giga Maps service API. Ideally, it should always <i>DAILY_CHECK_APP</i> but check with the Giga Maps team if this doesn't work.
 - PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [Giga Meter](https://github.com/unicef/project-connect-daily-check-app) Windows application.
 - SENTRY_DSN: To send data to [Sentry](https://docs.sentry.io/) you will set a client key, usually referred to as the SENTRY_DSN value.
+- NODE_ENV: The application environment, should be "development" or "production"
 <br />
 NOTE: <i>PROJECT_CONNECT_SERVICE_URL</i> and
   <i> DAILY_CHECK_APP_API_CODE</i> values are only required if you
