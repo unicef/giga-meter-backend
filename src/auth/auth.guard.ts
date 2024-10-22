@@ -29,21 +29,13 @@ export class AuthGuard implements CanActivate {
     }
 
     let isValid = false;
-
-    // First, try to validate as a JWT token
     try {
-      this.jwtService.verify(token);
-
-      // For self-generated tokens, grant full access
-      request.has_write_access = true;
-      request.allowed_countries = null; // Indicates access to all countries
-      request.allowed_countries_iso3 = null; // Indicates access to all countries
-      isValid = true;
+      this.jwtService.verify(token); // First, try to validate as a JWT token
+      request.has_write_access = true; // For self-generated tokens, grant full access
+      return true;
     } catch (error) {
-      // If JWT validation fails, try the external service
-      isValid = await this.validateToken(token, request);
+      isValid = await this.validateToken(token, request); // If JWT validation fails, try the external service
     }
-
     if (!isValid) {
       throw new UnauthorizedException(
         'Invalid token or not authorized to access',
