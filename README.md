@@ -1,10 +1,10 @@
-<div style="padding-top: 20px;">
+<div style="padding-top: 20px;"></div>
 <a href="https://giga.global/">
-    <img src="https://s41713.pcdn.co/wp-content/uploads/2018/11/2020.05_GIGA-visual-identity-guidelines_v1-25.png" alt="Giga logo" title="Giga" align="right" height="60"/>
+    <img src="https://s41713.pcdn.co/wp-content/uploads/2018/11/2020.05_GIGA-visual-identity-guidelines_v1-25.png" alt="Giga logo" title="Giga" align="right" height="60" style="padding-top: 10px;"/>
 </a>
 
-<div style="padding-top: 50px;"> </div>
-<h1><a id="gigameter" class="anchor" aria-hidden="true" href="#gigablocks"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"></svg></a>
+<div style="padding-top: 20px;"> </div>
+<h1><a id="gigameter" class="anchor" aria-hidden="true" href="#gigablocks"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"></path></svg></a>
 Giga Meter Backend </h1>
 
 <div align="center" >
@@ -100,7 +100,7 @@ PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
 DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 SENTRY_DSN="your-sentry-dsn"
-NODE_ENV="ENVIRONMENT" 
+NODE_ENV="ENVIRONMENT"
 ```
 
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
@@ -110,8 +110,8 @@ NODE_ENV="ENVIRONMENT"
 - PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [Giga Meter](https://github.com/unicef/project-connect-daily-check-app) Windows application.
 - SENTRY_DSN: To send data to [Sentry](https://docs.sentry.io/) you will set a client key, usually referred to as the SENTRY_DSN value.
 - NODE_ENV: The application environment, should be "development" or "production"
-<br />
-NOTE: <i>PROJECT_CONNECT_SERVICE_URL</i> and
+  <br />
+  NOTE: <i>PROJECT_CONNECT_SERVICE_URL</i> and
   <i> DAILY_CHECK_APP_API_CODE</i> values are only required if you
   want to use in-built Giga Meter authentication and
   <i> USE_AUTH</i> is set "true" else you can skip them.

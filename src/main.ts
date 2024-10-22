@@ -18,7 +18,10 @@ async function bootstrap() {
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
-    .setLicense('ODBL', 'https://opendatacommons.org/licenses/odbl/')
+    .setLicense(
+      'Giga Meter data is made available under the Open Database License(ODBL)',
+      'https://opendatacommons.org/licenses/odbl/',
+    )
     .addTag('Schools')
     .addTag('Country')
     .addTag('Measurements')
@@ -68,7 +71,10 @@ async function bootstrap() {
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
-    .setLicense('ODBL', 'https://opendatacommons.org/licenses/odbl/')
+    .setLicense(
+      'Giga Meter data is made available under the Open Database License(ODBL)',
+      'https://opendatacommons.org/licenses/odbl/',
+    )
     .addTag('Contact Messages')
     .addTag('Flagged Schools')
     .addTag('Schools')
@@ -95,7 +101,6 @@ async function bootstrap() {
       methods: ['GET', 'POST', 'PUT'],
       preflightContinue: false,
     });
-
   } else {
     app.enableCors({
       origin: 'capacitor-electron://-',
@@ -103,7 +108,6 @@ async function bootstrap() {
       preflightContinue: false,
     });
   }
-
 
   app.useGlobalFilters(new AllExceptionFilter());
 
