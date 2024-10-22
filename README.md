@@ -1,4 +1,4 @@
-<div>
+<div  style="padding-top: 20px;"></div>
 <a href="https://giga.global/">
     <img src="https://s41713.pcdn.co/wp-content/uploads/2018/11/2020.05_GIGA-visual-identity-guidelines_v1-25.png" alt="Giga logo" title="Giga" align="right" height="60" style="padding-top: 10px;"/>
 </a>
