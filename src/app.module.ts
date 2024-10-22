@@ -37,7 +37,7 @@ import { AuthController } from './auth/auth.controller';
     SentryModule.forRoot(),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '1d' }, // Token expires in 1 day
+      signOptions: {},
     }),
   ],
   controllers: [
