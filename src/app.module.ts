@@ -22,6 +22,9 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthGuard } from './auth/auth.guard';
+import { AuthController } from './auth/auth.controller';
 
 @Module({
   imports: [
@@ -32,6 +35,10 @@ import { MetricsService } from './metrics/metrics.service';
       },
     }),
     SentryModule.forRoot(),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1d' }, // Token expires in 1 day
+    }),
   ],
   controllers: [
     AppController,
@@ -44,6 +51,7 @@ import { MetricsService } from './metrics/metrics.service';
     AdminController,
     DataFixController,
     MetricsController,
+    AuthController,
   ],
   providers: [
     AppService,
@@ -56,6 +64,7 @@ import { MetricsService } from './metrics/metrics.service';
     MeasurementService,
     AdminService,
     MetricsService,
+    AuthGuard,
   ],
 })
 export class AppModule {}
