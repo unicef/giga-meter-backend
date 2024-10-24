@@ -389,9 +389,6 @@ export class MeasurementDto {
   Results?: ResultsDto | ResultsNdt7Dto;
 
   @ApiProperty()
-  school_id: string;
-
-  @ApiProperty()
   giga_id_school?: string;
 
   @ApiProperty()
@@ -448,7 +445,12 @@ export class MeasurementV2Dto {
   created_at?: Date;
 }
 
-export class MeasurementFailedDto extends MeasurementDto {
+export class AddMeasurementDto extends MeasurementDto {
+  @ApiProperty()
+  school_id: string;
+}
+
+export class MeasurementFailedDto extends AddMeasurementDto {
   @ApiProperty()
   reason?: string;
 }

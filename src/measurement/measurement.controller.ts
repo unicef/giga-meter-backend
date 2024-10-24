@@ -25,6 +25,7 @@ import {
   ApiSuccessResponseDto,
 } from '../common/common.dto';
 import {
+  AddMeasurementDto,
   MeasurementDto,
   MeasurementFailedDto,
   MeasurementV2Dto,
@@ -425,7 +426,7 @@ export class MeasurementController {
     description: 'Unauthorized; Invalid api key provided',
   })
   async createMeasurement(
-    @Body() measurementDto: MeasurementDto,
+    @Body() measurementDto: AddMeasurementDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
     const response =
       await this.measurementService.createMeasurement(measurementDto);
