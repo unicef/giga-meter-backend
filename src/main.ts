@@ -97,7 +97,7 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
-      origin: ['capacitor-electron://-', 'http://localhost:4200'],
+      origin: '*',
       methods: ['GET', 'POST', 'PUT'],
       preflightContinue: false,
     });
