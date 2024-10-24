@@ -260,7 +260,6 @@ export const mockMeasurementDto = [
     Timestamp: new Date('2024-12-31T18:05:16.365Z'),
     UUID: 'ndt-rzmq5_1678933405_0000000000324160',
     BrowserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
-    school_id: '233',
     DeviceType: 'windows',
     Notes: '',
     ClientInfo: {
@@ -306,7 +305,6 @@ export const mockMeasurementDto = [
     Timestamp: new Date('2024-12-31T18:05:16.365Z'),
     UUID: 'ndt-rzmq5_1678933405_0000000000324160',
     BrowserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
-    school_id: '123',
     DeviceType: 'windows',
     Notes: '',
     ClientInfo: {
@@ -352,7 +350,6 @@ export const mockMeasurementDto = [
     Timestamp: new Date('2024-12-31T18:05:16.365Z'),
     UUID: 'ndt-rzmq5_1678933405_0000000000324160',
     BrowserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
-    school_id: '123',
     DeviceType: 'windows',
     Notes: '',
     ClientInfo: {
@@ -391,6 +388,11 @@ export const mockMeasurementDto = [
     created_at: null,
   },
 ];
+
+export const mockAddMeasurementDto = mockMeasurementDto.map((item) => ({
+  ...item,
+  school_id: '111',
+}));
 
 export const mockMeasurementFailedDto = [
   {

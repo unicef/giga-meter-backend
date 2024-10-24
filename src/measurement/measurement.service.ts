@@ -5,6 +5,7 @@ import {
   measurements_failed as MeasurementFailed,
 } from '@prisma/client';
 import {
+  AddMeasurementDto,
   ClientInfoDto,
   MeasurementDto,
   MeasurementFailedDto,
@@ -76,7 +77,7 @@ export class MeasurementService {
     filter_value?: Date,
     write_access?: boolean,
     countries?: string[],
-  ): Promise<MeasurementDto[]> {
+  ): Promise<MeasurementV2Dto[]> {
     const filter = this.applyFilter(
       giga_id_school,
       filter_by,
@@ -176,7 +177,7 @@ export class MeasurementService {
     return (await measurements).map(this.toDto);
   }
 
-  async createMeasurement(measurementDto: MeasurementDto): Promise<string> {
+  async createMeasurement(measurementDto: AddMeasurementDto): Promise<string> {
     const processedResponse = await this.processMeasurement(measurementDto);
 
     switch (processedResponse) {
@@ -201,7 +202,7 @@ export class MeasurementService {
   }
 
   private async processMeasurement(
-    dto: MeasurementDto,
+    dto: AddMeasurementDto,
   ): Promise<string | null> {
     const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
       where: { giga_id_school: dto.giga_id_school },
@@ -301,7 +302,6 @@ export class MeasurementService {
       Timestamp: measurement.timestamp,
       UUID: measurement.uuid,
       BrowserID: measurement.browser_id,
-      school_id: measurement.school_id,
       DeviceType: measurement.device_type,
       Notes: measurement.notes,
       ClientInfo: clientInfo,
@@ -391,7 +391,7 @@ export class MeasurementService {
     };
   }
 
-  private toModel(measurement: MeasurementDto): any {
+  private toModel(measurement: AddMeasurementDto): any {
     return {
       timestamp: measurement.Timestamp,
       uuid: measurement.UUID,
@@ -417,7 +417,7 @@ export class MeasurementService {
     };
   }
 
-  private toFailedModel(measurement: MeasurementDto, reason: string): any {
+  private toFailedModel(measurement: AddMeasurementDto, reason: string): any {
     return {
       timestamp: measurement.Timestamp,
       uuid: measurement.UUID,
