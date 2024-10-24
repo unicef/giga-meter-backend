@@ -407,11 +407,6 @@ export class MeasurementDto {
   created_at?: Date;
 }
 
-export class AddMeasurementDto extends MeasurementDto {
-  @ApiProperty()
-  school_id: string;
-}
-
 export class MeasurementV2Dto {
   @ApiProperty()
   Timestamp?: Date;
@@ -448,6 +443,11 @@ export class MeasurementV2Dto {
 
   @ApiProperty()
   created_at?: Date;
+}
+
+export class AddMeasurementDto extends MeasurementDto {
+  @ApiProperty()
+  school_id: string;
 }
 
 export class MeasurementFailedDto extends AddMeasurementDto {
