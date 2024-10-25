@@ -67,6 +67,12 @@ Getting Started</h2>
 
 ### Setup and Running
 
+#### Prerequisites:
+
+- Node Package Manager (npm)
+- [Node.js](https://nodejs.org/) 20+
+- [PostgreSQL](https://www.postgresql.org/) DB v15+
+
 #### Installation
 
 Clone the repository and install required packages to run locally.
