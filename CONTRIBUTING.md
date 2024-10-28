@@ -43,6 +43,8 @@ DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 SENTRY_DSN="your-sentry-dsn"
 NODE_ENV="app-environment"
+ADMIN_SECRET="admin-secret"
+JWT_SECRET="jwt-secret"
 ```
 
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
@@ -52,6 +54,8 @@ NODE_ENV="app-environment"
 - PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [PCDC](https://github.com/unicef/project-connect-daily-check-app) Windows application.
 - SENTRY_DSN: To send data to [Sentry](https://docs.sentry.io/) you will set a client key, usually referred to as the SENTRY_DSN value.
 - NODE_ENV: The application environment, should be "development" or "production"
+- ADMIN_SECRET: The secret value used to generate a jwt token
+- JWT_SECRET: The secret value used to validate a jwt token
 
 3. Please make sure tha DATABASE_URL is set correctly in the .env file above then run `npx prisma migrate dev` to create the database (if not present already) and the tables.
 

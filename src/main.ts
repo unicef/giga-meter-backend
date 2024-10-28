@@ -54,6 +54,7 @@ async function bootstrap() {
     delete defaultDocument.components.schemas['MessagesDto'];
     delete defaultDocument.components.schemas['FlaggedSchoolDto'];
     delete defaultDocument.components.schemas['FeatureFlagDto'];
+    delete defaultDocument.components.schemas['AddMeasurementDto'];
     delete defaultDocument.components.schemas['MeasurementV2Dto'];
     delete defaultDocument.components.schemas['SchoolMasterDto'];
     delete defaultDocument.components.schemas['MetricsDto'];
@@ -81,6 +82,7 @@ async function bootstrap() {
     .addTag('SchoolsMaster')
     .addTag('Country')
     .addTag('Measurements')
+    .addTag('Auth')
     .addBearerAuth({
       type: 'http',
       description: 'Enter api key',

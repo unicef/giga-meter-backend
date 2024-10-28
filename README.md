@@ -106,7 +106,9 @@ PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
 DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 SENTRY_DSN="your-sentry-dsn"
-NODE_ENV="ENVIRONMENT"
+NODE_ENV="app-environment"
+ADMIN_SECRET="admin-secret"
+JWT_SECRET="jwt-secret"
 ```
 
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
@@ -116,10 +118,14 @@ NODE_ENV="ENVIRONMENT"
 - PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [Giga Meter](https://github.com/unicef/project-connect-daily-check-app) Windows application.
 - SENTRY_DSN: To send data to [Sentry](https://docs.sentry.io/) you will set a client key, usually referred to as the SENTRY_DSN value.
 - NODE_ENV: The application environment, should be "development" or "production"
+- ADMIN_SECRET: The secret value used to generate a jwt token
+- JWT_SECRET: The secret value used to validate a jwt token
   <br />
   NOTE: <i>PROJECT_CONNECT_SERVICE_URL</i> and
   <i> DAILY_CHECK_APP_API_CODE</i> values are only required if you
   want to use in-built Giga Meter authentication and
+  <i> USE_AUTH</i> is set "true" else you can skip them. <i>ADMIN_SECRET</i> and <i>JWT_SECRET</i> values are only required if you
+  want to use in-built JWT authentication and
   <i> USE_AUTH</i> is set "true" else you can skip them.
 
 #### Database Setup
@@ -151,10 +157,10 @@ You can use our default authentication or add your own custom one.
 ```
 USE_AUTH="true"
 ```
+The default auth uses in-built authentication approach to validate a [JSON Web token](https://jwt.io/) generated via the generate_token endpoint in auth.controller.ts.
+If the jwt auth values are not set then it uses project connect service API to validate a Giga Maps generated api key. You can have a look at the logic [here](https://github.com/unicef/giga-meter-backend/blob/main/src/auth/auth.guard.ts#L15).
 
-The default auth uses project connect service API to validate a Giga Maps generated api key. You can have a look at the logic [here](https://github.com/unicef/giga-meter-backend/blob/58861714ffa21c4eff1ca8ec5e629aba16594dec/src/auth/auth.guard.ts#L15).
-
-2. To use custom auth, you can update the logic in auth.guard.ts file [here](https://github.com/unicef/giga-meter-backend/blob/58861714ffa21c4eff1ca8ec5e629aba16594dec/src/auth/auth.guard.ts#L15).
+2. To use custom auth, you can update the logic in auth.guard.ts file [here](https://github.com/unicef/giga-meter-backend/blob/main/src/auth/auth.guard.ts#L15).
    You can refer [this](https://docs.nestjs.com/security/authentication#implementing-the-authentication-guard) NestJS documentation for reference.
 
 #### Running API server

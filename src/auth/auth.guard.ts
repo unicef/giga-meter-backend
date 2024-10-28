@@ -41,7 +41,7 @@ export class AuthGuard implements CanActivate {
         'Invalid token or not authorized to access',
       );
     }
-    return true;
+    return isValid;
   }
 
   private async validateToken(token: string, request: any): Promise<boolean> {

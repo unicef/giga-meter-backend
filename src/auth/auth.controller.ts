@@ -5,13 +5,23 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-@Controller('auth')
+@ApiTags('Auth')
+@Controller('api/v1/auth')
 export class AuthController {
   constructor(private readonly jwtService: JwtService) {}
 
-  @Post('generate-token')
-  generateToken(@Headers('admin-secret') adminSecret: string) {
+  @Post('generate_token')
+  @ApiOperation({
+    summary: 'Returns a jwt token based on the admin secret value',
+  })
+  @ApiHeader({
+    name: 'admin_secret',
+    description: 'The admin secret value',
+    required: true,
+  })
+  async generateToken(@Headers('admin_secret') adminSecret: string) {
     if (adminSecret !== process.env.ADMIN_SECRET) {
       throw new UnauthorizedException('Invalid admin secret');
     }
@@ -20,7 +30,7 @@ export class AuthController {
       has_write_access: true,
       is_self_generated: true,
     };
-    const token = this.jwtService.sign(payload);
+    const token = await this.jwtService.signAsync(payload);
     return { token };
   }
 }
