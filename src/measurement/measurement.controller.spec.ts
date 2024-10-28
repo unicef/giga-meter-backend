@@ -5,6 +5,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import {
+  mockAddMeasurementDto,
   mockMeasurementDto,
   mockMeasurementFailedDto,
   mockMeasurementV2Dto,
@@ -170,7 +171,7 @@ describe('MeasurementController', () => {
       jest.spyOn(service, 'createMeasurement').mockResolvedValue('');
 
       const response = await controller.createMeasurement(
-        mockMeasurementDto[0],
+        mockAddMeasurementDto[0],
       );
       expect(response.data.user_id).toBeDefined();
     });
@@ -180,7 +181,7 @@ describe('MeasurementController', () => {
         .spyOn(service, 'createMeasurement')
         .mockRejectedValue(new Error('Database error'));
       await expect(
-        controller.createMeasurement(mockMeasurementDto[0]),
+        controller.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
     });
   });

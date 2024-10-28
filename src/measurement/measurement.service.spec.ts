@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MeasurementService } from './measurement.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  mockAddMeasurementDto,
   mockCountryModel,
   mockGigaSchoolMappingModel,
   mockMeasurementDto,
@@ -351,7 +352,9 @@ describe('MeasurementService', () => {
         .spyOn(prisma.measurements, 'create')
         .mockResolvedValue(mockMeasurementModel[0]);
 
-      const response = await service.createMeasurement(mockMeasurementDto[0]);
+      const response = await service.createMeasurement(
+        mockAddMeasurementDto[0],
+      );
       expect(response).toEqual('');
     });
 
@@ -366,7 +369,9 @@ describe('MeasurementService', () => {
         .spyOn(prisma.measurements, 'create')
         .mockResolvedValue(mockMeasurementModel[1]);
 
-      const response = await service.createMeasurement(mockMeasurementDto[1]);
+      const response = await service.createMeasurement(
+        mockAddMeasurementDto[1],
+      );
       expect(response).toEqual('');
     });
 
@@ -378,7 +383,9 @@ describe('MeasurementService', () => {
         .spyOn(prisma.measurements_failed, 'create')
         .mockResolvedValue(mockMeasurementFailedModel[0]);
 
-      const response = await service.createMeasurement(mockMeasurementDto[0]);
+      const response = await service.createMeasurement(
+        mockAddMeasurementDto[0],
+      );
       expect(response).toEqual('PCDC school does not exist');
     });
 
@@ -393,7 +400,9 @@ describe('MeasurementService', () => {
         .spyOn(prisma.measurements_failed, 'create')
         .mockResolvedValue(mockMeasurementFailedModel[0]);
 
-      const response = await service.createMeasurement(mockMeasurementDto[0]);
+      const response = await service.createMeasurement(
+        mockAddMeasurementDto[0],
+      );
       expect(response).toEqual('Wrong country code');
     });
 
@@ -409,7 +418,7 @@ describe('MeasurementService', () => {
         .mockRejectedValue(new Error('Database error'));
 
       await expect(
-        service.createMeasurement(mockMeasurementDto[0]),
+        service.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
     });
   });

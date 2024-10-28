@@ -18,7 +18,10 @@ async function bootstrap() {
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
-    .setLicense('ODBL', 'https://opendatacommons.org/licenses/odbl/')
+    .setLicense(
+      'Giga Meter data is made available under the Open Database License(ODBL)',
+      'https://opendatacommons.org/licenses/odbl/',
+    )
     .addTag('Schools')
     .addTag('Country')
     .addTag('Measurements')
@@ -68,7 +71,10 @@ async function bootstrap() {
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
-    .setLicense('ODBL', 'https://opendatacommons.org/licenses/odbl/')
+    .setLicense(
+      'Giga Meter data is made available under the Open Database License(ODBL)',
+      'https://opendatacommons.org/licenses/odbl/',
+    )
     .addTag('Contact Messages')
     .addTag('Flagged Schools')
     .addTag('Schools')
@@ -91,19 +97,22 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
-      origin: ['capacitor-electron://-', 'http://localhost:4200'],
+      origin: '*',
       methods: ['GET', 'POST', 'PUT'],
       preflightContinue: false,
     });
-
   } else {
     app.enableCors({
-      origin: 'capacitor-electron://-',
+      origin: [
+        'capacitor-electron://-',
+        'https://meter.giga.global/',
+        'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
+        'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
+      ],
       methods: ['GET', 'POST', 'PUT'],
       preflightContinue: false,
     });
   }
-
 
   app.useGlobalFilters(new AllExceptionFilter());
 
