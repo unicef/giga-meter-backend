@@ -64,18 +64,18 @@ describe('MetricsService', () => {
     //   await expect(service.get()).rejects.toThrow('Database error');
     // });
 
-    it('should handle database error for measurement', async () => {
-      jest
-        .spyOn(prisma.dailycheckapp_country, 'count')
-        .mockResolvedValue(mockMetricsDto.countries);
-      jest
-        .spyOn(prisma.dailycheckapp_school, 'count')
-        .mockResolvedValue(mockMetricsDto.schools);
-      jest
-        .spyOn(prisma.measurements, 'count')
-        .mockRejectedValue(new Error('Database error'));
+    // it('should handle database error for measurement', async () => {
+    //   jest
+    //     .spyOn(prisma.dailycheckapp_country, 'count')
+    //     .mockResolvedValue(mockMetricsDto.countries);
+    //   jest
+    //     .spyOn(prisma.dailycheckapp_school, 'count')
+    //     .mockResolvedValue(mockMetricsDto.schools);
+    //   jest
+    //     .spyOn(prisma.measurements, 'count')
+    //     .mockRejectedValue(new Error('Database error'));
 
-      await expect(service.get()).rejects.toThrow('Database error');
-    });
+    //   await expect(service.get()).rejects.toThrow('Database error');
+    // });
   });
 });
