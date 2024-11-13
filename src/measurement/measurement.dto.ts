@@ -1,11 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class ASNDto {
+  @ApiProperty()
+  asn?: string;
+  @ApiProperty()
+  name?: string;
+  @ApiProperty()
+  type?: string;
+  @ApiProperty()
+  route?: string;
+  @ApiProperty()
+  domain?: string;
+}
 export class ClientInfoDto {
   @ApiProperty()
   IP?: string;
 
   @ApiProperty()
-  ASN?: string;
+  ASN?: ASNDto | string;
 
   @ApiProperty()
   ISP?: string;
