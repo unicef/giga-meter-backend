@@ -103,12 +103,13 @@ async function bootstrap() {
     });
   } else {
     app.enableCors({
-      origin: [
-        'capacitor-electron://-',
-        'https://meter.giga.global/',
-        'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
-        'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
-      ],
+      // origin: [
+      //   'capacitor-electron://-',
+      //   'https://meter.giga.global/',
+      //   'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
+      //   'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
+      // ],
+      origin: '*',
       methods: ['GET', 'POST', 'PUT'],
       preflightContinue: false,
     });
