@@ -339,7 +339,7 @@ export class MeasurementService {
         : {};
     return {
       timestamp: measurement.timestamp,
-      browserID: measurement.browser_id,
+      browserId: measurement.browser_id,
       school_id: measurement.school_id,
       download: measurement.download,
       upload: measurement.upload,
