@@ -421,19 +421,19 @@ export class MeasurementDto {
 
 export class MeasurementV2Dto {
   @ApiProperty()
-  Timestamp?: Date;
+  timestamp?: Date;
 
   @ApiProperty()
-  BrowserID?: string;
+  browserID?: string;
 
   @ApiProperty()
-  Download?: number;
+  download?: number;
 
   @ApiProperty()
-  Upload?: number;
+  upload?: number;
 
   @ApiProperty()
-  Latency?: number;
+  latency?: number;
 
   @ApiProperty()
   school_id: string;

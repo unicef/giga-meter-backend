@@ -338,12 +338,12 @@ export class MeasurementService {
         ? plainToInstance(ClientInfoDto, measurement.client_info ?? '')
         : {};
     return {
-      Timestamp: measurement.timestamp,
-      BrowserID: measurement.browser_id,
+      timestamp: measurement.timestamp,
+      browserID: measurement.browser_id,
       school_id: measurement.school_id,
-      Download: measurement.download,
-      Upload: measurement.upload,
-      Latency: parseInt(measurement.latency.toString()),
+      download: measurement.download,
+      upload: measurement.upload,
+      latency: parseInt(measurement.latency.toString()),
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
