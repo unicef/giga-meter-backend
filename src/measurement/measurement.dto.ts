@@ -424,7 +424,7 @@ export class MeasurementV2Dto {
   timestamp?: Date;
 
   @ApiProperty()
-  browserID?: string;
+  browserId?: string;
 
   @ApiProperty()
   download?: number;

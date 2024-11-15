@@ -538,7 +538,7 @@ export const mockMeasurementFailedDto = [
 export const mockMeasurementV2Dto: MeasurementV2Dto[] = [
   {
     timestamp: new Date('2024-12-31T18:05:16.365Z'),
-    browserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
+    browserId: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
     school_id: '233',
     download: 6935.637333333333,
     upload: 11,
@@ -552,7 +552,7 @@ export const mockMeasurementV2Dto: MeasurementV2Dto[] = [
   },
   {
     timestamp: new Date('2024-12-31T18:05:16.365Z'),
-    browserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
+    browserId: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
     school_id: '123',
     download: 6935.637333333333,
     upload: 11,
@@ -566,7 +566,7 @@ export const mockMeasurementV2Dto: MeasurementV2Dto[] = [
   },
   {
     timestamp: new Date('2024-12-31T18:05:16.365Z'),
-    browserID: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
+    browserId: '5b1fb97e-7dfa-404e-8148-70e96c22e03f',
     school_id: '123',
     download: 6935.637333333333,
     upload: 11,
