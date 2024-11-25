@@ -249,6 +249,7 @@ export class MeasurementService {
     }
     if (filter_by && filter_condition && filter_value != null) {
       const parsedDate = new Date(filter_value);
+      const formattedDate = parsedDate.toISOString();
       const hasTime =
         parsedDate.getUTCHours() > 0 ||
         parsedDate.getUTCMinutes() > 0 ||
@@ -260,28 +261,28 @@ export class MeasurementService {
       switch (filter_condition) {
         case 'lt':
           filter[filter_by] = {
-            lt: hasTime ? filter_value : parsedDate,
+            lt: hasTime ? formattedDate : parsedDate.toISOString(),
           };
           break;
         case 'lte':
           filter[filter_by] = {
-            lte: hasTime ? filter_value : endOfDay,
+            lte: hasTime ? formattedDate : endOfDay.toISOString(),
           };
           break;
         case 'gt':
           filter[filter_by] = {
-            gt: hasTime ? filter_value : endOfDay,
+            gt: hasTime ? formattedDate : endOfDay.toISOString(),
           };
           break;
         case 'gte':
           filter[filter_by] = {
-            gte: hasTime ? filter_value : parsedDate,
+            gte: hasTime ? formattedDate : parsedDate.toISOString(),
           };
           break;
         case 'eq':
           filter[filter_by] = hasTime
             ? {
-                equals: filter_value,
+                equals: formattedDate,
               }
             : {
                 gte: parsedDate,
