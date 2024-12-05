@@ -5,6 +5,7 @@ import {
   measurements_failed as MeasurementFailed,
 } from '@prisma/client';
 import {
+  AddMeasurementDto,
   ClientInfoDto,
   MeasurementDto,
   MeasurementFailedDto,
@@ -18,7 +19,7 @@ import { plainToInstance } from 'class-transformer';
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async measurements(
     skip?: number,
@@ -76,7 +77,7 @@ export class MeasurementService {
     filter_value?: Date,
     write_access?: boolean,
     countries?: string[],
-  ): Promise<MeasurementDto[]> {
+  ): Promise<MeasurementV2Dto[]> {
     const filter = this.applyFilter(
       giga_id_school,
       filter_by,
@@ -176,7 +177,7 @@ export class MeasurementService {
     return (await measurements).map(this.toDto);
   }
 
-  async createMeasurement(measurementDto: MeasurementDto): Promise<string> {
+  async createMeasurement(measurementDto: AddMeasurementDto): Promise<string> {
     const processedResponse = await this.processMeasurement(measurementDto);
 
     switch (processedResponse) {
@@ -201,7 +202,7 @@ export class MeasurementService {
   }
 
   private async processMeasurement(
-    dto: MeasurementDto,
+    dto: AddMeasurementDto,
   ): Promise<string | null> {
     const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
       where: { giga_id_school: dto.giga_id_school },
@@ -248,6 +249,7 @@ export class MeasurementService {
     }
     if (filter_by && filter_condition && filter_value != null) {
       const parsedDate = new Date(filter_value);
+      const formattedDate = parsedDate.toISOString();
       const hasTime =
         parsedDate.getUTCHours() > 0 ||
         parsedDate.getUTCMinutes() > 0 ||
@@ -259,33 +261,33 @@ export class MeasurementService {
       switch (filter_condition) {
         case 'lt':
           filter[filter_by] = {
-            lt: hasTime ? filter_value : parsedDate,
+            lt: hasTime ? formattedDate : parsedDate.toISOString(),
           };
           break;
         case 'lte':
           filter[filter_by] = {
-            lte: hasTime ? filter_value : endOfDay,
+            lte: hasTime ? formattedDate : endOfDay.toISOString(),
           };
           break;
         case 'gt':
           filter[filter_by] = {
-            gt: hasTime ? filter_value : endOfDay,
+            gt: hasTime ? formattedDate : endOfDay.toISOString(),
           };
           break;
         case 'gte':
           filter[filter_by] = {
-            gte: hasTime ? filter_value : parsedDate,
+            gte: hasTime ? formattedDate : parsedDate.toISOString(),
           };
           break;
         case 'eq':
           filter[filter_by] = hasTime
             ? {
-              equals: filter_value,
-            }
+                equals: formattedDate,
+              }
             : {
-              gte: parsedDate,
-              lte: endOfDay,
-            };
+                gte: parsedDate,
+                lte: endOfDay,
+              };
           break;
         default:
           break;
@@ -301,7 +303,6 @@ export class MeasurementService {
       Timestamp: measurement.timestamp,
       UUID: measurement.uuid,
       BrowserID: measurement.browser_id,
-      school_id: measurement.school_id,
       DeviceType: measurement.device_type,
       Notes: measurement.notes,
       ClientInfo: clientInfo,
@@ -338,12 +339,12 @@ export class MeasurementService {
         ? plainToInstance(ClientInfoDto, measurement.client_info ?? '')
         : {};
     return {
-      Timestamp: measurement.timestamp,
-      BrowserID: measurement.browser_id,
+      timestamp: measurement.timestamp,
+      browserId: measurement.browser_id,
       school_id: measurement.school_id,
-      Download: measurement.download,
-      Upload: measurement.upload,
-      Latency: parseInt(measurement.latency.toString()),
+      download: measurement.download,
+      upload: measurement.upload,
+      latency: parseInt(measurement.latency.toString()),
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
@@ -391,7 +392,7 @@ export class MeasurementService {
     };
   }
 
-  private toModel(measurement: MeasurementDto): any {
+  private toModel(measurement: AddMeasurementDto): any {
     return {
       timestamp: measurement.Timestamp,
       uuid: measurement.UUID,
@@ -417,7 +418,7 @@ export class MeasurementService {
     };
   }
 
-  private toFailedModel(measurement: MeasurementDto, reason: string): any {
+  private toFailedModel(measurement: AddMeasurementDto, reason: string): any {
     return {
       timestamp: measurement.Timestamp,
       uuid: measurement.UUID,

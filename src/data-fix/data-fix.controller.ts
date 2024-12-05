@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiExcludeController,
@@ -18,8 +12,6 @@ import { AuthGuard } from '../auth/auth.guard';
 @ApiTags('DataFix')
 @Controller('api/v1/dailycheckapp_data_fix')
 export class DataFixController {
-  constructor() {}
-
   @Get(':giga_id')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()

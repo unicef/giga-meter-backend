@@ -1,11 +1,23 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class ASNDto {
+  @ApiProperty()
+  asn?: string;
+  @ApiProperty()
+  name?: string;
+  @ApiProperty()
+  type?: string;
+  @ApiProperty()
+  route?: string;
+  @ApiProperty()
+  domain?: string;
+}
 export class ClientInfoDto {
   @ApiProperty()
   IP?: string;
 
   @ApiProperty()
-  ASN?: string;
+  ASN?: ASNDto | string;
 
   @ApiProperty()
   ISP?: string;
@@ -389,9 +401,6 @@ export class MeasurementDto {
   Results?: ResultsDto | ResultsNdt7Dto;
 
   @ApiProperty()
-  school_id: string;
-
-  @ApiProperty()
   giga_id_school?: string;
 
   @ApiProperty()
@@ -412,19 +421,19 @@ export class MeasurementDto {
 
 export class MeasurementV2Dto {
   @ApiProperty()
-  Timestamp?: Date;
+  timestamp?: Date;
 
   @ApiProperty()
-  BrowserID?: string;
+  browserId?: string;
 
   @ApiProperty()
-  Download?: number;
+  download?: number;
 
   @ApiProperty()
-  Upload?: number;
+  upload?: number;
 
   @ApiProperty()
-  Latency?: number;
+  latency?: number;
 
   @ApiProperty()
   school_id: string;
@@ -448,7 +457,12 @@ export class MeasurementV2Dto {
   created_at?: Date;
 }
 
-export class MeasurementFailedDto extends MeasurementDto {
+export class AddMeasurementDto extends MeasurementDto {
+  @ApiProperty()
+  school_id: string;
+}
+
+export class MeasurementFailedDto extends AddMeasurementDto {
   @ApiProperty()
   reason?: string;
 }

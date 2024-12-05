@@ -18,6 +18,10 @@ async function bootstrap() {
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
+    .setLicense(
+      'Giga Meter data is made available under the Open Database License(ODBL)',
+      'https://opendatacommons.org/licenses/odbl/',
+    )
     .addTag('Schools')
     .addTag('Country')
     .addTag('Measurements')
@@ -31,31 +35,28 @@ async function bootstrap() {
   const defaultDocument = SwaggerModule.createDocument(app, defaultConfig);
 
   app.use('/api', (req: Request, res, next) => {
-    const showAll = req.url.includes('?show_all=true');
     const defaultPaths = [
       '/api/v1/dailycheckapp_countries',
       '/api/v1/measurements',
       '/api/v1/dailycheckapp_schools',
     ];
-    if (!showAll) {
-      defaultDocument.paths = Object.keys(defaultDocument.paths)
-        .filter((path) => defaultPaths.includes(path))
-        .filter((path) => {
-          const pathObj = defaultDocument.paths[path];
-          delete pathObj.post;
-          return defaultPaths.includes(path);
-        })
-        .reduce(
-          (acc, path) => ({ ...acc, [path]: defaultDocument.paths[path] }),
-          {},
-        );
-      delete defaultDocument.components.schemas['MessagesDto'];
-      delete defaultDocument.components.schemas['FlaggedSchoolDto'];
-      delete defaultDocument.components.schemas['FeatureFlagDto'];
-      delete defaultDocument.components.schemas['MeasurementV2Dto'];
-      delete defaultDocument.components.schemas['SchoolMasterDto'];
-      delete defaultDocument.components.schemas['MetricsDto'];
-    }
+    defaultDocument.paths = Object.keys(defaultDocument.paths)
+      .filter((path) => defaultPaths.includes(path))
+      .filter((path) => {
+        const pathObj = defaultDocument.paths[path];
+        delete pathObj.post;
+        return defaultPaths.includes(path);
+      })
+      .reduce(
+        (acc, path) => ({ ...acc, [path]: defaultDocument.paths[path] }),
+        {},
+      );
+    delete defaultDocument.components.schemas['MessagesDto'];
+    delete defaultDocument.components.schemas['FlaggedSchoolDto'];
+    delete defaultDocument.components.schemas['FeatureFlagDto'];
+    delete defaultDocument.components.schemas['MeasurementV2Dto'];
+    delete defaultDocument.components.schemas['SchoolMasterDto'];
+    delete defaultDocument.components.schemas['MetricsDto'];
     next();
   });
 
@@ -70,6 +71,10 @@ async function bootstrap() {
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
+    .setLicense(
+      'Giga Meter data is made available under the Open Database License(ODBL)',
+      'https://opendatacommons.org/licenses/odbl/',
+    )
     .addTag('Contact Messages')
     .addTag('Flagged Schools')
     .addTag('Schools')
@@ -90,28 +95,32 @@ async function bootstrap() {
     customJs: '/swagger-custom.js',
   });
 
-  app.enableCors({
-    origin: true,
-    methods: ['GET', 'POST', 'PUT'],
-    allowedHeaders: '*',
-  });
+  if (process.env.NODE_ENV === 'development') {
+    app.enableCors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT'],
+      preflightContinue: false,
+    });
+  } else {
+    app.enableCors({
+      // origin: [
+      //   'capacitor-electron://-',
+      //   'https://meter.giga.global/',
+      //   'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
+      //   'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
+      // ],
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT'],
+      preflightContinue: false,
+    });
+  }
 
   app.useGlobalFilters(new AllExceptionFilter());
 
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    integrations: [
-      // Add our Profiling integration
-      nodeProfilingIntegration(),
-      Sentry.prismaIntegration(),
-    ],
-
-    // Add Tracing by setting tracesSampleRate
-    // We recommend adjusting this value in production
+    integrations: [nodeProfilingIntegration(), Sentry.prismaIntegration()],
     tracesSampleRate: 1.0,
-
-    // Set sampling rate for profiling
-    // This is relative to tracesSampleRate
     profilesSampleRate: 1.0,
   });
 
