@@ -195,6 +195,18 @@ model giga_id_school_mapping_fix {
   correct_country        String
   created_at             DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
+model connectivity_ping_checks{
+  id            Int    @id(map: "PK_connectivity_ping_checks") @default(autoincrement())
+  timestamp     DateTime? @db.Timestamptz(6) 
+  is_connected  Boolean?
+  response_time BigInt?
+  target_host   String?
+  packet_sent   BigInt?
+  packet_received BigInt?
+  error_message String?
+  giga_id_school String?
+  created_at    DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+}
 
 model measurements {
   id              BigInt    @id(map: "PK_measurements") @default(autoincrement())
