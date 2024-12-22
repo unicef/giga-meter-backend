@@ -161,10 +161,10 @@ export const mockFeatureFlagsDto = {
 
 export const mockSchoolMasterModel = {
   id: toBigInt(1),
+  name: 'school1',
   created: new Date('2024-04-12T04:13:37.300Z'),
   modified: new Date('2024-04-12T04:13:37.300Z'),
-  name: 'school1',
-  name_lower: 'school1',
+  country_code: 'IN',
   timezone: 'UTC',
   geopoint: 'ab',
   gps_confidence: 1,
@@ -173,7 +173,6 @@ export const mockSchoolMasterModel = {
   postal_code: '11',
   email: 'test',
   education_level: 'aa',
-  education_level_regional: '',
   environment: '',
   school_type: 'test',
   country_id: 1,
@@ -183,13 +182,14 @@ export const mockSchoolMasterModel = {
   admin_3_name: '',
   admin_4_name: '',
   external_id: '11',
+  name_lower: 'ss',
+  education_level_regional: '',
+  last_weekly_status_id: 1,
+  feature_flags: mockFeatureFlagsDto,
   giga_id_school: 'gigaid1',
-  country_code: 'IN',
+  created_at: new Date('2024-04-12T04:13:37.300Z'),
   deleted: null,
   last_school_static_id: 1,
-  last_weekly_status_id: 1,
-  feature_flags: {},
-  created_at: new Date('2024-04-12T04:13:37.300Z'),
 };
 
 export const mockSchoolMasterDto: SchoolMasterDto[] = [

@@ -54,25 +54,24 @@ describe('SchoolMasterService', () => {
 
   describe('flagsByGigaId', () => {
     it('should return flags', async () => {
-      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({
-        ...mockSchoolMasterModel,
-        feature_flags: { flag1: true, flag2: false },
-      });
+      jest
+        .spyOn(prisma.school, 'findFirstOrThrow')
+        .mockResolvedValue(mockSchoolMasterModel);
 
       const flags = await service.flagsByGigaId('gigaid1');
-      expect(flags).toEqual({ flag1: true, flag2: false });
+      expect(flags).toEqual(mockFeatureFlagsDto);
     });
 
-    it('should handle school not found', async () => {
-      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(null);
+    it('should handle null/undefined', async () => {
+      jest.spyOn(prisma.school, 'findFirstOrThrow').mockResolvedValue(null);
 
-      const flags = await service.flagsByGigaId('nonexistent');
-      expect(flags).toEqual({});
+      const flags = await service.flagsByGigaId('gigaid1');
+      expect(flags).toEqual(undefined);
     });
 
     it('should handle database error', async () => {
       jest
-        .spyOn(prisma.school, 'findFirst')
+        .spyOn(prisma.school, 'findFirstOrThrow')
         .mockRejectedValue(new Error('Database error'));
 
       await expect(service.flagsByGigaId('gigaid1')).rejects.toThrow(
