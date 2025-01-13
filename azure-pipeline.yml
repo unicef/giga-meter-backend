@@ -1,5 +1,7 @@
 trigger:
   - main
+  - development
+  - staging
 
 name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
 
@@ -104,7 +106,7 @@ stages:
   pool: 
     vmImage: 'ubuntu-22.04'
   jobs:
-  - job: Development
+  - job: Staging
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/staging')
     steps: 
     - task: AzureRmWebAppDeployment@4
