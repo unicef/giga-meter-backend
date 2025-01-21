@@ -16,8 +16,7 @@ async function bootstrap() {
     .setTitle('Daily Check App API')
     .setDescription(
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
-      'License: This database accessed through the GigaMeter API is made available under the Open Database License.  \n' +
-      'Any rights in individual contents of the database are licensed under the Database Content License.'
+      'License: The dataset accessed through this API is made available under the Open Data Commons Open Database License (ODbL). You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. Portions of this dataset include data from OpenStreetMap, available under the ODbL. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.'
     )
     .setVersion('1.0')
     .setLicense(
