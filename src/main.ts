@@ -13,13 +13,15 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
   const defaultConfig = new DocumentBuilder()
-    .setTitle('GIGA Meter API')
+    .setTitle('Daily Check App API')
     .setDescription(
-      'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
+      'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
+      'License: This database accessed through the GigaMeter API is made available under the Open Database License.  \n' +
+      'Any rights in individual contents of the database are licensed under the Database Content License.'
     )
     .setVersion('1.0')
     .setLicense(
-      'Giga Meter data is made available under the Open Database License(ODBL)',
+      'Daily Check App data is made available under the Open Database License(ODBL)',
       'https://opendatacommons.org/licenses/odbl/',
     )
     .addTag('Schools')
