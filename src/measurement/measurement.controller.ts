@@ -33,6 +33,7 @@ import {
 import {
   Countries,
   CountriesIso3,
+  ShowAllMeasurements,
   WriteAccess,
 } from '../common/common.decorator';
 import { v4 as uuidv4 } from 'uuid';
@@ -124,6 +125,7 @@ export class MeasurementController {
     @Query('filterValue') filterValue?: Date,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
+    @ShowAllMeasurements() showAllMeasurements?: boolean,
     @CountriesIso3() countries_iso3?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementDto[]>> {
     validateGetMeasurementsParams(
@@ -147,6 +149,7 @@ export class MeasurementController {
       filterValue ?? null,
       write_access,
       countries,
+      showAllMeasurements,
     );
 
     return {
