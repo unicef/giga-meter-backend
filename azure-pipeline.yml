@@ -1,5 +1,7 @@
 trigger:
   - main
+  - development
+  - staging
 
 name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
 
@@ -72,7 +74,7 @@ stages:
     vmImage: 'ubuntu-22.04'
   jobs:
   - job: Development
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/development')
     steps: 
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: uni-connect-services'
@@ -98,6 +100,27 @@ stages:
         DockerNamespace: uniconnectacr.azurecr.io
         DockerRepository: 'main/giga-meter-backend'
         DockerImageTag: '$(Build.BuildId)'
+- stage: stg_deploy
+  displayName: Deploy To Staging
+  dependsOn: build_test
+  pool: 
+    vmImage: 'ubuntu-22.04'
+  jobs:
+  - job: Staging
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/staging')
+    steps: 
+    - task: AzureRmWebAppDeployment@4
+      displayName: 'Azure App Service Deploy: uni-ooi-giga-meter-backend'
+      inputs:
+        azureSubscription: 'UNI_GIGA RS-UNI-GIGA-MAPS'
+        appType: webAppContainer
+        WebAppName: 'uni-ooi-giga-meter-backend'
+        deployToSlotOrASE: true
+        ResourceGroupName: 'RS-UNI-GIGA-MAPS'
+        SlotName: stg
+        DockerNamespace: uniconnectacr.azurecr.io
+        DockerRepository: 'main/giga-meter-backend'
+        DockerImageTag: '$(Build.BuildId)'
 - stage: prod_deploy
   displayName: Deploy To Prouction
   trigger: manual
@@ -107,16 +130,6 @@ stages:
   - job: Production
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     steps: 
-#    - task: AzureRmWebAppDeployment@4
-#      inputs:
-#        ConnectionType: 'AzureRM'
-#        azureSubscription: 'UNI_DATA RS-UNI-OI-CONNECT'
-#        appType: 'webAppContainer'
-#        WebAppName: 'uni-connect-services'
-#        DockerNamespace: 'uniconnectacr.azurecr.io'
-#        DockerRepository: 'main/giga-meter-backend'
-#        DockerImageTag: '$(Build.BuildId)'
-#        AppSettings: '-DAILY_CHECK_APP_API_CODE $(DAILY_CHECK_APP_API_CODE) -DATABASE_URL $(DATABASE_URL) -PCDC_APP_DOWNLOAD_URL $(PCDC_APP_DOWNLOAD_URL) -PROJECT_CONNECT_SERVICE_URL $(PROJECT_CONNECT_SERVICE_URL) -SENTRY_DSN $(SENTRY_DSN) -USE_AUTH $(USE_AUTH) -WEBSITES_PORT $(WEBSITES_PORT)'
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: uni-ooi-giga-meter-backend'
       inputs:
