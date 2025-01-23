@@ -64,7 +64,9 @@ export class MeasurementService {
         [order_by?.replace('-', '')]: order_by?.includes('-') ? 'desc' : 'asc',
       },
     });
-    return (await measurements).map((measurement) => this.toDto(measurement, showAllMeasurements));
+    return (await measurements).map((measurement) =>
+      this.toDto(measurement, showAllMeasurements),
+    );
   }
 
   async measurementsV2(
@@ -156,7 +158,9 @@ export class MeasurementService {
     }
 
     const measurements = this.prisma.measurements.findMany(query);
-    return (await measurements).map((measurement) => this.toDto(measurement, true));
+    return (await measurements).map((measurement) =>
+      this.toDto(measurement, true),
+    );
   }
 
   async measurementsBySchoolId(
@@ -175,7 +179,9 @@ export class MeasurementService {
     }
 
     const measurements = this.prisma.measurements.findMany(query);
-    return (await measurements).map((measurement) => this.toDto(measurement, true));
+    return (await measurements).map((measurement) =>
+      this.toDto(measurement, true),
+    );
   }
 
   async createMeasurement(measurementDto: AddMeasurementDto): Promise<string> {
@@ -297,15 +303,22 @@ export class MeasurementService {
     return filter;
   }
 
-  private toDto(measurement: Measurement, showAllMeasurements?: boolean): MeasurementDto {
+  private toDto(
+    measurement: Measurement,
+    showAllMeasurements?: boolean,
+  ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
+    const filteredClientInfo = showAllMeasurements
+      ? clientInfo
+      : { ...clientInfo, IP: undefined };
+
     const filterMeasurementData = {
       id: measurement.id.toString(),
       Timestamp: measurement.timestamp,
       BrowserID: measurement.browser_id,
       DeviceType: measurement.device_type,
       Notes: measurement.notes,
-      // ClientInfo: clientInfo,
+      ClientInfo: filteredClientInfo,
       ServerInfo: plainToInstance(ServerInfoDto, measurement.server_info),
       annotation: measurement.annotation,
       Download: measurement.download,
@@ -329,14 +342,11 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
-    }
-    if(showAllMeasurements){
-      filterMeasurementData["UUID"] = measurement.uuid;
-      filterMeasurementData["ip_address"] = measurement.ip_address;
-      filterMeasurementData["school_id"] = measurement.school_id;
-      filterMeasurementData["ClientInfo"] = {
-        IP: clientInfo.IP
-      }
+    };
+    if (showAllMeasurements) {
+      filterMeasurementData['UUID'] = measurement.uuid;
+      filterMeasurementData['ip_address'] = measurement.ip_address;
+      filterMeasurementData['school_id'] = measurement.school_id;
     }
     return filterMeasurementData;
   }
