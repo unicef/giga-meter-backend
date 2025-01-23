@@ -35,9 +35,8 @@ describe('MeasurementService', () => {
       jest
         .spyOn(prisma.measurements, 'findMany')
         .mockResolvedValue(mockMeasurementModel);
-
       expect(await service.measurements(0, 5, 'timestamp')).toMatchObject(
-        mockMeasurementDto,
+        mockMeasurementDto(false),
       );
     });
 
@@ -60,7 +59,7 @@ describe('MeasurementService', () => {
           'lt',
           new Date('2024-01-14'),
         ),
-      ).toMatchObject(mockMeasurementDto);
+      ).toMatchObject(mockMeasurementDto(false));
     });
 
     it('should return measurements with lte timestamp filter', async () => {
@@ -82,7 +81,7 @@ describe('MeasurementService', () => {
           'lte',
           new Date('2024-01-14'),
         ),
-      ).toMatchObject(mockMeasurementDto);
+      ).toMatchObject(mockMeasurementDto(false));
     });
 
     it('should return measurements with gt timestamp filter', async () => {
@@ -104,7 +103,7 @@ describe('MeasurementService', () => {
           'gt',
           new Date('2024-01-14'),
         ),
-      ).toMatchObject(mockMeasurementDto);
+      ).toMatchObject(mockMeasurementDto(false));
     });
 
     it('should return measurements with gte timestamp filter', async () => {
@@ -126,7 +125,7 @@ describe('MeasurementService', () => {
           'gte',
           new Date('2024-01-14'),
         ),
-      ).toMatchObject(mockMeasurementDto);
+      ).toMatchObject(mockMeasurementDto(false));
     });
 
     it('should return measurements with eq timestamp filter', async () => {
@@ -148,7 +147,7 @@ describe('MeasurementService', () => {
           'eq',
           new Date('2024-01-14'),
         ),
-      ).toMatchObject(mockMeasurementDto);
+      ).toMatchObject(mockMeasurementDto(false));
     });
 
     it('should return no measurements with country_iso3_code filter and no write_access', async () => {
@@ -291,7 +290,7 @@ describe('MeasurementService', () => {
         .mockResolvedValue(mockMeasurementModel);
 
       expect(await service.measurementsById(1)).toMatchObject(
-        mockMeasurementDto,
+        mockMeasurementDto(true),
       );
     });
 
@@ -317,9 +316,8 @@ describe('MeasurementService', () => {
       jest
         .spyOn(prisma.measurements, 'findMany')
         .mockResolvedValue(mockMeasurementModel);
-
       expect(await service.measurementsBySchoolId('123')).toMatchObject(
-        mockMeasurementDto,
+        mockMeasurementDto(true),
       );
     });
 

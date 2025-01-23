@@ -156,7 +156,7 @@ export class MeasurementService {
     }
 
     const measurements = this.prisma.measurements.findMany(query);
-    return (await measurements).map((measurement) => this.toDto(measurement));
+    return (await measurements).map((measurement) => this.toDto(measurement, true));
   }
 
   async measurementsBySchoolId(
@@ -175,7 +175,7 @@ export class MeasurementService {
     }
 
     const measurements = this.prisma.measurements.findMany(query);
-    return (await measurements).map((measurement) => this.toDto(measurement));
+    return (await measurements).map((measurement) => this.toDto(measurement, true));
   }
 
   async createMeasurement(measurementDto: AddMeasurementDto): Promise<string> {
@@ -334,7 +334,7 @@ export class MeasurementService {
       filterMeasurementData["UUID"] = measurement.uuid;
       filterMeasurementData["ip_address"] = measurement.ip_address;
       filterMeasurementData["school_id"] = measurement.school_id;
-      filterMeasurementData["client_info"] = {
+      filterMeasurementData["ClientInfo"] = {
         IP: clientInfo.IP
       }
     }
