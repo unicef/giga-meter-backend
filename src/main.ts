@@ -20,7 +20,7 @@ async function bootstrap() {
     )
     .setVersion('1.0')
     .addServer(
-      'https://uni-ooi-giga-meter-backend.azurewebsites.net/api'
+      'https://uni-ooi-giga-meter-backend.azurewebsites.net'
     )
     .addTag('Schools')
     .addTag('Country')
