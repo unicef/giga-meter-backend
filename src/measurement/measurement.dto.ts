@@ -351,6 +351,94 @@ export class ResultsDto {
   NDTResultS2CServerPort?: string;
 }
 
+export class FilteredMeasurementDto{
+  @ApiProperty()
+  id?: string;
+
+  @ApiProperty()
+  Timestamp?: Date;
+
+  @ApiProperty()
+  BrowserID?: string;
+
+  @ApiProperty()
+  DeviceType?: string;
+
+  @ApiProperty()
+  Notes?: string;
+
+  @ApiProperty({
+    type: Object, 
+    properties: {
+      ASN: { type: 'string', description: 'ASN value' },
+      ISP: { type: 'string', description: 'ISP name' },
+      Hostname: { type: 'string', description: 'Hostname of the device' },
+      City: { type: 'string', description: 'City name' },
+      Postal: { type: 'string', description: 'Postal code' },
+      Region: { type: 'string', description: 'Region name' },
+      Country: { type: 'string', description: 'Country name' },
+      Latitude: { type: 'number', description: 'Latitude coordinate' },
+      Timezone: { type: 'string', description: 'Timezone' },
+      Longitude: { type: 'number', description: 'Longitude coordinate' }
+    },
+    required: false
+  })
+  ClientInfo?: {
+    ASN?: ASNDto | string;
+    ISP?: string;
+    Hostname?: string;
+    City?: string;
+    Postal?: string;
+    Region?: string;
+    Country?: string;
+    Latitude?: number;
+    Timezone?: string;
+    Longitude?: number;
+  };
+
+  @ApiProperty()
+  ServerInfo?: ServerInfoDto;
+
+  @ApiProperty()
+  annotation?: string;
+
+  @ApiProperty()
+  Download?: number;
+
+  @ApiProperty()
+  Upload?: number;
+
+  @ApiProperty()
+  Latency?: number;
+
+  @ApiProperty()
+  DataUploaded?: number;
+
+  @ApiProperty()
+  DataDownloaded?: number;
+
+  @ApiProperty()
+  DataUsage?: number;
+
+  @ApiProperty()
+  Results?: ResultsDto | ResultsNdt7Dto;
+
+  @ApiProperty()
+  giga_id_school?: string;
+
+  @ApiProperty()
+  country_code?: string;
+
+  @ApiProperty()
+  app_version?: string;
+
+  @ApiProperty()
+  source?: string;
+
+  @ApiProperty()
+  created_at?: Date;
+}
+
 export class MeasurementDto {
   @ApiProperty()
   id?: string;
