@@ -398,6 +398,9 @@ export class MeasurementDto {
   DataUsage?: number;
 
   @ApiProperty()
+  Bandwidth?: number;
+
+  @ApiProperty()
   Results?: ResultsDto | ResultsNdt7Dto;
 
   @ApiProperty()

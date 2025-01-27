@@ -336,6 +336,9 @@ export class MeasurementService {
       DataUsage: measurement.data_usage
         ? parseInt(measurement.data_usage.toString())
         : undefined,
+      Bandwidth: measurement.bandwith
+        ? parseInt(measurement.bandwith.toString())
+        : undefined,
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
