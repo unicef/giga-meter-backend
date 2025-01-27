@@ -347,6 +347,7 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      StartTimestampMlabServer: measurement.start_timestamp_mlab_server,
     };
     if (showAllMeasurements) {
       filterMeasurementData['UUID'] = measurement.uuid;
@@ -439,6 +440,7 @@ export class MeasurementService {
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
+      start_timestamp_mlab_server: measurement?.StartTimestampMlabServer,
     };
   }
 
@@ -486,6 +488,7 @@ export class MeasurementService {
         DataDownloaded: DataDownloaded,
         DataUploaded: DataUploaded,
         DataUsage: DataDownloaded + DataUploaded,
+        // StartTimestampMlabServer: TBD,
       };
     }
 
@@ -496,6 +499,7 @@ export class MeasurementService {
       DownloadedData: results.TCPInfoBytesReceived,
       UploadedData: results.TCPInfoBytesAcked,
       DataUsage: results.TCPInfoBytesReceived + results.TCPInfoBytesAcked,
+      StartTimestampMlabServer: results.NDTResultS2CStartTime,
     };
   }
 }

@@ -406,6 +406,10 @@ export class MeasurementDto {
   @ApiProperty()
   giga_id_school?: string;
 
+  // start_timestamp_mlab_server
+  @ApiProperty()
+  StartTimestampMlabServer?: Date;
+
   @ApiProperty()
   country_code?: string;
 
