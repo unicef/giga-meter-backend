@@ -199,7 +199,9 @@ export class MeasurementService {
       }
 
       default: {
-        const model = this.toModel(measurementDto);
+        const augmentedMeasurement =
+          this.augmentMeasurementData(measurementDto);
+        const model = this.toModel(augmentedMeasurement);
         await this.prisma.measurements.create({
           data: model,
         });
@@ -427,6 +429,7 @@ export class MeasurementService {
       data_uploaded: measurement?.DataUploaded,
       data_usage: measurement?.DataUsage,
       latency: measurement.Latency,
+      bandwith: measurement.Bandwidth,
       results: measurement.Results,
       giga_id_school: measurement.giga_id_school?.toLowerCase().trim(),
       country_code: measurement.country_code,
@@ -457,6 +460,39 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
       reason,
+    };
+  }
+  private augmentMeasurementData(measurementData: AddMeasurementDto): any {
+    const results = measurementData.Results;
+    ///If Ndt7 is calculated with ndt7 results
+    if (Object.keys(results).includes('NDTResult.S2C')) {
+      const DataDownloaded =
+        results['NDTResult.S2C'].LastServerMeasurement.TCPInfo.BytesReceived +
+        results['NDTResult.C2S'].LastServerMeasurement.TCPInfo.BytesReceived;
+      const DataUploaded =
+        results['NDTResult.S2C'].LastServerMeasurement.TCPInfo.BytesAcked +
+        results['NDTResult.C2S'].LastServerMeasurement.TCPInfo.BytesAcked;
+      return {
+        ...measurementData,
+        Latency:
+          (results['NDTResult.S2C'].LastServerMeasurement.BBRInfo.MinRTT +
+            results['NDTResult.C2S'].LastServerMeasurement.BBRInfo.MinRTT) /
+          2 /
+          1000,
+        Bandwidth: results['NDTResult.S2C'].LastServerMeasurement.BBRInfo.BW,
+        DataDownloaded: DataDownloaded,
+        DataUploaded: DataUploaded,
+        DataUsage: DataDownloaded + DataUploaded,
+      };
+    }
+
+    return {
+      ...measurementData,
+      Latency: results.TCPInfoMinRTT,
+      Bandwidth: 0,
+      DownloadedData: results.TCPInfoBytesReceived,
+      UploadedData: results.TCPInfoBytesAcked,
+      DataUsage: results.TCPInfoBytesReceived + results.TCPInfoBytesAcked,
     };
   }
 }
