@@ -7,6 +7,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
+import { PUBLIC_URLs_LIST } from './auth.util';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -32,14 +33,18 @@ export class AuthGuard implements CanActivate {
     }
     return true;
   }
-
+  
   private async validateToken(token: string, request: any): Promise<boolean> {
     try {
+      const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
       if (process.env.GIGA_METER_APP_KEY === token) {
         request.has_write_access=true;
-        request.show_all_measurements=true;
+        request.is_super_user=true;
         return true;
       } else {
+        if (!isPublicAccess) {
+          return false;
+        }
         const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
         const response = await firstValueFrom(
           this.httpService.get<ValidateApiKeyDto>(url, {
