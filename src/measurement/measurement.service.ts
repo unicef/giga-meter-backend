@@ -199,7 +199,9 @@ export class MeasurementService {
       }
 
       default: {
-        const model = this.toModel(measurementDto);
+        const augmentedMeasurement =
+          this.augmentMeasurementData(measurementDto);
+        const model = this.toModel(augmentedMeasurement);
         await this.prisma.measurements.create({
           data: model,
         });
@@ -342,6 +344,7 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      StartTimestampMlabServer: measurement?.start_timestamp_mlab_server,
     };
     if (showAllMeasurements) {
       filterMeasurementData['UUID'] = measurement.uuid;
@@ -433,6 +436,7 @@ export class MeasurementService {
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
+      start_timestamp_mlab_server: measurement?.StartTimestampMlabServer,
     };
   }
 
@@ -458,5 +462,46 @@ export class MeasurementService {
       source: 'DailyCheckApp',
       reason,
     };
+  }
+  private augmentMeasurementData(measurementData: AddMeasurementDto): any {
+    const results = measurementData.Results;
+    if (!results) {
+      return measurementData;
+    }
+    ///If Ndt7 is calculated with ndt7 results
+    if (Object.keys(results).includes('NDTResult.S2C')) {
+      const DataDownloaded =
+        results['NDTResult.S2C'].LastServerMeasurement.TCPInfo.BytesReceived +
+        results['NDTResult.C2S'].LastServerMeasurement.TCPInfo.BytesReceived;
+      const DataUploaded =
+        results['NDTResult.S2C'].LastServerMeasurement.TCPInfo.BytesAcked +
+        results['NDTResult.C2S'].LastServerMeasurement.TCPInfo.BytesAcked;
+      return {
+        ...measurementData,
+        Latency:
+          (results['NDTResult.S2C'].LastServerMeasurement.BBRInfo.MinRTT +
+            results['NDTResult.C2S'].LastServerMeasurement.BBRInfo.MinRTT) /
+          2 /
+          1000,
+        Bandwidth: results['NDTResult.S2C'].LastServerMeasurement.BBRInfo.BW,
+        DataDownloaded: DataDownloaded,
+        DataUploaded: DataUploaded,
+        DataUsage: DataDownloaded + DataUploaded,
+        // StartTimestampMlabServer: TBD,
+      };
+    }
+    console.warn('NDTResult.S2C not found in results');
+    if (Object.keys(results).includes('NDTResultS2CStartTime')) {
+      return {
+        ...measurementData,
+        Latency: results['TCPInfoMinRTT'],
+        Bandwidth: 0,
+        DownloadedData: results['TCPInfoBytesReceived'],
+        UploadedData: results['TCPInfoBytesAcked'],
+        DataUsage:
+          results['TCPInfoBytesReceived'] + results['TCPInfoBytesAcked'],
+        StartTimestampMlabServer: results['NDTResultS2CStartTime'],
+      };
+    }
   }
 }

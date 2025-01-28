@@ -398,6 +398,9 @@ export class MeasurementDto {
   DataUsage?: number;
 
   @ApiProperty()
+  Bandwidth?: number;
+
+  @ApiProperty()
   Results?: ResultsDto | ResultsNdt7Dto;
 
   @ApiProperty()
@@ -414,6 +417,10 @@ export class MeasurementDto {
 
   @ApiProperty()
   source?: string;
+
+  // start_timestamp_mlab_server
+  @ApiProperty()
+  StartTimestampMlabServer?: Date;
 
   @ApiProperty()
   created_at?: Date;

@@ -561,6 +561,7 @@ export const mockMeasurementModel = [
     ip_address: null,
     app_version: null,
     source: 'MLab',
+    start_timestamp_mlab_server: null,
     created_at: null,
   },
   {
@@ -586,6 +587,7 @@ export const mockMeasurementModel = [
     ip_address: '0',
     app_version: '1.0.0',
     source: 'DailyCheckApp',
+    start_timestamp_mlab_server: null,
     created_at: null,
   },
   {
@@ -611,6 +613,7 @@ export const mockMeasurementModel = [
     ip_address: '0',
     app_version: '1.0.0',
     source: 'DailyCheckApp',
+    start_timestamp_mlab_server: null,
     created_at: null,
   },
 ];

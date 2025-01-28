@@ -142,6 +142,7 @@ model measurements {
   ip_address     String?
   app_version    String?
   source         String    @default("MLab")
+  start_timestamp_mlab_server DateTime?
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
 
