@@ -344,7 +344,7 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
-      StartTimestampMlabServer: measurement.start_timestamp_mlab_server,
+      StartTimestampMlabServer: measurement?.start_timestamp_mlab_server,
     };
     if (showAllMeasurements) {
       filterMeasurementData['UUID'] = measurement.uuid;
@@ -465,6 +465,9 @@ export class MeasurementService {
   }
   private augmentMeasurementData(measurementData: AddMeasurementDto): any {
     const results = measurementData.Results;
+    if (!results) {
+      return measurementData;
+    }
     ///If Ndt7 is calculated with ndt7 results
     if (Object.keys(results).includes('NDTResult.S2C')) {
       const DataDownloaded =
@@ -487,15 +490,18 @@ export class MeasurementService {
         // StartTimestampMlabServer: TBD,
       };
     }
-
-    return {
-      ...measurementData,
-      Latency: results.TCPInfoMinRTT,
-      Bandwidth: 0,
-      DownloadedData: results.TCPInfoBytesReceived,
-      UploadedData: results.TCPInfoBytesAcked,
-      DataUsage: results.TCPInfoBytesReceived + results.TCPInfoBytesAcked,
-      StartTimestampMlabServer: results.NDTResultS2CStartTime,
-    };
+    console.warn('NDTResult.S2C not found in results');
+    if (Object.keys(results).includes('NDTResultS2CStartTime')) {
+      return {
+        ...measurementData,
+        Latency: results['TCPInfoMinRTT'],
+        Bandwidth: 0,
+        DownloadedData: results['TCPInfoBytesReceived'],
+        UploadedData: results['TCPInfoBytesAcked'],
+        DataUsage:
+          results['TCPInfoBytesReceived'] + results['TCPInfoBytesAcked'],
+        StartTimestampMlabServer: results['NDTResultS2CStartTime'],
+      };
+    }
   }
 }
