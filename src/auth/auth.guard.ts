@@ -7,10 +7,14 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const useAuth = process.env.USE_AUTH === 'true';
@@ -24,13 +28,20 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing authorization token');
     }
 
-    const response = await this.validateToken(token, request);
-    if (!response) {
+    let isValid = false;
+    try {
+      this.jwtService.verify(token); // First, try to validate as a JWT token
+      request.has_write_access = true; // For self-generated tokens, grant full access
+      return true;
+    } catch (error) {
+      isValid = await this.validateToken(token, request); // If JWT validation fails, try the external service
+    }
+    if (!isValid) {
       throw new UnauthorizedException(
         'Invalid token or not authorized to access',
       );
     }
-    return true;
+    return isValid;
   }
 
   private async validateToken(token: string, request: any): Promise<boolean> {
@@ -69,6 +80,7 @@ export class AuthGuard implements CanActivate {
       }
     } catch (error) {
       console.error('Token validation failed:', error.message);
+      return false;
     }
   }
 }

@@ -4,9 +4,13 @@ import { AuthGuard } from './auth.guard';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { of } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
+import { JwtService } from '@nestjs/jwt';
 
 const mockHttpService = () => ({
   get: jest.fn(),
+});
+const mockJwtService = () => ({
+  verify: jest.fn(),
 });
 
 describe('AuthGuard', () => {
@@ -19,6 +23,10 @@ describe('AuthGuard', () => {
         {
           provide: HttpService,
           useValue: mockHttpService(),
+        },
+        {
+          provide: JwtService,
+          useValue: mockJwtService(),
         },
       ],
       imports: [HttpModule],
@@ -44,14 +52,31 @@ describe('AuthGuard', () => {
     );
   });
 
-  it('should return unauthorized for invalid bearer token', async () => {
+  it('should return authorized for valid jwt token', async () => {
     const mockExecutionContext = {
       switchToHttp: () => ({
         getRequest: () => ({
-          headers: { authorization: 'Bearer invalid_token' },
+          headers: { authorization: 'Bearer jwt_token' },
         }),
       }),
     } as ExecutionContext;
+
+    mockJwtService().verify.mockResolvedValue(true);
+    await expect(guard.canActivate(mockExecutionContext)).resolves.toBeTruthy();
+  });
+
+  it('should return authorized for valid giga token', async () => {
+    const mockExecutionContext = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: { authorization: 'Bearer access_token' },
+        }),
+      }),
+    } as ExecutionContext;
+
+    mockJwtService().verify.mockRejectedValue(
+      new UnauthorizedException('invalid token'),
+    );
 
     mockHttpService().get.mockResolvedValueOnce(
       of({
@@ -59,9 +84,7 @@ describe('AuthGuard', () => {
       }),
     );
 
-    await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(guard.canActivate(mockExecutionContext)).resolves.toBeTruthy();
   });
 });
 

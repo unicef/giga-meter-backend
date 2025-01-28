@@ -5,6 +5,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import { mockFlaggedSchoolDto } from '../common/mock-objects';
+import { JwtService } from '@nestjs/jwt';
 
 describe('FlaggedSchoolController', () => {
   let controller: FlaggedSchoolController;
@@ -13,7 +14,7 @@ describe('FlaggedSchoolController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [FlaggedSchoolController],
-      providers: [FlaggedSchoolService, PrismaService, AuthGuard],
+      providers: [FlaggedSchoolService, PrismaService, AuthGuard, JwtService],
       imports: [HttpModule],
     }).compile();
 

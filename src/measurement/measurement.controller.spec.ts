@@ -10,6 +10,7 @@ import {
   mockMeasurementFailedDto,
   mockMeasurementV2Dto,
 } from '../common/mock-objects';
+import { JwtService } from '@nestjs/jwt';
 
 describe('MeasurementController', () => {
   let controller: MeasurementController;
@@ -18,7 +19,7 @@ describe('MeasurementController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [MeasurementController],
-      providers: [MeasurementService, PrismaService, AuthGuard],
+      providers: [MeasurementService, PrismaService, AuthGuard, JwtService],
       imports: [HttpModule],
     }).compile();
 

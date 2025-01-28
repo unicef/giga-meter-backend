@@ -43,15 +43,26 @@ DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
 SENTRY_DSN="your-sentry-dsn"
 NODE_ENV="app-environment"
+ADMIN_SECRET="admin-secret"
+JWT_SECRET="jwt-secret"
 ```
 
 - DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
-- USE_AUTH: set "true" if APIs should use authentication which uses Giga Maps service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode_) endpoint.
+- USE_AUTH: set "true" if APIs should use in-built authentication which uses JWT authentication or Giga Maps service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode_) endpoint.
 - PROJECT_CONNECT_SERVICE_URL: Base API URL of the Giga Maps service used for authentication. For Dev, it should be pointed to https://uni-ooi-giga-maps-service-dev.azurewebsites.net
 - DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling Giga Maps service API. Ideally, it should always <i>DAILY_CHECK_APP</i> but check with the Giga Maps team if this doesn't work.
 - PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [PCDC](https://github.com/unicef/project-connect-daily-check-app) Windows application.
 - SENTRY_DSN: To send data to [Sentry](https://docs.sentry.io/) you will set a client key, usually referred to as the SENTRY_DSN value.
 - NODE_ENV: The application environment, should be "development" or "production"
+- ADMIN_SECRET: The secret value used to generate a jwt token
+- JWT_SECRET: The secret value used to validate a jwt token
+  <br />
+  NOTE: <i>PROJECT_CONNECT_SERVICE_URL</i> and
+  <i> DAILY_CHECK_APP_API_CODE</i> values are only required if you
+  want to use in-built Giga Meter authentication and
+  <i> USE_AUTH</i> is set "true" AND <i>ADMIN_SECRET</i> and <i>JWT_SECRET</i> values are only required if you
+  want to use in-built JWT authentication and
+  <i> USE_AUTH</i> is set "true" else you can skip them.
 
 3. Please make sure tha DATABASE_URL is set correctly in the .env file above then run `npx prisma migrate dev` to create the database (if not present already) and the tables.
 
