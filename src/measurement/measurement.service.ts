@@ -336,9 +336,6 @@ export class MeasurementService {
       DataUsage: measurement.data_usage
         ? parseInt(measurement.data_usage.toString())
         : undefined,
-      Bandwidth: measurement.bandwith
-        ? parseInt(measurement.bandwith.toString())
-        : undefined,
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
@@ -433,7 +430,6 @@ export class MeasurementService {
       data_uploaded: measurement?.DataUploaded,
       data_usage: measurement?.DataUsage,
       latency: measurement.Latency,
-      bandwith: measurement.Bandwidth,
       results: measurement.Results,
       giga_id_school: measurement.giga_id_school?.toLowerCase().trim(),
       country_code: measurement.country_code,

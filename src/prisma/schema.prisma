@@ -136,7 +136,6 @@ model measurements {
   data_uploaded    BigInt?
   data_downloaded  BigInt?
   data_usage     BigInt?
-  bandwidth      BigInt?
   results        Json?
   giga_id_school String?
   country_code   String?
