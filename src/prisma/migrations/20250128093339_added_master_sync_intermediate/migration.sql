@@ -75,7 +75,32 @@ CREATE TABLE "master_sync_intermediate" (
     "status" VARCHAR(50) NOT NULL,
     "country_id" BIGINT,
 
-    CONSTRAINT "master_sync_intermediate_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "master_sync_intermediate_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT master_sync_intermediate_connectivity_govt_collection_yea_check CHECK (connectivity_govt_collection_year >= 0),
+    CONSTRAINT master_sync_intermediate_num_adm_personnel_check CHECK (num_adm_personnel >= 0),
+    CONSTRAINT master_sync_intermediate_num_classrooms_check CHECK (num_classrooms >= 0),
+    CONSTRAINT master_sync_intermediate_num_computers_check CHECK (num_computers >= 0),
+    CONSTRAINT master_sync_intermediate_num_computers_desired_check CHECK (num_computers_desired >= 0),
+    CONSTRAINT master_sync_intermediate_num_latrines_check CHECK (num_latrines >= 0),
+    CONSTRAINT master_sync_intermediate_num_robotic_equipment_check CHECK (num_robotic_equipment >= 0),
+    CONSTRAINT master_sync_intermediate_num_schools_per_building_check CHECK (num_schools_per_building >= 0),
+    CONSTRAINT master_sync_intermediate_num_students_boys_check CHECK (num_students_boys >= 0),
+    CONSTRAINT master_sync_intermediate_num_students_check CHECK (num_students >= 0),
+    CONSTRAINT master_sync_intermediate_num_students_girls_check CHECK (num_students_girls >= 0),
+    CONSTRAINT master_sync_intermediate_num_students_other_check CHECK (num_students_other >= 0),
+    CONSTRAINT master_sync_intermediate_num_tablets_check CHECK (num_tablets >= 0),
+    CONSTRAINT master_sync_intermediate_num_teachers_check CHECK (num_teachers >= 0),
+    CONSTRAINT master_sync_intermediate_num_teachers_female_check CHECK (num_teachers_female >= 0),
+    CONSTRAINT master_sync_intermediate_num_teachers_male_check CHECK (num_teachers_male >= 0),
+    CONSTRAINT master_sync_intermediate_pop_within_1km_check CHECK (pop_within_1km >= 0),
+    CONSTRAINT master_sync_intermediate_pop_within_2km_check CHECK (pop_within_2km >= 0),
+    CONSTRAINT master_sync_intermediate_pop_within_3km_check CHECK (pop_within_3km >= 0),
+    CONSTRAINT master_sync_intermediate_school_data_collection_year_check CHECK (school_data_collection_year >= 0),
+    CONSTRAINT master_sync_intermediate_school_establishment_year_check CHECK (school_establishment_year >= 0),
+    CONSTRAINT master_sync_intermediate_schools_within_1km_check CHECK (schools_within_1km >= 0),
+    CONSTRAINT master_sync_intermediate_schools_within_2km_check CHECK (schools_within_2km >= 0),
+    CONSTRAINT master_sync_intermediate_schools_within_3km_check CHECK (schools_within_3km >= 0),
+    CONSTRAINT master_sync_intermediate_version_check CHECK (version >= 0)
 );
 
 -- CreateIndex

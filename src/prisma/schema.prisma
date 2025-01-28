@@ -98,6 +98,7 @@ model school {
 
   // Ensure country_code is indexed and enforce referential integrity
   @@index([country_code])
+  master_sync_school_static master_sync_school_static[]
 }
 
 model country {
@@ -256,4 +257,77 @@ model master_sync_intermediate {
   @@index([school_id_govt], name: "master_sync_intermediate_school_id_govt_ab3b376c")
   @@index([status], name: "master_sync_intermediate_status_a2e65bb9")
   @@map("master_sync_intermediate")
+}
+
+model master_sync_school_static {
+  id                                    Int       @id @default(autoincrement())
+  created                               DateTime  @db.Timestamptz
+  modified                              DateTime  @db.Timestamptz
+  latitude                              Float?
+  longitude                             Float?
+  admin1_id_giga                        String?   @db.VarChar(50)
+  admin2_id_giga                        String?   @db.VarChar(50)
+  school_establishment_year             Int?
+  download_speed_contracted             Float?
+  num_computers_desired                 Int?
+  electricity_type                      String?   @db.VarChar(255)
+  num_adm_personnel                     Int?
+  num_students                          Int?
+  num_teachers                          Int?
+  num_classrooms                        Int?
+  num_latrines                          Int?
+  water_availability                    Boolean?
+  electricity_availability              Boolean?
+  computer_lab                          Boolean?
+  num_computers                         Int?
+  connectivity_govt                     Boolean?
+  connectivity_type_govt                String?   @db.VarChar(255)
+  connectivity_type                     String?   @db.VarChar(255)
+  connectivity_type_root                String?   @db.VarChar(255)
+  cellular_coverage_availability        Boolean?
+  cellular_coverage_type                String?   @db.VarChar(255)
+  fiber_node_distance                   Float?
+  microwave_node_distance               Float?
+  schools_within_1km                    Int?
+  schools_within_2km                    Int?
+  schools_within_3km                    Int?
+  nearest_lte_distance                  Float?
+  nearest_umts_distance                 Float?
+  nearest_gsm_distance                  Float?
+  nearest_nr_distance                   Float?
+  pop_within_1km                        Int?
+  pop_within_2km                        Int?
+  pop_within_3km                        Int?
+  school_data_source                    String?   @db.VarChar(255)
+  school_data_collection_year           Int?
+  school_data_collection_modality       String?   @db.VarChar(255)
+  school_location_ingestion_timestamp   DateTime?
+  connectivity_govt_ingestion_timestamp DateTime?
+  connectivity_govt_collection_year     Int?
+  disputed_region                       Boolean
+  connectivity_rt                       Boolean?
+  connectivity_rt_datasource            String?   @db.VarChar(255)
+  connectivity_rt_ingestion_timestamp   DateTime?
+  connectivity                          Boolean?
+  download_speed_benchmark              Float?
+  computer_availability                 Boolean?
+  num_students_girls                    Int?
+  num_students_boys                     Int?
+  num_students_other                    Int?
+  num_teachers_female                   Int?
+  num_teachers_male                     Int?
+  teachers_trained                      Boolean?
+  sustainable_business_model            Boolean?
+  device_availability                   Boolean?
+  num_tablets                           Int?
+  num_robotic_equipment                 Int?
+  building_id_govt                      String?   @db.VarChar(255)
+  num_schools_per_building              Int?
+  version                               Int?
+  school_id                             BigInt?
+  school                                school?   @relation(fields: [school_id], references: [id])
+
+  @@index([school_id], name: "master_sync_school_static_school_id_00765da3")
+  @@map("master_sync_school_static")
+
 }
