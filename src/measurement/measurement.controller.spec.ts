@@ -36,10 +36,10 @@ describe('MeasurementController', () => {
 
   describe('GetMeasurements', () => {
     it('should get measurements', async () => {
-      jest.spyOn(service, 'measurements').mockResolvedValue(mockMeasurementDto);
+      jest.spyOn(service, 'measurements').mockResolvedValue(mockMeasurementDto(true));
 
       const response = await controller.getMeasurements();
-      expect(response.data).toStrictEqual(mockMeasurementDto);
+      expect(response.data).toStrictEqual(mockMeasurementDto(true));
     });
 
     it('should handle empty result set', async () => {
@@ -115,7 +115,7 @@ describe('MeasurementController', () => {
 
   describe('GetMeasurementsById', () => {
     it('should get measurements', async () => {
-      const record = mockMeasurementDto.filter((x) => x.id === '1');
+      const record = mockMeasurementDto(true).filter((x) => x.id === '1');
       jest.spyOn(service, 'measurementsById').mockResolvedValue(record);
 
       const response = await controller.getMeasurementsById(1);
@@ -143,10 +143,10 @@ describe('MeasurementController', () => {
     it('should get measurements', async () => {
       jest
         .spyOn(service, 'measurementsBySchoolId')
-        .mockResolvedValue(mockMeasurementDto);
+        .mockResolvedValue(mockMeasurementDto(true));
 
       const response = await controller.getMeasurementsBySchoolId('1234');
-      expect(response.data).toStrictEqual(mockMeasurementDto);
+      expect(response.data).toStrictEqual(mockMeasurementDto(true));
     });
 
     it('should handle empty result set', async () => {

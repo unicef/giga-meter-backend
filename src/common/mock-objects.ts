@@ -256,8 +256,8 @@ export const mockFlaggedSchoolModel = [
   },
 ];
 
-export const mockMeasurementDto = [
-  {
+export const mockMeasurementDto = (showAllMeasurement: boolean) => {
+  const items = [{
     id: '1',
     Timestamp: new Date('2024-12-31T18:05:16.365Z'),
     UUID: 'ndt-rzmq5_1678933405_0000000000324160',
@@ -266,15 +266,6 @@ export const mockMeasurementDto = [
     Notes: '',
     ClientInfo: {
       IP: '0',
-      ASN: 'AS919',
-      ISP: ' JSC Kazakhtelecom',
-      City: 'Taldykorgan',
-      Region: 'Jetisu Region',
-      Country: 'KZ',
-      Hostname: '0.megaline.telecom.kz',
-      Latitude: 45.0156,
-      Timezone: 'Asia/Almaty',
-      Longitude: 78.3739,
     },
     DataDownloaded: 277,
     DataUploaded: 277,
@@ -311,15 +302,6 @@ export const mockMeasurementDto = [
     Notes: '',
     ClientInfo: {
       IP: '0',
-      ASN: 'AS919',
-      ISP: ' JSC Kazakhtelecom',
-      City: 'Taldykorgan',
-      Region: 'Jetisu Region',
-      Country: 'KZ',
-      Hostname: '0.megaline.telecom.kz',
-      Latitude: 45.0156,
-      Timezone: 'Asia/Almaty',
-      Longitude: 78.3739,
     },
     DataDownloaded: 277,
     DataUploaded: 277,
@@ -356,15 +338,6 @@ export const mockMeasurementDto = [
     Notes: '',
     ClientInfo: {
       IP: '0',
-      ASN: 'AS919',
-      ISP: ' JSC Kazakhtelecom',
-      City: 'Taldykorgan',
-      Region: 'Jetisu Region',
-      Country: 'KZ',
-      Hostname: '0.megaline.telecom.kz',
-      Latitude: 45.0156,
-      Timezone: 'Asia/Almaty',
-      Longitude: 78.3739,
     },
     ServerInfo: {
       URL: 'https://ndt-iupui-mlab1-del01.mlab-oti.measurement-lab.org:7123',
@@ -389,9 +362,20 @@ export const mockMeasurementDto = [
     source: 'DailyCheckApp',
     created_at: null,
   },
-];
+]
+return items.map((item) => {
+  if(showAllMeasurement) {
+    return item;
+  }
+  delete item["UUID"]
+  delete item["ip_address"]
+  delete item["school_id"]
+  delete item["ClientInfo"]
+  return item;
+});
+}
 
-export const mockAddMeasurementDto = mockMeasurementDto.map((item) => ({
+export const mockAddMeasurementDto = mockMeasurementDto(true).map((item) => ({
   ...item,
   school_id: '111',
 }));
@@ -407,15 +391,6 @@ export const mockMeasurementFailedDto = [
     Notes: '',
     ClientInfo: {
       IP: '0',
-      ASN: 'AS919',
-      ISP: ' JSC Kazakhtelecom',
-      City: 'Taldykorgan',
-      Region: 'Jetisu Region',
-      Country: 'KZ',
-      Hostname: '0.megaline.telecom.kz',
-      Latitude: 45.0156,
-      Timezone: 'Asia/Almaty',
-      Longitude: 78.3739,
     },
     DataDownloaded: 277,
     DataUploaded: 277,
@@ -454,15 +429,6 @@ export const mockMeasurementFailedDto = [
     Notes: '',
     ClientInfo: {
       IP: '0',
-      ASN: 'AS919',
-      ISP: ' JSC Kazakhtelecom',
-      City: 'Taldykorgan',
-      Region: 'Jetisu Region',
-      Country: 'KZ',
-      Hostname: '0.megaline.telecom.kz',
-      Latitude: 45.0156,
-      Timezone: 'Asia/Almaty',
-      Longitude: 78.3739,
     },
     DataDownloaded: 277,
     DataUploaded: 277,
@@ -501,15 +467,6 @@ export const mockMeasurementFailedDto = [
     Notes: '',
     ClientInfo: {
       IP: '0',
-      ASN: 'AS919',
-      ISP: ' JSC Kazakhtelecom',
-      City: 'Taldykorgan',
-      Region: 'Jetisu Region',
-      Country: 'KZ',
-      Hostname: '0.megaline.telecom.kz',
-      Latitude: 45.0156,
-      Timezone: 'Asia/Almaty',
-      Longitude: 78.3739,
     },
     ServerInfo: {
       URL: 'https://ndt-iupui-mlab1-del01.mlab-oti.measurement-lab.org:7123',
@@ -591,8 +548,8 @@ export const mockMeasurementModel = [
     school_id: '233',
     device_type: 'windows',
     notes: '',
-    client_info: mockMeasurementDto[0].ClientInfo,
-    server_info: mockMeasurementDto[0].ServerInfo,
+    client_info: { ...mockMeasurementDto(true)[0].ClientInfo, Country: 'KZ' },
+    server_info: mockMeasurementDto(true)[0].ServerInfo,
     annotation: null,
     download: 6935.637333333333,
     upload: 11,
@@ -616,8 +573,8 @@ export const mockMeasurementModel = [
     school_id: '123',
     device_type: 'windows',
     notes: '',
-    client_info: mockMeasurementDto[1].ClientInfo,
-    server_info: mockMeasurementDto[1].ServerInfo,
+    client_info: { ...mockMeasurementDto(true)[1].ClientInfo, Country: 'KZ' },
+    server_info: mockMeasurementDto(true)[1].ServerInfo,
     annotation: null,
     download: 6935.637333333333,
     upload: 11,
@@ -641,8 +598,8 @@ export const mockMeasurementModel = [
     school_id: '123',
     device_type: 'windows',
     notes: '',
-    client_info: mockMeasurementDto[2].ClientInfo,
-    server_info: mockMeasurementDto[2].ServerInfo,
+    client_info: { ...mockMeasurementDto(true)[2].ClientInfo, Country: 'KZ' },
+    server_info: mockMeasurementDto(true)[2].ServerInfo,
     annotation: null,
     download: 6935.637333333333,
     upload: 11,
@@ -669,8 +626,8 @@ export const mockMeasurementFailedModel = [
     school_id: '233',
     device_type: 'windows',
     notes: '',
-    client_info: mockMeasurementDto[0].ClientInfo,
-    server_info: mockMeasurementDto[0].ServerInfo,
+    client_info: mockMeasurementDto(true)[0].ClientInfo,
+    server_info: mockMeasurementDto(true)[0].ServerInfo,
     annotation: null,
     download: 6935.637333333333,
     upload: 11,
@@ -695,8 +652,8 @@ export const mockMeasurementFailedModel = [
     school_id: '123',
     device_type: 'windows',
     notes: '',
-    client_info: mockMeasurementDto[1].ClientInfo,
-    server_info: mockMeasurementDto[1].ServerInfo,
+    client_info: mockMeasurementDto(true)[1].ClientInfo,
+    server_info: mockMeasurementDto(true)[1].ServerInfo,
     annotation: null,
     download: 6935.637333333333,
     upload: 11,
@@ -721,8 +678,8 @@ export const mockMeasurementFailedModel = [
     school_id: '123',
     device_type: 'windows',
     notes: '',
-    client_info: mockMeasurementDto[2].ClientInfo,
-    server_info: mockMeasurementDto[2].ServerInfo,
+    client_info: mockMeasurementDto(true)[2].ClientInfo,
+    server_info: mockMeasurementDto(true)[2].ServerInfo,
     annotation: null,
     download: 6935.637333333333,
     upload: 11,

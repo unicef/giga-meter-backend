@@ -20,3 +20,10 @@ export const WriteAccess = createParamDecorator(
     return request.has_write_access;
   },
 );
+
+export const IsSuperUser = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.is_super_user;
+  },
+);
