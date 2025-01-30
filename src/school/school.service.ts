@@ -136,7 +136,7 @@ export class SchoolService {
 
   private toModel(school: SchoolDto): any {
     return {
-      user_id: uuidv4(),
+      user_id: school?.user_id || uuidv4(),
       giga_id_school: school.giga_id_school?.toLowerCase().trim(),
       mac_address: school.mac_address,
       os: school.os,
