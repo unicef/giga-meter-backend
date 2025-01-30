@@ -253,3 +253,4 @@ SET iso3_format = CASE
     WHEN code = 'NA' THEN 'NAM'
     ELSE iso3_format
 END
+
