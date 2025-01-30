@@ -186,7 +186,7 @@ SET iso3_format = CASE
     WHEN code = 'KI' THEN 'KIR'
     WHEN code = 'KW' THEN 'KWT'
     WHEN code = 'LT' THEN 'LTU'
-    WHEN code = 'LU' THEN 'LUX'
+    WHEN code = 'LX' THEN 'LUX'
     WHEN code = 'MC' THEN 'MCO'
     WHEN code = 'MH' THEN 'MHL'
     WHEN code = 'MS' THEN 'MSR'
@@ -249,5 +249,7 @@ SET iso3_format = CASE
     WHEN code = 'VI' THEN 'VIR'
     WHEN code = 'WF' THEN 'WLF'
     WHEN code = 'WS' THEN 'WSM'
+    WHEN code = 'KP1' THEN 'KOR'
+    WHEN code = 'NA' THEN 'NAM'
     ELSE iso3_format
 END
