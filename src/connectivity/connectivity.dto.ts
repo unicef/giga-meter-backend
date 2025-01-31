@@ -1,12 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { PaginationDto } from 'src/utility/dto';
 
-export class ConnectivityDto {
-  @ApiProperty({
-    description: 'The id of the connectivity check',
-  })
-  id: number;
-
+export class BaseCreateConnectivityDto {
   @ApiProperty({
     description: 'The timestamp of the connectivity check',
   })
@@ -16,27 +11,6 @@ export class ConnectivityDto {
     description: 'The connection status of the connectivity check',
   })
   is_connected: boolean;
-
-  @ApiProperty({
-    description: 'The response time of the connectivity check',
-  })
-  response_time: bigint;
-
-  @ApiProperty({
-    description: 'The target host of the connectivity check',
-  })
-  target_host: string;
-
-  @ApiProperty({
-    description: 'The number of packets sent in the connectivity check',
-  })
-  packet_sent: bigint;
-
-  @ApiProperty({
-    description: 'The number of packets received in the connectivity check',
-  })
-  packet_received: bigint;
-
   @ApiProperty({
     description: 'The error message of the connectivity check',
   })
@@ -48,7 +22,36 @@ export class ConnectivityDto {
   giga_id_school: string;
 }
 
+export class CreateConnectivityDto extends BaseCreateConnectivityDto {}
+
+export class GetConnectivityDto extends BaseCreateConnectivityDto {
+  @ApiProperty({
+    description: 'The id of the connectivity check',
+  })
+  id: number;
+
+  @ApiProperty({
+    description: 'The created at timestamp of the connectivity check',
+  })
+  created_at: Date;
+}
+
 export class GetConnectivityRecordsDto extends PaginationDto {
+  @ApiProperty({
+    description: 'The start time to filter the connectivity checks',
+    required: false,
+    example: new Date(0),
+  })
+  start_time?: Date;
+  @ApiProperty({
+    description: 'The end time to filter the connectivity checks',
+    required: false,
+    example: new Date(),
+  })
+  end_time?: Date;
+}
+
+export class GetConnectivityRecordsWithSchoolDto extends GetConnectivityRecordsDto {
   @ApiProperty({
     description: 'The giga id of the school to filter the connectivity checks',
     required: true,

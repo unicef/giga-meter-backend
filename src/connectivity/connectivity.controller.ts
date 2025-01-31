@@ -8,7 +8,10 @@ import {
   Query,
 } from '@nestjs/common';
 import { ConnectivityService } from './connectivity.service';
-import { ConnectivityDto, GetConnectivityRecordsDto } from './connectivity.dto';
+import {
+  CreateConnectivityDto,
+  GetConnectivityRecordsWithSchoolDto,
+} from './connectivity.dto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { DynamicResponse, IdParam } from 'src/utility/decorators';
@@ -22,15 +25,16 @@ export class ConnectivityController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new connectivity check' })
-  async create(@Body() createConnectivityDto: ConnectivityDto) {
+  async create(
+    @Body() createConnectivityDto: CreateConnectivityDto,
+  ): Promise<CreateConnectivityDto> {
     return this.connectivityService.create(createConnectivityDto);
   }
 
   @Get()
   @DynamicResponse({ summary: 'Get all connectivity checks' })
-  findAll(@Query() query: GetConnectivityRecordsDto) {
-    const { giga_id_school } = query;
-    return this.connectivityService.findAll(giga_id_school);
+  findAll(@Query() query: GetConnectivityRecordsWithSchoolDto) {
+    return this.connectivityService.findAll(query);
   }
 
   @Get(':id')
