@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["tracing"]
 }
 
@@ -64,50 +64,127 @@ model dailycheckapp_school {
 }
 
 model school {
-  id                        BigInt    @id @default(autoincrement())
-  created                   DateTime? @db.Timestamptz(6)
-  modified                  DateTime? @db.Timestamptz(6)
-  name                      String?   @db.VarChar
-  country_code              String?   @db.VarChar
-  timezone                  String?   @db.VarChar
-  geopoint                  String?   @db.VarChar
-  gps_confidence            Float?
-  altitude                  Int?
-  address                   String?   @db.VarChar
-  postal_code               String?   @db.VarChar
-  email                     String?   @db.VarChar
-  education_level           String?   @db.VarChar
-  environment               String?   @db.VarChar
-  school_type               String?   @db.VarChar
-  country_id                Int?
-  location_id               Int?
-  admin_2_name              String?   @db.VarChar
-  admin_3_name              String?   @db.VarChar
-  admin_4_name              String?   @db.VarChar
-  external_id               String?   @db.VarChar
-  admin_1_name              String?   @db.VarChar
-  last_weekly_status_id     Int?
-  name_lower                String?   @db.VarChar
-  giga_id_school            String?   @db.VarChar
-  education_level_regional  String?   @db.VarChar
-  feature_flags             Json?
-  created_at                DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  id                         BigInt                     @id @default(autoincrement())
+  created                    DateTime?                  @db.Timestamptz(6)
+  modified                   DateTime?                  @db.Timestamptz(6)
+  name                       String?                    @db.VarChar
+  timezone                   String?                    @db.VarChar
+  geopoint                   String?                    @db.VarChar
+  gps_confidence             Float?
+  altitude                   Int?
+  address                    String?                    @db.VarChar
+  postal_code                String?                    @db.VarChar
+  email                      String?                    @db.VarChar
+  education_level            String?                    @db.VarChar
+  environment                String?                    @db.VarChar
+  school_type                String?                    @db.VarChar
+  country_id                 Int?
+  location_id                Int?
+  admin_2_name               String?                    @db.VarChar
+  admin_3_name               String?                    @db.VarChar
+  admin_4_name               String?                    @db.VarChar
+  external_id                String?                    @db.VarChar
+  admin_1_name               String?                    @db.VarChar
+  last_weekly_status_id      Int?
+  name_lower                 String?                    @db.VarChar
+  giga_id_school             String?                    @db.VarChar
+  education_level_regional   String?                    @db.VarChar
+  feature_flags              Json?
+  created_at                 DateTime?                  @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  country_code               String?                    @db.VarChar
+  deleted                    DateTime?                  @db.Timestamptz(6)
+  last_school_static_id      Int?
+  master_sync_school_statics master_sync_school_static? @relation("master_sync_school_staticToschool")
+  country                    country?                   @relation(fields: [country_code], references: [code])
+  master_sync_school_static  master_sync_school_static? @relation("schoolToMaster_sync_school_static", fields: [last_school_static_id], references: [id])
 
-  // Foreign key relation to country
-  country      country?      @relation(fields: [country_code], references: [code])
-
-  // Ensure country_code is indexed and enforce referential integrity
   @@index([country_code])
+  @@index([deleted])
+  @@index([last_school_static_id])
 }
 
 model country {
-  id         BigInt    @id @default(autoincrement())
-  name       String    @db.VarChar
-  code       String    @unique
-  created_at DateTime  @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  
-  // Relation back to school
-  schools     school[]
+  id                                BigInt                     @id @default(autoincrement())
+  name                              String                     @db.VarChar
+  code                              String                     @unique
+  created_at                        DateTime                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  iso3_format                       String?                    @db.VarChar(32)
+  latest_school_master_data_version Int?
+  master_sync_intermediate          master_sync_intermediate[]
+  schools                           school[]
+}
+
+model master_sync_school_static {
+    id                                  Int      @id @default(autoincrement())
+  created                               DateTime  @db.Timestamptz
+  modified                              DateTime  @db.Timestamptz
+  latitude                              Float?
+  longitude                             Float?
+  admin1_id_giga                        String?   @db.VarChar(50)
+  admin2_id_giga                        String?   @db.VarChar(50)
+  school_establishment_year             Int?
+  download_speed_contracted             Float?
+  num_computers_desired                 Int?
+  electricity_type                      String?   @db.VarChar(255)
+  num_adm_personnel                     Int?
+  num_students                          Int?
+  num_teachers                          Int?
+  num_classrooms                        Int?
+  num_latrines                          Int?
+  water_availability                    Boolean?
+  electricity_availability              Boolean?
+  computer_lab                          Boolean?
+  num_computers                         Int?
+  connectivity_govt                     Boolean?
+  connectivity_type_govt                String?   @db.VarChar(255)
+  connectivity_type                     String?   @db.VarChar(255)
+  connectivity_type_root                String?   @db.VarChar(255)
+  cellular_coverage_availability        Boolean?
+  cellular_coverage_type                String?   @db.VarChar(255)
+  fiber_node_distance                   Float?
+  microwave_node_distance               Float?
+  schools_within_1km                    Int?
+  schools_within_2km                    Int?
+  schools_within_3km                    Int?
+  nearest_lte_distance                  Float?
+  nearest_umts_distance                 Float?
+  nearest_gsm_distance                  Float?
+  nearest_nr_distance                   Float?
+  pop_within_1km                        Int?
+  pop_within_2km                        Int?
+  pop_within_3km                        Int?
+  school_data_source                    String?   @db.VarChar(255)
+  school_data_collection_year           Int?
+  school_data_collection_modality       String?   @db.VarChar(255)
+  school_location_ingestion_timestamp   DateTime?
+  connectivity_govt_ingestion_timestamp DateTime?
+  connectivity_govt_collection_year     Int?
+  disputed_region                       Boolean
+  connectivity_rt                       Boolean?
+  connectivity_rt_datasource            String?   @db.VarChar(255)
+  connectivity_rt_ingestion_timestamp   DateTime?
+  connectivity                          Boolean?
+  download_speed_benchmark              Float?
+  computer_availability                 Boolean?
+  num_students_girls                    Int?
+  num_students_boys                     Int?
+  num_students_other                    Int?
+  num_teachers_female                   Int?
+  num_teachers_male                     Int?
+  teachers_trained                      Boolean?
+  sustainable_business_model            Boolean?
+  device_availability                   Boolean?
+  num_tablets                           Int?
+  num_robotic_equipment                 Int?
+  building_id_govt                      String?   @db.VarChar(255)
+  num_schools_per_building              Int?
+  version                               Int?
+  school_id                             BigInt? @unique
+  school                                school?   @relation("master_sync_school_staticToschool", fields: [school_id], references: [id])
+  schools                               school[]  @relation("schoolToMaster_sync_school_static")
+
+  @@index([school_id], map: "master_sync_school_static_school_id_00765da3")
+  @@map("master_sync_school_static")
 }
 
 model giga_id_school_mapping_fix {
@@ -120,54 +197,139 @@ model giga_id_school_mapping_fix {
 }
 
 model measurements {
-  id             BigInt    @id(map: "PK_measurements") @default(autoincrement())
-  timestamp      DateTime? @db.Timestamptz(6)
-  uuid           String?
-  browser_id     String?
-  school_id      String
-  device_type    String?
-  notes          String?
-  client_info    Json?
-  server_info    Json?
-  annotation     String?
-  download       Float?
-  upload         Float?
-  latency        BigInt?
-  data_uploaded    BigInt?
-  data_downloaded  BigInt?
-  data_usage     BigInt?
-  results        Json?
-  giga_id_school String?
-  country_code   String?
-  ip_address     String?
-  app_version    String?
-  source         String    @default("MLab")
-  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  id              BigInt    @id(map: "PK_measurements") @default(autoincrement())
+  timestamp       DateTime? @db.Timestamptz(6)
+  uuid            String?
+  browser_id      String?
+  school_id       String
+  device_type     String?
+  notes           String?
+  client_info     Json?
+  server_info     Json?
+  annotation      String?
+  download        Float?
+  upload          Float?
+  latency         BigInt?
+  results         Json?
+  giga_id_school  String?
+  country_code    String?
+  ip_address      String?
+  app_version     String?
+  source          String    @default("MLab")
+  created_at      DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  data_downloaded BigInt?
+  data_uploaded   BigInt?
+  data_usage      BigInt?
 }
 
 model measurements_failed {
-  id             BigInt    @id(map: "PK_measurements_failed") @default(autoincrement())
-  timestamp      DateTime? @db.Timestamptz(6)
-  uuid           String?
-  browser_id     String?
-  school_id      String
-  device_type    String?
-  notes          String?
-  client_info    Json?
-  server_info    Json?
-  annotation     String?
-  download       Float?
-  upload         Float?
-  latency        BigInt?
-  data_uploaded    BigInt?
-  data_downloaded  BigInt?
-  data_usage     BigInt?
-  results        Json?
-  giga_id_school String?
-  country_code   String?
-  ip_address     String?
-  app_version    String?
-  source         String    @default("DailyCheckApp")
-  reason         String
-  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  id              BigInt    @id(map: "PK_measurements_failed") @default(autoincrement())
+  timestamp       DateTime? @db.Timestamptz(6)
+  uuid            String?
+  browser_id      String?
+  school_id       String
+  device_type     String?
+  notes           String?
+  client_info     Json?
+  server_info     Json?
+  annotation      String?
+  download        Float?
+  upload          Float?
+  latency         BigInt?
+  results         Json?
+  giga_id_school  String?
+  country_code    String?
+  ip_address      String?
+  app_version     String?
+  source          String    @default("DailyCheckApp")
+  reason          String
+  created_at      DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  data_downloaded BigInt?
+  data_uploaded   BigInt?
+  data_usage      BigInt?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model master_sync_intermediate {
+  id                                    Int       @id @default(autoincrement())
+  created                               DateTime  @db.Timestamptz
+  modified                              DateTime  @db.Timestamptz
+  school_id_giga                        String    @db.VarChar(50)
+  school_id_govt                        String?   @db.VarChar(255)
+  school_name                           String    @db.VarChar(1000)
+  admin1                                String?   @db.VarChar(255)
+  admin1_id_giga                        String?   @db.VarChar(50)
+  admin2                                String?   @db.VarChar(255)
+  admin2_id_giga                        String?   @db.VarChar(50)
+  latitude                              Float?
+  longitude                             Float?
+  education_level                       String?   @db.VarChar(255)
+  school_area_type                      String?   @db.VarChar(255)
+  school_funding_type                   String?   @db.VarChar(255)
+  school_establishment_year             Int?      @db.SmallInt
+  download_speed_contracted             Float?
+  num_computers_desired                 Int?
+  electricity_type                      String?   @db.VarChar(255)
+  num_adm_personnel                     Int?
+  num_students                          Int?
+  num_teachers                          Int?
+  num_classrooms                        Int?
+  num_latrines                          Int?
+  water_availability                    String?   @db.VarChar(255)
+  electricity_availability              String?   @db.VarChar(255)
+  computer_lab                          String?   @db.VarChar(255)
+  num_computers                         Int?
+  connectivity_govt                     String?   @db.VarChar(255)
+  connectivity_type_govt                String?   @db.VarChar(255)
+  cellular_coverage_availability        String?   @db.VarChar(255)
+  cellular_coverage_type                String?   @db.VarChar(255)
+  connectivity_type                     String?   @db.VarChar(255)
+  connectivity_type_root                String?   @db.VarChar(255)
+  fiber_node_distance                   Float?
+  microwave_node_distance               Float?
+  schools_within_1km                    Int?
+  schools_within_2km                    Int?
+  schools_within_3km                    Int?
+  nearest_LTE_distance                  Float?
+  nearest_UMTS_distance                 Float?
+  nearest_GSM_distance                  Float?
+  nearest_NR_distance                   Float?
+  pop_within_1km                        Int?
+  pop_within_2km                        Int?
+  pop_within_3km                        Int?
+  school_data_source                    String?   @db.VarChar(255)
+  school_data_collection_year           Int?      @db.SmallInt
+  school_data_collection_modality       String?   @db.VarChar(255)
+  school_location_ingestion_timestamp   DateTime? @db.Timestamptz
+  connectivity_govt_ingestion_timestamp DateTime? @db.Timestamptz
+  connectivity_govt_collection_year     Int?      @db.SmallInt
+  disputed_region                       String?   @db.VarChar(255)
+  connectivity_RT                       String?   @db.VarChar(255)
+  connectivity_RT_datasource            String?   @db.VarChar(255)
+  connectivity_RT_ingestion_timestamp   DateTime? @db.Timestamptz
+  download_speed_benchmark              Float?
+  computer_availability                 String?   @db.VarChar(255)
+  num_students_girls                    Int?
+  num_students_boys                     Int?
+  num_students_other                    Int?
+  num_teachers_female                   Int?
+  num_teachers_male                     Int?
+  teachers_trained                      String?   @db.VarChar(255)
+  sustainable_business_model            String?   @db.VarChar(255)
+  device_availability                   String?   @db.VarChar(255)
+  num_tablets                           Int?
+  num_robotic_equipment                 Int?
+  building_id_govt                      String?   @db.VarChar(255)
+  num_schools_per_building              Int?
+  connectivity                          String?   @db.VarChar(255)
+  version                               Int?
+  status                                String    @db.VarChar(50)
+  country_id                            BigInt?
+  country                               country?  @relation(fields: [country_id], references: [id])
+
+  @@index([country_id], map: "master_sync_intermediate_country_id_5341dc42")
+  @@index([school_id_giga], map: "master_sync_intermediate_school_id_giga_a164dbb6")
+  @@index([school_id_govt], map: "master_sync_intermediate_school_id_govt_ab3b376c")
+  @@index([status], map: "master_sync_intermediate_status_a2e65bb9")
+  @@map("master_sync_intermediate")
 }

@@ -188,6 +188,8 @@ export const mockSchoolMasterModel = {
   feature_flags: mockFeatureFlagsDto,
   giga_id_school: 'gigaid1',
   created_at: new Date('2024-04-12T04:13:37.300Z'),
+  deleted: null,
+  last_school_static_id: 1,
 };
 
 export const mockSchoolMasterDto: SchoolMasterDto[] = [
