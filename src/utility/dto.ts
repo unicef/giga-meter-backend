@@ -13,5 +13,5 @@ export class PaginationDto {
     example: 10,
     required: false,
   })
-  size?: number;
+  per_page?: number;
 }
