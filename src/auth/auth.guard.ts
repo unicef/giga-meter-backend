@@ -36,32 +36,32 @@ export class AuthGuard implements CanActivate {
   
   private async validateToken(token: string, request: any): Promise<boolean> {
     try {
-      const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
       if (process.env.GIGA_METER_APP_KEY === token) {
         request.has_write_access=true;
         request.is_super_user=true;
         return true;
       } else {
-        if (!isPublicAccess) {
-          return false;
-        }
         const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
         const response = await firstValueFrom(
           this.httpService.get<ValidateApiKeyDto>(url, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         );
-
+        
         if (
           !response.data.success ||
           (!response.data.data.has_write_access &&
             (request?.method != 'GET' ||
               response.data.data.countries?.length === 0))
-        ) {
-          return false;
-        }
-
-        request.has_write_access = response.data.data.has_write_access;
+            ) {
+              return false;
+            }
+            
+          request.has_write_access = response.data.data.has_write_access;
+          const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
+          if (!request.has_write_access && !isPublicAccess) {
+            return false;
+          }
         if (request?.method == 'GET' && !response.data.data.has_write_access) {
           request.allowed_countries = response.data.data.countries.map(
             (c) => c.code,
