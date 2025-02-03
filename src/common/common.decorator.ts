@@ -21,9 +21,9 @@ export const WriteAccess = createParamDecorator(
   },
 );
 
-export const ShowAllMeasurements = createParamDecorator(
+export const IsSuperUser = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.show_all_measurements;
+    return request.is_super_user;
   },
 );
