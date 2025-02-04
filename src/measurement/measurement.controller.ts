@@ -431,6 +431,38 @@ export class MeasurementController {
   async createMeasurement(
     @Body() measurementDto: AddMeasurementDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
+    if (measurementDto.Results && measurementDto.app_version) {
+      try {
+        // Validate app_version format
+        const versionParts = measurementDto.app_version.toString().split('.');
+        if (
+          versionParts.length !== 3 ||
+          versionParts.some((part) => !/^\d+$/.test(part))
+        ) {
+          console.warn(`Invalid version format: ${measurementDto.app_version}`);
+          return;
+        }
+
+        const [major, minor, patch] = versionParts.map(Number);
+        const isVersionAbove109 =
+          major > 1 ||
+          (major === 1 && minor > 0) ||
+          (major === 1 && minor === 0 && patch >= 9);
+
+        if (isVersionAbove109) {
+          const results = measurementDto.Results;
+          const minRTT =
+            results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo?.MinRTT;
+          if (typeof minRTT === 'number' && !isNaN(minRTT)) {
+            measurementDto.Latency = Number((minRTT / 1000).toFixed(0));
+          } else {
+            console.warn('Invalid or missing MinRTT value');
+          }
+        }
+      } catch (error) {
+        console.error('Error processing measurement:', error);
+      }
+    }
     const response =
       await this.measurementService.createMeasurement(measurementDto);
 
