@@ -32,7 +32,7 @@ export class MeasurementService {
     filter_value?: Date,
     write_access?: boolean,
     countries?: string[],
-    showAllMeasurements?: boolean,
+    isSuperUser?: boolean,
   ): Promise<MeasurementDto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -65,7 +65,7 @@ export class MeasurementService {
       },
     });
     return (await measurements).map((measurement) =>
-      this.toDto(measurement, showAllMeasurements),
+      this.toDto(measurement, isSuperUser),
     );
   }
 
@@ -305,10 +305,10 @@ export class MeasurementService {
 
   private toDto(
     measurement: Measurement,
-    showAllMeasurements?: boolean,
+    isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
-    const filteredClientInfo = showAllMeasurements
+    const filteredClientInfo = isSuperUser
       ? clientInfo
       : { ...clientInfo, IP: undefined };
 
@@ -343,7 +343,7 @@ export class MeasurementService {
       source: measurement.source,
       created_at: measurement.created_at,
     };
-    if (showAllMeasurements) {
+    if (isSuperUser) {
       filterMeasurementData['UUID'] = measurement.uuid;
       filterMeasurementData['ip_address'] = measurement.ip_address;
       filterMeasurementData['school_id'] = measurement.school_id;
