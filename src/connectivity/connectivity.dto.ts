@@ -24,6 +24,14 @@ export class BaseCreateConnectivityDto {
 
 export class CreateConnectivityDto extends BaseCreateConnectivityDto {}
 
+export class CreateManyConnectivityDto {
+  @ApiProperty({
+    description: 'The array of connectivity checks',
+    type: [BaseCreateConnectivityDto],
+  })
+  records: BaseCreateConnectivityDto[];
+}
+
 export class GetConnectivityDto extends BaseCreateConnectivityDto {
   @ApiProperty({
     description: 'The id of the connectivity check',
