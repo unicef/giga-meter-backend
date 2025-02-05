@@ -10,16 +10,26 @@ export class BaseCreateConnectivityDto {
   @ApiProperty({
     description: 'The connection status of the connectivity check',
   })
-  is_connected: boolean;
+  isConnected: boolean;
   @ApiProperty({
     description: 'The error message of the connectivity check',
   })
-  error_message: string;
+  errorMessage: string;
 
   @ApiProperty({
     description: 'The giga id of the school',
   })
   giga_id_school: string;
+
+  @ApiProperty({
+    description: 'Uuid of the connectivity check',
+  })
+  uuid: string;
+
+  @ApiProperty({
+    description: 'Device id of the connectivity check',
+  })
+  deviceId: string;
 }
 
 export class CreateConnectivityDto extends BaseCreateConnectivityDto {}
