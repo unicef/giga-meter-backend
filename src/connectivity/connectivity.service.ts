@@ -27,6 +27,26 @@ export class ConnectivityService {
       throw new BadRequestException('School does not exist');
     }
   }
+
+  async createMany(
+    createConnectivityDto: CreateConnectivityDto[],
+    giga_id_school: string,
+  ) {
+    if ((await existSchool(this.prisma, giga_id_school)) === false)
+      throw new BadRequestException('School does not exist');
+    try {
+      await this.prisma.connectivity_ping_checks.createMany({
+        data: createConnectivityDto.map((record) => ({
+          ...record,
+          giga_id_school,
+        })),
+      });
+      return createConnectivityDto;
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestException('School does not exist');
+    }
+  }
   async findAll(query: GetConnectivityRecordsWithSchoolDto) {
     const {
       giga_id_school,
