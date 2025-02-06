@@ -24,7 +24,7 @@ export class BaseCreateConnectivityDto {
   @ApiProperty({
     description: 'Uuid of the connectivity check',
   })
-  uuid: string;
+  app_local_uuid: string;
 
   @ApiProperty({
     description: 'Device id of the connectivity check',
