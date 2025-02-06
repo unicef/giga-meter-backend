@@ -115,7 +115,7 @@ model country {
 }
 
 model master_sync_school_static {
-    id                                  Int      @id @default(autoincrement())
+  id                                    Int       @id @default(autoincrement())
   created                               DateTime  @db.Timestamptz
   modified                              DateTime  @db.Timestamptz
   latitude                              Float?
@@ -195,15 +195,16 @@ model giga_id_school_mapping_fix {
   correct_country        String
   created_at             DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
-model connectivity_ping_checks{
-  id            Int    @id(map: "PK_connectivity_ping_checks") @default(autoincrement())
-  timestamp     DateTime? @db.Timestamptz(6) 
-  isConnected  Boolean? @map("is_connected")
-  errorMessage String? @map("error_message")
-  giga_id_school String 
-  app_local_uuid          String @unique 
-  deviceId      String  @map("device_id")
-  created_at    DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+
+model connectivity_ping_checks {
+  id             Int       @id() @default(autoincrement())
+  timestamp      DateTime? @db.Timestamptz(6)
+  isConnected    Boolean?  @map("is_connected")
+  errorMessage   String?   @map("error_message")
+  giga_id_school String
+  app_local_uuid String    @unique
+  deviceId       String    @map("device_id")
+  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
 
 model measurements {
