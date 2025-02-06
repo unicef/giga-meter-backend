@@ -20,7 +20,7 @@ import { DynamicResponse, IdParam } from 'src/utility/decorators';
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
 @ApiTags('Connectivity Checks')
-@Controller('connectivity')
+@Controller('api/v1/connectivity')
 export class ConnectivityController {
   constructor(private readonly connectivityService: ConnectivityService) {}
 
