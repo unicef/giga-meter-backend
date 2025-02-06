@@ -201,7 +201,7 @@ model connectivity_ping_checks{
   isConnected  Boolean? @map("is_connected")
   errorMessage String? @map("error_message")
   giga_id_school String 
-  uuid          String 
+  app_local_uuid          String @unique 
   deviceId      String  @map("device_id")
   created_at    DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
