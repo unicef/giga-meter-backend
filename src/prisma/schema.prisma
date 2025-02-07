@@ -196,17 +196,6 @@ model giga_id_school_mapping_fix {
   created_at             DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
 
-model connectivity_ping_checks {
-  id             Int       @id() @default(autoincrement())
-  timestamp      DateTime? @db.Timestamptz(6)
-  isConnected    Boolean?  @map("is_connected")
-  errorMessage   String?   @map("error_message")
-  giga_id_school String
-  app_local_uuid String    @unique
-  deviceId       String    @map("device_id")
-  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-}
-
 model measurements {
   id              BigInt    @id(map: "PK_measurements") @default(autoincrement())
   timestamp       DateTime? @db.Timestamptz(6)
@@ -343,4 +332,15 @@ model master_sync_intermediate {
   @@index([school_id_govt], map: "master_sync_intermediate_school_id_govt_ab3b376c")
   @@index([status], map: "master_sync_intermediate_status_a2e65bb9")
   @@map("master_sync_intermediate")
+}
+
+model connectivity_ping_checks {
+  id             Int       @id() @default(autoincrement())
+  timestamp      DateTime? @db.Timestamptz(6)
+  isConnected    Boolean?  @map("is_connected")
+  errorMessage   String?   @map("error_message")
+  giga_id_school String
+  app_local_uuid String    @unique
+  deviceId       String    @map("device_id")
+  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 }
