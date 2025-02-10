@@ -22,6 +22,8 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
+import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityService } from './connectivity/connectivity.service';
 
 @Module({
   imports: [
@@ -44,6 +46,7 @@ import { MetricsService } from './metrics/metrics.service';
     AdminController,
     DataFixController,
     MetricsController,
+    ConnectivityController,
   ],
   providers: [
     AppService,
@@ -56,6 +59,7 @@ import { MetricsService } from './metrics/metrics.service';
     MeasurementService,
     AdminService,
     MetricsService,
+    ConnectivityService,
   ],
 })
 export class AppModule {}
