@@ -22,6 +22,7 @@ export class ConnectivityService {
         ...record,
         giga_id_school,
       })),
+      skipDuplicates: true,
     });
     return createConnectivityDto;
   }
