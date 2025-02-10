@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
@@ -7,6 +7,10 @@ import * as dotenv from 'dotenv';
 import * as Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { AllExceptionFilter } from './common/common.filter';
+import {
+  PrismaClientExceptionFilter,
+  PrismaClientValidationErrorFilter,
+} from './prisma/prisma-client-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -113,7 +117,12 @@ async function bootstrap() {
     });
   }
 
-  app.useGlobalFilters(new AllExceptionFilter());
+  const { httpAdapter } = app.get(HttpAdapterHost);
+  app.useGlobalFilters(
+    new AllExceptionFilter(),
+    new PrismaClientExceptionFilter(httpAdapter),
+    new PrismaClientValidationErrorFilter(httpAdapter),
+  );
 
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
@@ -123,6 +132,7 @@ async function bootstrap() {
   });
 
   dotenv.config();
+
   await app.listen(3000, () => {
     console.log('Server started on port 3000');
   });
