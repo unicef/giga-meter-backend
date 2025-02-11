@@ -451,6 +451,22 @@ export class MeasurementController {
 
         if (isVersionAbove109) {
           const results = measurementDto.Results;
+          const dataDownloaded =
+            results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo
+              ?.BytesAcked;
+          const dataUploaded =
+            results['NDTResult.C2S']?.LastServerMeasurement?.TCPInfo
+              ?.BytesReceived;
+          // Use strict null check (==) to handle both null and undefined
+          // Use nullish coalescing (??) instead of OR (||) to only replace null/undefined with 0
+          // This ensures we don't accidentally convert falsy values like 0 to 0
+          const dataUsage =
+            dataDownloaded == null && dataUploaded == null
+              ? null // If both are null/undefined, return null
+              : (dataDownloaded ?? 0) + (dataUploaded ?? 0); // Otherwise sum them, replacing null/undefined with 0
+          measurementDto.DataDownloaded = dataDownloaded;
+          measurementDto.DataUploaded = dataUploaded;
+          measurementDto.DataUsage = dataUsage;
           const minRTT =
             results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo?.MinRTT;
           if (typeof minRTT === 'number' && !isNaN(minRTT)) {
