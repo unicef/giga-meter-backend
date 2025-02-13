@@ -363,7 +363,7 @@ export class MeasurementService {
 
     const cleaned = { ...results };
 
-    // Safely remove ConnectionInfo using optional chaining
+    // Remove ConnectionInfo and NDTResult.S2C.ClientIP
     if (
       cleaned['NDTResult.C2S']?.LastServerMeasurement?.ConnectionInfo !==
       undefined
@@ -375,6 +375,9 @@ export class MeasurementService {
       undefined
     ) {
       delete cleaned['NDTResult.S2C'].LastServerMeasurement.ConnectionInfo;
+    }
+    if (cleaned['NDTResult.S2C.ClientIP'] !== undefined) {
+      delete cleaned['NDTResult.S2C.ClientIP'];
     }
 
     return cleaned;
