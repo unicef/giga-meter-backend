@@ -312,6 +312,11 @@ export class MeasurementService {
       ? clientInfo
       : { ...clientInfo, IP: undefined };
 
+    // Clean up Results object to remove ConnectionInfo
+    const cleanResults = measurement.results
+      ? this.removeConnectionInfo(measurement.results)
+      : undefined;
+
     const filterMeasurementData = {
       id: measurement.id.toString(),
       Timestamp: measurement.timestamp,
@@ -324,7 +329,9 @@ export class MeasurementService {
       Download: measurement.download,
       Upload: measurement.upload,
       Latency: parseInt(measurement.latency.toString()),
-      Results: plainToInstance(ResultsDto, measurement.results),
+      Results: cleanResults
+        ? plainToInstance(ResultsDto, cleanResults)
+        : undefined,
       DataDownloaded: measurement.data_downloaded
         ? parseInt(measurement.data_downloaded.toString())
         : undefined,
@@ -349,6 +356,31 @@ export class MeasurementService {
       filterMeasurementData['school_id'] = measurement.school_id;
     }
     return filterMeasurementData;
+  }
+
+  private removeConnectionInfo(results: any): any {
+    if (!results) return results;
+
+    const cleaned = { ...results };
+
+    // Remove ConnectionInfo and NDTResult.S2C.ClientIP
+    if (
+      cleaned['NDTResult.C2S']?.LastServerMeasurement?.ConnectionInfo !==
+      undefined
+    ) {
+      delete cleaned['NDTResult.C2S'].LastServerMeasurement.ConnectionInfo;
+    }
+    if (
+      cleaned['NDTResult.S2C']?.LastServerMeasurement?.ConnectionInfo !==
+      undefined
+    ) {
+      delete cleaned['NDTResult.S2C'].LastServerMeasurement.ConnectionInfo;
+    }
+    if (cleaned['NDTResult.S2C.ClientIP'] !== undefined) {
+      delete cleaned['NDTResult.S2C.ClientIP'];
+    }
+
+    return cleaned;
   }
 
   private toV2Dto(measurement: Measurement): MeasurementV2Dto {
@@ -399,7 +431,14 @@ export class MeasurementService {
       DataUsage: measurement.data_usage
         ? parseInt(measurement.data_usage.toString())
         : undefined,
-      Results: plainToInstance(ResultsDto, measurement.results),
+      Results: measurement.results
+        ? this.removeConnectionInfo(measurement.results)
+          ? plainToInstance(
+              ResultsDto,
+              this.removeConnectionInfo(measurement.results),
+            )
+          : undefined
+        : undefined,
       giga_id_school: measurement.giga_id_school,
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,
