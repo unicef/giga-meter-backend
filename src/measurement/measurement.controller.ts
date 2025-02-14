@@ -26,6 +26,7 @@ import {
 } from '../common/common.dto';
 import {
   AddMeasurementDto,
+  FilteredMeasurementDto,
   MeasurementDto,
   MeasurementFailedDto,
   MeasurementV2Dto,
@@ -53,7 +54,7 @@ export class MeasurementController {
   @ApiResponse({
     status: 200,
     description: 'Returns the list of measurements',
-    type: MeasurementDto,
+    type: FilteredMeasurementDto,
     isArray: true,
   })
   @ApiResponse({
