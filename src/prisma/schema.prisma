@@ -94,9 +94,9 @@ model school {
   country_code               String?                    @db.VarChar
   deleted                    DateTime?                  @db.Timestamptz(6)
   last_school_static_id      Int?
-  master_sync_school_statics master_sync_school_static? @relation("master_sync_school_staticToschool")
+  latest_master_sync         master_sync_school_static? @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
   country                    country?                   @relation(fields: [country_code], references: [code])
-  master_sync_school_static  master_sync_school_static? @relation("schoolToMaster_sync_school_static", fields: [last_school_static_id], references: [id])
+  master_sync_records        master_sync_school_static[] @relation("schoolToMasterSync")
 
   @@index([country_code])
   @@index([deleted])
@@ -179,9 +179,9 @@ model master_sync_school_static {
   building_id_govt                      String?   @db.VarChar(255)
   num_schools_per_building              Int?
   version                               Int?
-  school_id                             BigInt?   @unique
-  school                                school?   @relation("master_sync_school_staticToschool", fields: [school_id], references: [id])
-  schools                               school[]  @relation("schoolToMaster_sync_school_static")
+  school_id                             BigInt?
+  school                                school?  @relation("schoolToMasterSync", fields: [school_id], references: [id])
+  schools                               school[] @relation("latestMasterSync")
 
   @@index([school_id], map: "master_sync_school_static_school_id_00765da3")
   @@map("master_sync_school_static")
