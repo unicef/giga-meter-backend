@@ -10,6 +10,31 @@ export class PrismaService
 {
   private redisClient: Redis;
 
+  private serializeBigInt(data: any): any {
+    if (data === null || data === undefined) {
+      return data;
+    }
+    
+    if (typeof data === 'bigint') {
+      return data.toString();
+    }
+    
+    if (Array.isArray(data)) {
+      return data.map(item => this.serializeBigInt(item));
+    }
+    
+    if (typeof data === 'object') {
+      return Object.fromEntries(
+        Object.entries(data).map(([key, value]) => [
+          key,
+          this.serializeBigInt(value)
+        ])
+      );
+    }
+    
+    return data;
+  }
+
   constructor() {
     super();
     this.redisClient = new Redis(process.env.REDIS_URL);
@@ -37,8 +62,9 @@ export class PrismaService
 
         // Cache the result with configured TTL
         if (result) {
+          const serializedResult = this.serializeBigInt(result);
           const ttl = getCacheTTL(params.model);
-          await this.redisClient.set(key, JSON.stringify(result), 'EX', ttl);
+          await this.redisClient.set(key, JSON.stringify(serializedResult), 'EX', ttl);
           // console.log('Cached result for key:', key, 'with TTL:', ttl);
         }
 
