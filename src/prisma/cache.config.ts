@@ -12,11 +12,15 @@ const DEFAULT_CACHE_TTL = 1800; // 30 minutes
 export const CACHE_CONFIG: CacheConfig = {
   models: {
     measurements: {
-      actions: ['findMany', 'findUnique'],
+      actions: ['findMany', 'findUnique', 'findFirstOrThrow', 'findFirst'],
       ttl: parseInt(process.env.CACHE_EXPIRE, 10) || DEFAULT_CACHE_TTL // Default to 30 minutes if not set
     },
     dailycheckapp_country: {
-      actions: ['findMany', 'findUnique'],
+      actions: ['findMany', 'findUnique', 'findFirstOrThrow', 'findFirst'],
+      ttl: parseInt(process.env.CACHE_EXPIRE, 10) || DEFAULT_CACHE_TTL
+    },
+    dailycheckapp_school: {
+      actions: ['findMany', 'findUnique', 'findFirstOrThrow', 'findFirst'],
       ttl: parseInt(process.env.CACHE_EXPIRE, 10) || DEFAULT_CACHE_TTL
     }
   }
