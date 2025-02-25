@@ -17,10 +17,10 @@ export class AuthGuard implements CanActivate {
     try {
       const tokenList = (JSON.parse(process.env.TEMP_GIGA_METER_PUBLIC_ACCESS_TOKEN ?? "") || []) as string[];
       const isValid = tokenList.find((t: string) => t === token);
+      const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path);
 
-      if (isValid) {
-        request.allowed_countries = ['BR', 'US', 'IN', 'AU', 'CA'];
-        request.allowed_countries_iso3 = ['BRA', 'USA', 'IND', 'AUS', 'CAN'];
+      if (isValid && isPublicAccess && request?.method === 'GET') {
+        request.has_write_access = true;
       }
 
       return isValid;
