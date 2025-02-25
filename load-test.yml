@@ -8,8 +8,7 @@ config:
           rampTo: 200      # Ramp up to 100 users per second
       defaults:
         headers:
-                    # Authorization: "Bearer NlgrkZxB_*S_PbZbtOI9JweF92pwne1P5MunLLEpr5q42lSU87Js1X9eDsKUWx7oanx.4B1Zol6YKulP0Ut2W.wWOGcCJNFcokp4P69VwuO8oLvrQv#L#IL48f_vR8_4QxiZ3xDjIDuNHPKS_HDtH3Ykgnm.ojzsYpVFz3aNFw1ZkMq8T6s4sBqTDjA9XwKFdeVf2p#Ak9j9ksHfYdoZKrid4J3yCE6Kk3YCgFvCWXWPV4c7V76bcYckJRD#XT_bXO1tiEY8"
-          Authorization: "If5Nv65nP*iZa.HM*xvAR3g3k3V6#SZZnxXzTHFQg.KdLW.Je5zVnP_FV5ar4xnLBZaKoBo17fUivqger4TANU_eY_0ls8*utrKDUYj74yL45JCkuTam6Xshe*CWOUi7b2cqB.V8w2.H__fCCHeYw7dwZU66bWWFansSwAzwNg#MZPho4403gysMmOHICOIH*wVMddmfFdheqGCSkC8kv.aLFuE8r0IyRvC5JXEauDGG2YjssVSSSUq8RrVdfxzeDXiRtV7R"
+          Authorization: "Bearer YOUR_PROD_ACCESS_TOKEN"
           Content-Type: "application/json"
 
     prod:
