@@ -42,7 +42,7 @@ export class PrismaService
     // Set up the caching middleware
     this.$use(async (params, next) => {
       // Apply caching only on configured models and actions
-      if (process.env.NO_CACHE === 'true' || !isCacheable(params.model, params.action)) {
+      if (process.env.NO_CACHE === 'false' || !isCacheable(params.model, params.action)) {
         return next(params);
       }
 
