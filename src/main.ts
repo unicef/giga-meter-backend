@@ -92,10 +92,10 @@ async function bootstrap() {
     .build();
   const allDocument = SwaggerModule.createDocument(app, allConfig);
 
-  SwaggerModule.setup('api/all', app, allDocument, {
-    customCssUrl: '/swagger-custom.css',
-    customJs: '/swagger-custom.js',
-  });
+  // SwaggerModule.setup('api/all', app, allDocument, {
+  //   customCssUrl: '/swagger-custom.css',
+  //   customJs: '/swagger-custom.js',
+  // });
 
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({

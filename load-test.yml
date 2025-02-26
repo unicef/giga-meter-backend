@@ -1,0 +1,31 @@
+config:
+  environments:
+    dev:
+      target: "https://uni-ooi-giga-meter-backend-dev.azurewebsites.net"
+      phases:
+        - duration: 60   # 5 minutes
+          arrivalRate: 1  # 50 users per second
+      defaults:
+        headers:
+          Authorization: "Bearer YOUR_PROD_ACCESS_TOKEN"
+          Content-Type: "application/json"
+
+    prod:
+      target: "https://uni-ooi-giga-meter-backend-prod.azurewebsites.net"
+      phases:
+        - duration: 300   # 5 minutes
+          arrivalRate: 100 # 100 users per second
+          rampTo: 200      # Ramp up to 200 users per second
+      defaults:
+        headers:
+          Authorization: "Bearer YOUR_PROD_ACCESS_TOKEN"
+          Content-Type: "application/json"
+
+scenarios:
+  - flow:
+      - get:
+          url: "/api/v1/measurements?country_iso3_code=BWA&page={{ $randomNumber(1, 20) }}"
+      - get:
+          url: "/api/v1/measurements?country_iso3_code=KEN&page={{ $randomNumber(1, 20) }}"
+      - get:
+          url: "/api/v1/measurements?page={{ $randomNumber(1, 20) }}"
