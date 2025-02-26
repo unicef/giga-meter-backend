@@ -3,9 +3,8 @@ config:
     dev:
       target: "https://uni-ooi-giga-meter-backend-dev.azurewebsites.net"
       phases:
-        - duration: 30   # 5 minutes
-          arrivalRate: 500  # 50 users per second
-          rampTo: 200      # Ramp up to 100 users per second
+        - duration: 60   # 5 minutes
+          arrivalRate: 1  # 50 users per second
       defaults:
         headers:
           Authorization: "Bearer YOUR_PROD_ACCESS_TOKEN"
@@ -22,11 +21,11 @@ config:
           Authorization: "Bearer YOUR_PROD_ACCESS_TOKEN"
           Content-Type: "application/json"
 
-variables:
-    country: ["", "BRA", "IND", "USA", "GBR", ""]
-    filter: ["timestamp", "created_at", ""]
-
 scenarios:
   - flow:
       - get:
-          url: "/api/v1/measurements"
+          url: "/api/v1/measurements?country_iso3_code=BWA&page={{ $randomNumber(1, 20) }}"
+      - get:
+          url: "/api/v1/measurements?country_iso3_code=KEN&page={{ $randomNumber(1, 20) }}"
+      - get:
+          url: "/api/v1/measurements?page={{ $randomNumber(1, 20) }}"
