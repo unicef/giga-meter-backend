@@ -234,7 +234,8 @@ export class MeasurementController {
   })
   async getMeasurementsV2(
     @Query('page') page?: number,
-    @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
+    @ValidateSize({ min: 1, max: 100 }) 
+    @Query('size') size?: number,
     @Query('orderBy') orderBy?: string,
     @Query('giga_id_school') giga_id_school?: string,
     @Query('country_iso3_code') country_iso3_code?: string,
