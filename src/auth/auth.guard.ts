@@ -15,7 +15,7 @@ export class AuthGuard implements CanActivate {
 
   private async TEMP_verifyPublicToken(token: string, request: any) {
     try {
-      const tokenList = (JSON.parse(process.env.TEMP_GIGA_METER_PUBLIC_ACCESS_TOKEN ?? '["secret"]') || []) as string[];
+      const tokenList = (JSON.parse(process.env.TEMP_GIGA_METER_PUBLIC_ACCESS_TOKEN ?? '[]') || []) as string[];
       const isValid = tokenList.find((t: string) => t === token);
       const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path);
 
