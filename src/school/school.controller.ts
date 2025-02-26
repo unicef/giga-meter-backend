@@ -29,6 +29,7 @@ import { Countries, WriteAccess } from '../common/common.decorator';
 import { DynamicResponse } from 'src/utility/decorators';
 import { GetConnectivityRecordsDto } from 'src/connectivity/connectivity.dto';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
+import { ValidateSize } from 'src/common/validation.decorator';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')
@@ -83,6 +84,7 @@ export class SchoolController {
   })
   async getSchools(
     @Query('page') page?: number,
+    @ValidateSize({ min: 1, max: 100 }) 
     @Query('size') size?: number,
     @Query('giga_id_school') giga_id_school?: string,
     @Query('country_iso3_code') country_iso3_code?: string,

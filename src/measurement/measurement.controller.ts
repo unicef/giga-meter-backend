@@ -37,6 +37,7 @@ import {
   WriteAccess,
 } from '../common/common.decorator';
 import { v4 as uuidv4 } from 'uuid';
+import { ValidateSize } from '../common/validation.decorator';
 
 @ApiTags('Measurements')
 @Controller('api/v1/measurements')
@@ -103,9 +104,9 @@ export class MeasurementController {
   })
   @ApiQuery({
     name: 'size',
-    description: 'The number of measurements to return, default: 10',
+    description: 'The number of measurements to return (min: 1, max: 100), default: 10',
     required: false,
-    type: 'number',
+    type: 'number'
   })
   @ApiQuery({
     name: 'page',
@@ -116,7 +117,7 @@ export class MeasurementController {
   })
   async getMeasurements(
     @Query('page') page?: number,
-    @Query('size') size?: number,
+    @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
     @Query('orderBy') orderBy?: string,
     @Query('giga_id_school') giga_id_school?: string,
     @Query('country_iso3_code') country_iso3_code?: string,
@@ -140,7 +141,7 @@ export class MeasurementController {
 
     const measurements = await this.measurementService.measurements(
       (page ?? 0) * (size ?? 10),
-      (size ?? 10) * 1,
+      size ?? 10,
       orderBy ?? '-timestamp',
       giga_id_school,
       country_iso3_code,
@@ -233,6 +234,7 @@ export class MeasurementController {
   })
   async getMeasurementsV2(
     @Query('page') page?: number,
+    @ValidateSize({ min: 1, max: 100 }) 
     @Query('size') size?: number,
     @Query('orderBy') orderBy?: string,
     @Query('giga_id_school') giga_id_school?: string,
@@ -301,7 +303,7 @@ export class MeasurementController {
   })
   async getMeasurementsFailed(
     @Query('page') page?: number,
-    @Query('size') size?: number,
+    @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementFailedDto[]>> {
