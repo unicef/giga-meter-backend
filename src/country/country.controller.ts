@@ -27,6 +27,7 @@ import {
   CountriesIso3,
   WriteAccess,
 } from '../common/common.decorator';
+import { ValidateSize } from '../common/validation.decorator';
 
 @ApiTags('Country')
 @Controller('api/v1/dailycheckapp_countries')
@@ -65,6 +66,7 @@ export class CountryController {
   })
   async getCountries(
     @Query('page') page?: number,
+    @ValidateSize({ min: 1, max: 100 }) 
     @Query('size') size?: number,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
