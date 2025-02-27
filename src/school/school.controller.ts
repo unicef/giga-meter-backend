@@ -26,7 +26,7 @@ import {
 } from '../common/common.dto';
 import { CheckNotifyDto, SchoolDto } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
-import { ValidateSize } from 'src/common/validation.decorator';
+import { ValidateSize } from '../common/validation.decorator';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')

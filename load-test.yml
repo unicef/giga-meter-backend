@@ -3,11 +3,22 @@ config:
     dev:
       target: "https://uni-ooi-giga-meter-backend-dev.azurewebsites.net"
       phases:
-        - duration: 60   # 5 minutes
+        - duration: 60   # 60 seconds
           arrivalRate: 1  # 50 users per second
       defaults:
         headers:
           Authorization: "Bearer YOUR_PROD_ACCESS_TOKEN"
+          Content-Type: "application/json"
+    stg:
+      target: "https://uni-ooi-giga-meter-backend-stg.azurewebsites.net"
+      phases:
+        - duration: 60   # 60 seconds
+          arrivalRate: 20  # 50 users per second
+          rampTo: 20      # Ramp up to 200 users per second
+
+      defaults:
+        headers:
+          Authorization: "Bearer Y2.HjrsJs6djmJfg92HzAUPdGroYjIBA6yk*Xm5RJHMdjd.h#d01IdAwdJKuZfzfKDraWolxgK6Npr*1vqE53XF6CJ6QZiPMIP91sBvX7gNUkzdZ*.#z0er85zzo4daqU*7F9HgSjXh#emxoi.HbQ.RkStJj#hupmEn2.uVzZgR6OMHkLmELc1l*_mHlGfzjqdLuV*D1iyar.JdknKKZ0UEx59IHNbm8QSQwYJQsF30RmsGs0HWRKPl0koV4ipk9QVd9LlAj"
           Content-Type: "application/json"
 
     prod:
