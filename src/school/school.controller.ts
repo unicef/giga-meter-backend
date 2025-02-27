@@ -29,7 +29,7 @@ import { Countries, WriteAccess } from '../common/common.decorator';
 import { DynamicResponse } from 'src/utility/decorators';
 import { GetConnectivityRecordsDto } from 'src/connectivity/connectivity.dto';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
-import { ValidateSize } from 'src/common/validation.decorator';
+import { ValidateSize } from '../common/validation.decorator';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')
