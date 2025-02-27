@@ -26,16 +26,22 @@ import {
 } from '../common/common.dto';
 import { CheckNotifyDto, SchoolDto } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
+import { DynamicResponse } from 'src/utility/decorators';
+import { GetConnectivityRecordsDto } from 'src/connectivity/connectivity.dto';
+import { ConnectivityService } from 'src/connectivity/connectivity.service';
 import { ValidateSize } from '../common/validation.decorator';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 export class SchoolController {
-  constructor(private readonly schoolService: SchoolService) {}
+  constructor(
+    private readonly schoolService: SchoolService,
+    private readonly connectivityService: ConnectivityService,
+  ) {}
 
   @Get('')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Returns the list of registered schools on the Daily Check App database',
@@ -102,9 +108,19 @@ export class SchoolController {
     };
   }
 
+  @Get(':giga_id_school/connectivity')
+  @DynamicResponse({ summary: 'Get all connectivity checks' })
+  findConnectivityRecords(
+    @Param('giga_id_school') giga_id_school: string,
+    @Query() query: GetConnectivityRecordsDto,
+  ) {
+    return this.connectivityService.findAll({
+      giga_id_school,
+      ...query,
+    });
+  }
+
   @Get(':giga_id_school')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Returns the list of schools on the Daily Check App database by giga id school',
@@ -151,8 +167,6 @@ export class SchoolController {
   }
 
   @Get('id/:id')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Returns the list of schools on the Daily Check App database by id',
@@ -190,8 +204,6 @@ export class SchoolController {
   }
 
   @Get('country_id/:country_id')
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Returns the list of schools on the Daily Check App database by country id',
@@ -244,8 +256,6 @@ export class SchoolController {
 
   @Get('checkNotify/:user_id')
   @ApiExcludeEndpoint()
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Check to notify a Daily Check App school',
   })
@@ -282,8 +292,6 @@ export class SchoolController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Register a school in to the Daily Check App database',
   })
