@@ -27,7 +27,7 @@ import {
   CountriesIso3,
   WriteAccess,
 } from '../common/common.decorator';
-import { ValidateSize } from 'src/common/validation.decorator';
+import { ValidateSize } from '../common/validation.decorator';
 
 @ApiTags('Country')
 @Controller('api/v1/dailycheckapp_countries')
