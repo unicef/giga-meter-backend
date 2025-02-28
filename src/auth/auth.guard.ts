@@ -21,9 +21,9 @@ export class AuthGuard implements CanActivate {
 
       if (isValid && isPublicAccess && request?.method === 'GET') {
         request.has_write_access = true;
+        return isValid;
       }
-
-      return isValid;
+      return false;
     } catch (error) {
       console.error('Public token parse error', error.message);
       return false;
