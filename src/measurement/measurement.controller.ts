@@ -38,9 +38,13 @@ import {
 } from '../common/common.decorator';
 import { v4 as uuidv4 } from 'uuid';
 import { ValidateSize } from '../common/validation.decorator';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
+import { getRateLimitConfig } from '../config/rate-limit.config';
 
 @ApiTags('Measurements')
 @Controller('api/v1/measurements')
+@UseGuards(ThrottlerGuard)
+@Throttle(getRateLimitConfig('measurements'))
 export class MeasurementController {
   constructor(private readonly measurementService: MeasurementService) {}
 

@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import Redis from 'ioredis';
-import { isCacheable, getCacheTTL } from './cache.config';
+import { isCacheable, getCacheTTL } from '../config/cache.config';
 
 @Injectable()
 export class PrismaService 

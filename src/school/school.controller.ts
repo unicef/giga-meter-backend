@@ -27,9 +27,13 @@ import {
 import { CheckNotifyDto, SchoolDto } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { getRateLimitConfig } from 'src/config/rate-limit.config';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')
+@UseGuards(ThrottlerGuard)
+@Throttle(getRateLimitConfig('schools'))
 export class SchoolController {
   constructor(private readonly schoolService: SchoolService) {}
 

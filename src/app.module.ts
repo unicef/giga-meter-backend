@@ -22,10 +22,13 @@ import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { defaultRateLimitConfig } from './config/rate-limit.config';
 
 @Module({
   imports: [
     HttpModule,
+    ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.

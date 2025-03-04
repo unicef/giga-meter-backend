@@ -28,9 +28,13 @@ import {
   WriteAccess,
 } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { getRateLimitConfig } from '../config/rate-limit.config';
 
 @ApiTags('Country')
 @Controller('api/v1/dailycheckapp_countries')
+@UseGuards(ThrottlerGuard)
+@Throttle(getRateLimitConfig('countries'))
 export class CountryController {
   constructor(private readonly countryService: CountryService) {}
 
