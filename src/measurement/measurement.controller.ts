@@ -234,7 +234,7 @@ export class MeasurementController {
   })
   async getMeasurementsV2(
     @Query('page') page?: number,
-    @ValidateSize({ min: 1, max: 100 }) 
+    @ValidateSize({ min: 1, max: 1000 }) 
     @Query('size') size?: number,
     @Query('orderBy') orderBy?: string,
     @Query('giga_id_school') giga_id_school?: string,
@@ -303,7 +303,7 @@ export class MeasurementController {
   })
   async getMeasurementsFailed(
     @Query('page') page?: number,
-    @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
+    @ValidateSize({ min: 1, max: 1000 }) @Query('size') size?: number,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<MeasurementFailedDto[]>> {
