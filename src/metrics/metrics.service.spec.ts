@@ -37,15 +37,17 @@ describe('MetricsService', () => {
     // });
 
     it('should handle database error for country', async () => {
-      jest
-        .spyOn(prisma.dailycheckapp_country, 'count')
-        .mockRejectedValue(new Error('Database error'));
-      jest
-        .spyOn(prisma.dailycheckapp_school, 'count')
-        .mockResolvedValue(mockMetricsDto.schools);
-      jest
-        .spyOn(prisma.measurements, 'count')
-        .mockResolvedValue(mockMetricsDto.measurements);
+      // Mock the groupBy function for countries
+      const groupByMock = jest.fn().mockRejectedValue(new Error('Database error'));
+      prisma.dailycheckapp_country.groupBy = groupByMock;
+
+      // Mock the groupBy function for schools
+      const schoolGroupByMock = jest.fn().mockResolvedValue([{ giga_id_school: 'school1', _count: { giga_id_school: 1 } }]);
+      prisma.dailycheckapp_school.groupBy = schoolGroupByMock;
+      
+      // Mock the count function for measurements with where clause
+      const countMock = jest.fn().mockResolvedValue(mockMetricsDto.measurements);
+      prisma.measurements.count = countMock;
 
       await expect(service.get()).rejects.toThrow('Database error');
     });
