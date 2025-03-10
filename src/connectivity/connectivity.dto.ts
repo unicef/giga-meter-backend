@@ -25,6 +25,11 @@ export class BaseCreateConnectivityDto {
     description: 'Device id of the connectivity check',
   })
   deviceId: string;
+
+  @ApiProperty({
+    description: 'Latency of the connectivity check',
+  })
+  latency: number;
 }
 
 export class CreateConnectivityDto extends BaseCreateConnectivityDto {}
