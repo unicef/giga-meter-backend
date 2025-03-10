@@ -401,6 +401,9 @@ export class MeasurementDto {
   Results?: ResultsDto | ResultsNdt7Dto;
 
   @ApiProperty()
+  ndtVersion?: string;
+
+  @ApiProperty()
   giga_id_school?: string;
 
   @ApiProperty()
