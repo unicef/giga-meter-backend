@@ -13,23 +13,6 @@ import { PUBLIC_URLs_LIST } from './auth.util';
 export class AuthGuard implements CanActivate {
   constructor(private readonly httpService: HttpService) { }
 
-  private async TEMP_verifyPublicToken(token: string, request: any) {
-    try {
-      const tokenList = (JSON.parse(process.env.TEMP_GIGA_METER_PUBLIC_ACCESS_TOKEN ?? "") || []) as string[];
-      const isValid = tokenList.find((t: string) => t === token);
-      const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path);
-
-      if (isValid && isPublicAccess && request?.method === 'GET') {
-        request.has_write_access = true;
-      }
-
-      return isValid;
-    } catch (error) {
-      console.error('Public token parse error', error.message);
-      return false;
-    }
-  }
-
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const useAuth = process.env.USE_AUTH === 'true';
 
@@ -58,11 +41,6 @@ export class AuthGuard implements CanActivate {
         request.is_super_user = true;
         return true;
       } else {
-
-        // TEMPORARY CODE
-        const isValid = await this.TEMP_verifyPublicToken(token, request);
-        if (isValid) return true;
-
         const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
         const response = await firstValueFrom(
           this.httpService.get<ValidateApiKeyDto>(url, {
