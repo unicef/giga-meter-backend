@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -40,6 +41,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ValidateSize } from '../common/validation.decorator';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { getRateLimitConfig } from '../config/rate-limit.config';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
 @ApiTags('Measurements')
 @Controller('api/v1/measurements')
@@ -50,6 +52,7 @@ export class MeasurementController {
 
   @Get('')
   @UseGuards(AuthGuard)
+  @UseInterceptors(CacheInterceptor)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -166,7 +169,6 @@ export class MeasurementController {
   }
 
   @Get('v2')
-  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -276,7 +278,6 @@ export class MeasurementController {
 
   @Get('failed')
   @ApiExcludeEndpoint()
-  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -372,7 +373,6 @@ export class MeasurementController {
   }
 
   @Get('school_id/:school_id')
-  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary:

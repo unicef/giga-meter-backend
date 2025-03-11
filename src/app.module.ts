@@ -24,11 +24,27 @@ import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { DEFAULT_CACHE_TTL } from './config/cache.config';
+import { createKeyv, Keyv } from '@keyv/redis';
+import { CacheableMemory } from 'cacheable';
 
 @Module({
   imports: [
     HttpModule,
     ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
+    CacheModule.registerAsync({
+      useFactory: async () => {
+        return {
+          stores: [
+            new Keyv({
+              store: new CacheableMemory({ ttl: parseInt(process.env.CACHE_EXPIRE, 10) || DEFAULT_CACHE_TTL, lruSize: 5000 }),
+            }),
+            createKeyv(process.env.REDIS_URL || 'redis://localhost:6379'),
+          ],
+        };
+      },
+    }),
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.

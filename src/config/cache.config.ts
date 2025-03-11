@@ -7,7 +7,7 @@ export interface CacheConfig {
   };
 }
 
-const DEFAULT_CACHE_TTL = 1800; // 30 minutes
+export const DEFAULT_CACHE_TTL = 1800; // 30 minutes
 
 export const CACHE_CONFIG: CacheConfig = {
   models: {
