@@ -342,6 +342,6 @@ model connectivity_ping_checks {
   giga_id_school String
   app_local_uuid String    @unique
   deviceId       String    @map("device_id")
-  latency        Int?
+  latency        Float?
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 } 
