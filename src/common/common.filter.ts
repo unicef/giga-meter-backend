@@ -5,12 +5,9 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { WithSentry } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
-
 @Catch()
 export class AllExceptionFilter implements ExceptionFilter {
-  @WithSentry()
   catch(exception: any, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();

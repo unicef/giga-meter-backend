@@ -19,7 +19,6 @@ import { SchoolMasterController } from './school-master/school-master.controller
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-import { SentryModule } from '@sentry/nestjs/setup';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
 import { ConnectivityController } from './connectivity/connectivity.controller';
@@ -33,7 +32,6 @@ import { ConnectivityService } from './connectivity/connectivity.service';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
-    SentryModule.forRoot(),
   ],
   controllers: [
     AppController,

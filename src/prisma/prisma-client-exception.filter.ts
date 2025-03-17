@@ -1,7 +1,6 @@
 import { ArgumentsHost, Catch, HttpStatus } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
-import { WithSentry } from '@sentry/nestjs';
 import * as Sentry from '@sentry/node';
 import { Response } from 'express';
 
@@ -50,7 +49,6 @@ export class PrismaClientExceptionFilter extends BaseExceptionFilter {
 
 @Catch(Prisma.PrismaClientValidationError)
 export class PrismaClientValidationErrorFilter extends BaseExceptionFilter {
-  @WithSentry()
   catch(exception: Prisma.PrismaClientValidationError, host: ArgumentsHost) {
     Sentry.captureException(exception);
     const ctx = host.switchToHttp();
