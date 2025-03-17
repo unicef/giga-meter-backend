@@ -4,9 +4,9 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
-import * as Sentry from '@sentry/nestjs';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { AllExceptionFilter } from './common/common.filter';
+
+import * as Sentry from '@sentry/node';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -117,11 +117,15 @@ async function bootstrap() {
 
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    integrations: [nodeProfilingIntegration(), Sentry.prismaIntegration()],
+    // Performance Monitoring
     tracesSampleRate: 1.0,
-    profilesSampleRate: 1.0,
+    environment: process.env.NODE_ENV ?? 'production',
   });
 
+  // The request handler must be the first middleware on the app
+  app.use(Sentry.Handlers.requestHandler());
+  // TracingHandler creates a trace for every incoming request
+  app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
   await app.listen(3000, () => {
     console.log('Server started on port 3000');
