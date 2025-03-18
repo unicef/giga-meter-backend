@@ -23,6 +23,7 @@ import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
+import { AccessInformationModule } from './access-information.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ConnectivityService } from './connectivity/connectivity.service';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    AccessInformationModule,
   ],
   controllers: [
     AppController,
