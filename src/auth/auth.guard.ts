@@ -8,6 +8,7 @@ import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { PUBLIC_URLs_LIST } from './auth.util';
+import { DEFAULT_CATEGORY } from '../common/category.config';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -39,6 +40,7 @@ export class AuthGuard implements CanActivate {
       if (process.env.GIGA_METER_APP_KEY === token) {
         request.has_write_access = true;
         request.is_super_user = true;
+        request.category = 'admin'; // Set category as admin for the master key
         return true;
       } else {
         const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
@@ -58,6 +60,16 @@ export class AuthGuard implements CanActivate {
         }
 
         request.has_write_access = response.data.data.has_write_access;
+        
+        // Extract and set the category from the response
+        if (response.data.data.category) {
+          request.category = response?.data?.data?.category ?? DEFAULT_CATEGORY;
+        } 
+        // else {
+          // Map the has_write_access to a category if not explicitly provided
+          // request.category = response.data.data.has_write_access ? 'gov' : DEFAULT_CATEGORY;
+        // }
+        
         const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
         if (!request.has_write_access && !isPublicAccess) {
           return false;
@@ -74,6 +86,7 @@ export class AuthGuard implements CanActivate {
       }
     } catch (error) {
       console.error('Token validation failed:', error.message);
+      return false;
     }
   }
 }

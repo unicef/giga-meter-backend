@@ -27,3 +27,10 @@ export const IsSuperUser = createParamDecorator(
     return request.is_super_user;
   },
 );
+
+export const Category = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.category;
+  },
+);

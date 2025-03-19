@@ -21,6 +21,9 @@ import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { CategoryGuard } from './common/category.guard';
+import { CategoryResponseInterceptor } from './common/category.interceptor';
 
 @Module({
   imports: [
@@ -54,6 +57,14 @@ import { MetricsService } from './metrics/metrics.service';
     MeasurementService,
     AdminService,
     MetricsService,
+    {
+      provide: APP_GUARD,
+      useClass: CategoryGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CategoryResponseInterceptor,
+    },
   ],
 })
 export class AppModule {}
