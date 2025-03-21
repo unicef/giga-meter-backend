@@ -8,9 +8,9 @@ import { AllExceptionFilter } from './common/common.filter';
 
 import * as Sentry from '@sentry/node';
 import { CategoryGuard } from './common/category.guard';
-import { filterSwaggerDocByCategory } from './common/swagger.helper';
 import { CategoryResponseInterceptor } from './common/category.interceptor';
 import { CATEGORIES, CATEGORY_CONFIG, DEFAULT_CATEGORY } from './common/category.config';
+import { filterSwaggerDocByCategory } from './common/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -49,7 +49,9 @@ async function bootstrap() {
     customJs: '/swagger-custom.js',
   });
   
+  // setTimeout(() => {
   // Create a Swagger endpoint for each category
+  console.log('Creating Swagger endpoints for categories...');
   CATEGORIES.forEach(category => {
     const config = CATEGORY_CONFIG[category];
     if (config && config.swagger.visible) {
@@ -66,6 +68,7 @@ async function bootstrap() {
       });
     }
   });
+// }, 10000)
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
       origin: '*',

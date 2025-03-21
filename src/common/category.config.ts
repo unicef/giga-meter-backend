@@ -41,45 +41,18 @@ export const DEFAULT_CATEGORY = 'public';
 export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
   public: {
     allowedAPIs: [
-      {
-        url: '/api/v1/dailycheckapp_schools',
-        methods: ['GET']
-      },
-      {
-        url: '/api/v1/dailycheckapp_countries',
-        methods: ['GET']
-      },
-      {
-        url: '/api/v1/measurements',
-        methods: ['GET']
-      },
-      {
-        url: '/health',
-        methods: ['GET']
-      },
-      {
-        url: '/example',
-        methods: ['GET']
-      }
+      { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
+      { url: '/api/v1/dailycheckapp_countries', methods: ['GET'] },
+      { url: '/api/v1/measurements', methods: ['GET'] },
     ],
     notAllowedAPIs: null,
     responseFilters: {
       // Global exclusions for all endpoints in this category
-      exclude: ['internalId', 'createdBy', 'updatedBy', 'sensitiveData', 'ipAddress', 'userAgent'],
-      
+      exclude: ['BrowserID', 'IP', 'deviceId', 'ServerInfo'],
       // Endpoint-specific filters
       endpoints: {
         '/api/v1/dailycheckapp_schools': {
-          // For nested object properties, use dot notation
-          exclude: ['contact.phoneNumber', 'contact.email', 'location.coordinates']
-        },
-        '/api/v1/measurements': {
-          // For array items, use brackets notation
-          exclude: ['data.readings[].rawData', 'metadata.sensors']
-        },
-        '/example': {
-          // Can use both include and exclude per endpoint
-          include: ['id', 'name', 'description', 'data.summary', 'tags.[].name', "message", "data"],
+          exclude: ['giga_id_school'],
         }
       }
     },
@@ -108,27 +81,19 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
         url: '/api/v1/messages',
         methods: ['GET', 'POST']
       },
-      {
-        url: '/health',
-        methods: ['GET']
-      },
-      {
-        url: '/example',
-        methods: ['GET', 'POST']
-      }
     ],
     notAllowedAPIs: null,
     responseFilters: {
       // Global exclusions for all endpoints
-      exclude: ['internalId', 'sensitiveData'],
+      exclude: [],
       
       // Endpoint-specific filters with nested paths
       endpoints: {
         '/api/v1/measurements': {
-          exclude: ['data.readings[].deviceId', 'data.readings[].rawData.ipInfo']
+          exclude: ['IP', 'BrowserID', 'deviceId']
         },
         '/api/v1/dailycheckapp_schools': {
-          exclude: ['admin.credentials', 'settings.apiKeys']
+          exclude: []
         }
       }
     },
@@ -148,9 +113,6 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
       
       // But can still have some endpoint-specific exclusions if needed
       endpoints: {
-        '/api/v1/measurements': {
-          exclude: ['data.readings[].rawData.internalDebugInfo']
-        }
       }
     },
     swagger: {
@@ -216,6 +178,7 @@ export const hasApiAccess = (category: string, path: string, method: string): bo
  */
 const pathMatches = (path: string, pattern: string): boolean => {
   // Exact match
+  console.log(path, pattern, '---pattern match');
   if (path === pattern) {
     return true;
   }
@@ -226,7 +189,8 @@ const pathMatches = (path: string, pattern: string): boolean => {
     return path.startsWith(prefix);
   }
 
+  return false;
   // Check if the path starts with the pattern
-  // This handles cases like '/example/gov-only' matching '/example'
-  return path.startsWith(`${pattern}/`);
+
+  // return path.startsWith(`${pattern}/`);
 };
