@@ -64,28 +64,33 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
     }
   },
   gov: {
-    allowedAPIs: [
+    allowedAPIs: null,
+    // notAllowedAPIs: null,
+    notAllowedAPIs: [
       {
-        url: '/api/v1/dailycheckapp_schools',
-        methods: ['GET', 'POST']
+        url: '/api/v1/measurements*',
+        methods: ['GET']
       },
       {
-        url: '/api/v1/dailycheckapp_countries',
-        methods: ['GET', 'POST']
+        url: '/api/v1/schools/features_flags/{giga_id_school}',
+        methods: ['PUT']
       },
       {
-        url: '/api/v1/measurements',
-        methods: ['GET', 'POST']
+        url: '/api/v1/dailycheckapp_schools*',
+        methods: ['GET']
       },
       {
-        url: '/api/v1/messages',
-        methods: ['GET', 'POST']
+        url: '/api/v1/dailycheckapp_countries*',
+        methods: ['DELETE', 'GET']
       },
-    ],
-    notAllowedAPIs: null,
+      {
+        url: '/api/v1/flagged_dailycheckapp_schools*',
+        methods: ['POST', 'GET']
+      }
+   ],
     responseFilters: {
       // Global exclusions for all endpoints
-      exclude: [],
+      exclude: ['IP', 'BrowserID', 'ServerInfo'],
       
       // Endpoint-specific filters with nested paths
       endpoints: {

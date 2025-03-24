@@ -6,9 +6,20 @@ export interface SchemaObject {
   properties?: Record<string, any>;
   required?: string[];
   allOf?: any[];
+  oneOf?: any[];
+  anyOf?: any[];
   items?: any;
   $ref?: string;
   example?: any;
+  additionalProperties?: boolean | SchemaObject;
+  nullable?: boolean;
+  description?: string;
+  format?: string;
+  title?: string;
+}
+
+export interface ReferenceObject {
+  $ref: string;
 }
 
 export interface ContentObject {
@@ -17,15 +28,22 @@ export interface ContentObject {
 
 export interface ResponseObject {
   content?: Record<string, ContentObject>;
+  description?: string;
 }
 
 export interface RequestBodyObject {
   content?: Record<string, ContentObject>;
+  description?: string;
+  required?: boolean;
 }
 
 export interface OperationObject {
   responses?: Record<string, ResponseObject>;
   requestBody?: RequestBodyObject;
+  description?: string;
+  summary?: string;
+  tags?: string[];
+  parameters?: any[];
 }
 
 export interface PathItemObject {
@@ -39,12 +57,12 @@ export interface PathItemObject {
   parameters?: any[];
 }
 
-export interface ReferenceObject {
-  $ref: string;
-}
-
+// Interface for response filters configuration
 export interface ResponseFilters {
-  include?: string[];
   exclude?: string[];
-  endpoints?: Record<string, { include?: string[]; exclude?: string[] }>;
+  include?: string[];
+  endpoints?: Record<string, {
+    exclude?: string[];
+    include?: string[];
+  }>;
 }

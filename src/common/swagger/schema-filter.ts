@@ -1,35 +1,29 @@
+import { SchemaObject } from './types';
+import { getSchemaNameFromRef } from './utils';
 import { resolveSchemaRef } from './schema-mapper';
 
 /**
- * Filters schema properties based on inclusion and exclusion rules
+ * Filter schema properties based on the inclusion and exclusion rules
  * @param schema The schema to filter
- * @param excludeRules Array of exclusion rules
- * @param includeRules Array of inclusion rules (prioritized over exclude)
+ * @param excludeRules Global exclusion rules
+ * @param includeRules Global inclusion rules
  * @param endpointExcludeRules Endpoint-specific exclusion rules
  * @param endpointIncludeRules Endpoint-specific inclusion rules
- * @param allSchemas All schemas for resolving references
+ * @param allSchemas All schemas in the document
+ * @returns Set of schema references that were removed
  */
 export function filterSchemaProperties(
-  schema: any, 
+  schema: SchemaObject, 
   excludeRules: string[] = [],
   includeRules: string[] = [],
   endpointExcludeRules: string[] = [],
   endpointIncludeRules: string[] = [],
-  allSchemas: Record<string, any> = {}
+  allSchemas: Record<string, SchemaObject> = {}
 ): Set<string> {
   if (!schema || !schema.properties) return new Set<string>();
   
   // Keep track of all removed schemas
   const removedSchemaRefs = new Set<string>();
-  
-  // Helper function to get schema name from reference
-  const getSchemaNameFromRef = (ref: string): string | null => {
-    if (ref && typeof ref === 'string') {
-      const parts = ref.split('/');
-      return parts[parts.length - 1];
-    }
-    return null;
-  };
   
   // Combine global and endpoint-specific rules
   const combinedExcludeRules = [...excludeRules, ...endpointExcludeRules];

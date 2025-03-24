@@ -1,6 +1,6 @@
 import { OpenAPIObject } from '@nestjs/swagger';
 import { OperationObject, PathItemObject, ContentObject, ResponseObject, RequestBodyObject } from './types';
-import { getSchemaNameFromRef } from './utils';
+import { getSchemaNameFromRef, findSchemaReferences } from './utils';
 
 /**
  * Build a map of which schemas are used by which endpoints
@@ -8,155 +8,78 @@ import { getSchemaNameFromRef } from './utils';
 export function buildEndpointSchemaMap(document: OpenAPIObject): Record<string, string[]> {
   const schemaMap: Record<string, string[]> = {};
   
-  // Helper to recursively find all schema references in an object
-  const findSchemaRefs = (obj: any, schemas: Set<string>): void => {
-    if (!obj || typeof obj !== 'object') return;
+  // Process all paths and operations to find schema references
+  for (const [path, pathItem] of Object.entries(document.paths)) {
+    // Skip if not a valid path item
+    if (!pathItem) continue;
     
-    // If this is a reference, extract the schema name and add it
-    if (obj.$ref) {
-      const schemaName = getSchemaNameFromRef(obj.$ref);
-      if (schemaName) schemas.add(schemaName);
-      return;
-    }
+    // Process each HTTP method in the path
+    const httpMethods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'] as const;
     
-    // Process allOf, oneOf, anyOf arrays
-    ['allOf', 'oneOf', 'anyOf'].forEach(key => {
-      if (Array.isArray(obj[key])) {
-        obj[key].forEach(item => findSchemaRefs(item, schemas));
-      }
-    });
-    
-    // Process array items
-    if (obj.items) {
-      findSchemaRefs(obj.items, schemas);
-    }
-    
-    // Process object properties
-    if (obj.properties) {
-      Object.values(obj.properties).forEach(prop => {
-        findSchemaRefs(prop, schemas);
-      });
-    }
-    
-    // Process additionalProperties
-    if (obj.additionalProperties && typeof obj.additionalProperties === 'object') {
-      findSchemaRefs(obj.additionalProperties, schemas);
-    }
-    
-    // Check array items
-    if (Array.isArray(obj)) {
-      obj.forEach(item => findSchemaRefs(item, schemas));
-      return;
-    }
-    
-    // Check object properties
-    Object.values(obj).forEach(value => {
-      findSchemaRefs(value, schemas);
-    });
-  };
-  
-  // Process all paths and their operations
-  if (document.paths) {
-    Object.entries(document.paths).forEach(([path, pathItem]) => {
-      // Process each HTTP method
-      Object.entries(pathItem as PathItemObject).forEach(([method, operation]) => {
-        if (typeof operation !== 'object' || !operation) return;
-        
-        // Skip non-operation properties like 'parameters'
-        if (['parameters', 'servers', 'summary', 'description'].includes(method)) return;
-        
-        // Form the endpoint key (path + method)
-        const endpoint = `${path}:${method.toUpperCase()}`;
-        const schemaSet = new Set<string>();
-        
-        // Process responses to find schema references
-        const op = operation as OperationObject;
-        if (op.responses) {
-          Object.values(op.responses).forEach(resp => {
-            const response = resp as ResponseObject;
-            if (!response || typeof response !== 'object') return;
-            
-            // Check content types (application/json, etc.)
-            if (response.content) {
-              Object.values(response.content).forEach(contentObj => {
-                const content = contentObj as ContentObject;
-                if (content.schema) {
-                  findSchemaRefs(content.schema, schemaSet);
-                }
-              });
+    for (const method of httpMethods) {
+      const operation = pathItem[method] as OperationObject | undefined;
+      if (!operation) continue;
+      
+      const endpointKey = `${path}:${method.toUpperCase()}`;
+      
+      // Find schemas in responses
+      if (operation.responses) {
+        for (const response of Object.values(operation.responses)) {
+          if (response && response.content) {
+            for (const contentType of Object.values(response.content)) {
+              if (contentType.schema) {
+                const schemaRefs = new Set<string>();
+                const refs = findSchemaReferences(contentType.schema, schemaRefs);
+                
+                // Add to map
+                if (!schemaMap[endpointKey]) schemaMap[endpointKey] = [];
+                refs.forEach(ref => {
+                  if (!schemaMap[endpointKey].includes(ref)) {
+                    schemaMap[endpointKey].push(ref);
+                  }
+                });
+              }
             }
-          });
+          }
         }
-        
-        // Process request body to find schema references
-        if (op.requestBody) {
-          const requestBody = op.requestBody as RequestBodyObject;
-          if (requestBody.content) {
-            Object.values(requestBody.content).forEach(contentObj => {
-              const content = contentObj as ContentObject;
-              if (content.schema) {
-                findSchemaRefs(content.schema, schemaSet);
+      }
+      
+      // Find schemas in request body
+      if (operation.requestBody && operation.requestBody.content) {
+        for (const contentType of Object.values(operation.requestBody.content)) {
+          if (contentType.schema) {
+            const schemaRefs = new Set<string>();
+            const refs = findSchemaReferences(contentType.schema, schemaRefs);
+            
+            // Add to map
+            if (!schemaMap[endpointKey]) schemaMap[endpointKey] = [];
+            refs.forEach(ref => {
+              if (!schemaMap[endpointKey].includes(ref)) {
+                schemaMap[endpointKey].push(ref);
               }
             });
           }
         }
-        
-        // Convert Set to Array for easier manipulation
-        const schemaArray = Array.from(schemaSet);
-        schemaMap[endpoint] = schemaArray;
-      });
-    });
+      }
+    }
   }
   
   return schemaMap;
 }
 
 /**
- * Find all nested schema dependencies
+ * Find all schema dependencies for a given set of schema names
+ * @param schemas All schemas in the document
+ * @param schemaNames Array of schema names to find dependencies for
+ * @returns Set of all schema names that are dependencies
  */
 export function findAllSchemaDependencies(
   schemas: Record<string, any>,
-  initialSchemas: Set<string>
+  schemaNames: string[]
 ): Set<string> {
-  const allDependencies = new Set<string>(initialSchemas);
+  const allDependencies = new Set<string>(schemaNames);
+  const toProcess = [...schemaNames];
   const processed = new Set<string>();
-  const toProcess = Array.from(initialSchemas);
-  
-  // Helper to find references in a schema
-  const findRefsInSchema = (schema: any, refs: Set<string>): void => {
-    if (!schema || typeof schema !== 'object') return;
-    
-    // If this is a reference, extract the schema name
-    if (schema.$ref) {
-      const schemaName = getSchemaNameFromRef(schema.$ref);
-      if (schemaName) refs.add(schemaName);
-      return;
-    }
-    
-    // Process allOf, oneOf, anyOf arrays
-    ['allOf', 'oneOf', 'anyOf'].forEach(key => {
-      if (Array.isArray(schema[key])) {
-        schema[key].forEach(item => findRefsInSchema(item, refs));
-      }
-    });
-    
-    // Process array items
-    if (schema.items) {
-      findRefsInSchema(schema.items, refs);
-    }
-    
-    // Process object properties
-    if (schema.properties) {
-      Object.values(schema.properties).forEach(prop => {
-        findRefsInSchema(prop, refs);
-      });
-    }
-    
-    // Process additionalProperties
-    if (schema.additionalProperties && typeof schema.additionalProperties === 'object') {
-      findRefsInSchema(schema.additionalProperties, refs);
-    }
-  };
   
   // Process all schemas to find their dependencies
   while (toProcess.length > 0) {
@@ -168,8 +91,8 @@ export function findAllSchemaDependencies(
     const schema = schemas[schemaName];
     if (!schema) continue;
     
-    const refs = new Set<string>();
-    findRefsInSchema(schema, refs);
+    // Find all references in this schema
+    const refs = findSchemaReferences(schema);
     
     // Add new dependencies to the processing queue
     refs.forEach(ref => {

@@ -1,18 +1,8 @@
 import { OpenAPIObject } from '@nestjs/swagger';
 import { CATEGORY_CONFIG, CATEGORIES } from '../category.config';
-import { pathMatchesPattern } from './utils';
+import { pathMatchesPattern, getSchemaNameFromRef, findSchemaReferences, isSchemaReferenced } from './utils';
 import { buildEndpointSchemaMap, findAllSchemaDependencies } from './schema-mapper';
 import { filterSchemaProperties } from './schema-filter';
-
-// Get schema name from a reference string
-const getSchemaNameFromRef = (ref: string): string | null => {
-  // Reference format is "#/components/schemas/SchemaName"
-  if (ref && typeof ref === 'string') {
-    const parts = ref.split('/');
-    return parts[parts.length - 1];
-  }
-  return null;
-};
 
 /**
  * Filters the Swagger documentation based on the specified category
@@ -138,13 +128,24 @@ export function filterSwaggerDocByCategory(
       const [path, method] = endpoint.split(':');
       
       // Check if this endpoint's path and method are allowed for this category
-      let isAllowed = false;
+      let isAllowed = true; // Default to allowed when using notAllowedAPIs
       
       if (categoryConfig.allowedAPIs) {
+        // When allowedAPIs is specified, only include listed endpoints
+        isAllowed = false;
         for (const api of categoryConfig.allowedAPIs) {
           if (pathMatchesPattern(path, api.url) && 
               (!api.methods || api.methods.includes(method))) {
             isAllowed = true;
+            break;
+          }
+        }
+      } else if (categoryConfig.notAllowedAPIs) {
+        // When notAllowedAPIs is specified, exclude listed endpoints
+        for (const api of categoryConfig.notAllowedAPIs) {
+          if (pathMatchesPattern(path, api.url) && 
+              (!api.methods || api.methods.includes(method))) {
+            isAllowed = false;
             break;
           }
         }
@@ -159,7 +160,7 @@ export function filterSwaggerDocByCategory(
     // Find all nested schema dependencies
     const allRequiredSchemas = findAllSchemaDependencies(
       filteredDocument.components.schemas,
-      allowedSchemas
+      Array.from(allowedSchemas)
     );
     
     // Get exclude and include lists from response filters
@@ -225,63 +226,6 @@ export function filterSwaggerDocByCategory(
     
     // Replace the schemas with the filtered set
     filteredDocument.components.schemas = schemasToKeep;
-    
-    // Find all schema references in a schema or sub-schema
-    const findSchemaReferences = (schema: any, refs: Set<string> = new Set()): Set<string> => {
-      if (!schema) return refs;
-      
-      // Handle direct references
-      if (schema.$ref) {
-        const schemaName = getSchemaNameFromRef(schema.$ref);
-        if (schemaName) refs.add(schemaName);
-        return refs;
-      }
-      
-      // Handle properties
-      if (schema.properties) {
-        Object.values(schema.properties).forEach(prop => {
-          findSchemaReferences(prop, refs);
-        });
-      }
-      
-      // Handle array items
-      if (schema.items) {
-        findSchemaReferences(schema.items, refs);
-      }
-      
-      // Handle allOf, anyOf, oneOf
-      ['allOf', 'anyOf', 'oneOf'].forEach(key => {
-        if (Array.isArray(schema[key])) {
-          schema[key].forEach(subSchema => {
-            findSchemaReferences(subSchema, refs);
-          });
-        }
-      });
-      
-      return refs;
-    };
-    
-    // Function to check if a schema is referenced by other schemas
-    const isSchemaReferenced = (schemaName: string, schemas: any, endpointSchemaMap: any): boolean => {
-      // Check if the schema is directly used by any endpoint
-      for (const [_, usedSchemas] of Object.entries(endpointSchemaMap)) {
-        if (Array.isArray(usedSchemas) && usedSchemas.includes(schemaName)) {
-          return true;
-        }
-      }
-      
-      // Check if the schema is referenced by other schemas
-      for (const [otherSchemaName, otherSchema] of Object.entries(schemas)) {
-        if (otherSchemaName === schemaName) continue;
-        
-        const refs = findSchemaReferences(otherSchema);
-        if (refs.has(schemaName)) {
-          return true;
-        }
-      }
-      
-      return false;
-    };
     
     // Remove any schemas that were explicitly excluded or aren't referenced anymore
     // We need to do this iteratively until no more schemas are removed
