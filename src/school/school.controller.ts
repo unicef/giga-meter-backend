@@ -44,7 +44,7 @@ export class SchoolController {
   @Get('')
   @ApiOperation({
     summary:
-      'Returns the list of registered schools on the Daily Check App database',
+      'Returns the list of registered schools on the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
@@ -123,7 +123,7 @@ export class SchoolController {
   @Get(':giga_id_school')
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by giga id school',
+      'Returns the list of schools on the Giga Meter database by giga id school',
   })
   @ApiResponse({
     status: 200,
@@ -169,7 +169,7 @@ export class SchoolController {
   @Get('id/:id')
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by id',
+      'Returns the list of schools on the Giga Meter database by id',
   })
   @ApiResponse({
     status: 200,
@@ -206,7 +206,7 @@ export class SchoolController {
   @Get('country_id/:country_id')
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by country id',
+      'Returns the list of schools on the Giga Meter database by country id',
   })
   @ApiResponse({
     status: 200,
@@ -257,7 +257,7 @@ export class SchoolController {
   @Get('checkNotify/:user_id')
   @ApiExcludeEndpoint()
   @ApiOperation({
-    summary: 'Check to notify a Daily Check App school',
+    summary: 'Check to notify a Giga Meter school',
   })
   @ApiResponse({
     status: 200,
@@ -293,7 +293,7 @@ export class SchoolController {
 
   @Post()
   @ApiOperation({
-    summary: 'Register a school in to the Daily Check App database',
+    summary: 'Register a school in to the Giga Meter database',
   })
   @ApiResponse({
     status: 201,

@@ -17,9 +17,9 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
   const defaultConfig = new DocumentBuilder()
-    .setTitle('Daily Check App API')
+    .setTitle('Giga Meter API')
     .setDescription(
-      'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
+      'API to query list schools and countries with Giga Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
         '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',
     )
     .setVersion('1.0')
@@ -33,6 +33,7 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
+    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net')
     .build();
   const defaultDocument = SwaggerModule.createDocument(app, defaultConfig);
 
@@ -68,9 +69,9 @@ async function bootstrap() {
   });
 
   const allConfig = new DocumentBuilder()
-    .setTitle('GIGA Meter API')
+    .setTitle('Giga Meter API')
     .setDescription(
-      'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
+      'API to query list schools and countries with Giga Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
     .setLicense(
@@ -89,6 +90,7 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
+    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net')
     .build();
   const allDocument = SwaggerModule.createDocument(app, allConfig);
 

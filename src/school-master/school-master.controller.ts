@@ -30,7 +30,7 @@ export class SchoolMasterController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of schools registered on the Daily Check App database filtered by country_code and school_id',
+      'Returns the list of schools registered on the Giga Meter database filtered by country_code and school_id',
   })
   @ApiResponse({
     status: 200,
@@ -87,7 +87,7 @@ export class SchoolMasterController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the feature flags for a school on the Daily Check App database by giga school id',
+      'Returns the feature flags for a school on the Giga Meter database by giga school id',
   })
   @ApiResponse({
     status: 200,
@@ -128,7 +128,7 @@ export class SchoolMasterController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Set feature flags for a school in to the Daily Check App database',
+      'Set feature flags for a school in to the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
