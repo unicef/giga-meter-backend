@@ -38,7 +38,11 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
 
 1. **API Access Control**:
    - `allowedAPIs`: List of endpoints this category can access
-   - `notAllowedAPIs`: List of endpoints this category cannot access (overrides allowedAPIs)
+   - `notAllowedAPIs`: List of endpoints this category cannot access (used when you want to allow most endpoints and only restrict a few)
+
+   **NOTE**: You should set either `allowedAPIs` or `notAllowedAPIs`, not both. If `allowedAPIs` is non-null, it takes precedence:
+   - When `allowedAPIs` is specified: Only listed endpoints are accessible
+   - When `notAllowedAPIs` is specified: All endpoints EXCEPT those listed are accessible
 
 2. **Response Filtering**:
    - `responseFilters.include`: List of fields that should be included in responses (all other fields will be removed)
@@ -107,6 +111,8 @@ getWithCategory(@Category() category: string) {
 3. **Swagger Integration**:
    - Filters the Swagger documentation to only show endpoints accessible to each category
    - Creates separate Swagger endpoints for each category
+   - Automatically handles schema dependencies to ensure proper documentation
+   - Applies response filtering rules to schema models for accurate representation
 
 ## Extending the System
 
@@ -200,10 +206,44 @@ The response filtering system supports dot notation to target nested fields and 
 
 4. **Deeply Nested Paths**:
    ```
-   'data.readings[].measurements.value'  // Targets value in each measurement in each reading
+   'data.users[].addresses[].street'  // Targets the street property of each address of each user
    ```
 
 When configuring filters:
 - If you include a parent object or array, all its nested properties remain
 - If you exclude a parent object or array, all its nested properties are removed
 - You can selectively include/exclude specific deep paths
+
+### URL Pattern Matching
+
+The system supports flexible URL pattern matching for API access control:
+
+1. **Exact Matching**:
+   ```
+   '/api/v1/schools'  // Matches exactly /api/v1/schools
+   ```
+
+2. **Path Parameters**:
+   ```
+   '/api/v1/schools/{id}'  // Matches /api/v1/schools/123, /api/v1/schools/456, etc.
+   ```
+
+3. **Wildcards**:
+   ```
+   '/api/v1/measurements*'  // Matches any path starting with /api/v1/measurements
+   ```
+
+4. **Method Restrictions**:
+   ```
+   { url: '/api/v1/schools', methods: ['GET', 'POST'] }  // Only allows GET and POST
+   { url: '/api/v1/schools*', methods: ['*'] }  // Restricts all methods for all schools endpoints
+   ```
+
+## Advanced Schema Filtering
+
+The Swagger schema filtering system intelligently handles schema dependencies:
+
+1. When using `allowedAPIs`, only schemas referenced by allowed endpoints are shown
+2. When using `notAllowedAPIs`, all schemas are shown except those referenced exclusively by disallowed endpoints
+3. Nested schema references are automatically resolved to ensure proper documentation
+4. Response field filtering is applied consistently across all schemas
