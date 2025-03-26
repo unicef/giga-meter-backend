@@ -28,7 +28,7 @@ export class AdminController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of registered schools on the Daily Check App database',
+      'Returns the list of registered schools on the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
@@ -48,7 +48,7 @@ export class AdminController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Block one or more Daily Check App school(s)',
+    summary: 'Block one or more Giga Meter school(s)',
   })
   @ApiResponse({
     status: 200,
@@ -77,7 +77,7 @@ export class AdminController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Unlock one or more Daily Check App school(s)',
+    summary: 'Unlock one or more Giga Meter school(s)',
   })
   @ApiResponse({
     status: 200,
@@ -106,7 +106,7 @@ export class AdminController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Notify one or more Daily Check App school(s)',
+    summary: 'Notify one or more Giga Meter school(s)',
   })
   @ApiResponse({
     status: 200,

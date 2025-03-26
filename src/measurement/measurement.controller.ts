@@ -49,7 +49,7 @@ export class MeasurementController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of registered measurements on the Daily Check App database',
+      'Returns the list of registered measurements on the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
@@ -166,7 +166,7 @@ export class MeasurementController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of registered measurements on the Daily Check App database in a brief structure',
+      'Returns the list of registered measurements on the Giga Meter database in a brief structure',
   })
   @ApiResponse({
     status: 200,
@@ -276,7 +276,7 @@ export class MeasurementController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of failed measurements on the Daily Check App database in a brief structure',
+      'Returns the list of failed measurements on the Giga Meter database in a brief structure',
   })
   @ApiResponse({
     status: 200,
@@ -327,7 +327,7 @@ export class MeasurementController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of measurements on the Daily Check App database by giga id measurement',
+      'Returns the list of measurements on the Giga Meter database by giga id measurement',
   })
   @ApiResponse({
     status: 200,
@@ -372,7 +372,7 @@ export class MeasurementController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of measurements on the Daily Check App database by school id',
+      'Returns the list of measurements on the Giga Meter database by school id',
   })
   @ApiResponse({
     status: 200,
@@ -419,7 +419,7 @@ export class MeasurementController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Register a measurement in to the Daily Check App database',
+    summary: 'Register a measurement in to the Giga Meter database',
   })
   @ApiResponse({
     status: 201,
