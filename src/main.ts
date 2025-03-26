@@ -12,8 +12,6 @@ import {
 
 import * as Sentry from '@sentry/node';
 
-import * as Sentry from '@sentry/node';
-
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'public'));
