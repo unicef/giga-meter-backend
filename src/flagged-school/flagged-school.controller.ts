@@ -33,7 +33,7 @@ export class FlaggedSchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of flagged schools on the Daily Check App database',
+      'Returns the list of flagged schools on the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
@@ -84,7 +84,7 @@ export class FlaggedSchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of flagged schools on the Daily Check App database by country id',
+      'Returns the list of flagged schools on the Giga Meter database by country id',
   })
   @ApiResponse({
     status: 200,
@@ -138,7 +138,7 @@ export class FlaggedSchoolController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Register a flagged school in to the Daily Check App database',
+    summary: 'Register a flagged school in to the Giga Meter database',
   })
   @ApiResponse({
     status: 201,
