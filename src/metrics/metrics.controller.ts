@@ -11,7 +11,7 @@ export class MetricsController {
 
   @Get('')
   @ApiOperation({
-    summary: 'Returns the metrics from the Daily Check App database',
+    summary: 'Returns the metrics from the Giga Meter database',
   })
   @ApiResponse({
     status: 200,

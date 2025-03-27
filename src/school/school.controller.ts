@@ -38,7 +38,7 @@ export class SchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of registered schools on the Daily Check App database',
+      'Returns the list of registered schools on the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
@@ -107,7 +107,7 @@ export class SchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by giga id school',
+      'Returns the list of schools on the Giga Meter database by giga id school',
   })
   @ApiResponse({
     status: 200,
@@ -155,7 +155,7 @@ export class SchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by id',
+      'Returns the list of schools on the Giga Meter database by id',
   })
   @ApiResponse({
     status: 200,
@@ -194,7 +194,7 @@ export class SchoolController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of schools on the Daily Check App database by country id',
+      'Returns the list of schools on the Giga Meter database by country id',
   })
   @ApiResponse({
     status: 200,
@@ -247,7 +247,7 @@ export class SchoolController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Check to notify a Daily Check App school',
+    summary: 'Check to notify a Giga Meter school',
   })
   @ApiResponse({
     status: 200,
@@ -285,7 +285,7 @@ export class SchoolController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Register a school in to the Daily Check App database',
+    summary: 'Register a school in to the Giga Meter database',
   })
   @ApiResponse({
     status: 201,
