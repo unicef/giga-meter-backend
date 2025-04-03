@@ -14,6 +14,8 @@ export function filterSwaggerDocByCategory(
   document: OpenAPIObject,
   category: string,
 ): OpenAPIObject {
+  console.log(category, CATEGORY_CONFIG[category]);
+
   // If category doesn't exist in config, return original document
   if (!CATEGORY_CONFIG[category]) {
     return document;
@@ -115,6 +117,7 @@ export function filterSwaggerDocByCategory(
     });
   }
   
+  // return filteredDocument;
   // Filter out schemas that should not be visible to this category
   if (filteredDocument.components && filteredDocument.components.schemas) {
     // Build a map of which schemas are used by which endpoints
@@ -175,7 +178,6 @@ export function filterSwaggerDocByCategory(
     
     // Map of path to endpoint-specific exclusion rules
     const endpointExclusions = categoryConfig.responseFilters?.endpoints || {};
-    
     // Only keep schemas that are in the allowed schemas set
     Object.keys(filteredDocument.components.schemas).forEach(schemaName => {
       if (allRequiredSchemas.has(schemaName)) {
@@ -267,6 +269,6 @@ export function filterSwaggerDocByCategory(
       });
     }
   }
-  
+  console.log(filteredDocument);
   return filteredDocument;
 }

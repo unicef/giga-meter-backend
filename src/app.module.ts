@@ -24,6 +24,7 @@ import { MetricsService } from './metrics/metrics.service';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CategoryGuard } from './common/category.guard';
 import { CategoryResponseInterceptor } from './common/category.interceptor';
+import { AuthGuard } from './auth/auth.guard';
 
 @Module({
   imports: [
@@ -57,6 +58,10 @@ import { CategoryResponseInterceptor } from './common/category.interceptor';
     MeasurementService,
     AdminService,
     MetricsService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: CategoryGuard,

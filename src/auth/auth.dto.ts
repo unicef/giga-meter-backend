@@ -7,7 +7,11 @@ export class ValidateApiKeyDto {
 class ValidateKeyDto {
   readonly has_write_access: boolean;
   readonly countries: CountryKeyDto[];
-  readonly category?: string; // Category of the user (public, gov, admin)
+  readonly apiCategory?: {
+    code: string;
+    name: string;
+    id: number;
+  }; // Category of the user (public, gov, admin)
 }
 
 class CountryKeyDto {

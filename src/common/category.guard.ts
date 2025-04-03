@@ -7,6 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { CATEGORY_CONFIG, hasApiAccess, DEFAULT_CATEGORY } from './category.config';
 import { CATEGORY_KEY } from './category.decorator';
+import { IS_PUBLIC_KEY } from './public.decorator';
 
 @Injectable()
 export class CategoryGuard implements CanActivate {
@@ -14,6 +15,22 @@ export class CategoryGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
+    
+    // Check if the route is marked as public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+    
+    // Skip category check if no token validation has happened yet
+    // This allows the AuthGuard to run first on controller methods
+    // if (!request.category && request.headers.authorization) {
+    //   return true;
+    // }
     
     // Extract category from request
     const category = this.extractCategory(request);
@@ -65,21 +82,6 @@ export class CategoryGuard implements CanActivate {
     if (request.category) {
       return request.category;
     }
-    
-    // const categoryHeader = request.headers['x-api-category'];
-    // if (categoryHeader) {
-    //   return categoryHeader;
-    // }
-    
-    // // Fallback to a token claim if using JWT
-    // if (request.user && request.user.category) {
-    //   return request.user.category;
-    // }
-    
-    // // Fallback to a query parameter
-    // if (request.query.category) {
-    //   return request.query.category;
-    // }
     
     // Default to configured default category
     return DEFAULT_CATEGORY;

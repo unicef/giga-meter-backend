@@ -32,7 +32,7 @@ export interface CategoryConfig {
 }
 
 // List of all supported categories
-export const CATEGORIES = ['public', 'gov', 'admin'];
+export const CATEGORIES = ['public', 'gov', 'giga_apps', 'giga_meter'];
 
 // Default category to use when none is specified
 export const DEFAULT_CATEGORY = 'public';
@@ -48,7 +48,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
     notAllowedAPIs: null,
     responseFilters: {
       // Global exclusions for all endpoints in this category
-      exclude: ['BrowserID', 'IP', 'deviceId', 'ServerInfo'],
+      exclude: [],
       // Endpoint-specific filters
       endpoints: {
         '/api/v1/dailycheckapp_schools': {
@@ -58,7 +58,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
     },
     swagger: {
       visible: true,
-      title: 'Daily Check App API',
+      title: 'Giga Meter API',
       description: 'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
         '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.'
     }
@@ -104,11 +104,11 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
     },
     swagger: {
       visible: true,
-      title: 'Daily Check App Government API',
+      title: 'Giga Meter Government API',
       description: 'Government access API endpoints for GIGA Meter data'
     }
   },
-  admin: {
+  giga_meter: {
     // Admin has access to everything
     allowedAPIs: null,
     notAllowedAPIs: null,
@@ -122,8 +122,25 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
     },
     swagger: {
       visible: true,
-      title: 'GIGA Meter Admin API',
-      description: 'Complete API documentation with admin access'
+      title: 'GIGA Meter API',
+      description: 'API documentation for GIGA Meter'
+    }
+  },
+  giga_apps: {
+    allowedAPIs: null,
+    notAllowedAPIs: null,
+    responseFilters: {
+      // Global exclusions for all endpoints
+      exclude: ['IP', 'BrowserID', 'ServerInfo'],
+      
+      // But can still have some endpoint-specific exclusions if needed
+      endpoints: {
+      }
+    },
+    swagger: {
+      visible: true,
+      title: 'Giga Meter API',
+      description: 'API documentation for GIGA Apps'
     }
   }
 };
@@ -146,11 +163,10 @@ export const hasApiAccess = (category: string, path: string, method: string): bo
 
   const categoryConfig = CATEGORY_CONFIG[category];
   
-  // Get the isAdmin status from the config, not hardcoded
+  // Check if this is an all-access category
   const isAllAccessCategory = categoryConfig.allowedAPIs === null && 
                             categoryConfig.notAllowedAPIs === null;
-  
-  // If this is an all-access category (like admin), grant access
+  // If this is an all-access category, grant access  
   if (isAllAccessCategory) {
     return true;
   }

@@ -1,20 +1,28 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { DEFAULT_CATEGORY } from '../common/category.config';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from '../common/public.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
-import { PUBLIC_URLs_LIST } from './auth.util';
-import { DEFAULT_CATEGORY } from '../common/category.config';
+
+
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly httpService: HttpService) { }
+  constructor(private readonly httpService: HttpService, private reflector: Reflector) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check if the route is marked as public
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (isPublic) {
+      return true;
+    }
+
     const useAuth = process.env.USE_AUTH === 'true';
 
     if (!useAuth) return true;
@@ -40,7 +48,7 @@ export class AuthGuard implements CanActivate {
       if (process.env.GIGA_METER_APP_KEY === token) {
         request.has_write_access = true;
         request.is_super_user = true;
-        request.category = 'admin'; // Set category as admin for the master key
+        request.category = 'giga_meter'; // Set category as giga_meter for the master key
         return true;
       } else {
         const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
@@ -49,12 +57,12 @@ export class AuthGuard implements CanActivate {
             headers: { Authorization: `Bearer ${token}` },
           }),
         );
-
+        console.log(response.data.data.apiCategory, response.data.data.has_write_access)
         if (
           !response.data.success ||
           (!response.data.data.has_write_access &&
-            (request?.method != 'GET' ||
-              response.data.data.countries?.length === 0))
+            (/*request?.method != 'GET' ||*/
+            response.data.data.countries?.length === 0))
         ) {
           return false;
         }
@@ -62,26 +70,28 @@ export class AuthGuard implements CanActivate {
         request.has_write_access = response.data.data.has_write_access;
         
         // Extract and set the category from the response
-        if (response.data.data.category) {
-          request.category = response?.data?.data?.category ?? DEFAULT_CATEGORY;
-        } 
+        // if (response.data.data.apiCategory) {
+        request.category = response?.data?.data?.apiCategory?.code ?? DEFAULT_CATEGORY;
+        // } 
+
         // else {
           // Map the has_write_access to a category if not explicitly provided
           // request.category = response.data.data.has_write_access ? 'gov' : DEFAULT_CATEGORY;
         // }
         
-        const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
-        if (!request.has_write_access && !isPublicAccess) {
-          return false;
-        }
-        if (request?.method == 'GET' && !response.data.data.has_write_access) {
-          request.allowed_countries = response.data.data.countries.map(
-            (c) => c.code,
-          );
-          request.allowed_countries_iso3 = response.data.data.countries.map(
-            (c) => c.iso3_format,
-          );
-        }
+        // const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
+        // if (!request.has_write_access && !isPublicAccess) {
+        //   console.log('Invalid token or not authorized to access');
+        //   return false;
+        // }
+        // if (request?.method == 'GET' && !response.data.data.has_write_access) {
+        //   request.allowed_countries = response.data.data.countries.map(
+        //     (c) => c.code,
+        //   );
+        //   request.allowed_countries_iso3 = response.data.data.countries.map(
+        //     (c) => c.iso3_format,
+        //   );
+        // }
         return true;
       }
     } catch (error) {

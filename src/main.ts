@@ -36,7 +36,7 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
-    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net')
+    .addServer('http://localhost:3000')
     .build();
 
   // Generate the base Swagger document
@@ -57,7 +57,8 @@ async function bootstrap() {
     const config = CATEGORY_CONFIG[category];
     if (config && config.swagger.visible) {
       // Filter the Swagger document for this category
-      const categoryDocument = filterSwaggerDocByCategory(fullDocument, category);
+      const freshDoc = SwaggerModule.createDocument(app, baseConfig);
+      const categoryDocument = filterSwaggerDocByCategory(freshDoc, category);
       
       // Set up the Swagger endpoint for this category
       SwaggerModule.setup(`api/${category}`, app, categoryDocument, {
