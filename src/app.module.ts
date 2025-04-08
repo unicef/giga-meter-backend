@@ -23,7 +23,7 @@ import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
-import { AccessInformationModule } from './access-information.module';
+import { AccessInformationModule } from './access-information/access-information.module';
 
 @Module({
   imports: [

@@ -1,14 +1,18 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { AccessInformationService } from './access-information.service';
 import { Request } from 'express';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
-@Controller('access-information')
+@Controller('api/v1/access-information')
 export class AccessInformationController {
   constructor(
     private readonly accessInformationService: AccessInformationService,
   ) {}
 
   @Get()
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   async getIpInfo(@Req() request: Request) {
     let ip = request.ip || request.headers['x-forwarded-for'] || 'unknown';
     if (ip === 'unknown') {
