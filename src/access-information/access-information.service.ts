@@ -33,16 +33,17 @@ export class AccessInformationService {
           this.httpService.get(`https://ipv4.geojs.io/v1/ip/geo/${ip}.json`),
         );
         return {
-          ip: fallbackResponse.data.ip,
-          city: fallbackResponse.data.city,
-          region: fallbackResponse.data.region,
-          country: fallbackResponse.data.country_code,
-          loc: `${fallbackResponse.data.latitude},${fallbackResponse.data.longitude}`,
-          org: fallbackResponse.data.organization_name,
-          postal: fallbackResponse.data.area_code,
-          timezone: fallbackResponse.data.timezone,
-          asn: fallbackResponse.data.organization.match(/AS[0-9]+/)?.[0] ?? ''
-          
+          ip: fallbackResponse.data?.ip ?? '',
+          city: fallbackResponse.data?.city ?? '',
+          region: fallbackResponse.data?.region ?? '',
+          country: fallbackResponse.data?.country_code ?? '',
+          loc: fallbackResponse.data?.latitude && fallbackResponse.data?.longitude
+            ? `${fallbackResponse.data.latitude},${fallbackResponse.data.longitude}`
+            : '',
+          org: fallbackResponse.data?.organization_name ?? '',
+          postal: fallbackResponse.data?.area_code ?? '',
+          timezone: fallbackResponse.data?.timezone ?? '',
+          asn: fallbackResponse.data?.organization?.match(/AS[0-9]+/)?.[0] ?? ''
         };
       } catch (fallbackError) {
         console.error('Both IP lookup services failed.', fallbackError);
