@@ -53,6 +53,38 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfig = {
    - `swagger.title`: Custom title for this category's Swagger docs
    - `swagger.description`: Custom description for this category's Swagger docs
 
+
+#### Category API Configuration
+
+The application supports dynamic category-based access control through a database-driven configuration system. This allows for fine-grained control over API access and response filtering based on user categories.
+
+1. Initial Setup
+
+After setting up the database, run the category configuration setup script to create the necessary table and seed it with initial data:
+
+```
+node src/category-config/setup-category-config.js
+```
+
+2. API Endpoints
+
+The following API endpoints are available for managing category configurations:
+
+- `GET /api/v1/category-config` - Get all category configurations
+- `GET /api/v1/category-config/default` - Get the default category configuration
+- `GET /api/v1/category-config/:id` - Get a category configuration by ID
+- `GET /api/v1/category-config/name/:name` - Get a category configuration by name
+- `POST /api/v1/category-config` - Create a new category configuration
+- `PATCH /api/v1/category-config/:id` - Update an existing category configuration
+- `DELETE /api/v1/category-config/:id` - Delete a category configuration
+
+3. Testing
+
+You can test the category configuration API endpoints using the provided test script:
+
+```
+node src/category-config/test-category-config.js
+```
 ## Usage
 
 ### Accessing the API with a Category
@@ -64,23 +96,6 @@ Users can specify their category in multiple ways (in order of precedence):
 
 The category determines what endpoints the user can access and what fields they can see in responses.
 
-### Restricting Endpoints to Specific Categories
-
-Use the `RequiredCategories` decorator to restrict access to specific categories:
-
-```typescript
-@Get('admin-only')
-@RequiredCategories('admin')
-getAdminOnlyData() {
-  // Only accessible to admin category
-}
-
-@Get('government-or-admin')
-@RequiredCategories('gov', 'admin')
-getGovernmentData() {
-  // Accessible to gov and admin categories
-}
-```
 
 ### Accessing Category in Controllers
 
@@ -92,11 +107,12 @@ getWithCategory(@Category() category: string) {
   console.log(`Request from ${category} category`);
   
   // You can use this to implement custom logic based on category
-  if (category === 'admin') {
+  if (category === 'gov') {
     // Add admin-specific logic
   }
 }
 ```
+
 
 ## How It Works
 

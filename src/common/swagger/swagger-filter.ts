@@ -1,46 +1,41 @@
 import { OpenAPIObject } from '@nestjs/swagger';
-import { CATEGORY_CONFIG, CATEGORIES } from '../category.config';
-import { pathMatchesPattern, getSchemaNameFromRef, findSchemaReferences, isSchemaReferenced } from './utils';
+import { pathMatchesPattern, isSchemaReferenced } from './utils';
 import { buildEndpointSchemaMap, findAllSchemaDependencies } from './schema-mapper';
 import { filterSchemaProperties } from './schema-filter';
+import { CategoryConfig } from '@prisma/client';
+import { CategoryConfigType } from '../category.config';
 
 /**
- * Filters the Swagger documentation based on the specified category
- * @param document The Swagger document to filter
- * @param category The category to filter for
- * @returns The filtered Swagger document
+ * Filters the Swagger documentation based on the specified category config
  */
 export function filterSwaggerDocByCategory(
   document: OpenAPIObject,
-  category: string,
+  categoryConfig: CategoryConfigType,
 ): OpenAPIObject {
-  console.log(category, CATEGORY_CONFIG[category]);
 
   // If category doesn't exist in config, return original document
-  if (!CATEGORY_CONFIG[category]) {
+  if (!categoryConfig) {
     return document;
   }
 
-  const categoryConfig = CATEGORY_CONFIG[category];
-  
   // Check if swagger should be visible for this category
   if (!categoryConfig.swagger.visible) {
     return { ...document, paths: {} }; // Return empty paths if not visible
   }
   
-  // Create a deep copy of the document to avoid modifying the original
+  // Create a deep copy of the document
   const filteredDocument = JSON.parse(JSON.stringify(document));
   
-  // Update the info object with category-specific values if provided
+  // Update the info swagger info if provided
   filteredDocument.info = {
     ...document.info,
     title: categoryConfig.swagger.title || document.info.title,
     description: categoryConfig.swagger.description || document.info.description
   };
   
-  // If category has full access (no API restrictions), return full document with potentially updated info
-  const hasFullAccess = categoryConfig.allowedAPIs === null && 
-                        categoryConfig.notAllowedAPIs === null;
+  // If category has full access, return full document
+  const hasFullAccess = !categoryConfig.allowedAPIs?.length && 
+                        !categoryConfig.notAllowedAPIs?.length;
   
   if (hasFullAccess) {
     return filteredDocument;
@@ -50,7 +45,7 @@ export function filterSwaggerDocByCategory(
   filteredDocument.paths = { ...document.paths };
   
   // If allowedAPIs is specified, only include those paths
-  if (categoryConfig.allowedAPIs) {
+  if (categoryConfig.allowedAPIs?.length) {
     // Get patterns of paths that should be kept
     const allowedUrlPatterns = categoryConfig.allowedAPIs.map(api => api.url);
     
@@ -117,7 +112,6 @@ export function filterSwaggerDocByCategory(
     });
   }
   
-  // return filteredDocument;
   // Filter out schemas that should not be visible to this category
   if (filteredDocument.components && filteredDocument.components.schemas) {
     // Build a map of which schemas are used by which endpoints
@@ -133,7 +127,7 @@ export function filterSwaggerDocByCategory(
       // Check if this endpoint's path and method are allowed for this category
       let isAllowed = true; // Default to allowed when using notAllowedAPIs
       
-      if (categoryConfig.allowedAPIs) {
+      if (categoryConfig.allowedAPIs?.length) {
         // When allowedAPIs is specified, only include listed endpoints
         isAllowed = false;
         for (const api of categoryConfig.allowedAPIs) {
@@ -143,7 +137,7 @@ export function filterSwaggerDocByCategory(
             break;
           }
         }
-      } else if (categoryConfig.notAllowedAPIs) {
+      } else if (categoryConfig.notAllowedAPIs?.length) {
         // When notAllowedAPIs is specified, exclude listed endpoints
         for (const api of categoryConfig.notAllowedAPIs) {
           if (pathMatchesPattern(path, api.url) && 
@@ -206,7 +200,7 @@ export function filterSwaggerDocByCategory(
               }
             }
           });
-          
+
           // Apply the property filtering
           const removedSchemaRefs = filterSchemaProperties(
             schema, 
@@ -219,7 +213,6 @@ export function filterSwaggerDocByCategory(
           
           // Add removed schema references to the list of schemas to be checked
           if (removedSchemaRefs.size > 0) {
-            console.log(`Found ${removedSchemaRefs.size} schema references to potentially remove from ${schemaName}`);
             removedSchemaRefs.forEach(ref => allRemovedSchemaRefs.add(ref));
           }
         }
@@ -241,17 +234,14 @@ export function filterSwaggerDocByCategory(
         if (Array.isArray(globalExcludes) && globalExcludes.includes(schemaName)) {
           delete filteredDocument.components.schemas[schemaName];
           schemasRemoved = true;
-          console.log(`Removed schema ${schemaName} because it's in the global exclusion list`);
           return;
         }
         
         // If the schema was referenced by a property that was removed, check if it's still needed
         if (allRemovedSchemaRefs.has(schemaName)) {
-          console.log(`Checking if schema ${schemaName} is still needed after property removal`);
           if (!isSchemaReferenced(schemaName, filteredDocument.components.schemas, endpointSchemaMap)) {
             delete filteredDocument.components.schemas[schemaName];
             schemasRemoved = true;
-            console.log(`Removed schema ${schemaName} because it's no longer referenced`);
           }
         } else {
           const isReferenced = isSchemaReferenced(
@@ -263,12 +253,10 @@ export function filterSwaggerDocByCategory(
           if (!isReferenced) {
             delete filteredDocument.components.schemas[schemaName];
             schemasRemoved = true;
-            console.log(`Removed schema ${schemaName} because it's no longer referenced`);
           }
         }
       });
     }
   }
-  console.log(filteredDocument);
   return filteredDocument;
 }

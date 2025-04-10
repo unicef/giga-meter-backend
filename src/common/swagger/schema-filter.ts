@@ -4,13 +4,6 @@ import { resolveSchemaRef } from './schema-mapper';
 
 /**
  * Filter schema properties based on the inclusion and exclusion rules
- * @param schema The schema to filter
- * @param excludeRules Global exclusion rules
- * @param includeRules Global inclusion rules
- * @param endpointExcludeRules Endpoint-specific exclusion rules
- * @param endpointIncludeRules Endpoint-specific inclusion rules
- * @param allSchemas All schemas in the document
- * @returns Set of schema references that were removed
  */
 export function filterSchemaProperties(
   schema: SchemaObject, 
@@ -158,7 +151,7 @@ export function filterSchemaProperties(
         // Check if the top-level property exists and is a nested object
         if (schema.properties[topLevelProp] && 
             (schema.properties[topLevelProp].type === 'object' || 
-             schema.properties[topLevelProp].properties)) {
+             schema.properties[topLevelProp].properties || schema.properties[topLevelProp].$ref)) {
           // If it's a nested object with properties, recursively filter it
           if (schema.properties[topLevelProp].properties) {
             const nestedPropName = parts.slice(1).join('.');

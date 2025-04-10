@@ -69,9 +69,6 @@ export function buildEndpointSchemaMap(document: OpenAPIObject): Record<string, 
 
 /**
  * Find all schema dependencies for a given set of schema names
- * @param schemas All schemas in the document
- * @param schemaNames Array of schema names to find dependencies for
- * @returns Set of all schema names that are dependencies
  */
 export function findAllSchemaDependencies(
   schemas: Record<string, any>,
@@ -108,9 +105,6 @@ export function findAllSchemaDependencies(
 
 /**
  * Resolves a schema reference to the actual schema
- * @param schemas All schemas in the document
- * @param ref Reference string in the format "#/components/schemas/SchemaName"
- * @returns The resolved schema or null if not found
  */
 export function resolveSchemaRef(schemas: Record<string, any>, ref: string): any {
   if (!ref || typeof ref !== 'string') return null;

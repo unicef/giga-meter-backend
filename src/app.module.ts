@@ -25,6 +25,9 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CategoryGuard } from './common/category.guard';
 import { CategoryResponseInterceptor } from './common/category.interceptor';
 import { AuthGuard } from './auth/auth.guard';
+import { CategoryConfigModule } from './category-config/category-config.module';
+import { CategoryConfigProvider } from './common/category-config.provider';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -34,6 +37,8 @@ import { AuthGuard } from './auth/auth.guard';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    CategoryConfigModule,
+    AuthModule,
   ],
   controllers: [
     AppController,
@@ -58,6 +63,7 @@ import { AuthGuard } from './auth/auth.guard';
     MeasurementService,
     AdminService,
     MetricsService,
+    CategoryConfigProvider,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,

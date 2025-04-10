@@ -6,25 +6,28 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { CATEGORY_CONFIG, DEFAULT_CATEGORY } from './category.config';
+import { CategoryConfigProvider } from './category-config.provider';
 
 @Injectable()
 export class CategoryResponseInterceptor implements NestInterceptor {
+  constructor(private categoryConfigProvider: CategoryConfigProvider) {}
+
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    const category = request.category || DEFAULT_CATEGORY;
-    const path = request.route?.path || request.path;
-
+    
     return next.handle().pipe(
-      map(data => {
+      map(async (response) => {
+        const category = request.category || await this.categoryConfigProvider.getDefaultCategory();
+        const path = request.route?.path || request.path;
         // If data is null or undefined, return as is
-        if (data === null || data === undefined) {
-          return data;
+        if (response === null || response === undefined) {
+          return response;
         }
-
+        const data = response?.data;
         // If data is an array, filter each object
         if (Array.isArray(data)) {
-          return data.map(item => this.filterObjectByCategory(item, category, path));
+          response.data = await Promise.all(data.map(item => this.filterObjectByCategory(item, category, path)));
+          return response;
         }
         
         // If data is an object, filter its properties
@@ -38,13 +41,13 @@ export class CategoryResponseInterceptor implements NestInterceptor {
     );
   }
 
-  private filterObjectByCategory(obj: any, category: string, path: string): any {
+  private async filterObjectByCategory(obj: any, category: string, path: string): Promise<any> {
     if (!obj || typeof obj !== 'object') {
       return obj;
     }
 
     // Get the response filters for this category and endpoint
-    const responseFilters = this.getResponseFilters(category, path);
+    const responseFilters = await this.getResponseFilters(category, path);
     
     // Create a new object with filtered fields
     const result = { ...obj };
@@ -207,50 +210,39 @@ export class CategoryResponseInterceptor implements NestInterceptor {
   }
 
   /**
-   * Get the response filters for a specific category and endpoint
+   * Get response filters for a specific category and endpoint
    */
-  private getResponseFilters(category: string, path: string): { include?: string[], exclude?: string[] } {
-    // Default filters for unknown categories - quite restrictive
-    const defaultFilters = { 
-      exclude: [
-        'internalId', 'createdBy', 'updatedBy', 'sensitiveData', 
-        'ipAddress', 'userAgent', 'password', 'hash'
-      ] 
-    };
+  private async getResponseFilters(category: string, path: string): Promise<any> {
+    const config = await this.categoryConfigProvider.getCategoryConfig(category);
     
-    // If category doesn't exist in config, use default filters
-    if (!CATEGORY_CONFIG[category]) {
-      return defaultFilters;
+    if (!config || !config.responseFilters) {
+      return { include: [], exclude: [] };
     }
-    
-    const categoryFilters = CATEGORY_CONFIG[category].responseFilters;
-    
-    // If there are endpoint-specific filters for this path, use those
-    const endpoints = categoryFilters.endpoints || {};
-    for (const configPath in endpoints) {
-      if (path === configPath || path.startsWith(`${configPath}/`)) {
-        // Found matching endpoint-specific filters
-        const endpointFilters = endpoints[configPath];
-        
-        // If endpoint specifies 'include', use that
-        if (endpointFilters.include && endpointFilters.include.length > 0) {
-          return { include: endpointFilters.include };
+    const globalExclude = config.responseFilters.exclude || [];
+    // Find the most specific filter for this path
+    const pathFilter = Array.isArray(config.responseFilters) ? 
+      config.responseFilters.find((filter: any) => {
+        if (filter.path === '*') {
+          return true; // Fallback filter
         }
         
-        // If endpoint specifies 'exclude', merge with category-level excludes
-        if (endpointFilters.exclude && endpointFilters.exclude.length > 0) {
-          const categoryExcludes = categoryFilters.exclude || [];
-          return { 
-            exclude: [...new Set([...categoryExcludes, ...endpointFilters.exclude])] 
-          };
-        }
-      }
+        // Convert the filter path to a regex pattern
+        const pattern = filter.path
+          .replace(/\//g, '\\/') // Escape forward slashes
+          .replace(/\{[^}]+\}/g, '[^/]+') // Replace {param} with regex for any character except /
+          .replace(/\*/g, '.*'); // Replace * with regex for any character
+        
+        const regex = new RegExp(`^${pattern}$`);
+        return regex.test(path);
+      }) : null;
+    
+    if (pathFilter) {
+      return {
+        include: pathFilter.include || [],
+        exclude: [...globalExclude, ...pathFilter.exclude],
+      };
     }
     
-    // If no endpoint-specific filters, use category-level filters
-    return {
-      include: categoryFilters.include,
-      exclude: categoryFilters.exclude
-    };
+    return { include: [], exclude: [...globalExclude] };
   }
 }

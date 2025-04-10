@@ -43,7 +43,7 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private async validateToken(token: string, request: any): Promise<boolean> {
+  public async validateToken(token: string, request: any): Promise<boolean> {
     try {
       if (process.env.GIGA_METER_APP_KEY === token) {
         request.has_write_access = true;
@@ -57,7 +57,6 @@ export class AuthGuard implements CanActivate {
             headers: { Authorization: `Bearer ${token}` },
           }),
         );
-        console.log(response.data.data.apiCategory, response.data.data.has_write_access)
         if (
           !response.data.success ||
           (!response.data.data.has_write_access &&

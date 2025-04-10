@@ -7,20 +7,25 @@ import * as dotenv from 'dotenv';
 import { AllExceptionFilter } from './common/common.filter';
 
 import * as Sentry from '@sentry/node';
-import { CategoryGuard } from './common/category.guard';
-import { CategoryResponseInterceptor } from './common/category.interceptor';
-import { CATEGORIES, CATEGORY_CONFIG, DEFAULT_CATEGORY } from './common/category.config';
-import { filterSwaggerDocByCategory } from './common/swagger';
+import { CategoryConfigProvider } from './common/category-config.provider';
+import { SwaggerAuthMiddleware } from './common/swagger-auth.middleware';
+import { AuthGuard } from './auth/auth.guard';
+import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
-  // Apply global guards
-  app.useGlobalGuards(new CategoryGuard(app.get('Reflector')));
+  // Get the Category
+  const categoryConfigProvider = app.get(CategoryConfigProvider);
+  await categoryConfigProvider.initialize();
+  const categories = await categoryConfigProvider.getCategories();
   
-  // Apply global interceptors
-  app.useGlobalInterceptors(new CategoryResponseInterceptor());
+  const authGuard = app.get(AuthGuard);
+  const swaggerMiddleware = new SwaggerAuthMiddleware(authGuard);
+  
+  const categoryPaths = categories.map(path => `/api/${path}`);
+  app.use(categoryPaths, swaggerMiddleware.use.bind(swaggerMiddleware));
 
   // Configure basic Swagger options
   const baseConfig = new DocumentBuilder()
@@ -39,38 +44,38 @@ async function bootstrap() {
     .addServer('http://localhost:3000')
     .build();
 
-  // Generate the base Swagger document
-  const fullDocument = SwaggerModule.createDocument(app, baseConfig);
+  // // Generate the base Swagger document
+  // const fullDocument = SwaggerModule.createDocument(app, baseConfig);
   
-  // Create the different Swagger endpoints for different categories
+  // // Get the default category from the provider
+  // const defaultCategory = await categoryConfigProvider.getDefaultCategory();
   
-  // Default API documentation (using default category from config)
-  SwaggerModule.setup('api', app, filterSwaggerDocByCategory(fullDocument, DEFAULT_CATEGORY), {
-    customCssUrl: '/swagger-custom.css',
-    customJs: '/swagger-custom.js',
-  });
+  // // Default API documentation (using default category from config)
+  // SwaggerModule.setup('api', app, filterSwaggerDocByCategory(fullDocument, defaultCategory), {
+  //   customCssUrl: '/swagger-custom.css',
+  //   customJs: '/swagger-custom.js',
+  // });
   
-  // setTimeout(() => {
   // Create a Swagger endpoint for each category
-  console.log('Creating Swagger endpoints for categories...');
-  CATEGORIES.forEach(category => {
-    const config = CATEGORY_CONFIG[category];
-    if (config && config.swagger.visible) {
+  const categoriesConfig = await categoryConfigProvider.getAllCategoryConfigs();
+  // setTimeout(() => {
+  for (const config of categoriesConfig) {
+    if (config && config.swagger && config.swagger.visible) {
       // Filter the Swagger document for this category
       const freshDoc = SwaggerModule.createDocument(app, baseConfig);
-      const categoryDocument = filterSwaggerDocByCategory(freshDoc, category);
+      const categoryDocument = filterSwaggerDocByCategory(freshDoc, config);
       
       // Set up the Swagger endpoint for this category
-      SwaggerModule.setup(`api/${category}`, app, categoryDocument, {
-          customCssUrl: '/swagger-custom.css',
-          customJs: '/swagger-custom.js',
+      SwaggerModule.setup(`api/${config.name}`, app, categoryDocument, {
+        customCssUrl: '/swagger-custom.css',
+        customJs: '/swagger-custom.js',
         swaggerOptions: {
           persistAuthorization: true,
         },
       });
     }
-  });
-// }, 10000)
+  }
+  // }, 10000)
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
       origin: '*',
@@ -102,7 +107,7 @@ async function bootstrap() {
 
   // The request handler must be the first middleware on the app
   app.use(Sentry.Handlers.requestHandler());
-  // TracingHandler creates a trace for every incoming request
+  // TracingHandler creates a trace for every incoming request  
   app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
   await app.listen(3000, () => {

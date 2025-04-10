@@ -5,13 +5,16 @@ import {
   ForbiddenException
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { CATEGORY_CONFIG, hasApiAccess, DEFAULT_CATEGORY } from './category.config';
 import { CATEGORY_KEY } from './category.decorator';
 import { IS_PUBLIC_KEY } from './public.decorator';
+import { CategoryConfigProvider } from './category-config.provider';
 
 @Injectable()
 export class CategoryGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private categoryConfigProvider: CategoryConfigProvider
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -26,20 +29,16 @@ export class CategoryGuard implements CanActivate {
       return true;
     }
     
-    // Skip category check if no token validation has happened yet
-    // This allows the AuthGuard to run first on controller methods
-    // if (!request.category && request.headers.authorization) {
-    //   return true;
-    // }
-    
     // Extract category from request
-    const category = this.extractCategory(request);
+    const category = await this.extractCategory(request);
     
     // Store the category in the request for later use (e.g., filtering response data)
     request.category = category;
     
+    // Get the category config
+    const categoryConfig = await this.categoryConfigProvider.getCategoryConfig(category);
     // If category doesn't exist in config, deny access
-    if (!CATEGORY_CONFIG[category]) {
+    if (!categoryConfig) {
       throw new ForbiddenException(`Category '${category}' not found`);
     }
 
@@ -62,28 +61,28 @@ export class CategoryGuard implements CanActivate {
       return true;
     }
     
-    // Otherwise check general access based on URL/method using the centralized helper
+    // Otherwise check general access based on URL/method
     const path = request.path;
     const method = request.method;
     
-    // Check if category has access to this path and method using the centralized helper
-    const hasAccess = hasApiAccess(category, path, method);
+    // Check if category has access to this path and method
+    const hasAccess = await this.categoryConfigProvider.hasApiAccess(categoryConfig, path, method);
     
     if (!hasAccess) {
-      console.log(`Category '${category}' does not have access to ${method} ${path}`);
-      throw new ForbiddenException(`You do not have access to ${method} ${path}`);
+      console.error(`Category '${category}' does not have access to ${method} ${path}`);
+      throw new ForbiddenException(`Unauthorized to access ${method} ${path}`);
     }
     
     return true;
   }
   
-  private extractCategory(request: any): string {
+  private async extractCategory(request: any): Promise<string> {
     // If the AuthGuard has already set the category, use that
     if (request.category) {
       return request.category;
     }
     
     // Default to configured default category
-    return DEFAULT_CATEGORY;
+    return await this.categoryConfigProvider.getDefaultCategory();
   }
 }
