@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "AccessInformation" (
+CREATE TABLE "IpMetadata" (
     "ip" TEXT NOT NULL,
     "hostname" TEXT,
     "city" TEXT,
@@ -11,8 +11,8 @@ CREATE TABLE "AccessInformation" (
     "timezone" TEXT,
     "asn" TEXT,
 
-    CONSTRAINT "AccessInformation_pkey" PRIMARY KEY ("ip")
+    CONSTRAINT "IpMetadata_pkey" PRIMARY KEY ("ip")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AccessInformation_ip_key" ON "AccessInformation"("ip");
+CREATE UNIQUE INDEX "IpMetadata_ip_key" ON "IpMetadata"("ip");
