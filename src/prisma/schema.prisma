@@ -346,7 +346,7 @@ model connectivity_ping_checks {
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 } 
 
-model AccessInformation {
+model IpMetadata {
   ip        String  @id @unique
   hostname  String?
   city      String?

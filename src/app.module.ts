@@ -23,7 +23,7 @@ import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
-import { AccessInformationModule } from './access-information/access-information.module';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
 
 @Module({
   imports: [
@@ -33,7 +33,7 @@ import { AccessInformationModule } from './access-information/access-information
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
-    AccessInformationModule,
+    IpMetadataModule,
   ],
   controllers: [
     AppController,
