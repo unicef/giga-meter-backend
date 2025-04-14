@@ -4,6 +4,19 @@ import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
+export interface IpMetadata {
+  ip: string;
+  city: string;
+  region: string;
+  country: string;
+  loc: string;
+  org: string;
+  postal: string;
+  timezone: string;
+  asn: string;
+  error?: string;
+}
+
 @Injectable()
 export class IpMetadataService {
   constructor(
@@ -11,7 +24,7 @@ export class IpMetadataService {
     private readonly prisma: PrismaService,
   ) {}
 
-  private async fetchIpInfoFromAPI(ip: string): Promise<any> {
+  private async fetchIpInfoFromAPI(ip: string): Promise<IpMetadata> {
     const ipInfoToken = process.env.IPINFO_TOKEN;
     try {
       console.log('Fetching IP info from IPInfo API...');
@@ -44,6 +57,7 @@ export class IpMetadataService {
           org: '',
           postal: '',
           timezone: '',
+          asn: '',
           error: 'Unable to fetch IP information from both APIs',
         }
       }
@@ -66,6 +80,7 @@ export class IpMetadataService {
       org: response?.data?.organization_name ?? '',
       postal: response?.data?.area_code ?? '',
       timezone: response?.data?.timezone ?? '',
+      
     };
   }
 
