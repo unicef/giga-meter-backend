@@ -110,7 +110,12 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     isDefault: false,
     // giga_meter has access to everything
     allowedAPIs: [],
-    notAllowedAPIs: [],
+    notAllowedAPIs: [
+      {
+      url: '/api/v1/category-config*',
+      methods: ['*']
+    }
+  ],
     responseFilters: {
       // giga_meter sees all fields by default
       exclude: [],
@@ -143,7 +148,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     },
     swagger: {
       visible: true,
-      title: 'Giga Meter API',
+      title: 'Giga Meter Apps APIs',
       description: 'API documentation for GIGA Apps'
     },
     createdAt: new Date(),
