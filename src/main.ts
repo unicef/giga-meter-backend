@@ -41,20 +41,8 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
-    .addServer('http://localhost:3000')
+    .addServer(process.env.GIGA_METER_BE_HOST || 'https://uni-ooi-giga-meter-backend.azurewebsites.net')
     .build();
-
-  // // Generate the base Swagger document
-  // const fullDocument = SwaggerModule.createDocument(app, baseConfig);
-  
-  // // Get the default category from the provider
-  // const defaultCategory = await categoryConfigProvider.getDefaultCategory();
-  
-  // // Default API documentation (using default category from config)
-  // SwaggerModule.setup('api', app, filterSwaggerDocByCategory(fullDocument, defaultCategory), {
-  //   customCssUrl: '/swagger-custom.css',
-  //   customJs: '/swagger-custom.js',
-  // });
   
   // Create a Swagger endpoint for each category
   const categoriesConfig = await categoryConfigProvider.getAllCategoryConfigs();
