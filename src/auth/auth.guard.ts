@@ -69,28 +69,16 @@ export class AuthGuard implements CanActivate {
         request.has_write_access = response.data.data.has_write_access;
         
         // Extract and set the category from the response
-        // if (response.data.data.apiCategory) {
         request.category = response?.data?.data?.apiCategory?.code ?? DEFAULT_CATEGORY;
-        // } 
 
-        // else {
-          // Map the has_write_access to a category if not explicitly provided
-          // request.category = response.data.data.has_write_access ? 'gov' : DEFAULT_CATEGORY;
-        // }
-        
-        // const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
-        // if (!request.has_write_access && !isPublicAccess) {
-        //   console.log('Invalid token or not authorized to access');
-        //   return false;
-        // }
-        // if (request?.method == 'GET' && !response.data.data.has_write_access) {
-        //   request.allowed_countries = response.data.data.countries.map(
-        //     (c) => c.code,
-        //   );
-        //   request.allowed_countries_iso3 = response.data.data.countries.map(
-        //     (c) => c.iso3_format,
-        //   );
-        // }
+        if (request?.method == 'GET' && !response.data.data.has_write_access) {
+          request.allowed_countries = response.data.data.countries.map(
+            (c) => c.code,
+          );
+          request.allowed_countries_iso3 = response.data.data.countries.map(
+            (c) => c.iso3_format,
+          );
+        }
         return true;
       }
     } catch (error) {
