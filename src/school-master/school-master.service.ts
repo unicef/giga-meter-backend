@@ -12,17 +12,14 @@ export class SchoolMasterService {
     country_code: string,
     school_id: string,
   ): Promise<SchoolMasterDto[]> {
-    console.log('country_code', country_code);
-    console.log('school_id', school_id);
-    const schools = await this.prisma.school.findMany({
+    const schools = this.prisma.school.findMany({
       where: {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
       },
     });
-    console.log('schools', schools);
 
-    return  schools.map(this.toDto);
+    return (await schools).map(this.toDto);
   }
 
   async flagsByGigaId(giga_id_school: string): Promise<FeatureFlagDto> {
