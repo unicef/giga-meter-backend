@@ -27,9 +27,13 @@ export class BaseCreateConnectivityDto {
   app_local_uuid: string;
 
   @ApiProperty({
-    description: 'Device id of the connectivity check',
+    description: 'Browser id of the connectivity check',
   })
-  deviceId: string;
+  browserId: string;
+  @ApiProperty({
+    description: 'Latency of the connectivity check',
+  })
+  latency: number;
 }
 
 export class CreateConnectivityDto extends BaseCreateConnectivityDto {}
