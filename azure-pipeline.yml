@@ -61,12 +61,23 @@ stages:
     - task: Docker@2
       displayName: Build image
       inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        dockerfile: $(dockerfilePath)
-        tags: |
-          $(tag)
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '**/Dockerfile'
+        tags: '$(tag)'
+        arguments: 
+          --build-arg=SSH_PASSWD=$(SSH_PASSWD)
+  - job: Push
+    dependsOn: Build
+    steps:
+    - task: Docker@2
+      displayName: Push image
+      inputs:
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)'
+        command: 'push'
+        tags: '$(tag)'
 - stage: dev_deploy
   displayName: Deploy To Development
   dependsOn: build_test
