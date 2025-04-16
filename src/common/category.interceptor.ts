@@ -32,11 +32,12 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         
         // If data is an object, filter its properties
         if (typeof data === 'object') {
-          return this.filterObjectByCategory(data, category, path);
+          response.data = this.filterObjectByCategory(data, category, path);
+          return response;
         }
 
         // If data is a primitive value, return as is
-        return data;
+        return response;
       }),
     );
   }

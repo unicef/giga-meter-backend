@@ -111,10 +111,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     // giga_meter has access to everything
     allowedAPIs: [],
     notAllowedAPIs: [
-      {
-      url: '/api/v1/category-config*',
-      methods: ['*']
-    }
+      
   ],
     responseFilters: {
       // giga_meter sees all fields by default
@@ -137,10 +134,13 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     name: 'giga_apps',
     isDefault: false,
     allowedAPIs: [],
-    notAllowedAPIs: [],
+    notAllowedAPIs: [{
+      url: '/api/v1/category-config*',
+      methods: ['*']
+    }],
     responseFilters: {
       // Global exclusions for all endpoints
-      exclude: ['IP', 'BrowserID', 'ServerInfo'],
+      exclude: [],
       
       // But can still have some endpoint-specific exclusions if needed
       endpoints: {
