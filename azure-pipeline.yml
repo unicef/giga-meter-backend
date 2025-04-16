@@ -55,7 +55,7 @@ stages:
             -Dsonar.host.url=$(SONAR_HOST) \
             -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info \
             -Dsonar.exclusions=**/*/*.spec.ts,**/prisma/**   
-  - job: Build
+  - job: BuildAndPush
     dependsOn: Test
     steps:
     - task: Docker@2
@@ -68,9 +68,6 @@ stages:
         tags: '$(tag)'
         arguments: 
           --build-arg=SSH_PASSWD=$(SSH_PASSWD)
-  - job: Push
-    dependsOn: Build
-    steps:
     - task: Docker@2
       displayName: Push image
       inputs:
