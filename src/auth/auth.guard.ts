@@ -67,9 +67,9 @@ export class AuthGuard implements CanActivate {
         }
 
         request.has_write_access = response.data.data.has_write_access;
-        
+        const apiCategory = response?.data?.data?.apiCategory?.code;
         // Extract and set the category from the response
-        request.category = response?.data?.data?.apiCategory?.code ?? DEFAULT_CATEGORY;
+        request.category = apiCategory ?? request.has_write_access ? 'giga_apps' : DEFAULT_CATEGORY;
 
         if (request?.method == 'GET' && !response.data.data.has_write_access) {
           request.allowed_countries = response.data.data.countries.map(
