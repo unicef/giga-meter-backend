@@ -32,7 +32,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         
         // If data is an object, filter its properties
         if (typeof data === 'object') {
-          response.data = this.filterObjectByCategory(data, category, path);
+          response.data = await this.filterObjectByCategory(data, category, path);
           return response;
         }
 

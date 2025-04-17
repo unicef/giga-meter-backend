@@ -147,7 +147,7 @@ export class CategoryConfigService {
 
     // Don't allow deleting the default category
     if (categoryConfig.isDefault) {
-      throw new Error('Cannot delete the default category configuration');
+      throw new BadRequestException('Cannot delete the default category configuration');
     }
 
     const result = await this.prisma.categoryConfig.delete({
@@ -157,7 +157,10 @@ export class CategoryConfigService {
     return this.mapPrismaModelToInterface(result);
   } catch (error) {
     console.error('Error deleting category config:', error.message);
-    throw new Error('Failed to delete category config');
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+    throw new BadRequestException('Failed to delete category config');
   }
   }
 
