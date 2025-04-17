@@ -16,7 +16,7 @@ export class SwaggerAuthMiddleware implements NestMiddleware {
     let requestedCategory;
     const pathParts = req.originalUrl.split('/');
     if (pathParts.length >= 3 && pathParts[1] === 'api' && pathParts[2]) {
-      requestedCategory = pathParts[2].split('?')[0];
+      requestedCategory = pathParts[2].split('?')[0]?.toLowerCase();
     }
 
     // Skip authentication for non-Swagger routes

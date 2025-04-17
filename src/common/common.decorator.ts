@@ -31,6 +31,6 @@ export const IsSuperUser = createParamDecorator(
 export const Category = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    return request.category;
+    return request.category?.toLowerCase();
   },
 );
