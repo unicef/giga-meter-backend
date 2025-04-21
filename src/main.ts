@@ -4,18 +4,18 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
-import * as Sentry from '@sentry/nestjs';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import { AllExceptionFilter } from './common/common.filter';
+
+import * as Sentry from '@sentry/node';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
   const defaultConfig = new DocumentBuilder()
-    .setTitle('Daily Check App API')
+    .setTitle('Giga Meter API')
     .setDescription(
-      'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
+      'API to query list schools and countries with Giga Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
         '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',
     )
     .setVersion('1.0')
@@ -29,6 +29,7 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
+    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net')
     .build();
   const defaultDocument = SwaggerModule.createDocument(app, defaultConfig);
 
@@ -64,9 +65,9 @@ async function bootstrap() {
   });
 
   const allConfig = new DocumentBuilder()
-    .setTitle('GIGA Meter API')
+    .setTitle('Giga Meter API')
     .setDescription(
-      'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
+      'API to query list schools and countries with Giga Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.',
     )
     .setVersion('1.0')
     .setLicense(
@@ -85,6 +86,7 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
+    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net')
     .build();
   const allDocument = SwaggerModule.createDocument(app, allConfig);
 
@@ -117,11 +119,15 @@ async function bootstrap() {
 
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    integrations: [nodeProfilingIntegration(), Sentry.prismaIntegration()],
+    // Performance Monitoring
     tracesSampleRate: 1.0,
-    profilesSampleRate: 1.0,
+    environment: process.env.NODE_ENV ?? 'production',
   });
 
+  // The request handler must be the first middleware on the app
+  app.use(Sentry.Handlers.requestHandler());
+  // TracingHandler creates a trace for every incoming request
+  app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
   await app.listen(3000, () => {
     console.log('Server started on port 3000');

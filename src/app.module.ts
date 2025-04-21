@@ -19,7 +19,6 @@ import { SchoolMasterController } from './school-master/school-master.controller
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
-import { SentryModule } from '@sentry/nestjs/setup';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -28,6 +27,8 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { DEFAULT_CACHE_TTL } from './config/cache.config';
 import { createKeyv, Keyv } from '@keyv/redis';
 import { CacheableMemory } from 'cacheable';
+import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityService } from './connectivity/connectivity.service';
 
 @Module({
   imports: [
@@ -50,7 +51,6 @@ import { CacheableMemory } from 'cacheable';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
-    SentryModule.forRoot(),
   ],
   controllers: [
     AppController,
@@ -63,6 +63,7 @@ import { CacheableMemory } from 'cacheable';
     AdminController,
     DataFixController,
     MetricsController,
+    ConnectivityController,
   ],
   providers: [
     AppService,
@@ -75,6 +76,7 @@ import { CacheableMemory } from 'cacheable';
     MeasurementService,
     AdminService,
     MetricsService,
+    ConnectivityService,
   ],
 })
 export class AppModule {}

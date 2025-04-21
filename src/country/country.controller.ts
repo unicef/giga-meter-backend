@@ -43,7 +43,7 @@ export class CountryController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of registered countries on the Daily Check App database',
+      'Returns the list of registered countries on the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
@@ -95,7 +95,7 @@ export class CountryController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of countries on the Daily Check App database by country code',
+      'Returns the list of countries on the Giga Meter database by country code',
   })
   @ApiResponse({
     status: 200,
@@ -145,7 +145,7 @@ export class CountryController {
   @ApiBearerAuth()
   @ApiOperation({
     summary:
-      'Returns the list of countries on the Daily Check App database by country iso3 code',
+      'Returns the list of countries on the Giga Meter database by country iso3 code',
   })
   @ApiResponse({
     status: 200,
@@ -196,7 +196,7 @@ export class CountryController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Register a country in to the Daily Check App database',
+    summary: 'Register a country in to the Giga Meter database',
   })
   @ApiResponse({
     status: 201,
@@ -244,7 +244,7 @@ export class CountryController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Remove a country from the Daily Check App database',
+    summary: 'Remove a country from the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
