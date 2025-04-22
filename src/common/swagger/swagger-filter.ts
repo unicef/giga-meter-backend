@@ -69,13 +69,15 @@ export function filterSwaggerDocByCategory(
           // HTTP methods in lowercase as used in OpenAPI spec
           const httpMethods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head'];
           
+          const isAllowAllMethod = allowedApi.methods.includes('*');
           // Filter methods for this path
-          httpMethods.forEach(method => {
-            if (pathObj[method] && !allowedApi.methods.includes(method.toUpperCase())) {
-              delete pathObj[method];
-            }
-          });
-          
+          if(!isAllowAllMethod) {
+            httpMethods.forEach(method => {
+              if (pathObj[method] && !allowedApi.methods.includes(method.toUpperCase())) {
+                delete pathObj[method];
+              }
+            });
+          }
           // If no methods left, remove the entire path
           if (Object.keys(pathObj).filter(key => httpMethods.includes(key)).length === 0) {
             delete filteredDocument.paths[path];
@@ -132,7 +134,7 @@ export function filterSwaggerDocByCategory(
         isAllowed = false;
         for (const api of categoryConfig.allowedAPIs) {
           if (pathMatchesPattern(path, api.url) && 
-              (!api.methods || api.methods.includes(method))) {
+              (!api.methods || api.methods.includes(method) || api.methods.includes('*'))) {
             isAllowed = true;
             break;
           }
@@ -141,7 +143,7 @@ export function filterSwaggerDocByCategory(
         // When notAllowedAPIs is specified, exclude listed endpoints
         for (const api of categoryConfig.notAllowedAPIs) {
           if (pathMatchesPattern(path, api.url) && 
-              (!api.methods || api.methods.includes(method))) {
+              (!api.methods || api.methods.includes(method) || api.methods.includes('*'))) {
             isAllowed = false;
             break;
           }

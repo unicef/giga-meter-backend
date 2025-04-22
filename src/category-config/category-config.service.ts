@@ -135,6 +135,9 @@ export class CategoryConfigService {
 
     return this.mapPrismaModelToInterface(result);
   } catch (error) {
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
     console.error('Error updating category config:', error.message);
     throw new Error('Failed to update category config');
   }
