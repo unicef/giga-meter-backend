@@ -25,27 +25,28 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { DEFAULT_CACHE_TTL } from './config/cache.config';
-import { createKeyv, Keyv } from '@keyv/redis';
-import { CacheableMemory } from 'cacheable';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
+// Redis store import
+import { redisStore } from 'cache-manager-redis-yet';
+
+const cacheEnabled = process.env.NO_CACHE === 'true';
 
 @Module({
   imports: [
     HttpModule,
     ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
-    CacheModule.registerAsync({
-      useFactory: async () => {
-        return {
-          stores: [
-            new Keyv({
-              store: new CacheableMemory({ ttl: parseInt(process.env.CACHE_EXPIRE, 10) || DEFAULT_CACHE_TTL, lruSize: 5000 }),
-            }),
-            createKeyv(process.env.REDIS_URL || 'redis://localhost:6379'),
-          ],
-        };
-      },
-    }),
+    // Conditionally register CacheModule with Redis if caching is enabled
+    (!cacheEnabled ? CacheModule.registerAsync({
+      isGlobal: false, // Not global, use per-controller/route
+      useFactory: async () => ({
+        store: await redisStore({
+          url: process.env.REDIS_URL || 'redis://localhost:6379',
+        }),
+        ttl: DEFAULT_CACHE_TTL * 1000, // ms
+        max: 5000,
+      }),
+    }) : null),
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
@@ -77,6 +78,7 @@ import { ConnectivityService } from './connectivity/connectivity.service';
     AdminService,
     MetricsService,
     ConnectivityService,
+    // No APP_INTERCEPTOR for CacheInterceptor here!
   ],
 })
 export class AppModule {}
