@@ -18,7 +18,11 @@ import {
 import { SchoolMasterService } from './school-master.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { ApiSuccessResponseDto } from '../common/common.dto';
-import { FeatureFlagDto, SchoolFlagsDto, SchoolMasterDto } from './school-master.dto';
+import {
+  FeatureFlagDto,
+  SchoolFlagsDto,
+  SchoolMasterDto,
+} from './school-master.dto';
 
 @ApiTags('SchoolsMaster')
 @Controller('api/v1/schools')
@@ -203,4 +207,3 @@ export class SchoolMasterController {
     };
   }
 }
- 

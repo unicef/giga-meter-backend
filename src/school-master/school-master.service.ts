@@ -1,4 +1,4 @@
-import { Body, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   FeatureFlagDto,
@@ -26,7 +26,7 @@ export class SchoolMasterService {
     });
     console.log('schools', schools);
 
-    return  schools.map(this.toDto);
+    return schools.map(this.toDto);
   }
 
   async flagsByGigaId(giga_id_school: string): Promise<FeatureFlagDto> {
@@ -87,7 +87,6 @@ export class SchoolMasterService {
     giga_ids: string[],
     flagDto: FeatureFlagDto,
   ): Promise<SchoolFlagsDto[] | false> {
-    console.log('giga_ids', giga_ids);
     const schools = await this.prisma.school.findMany({
       where: {
         giga_id_school: { in: giga_ids },
@@ -101,12 +100,11 @@ export class SchoolMasterService {
     if (!schools || schools.length === 0) {
       return false; // No schools found
     }
-    console.log('schools', schools);
     if (schools.length > 0) {
       const updatedSchools = schools.map((school) => ({
         ...school,
         feature_flags: {
-          ...(school.feature_flags as object),
+          ...((school?.feature_flags as object) ?? {}),
           ...flagDto,
         },
       }));
@@ -122,7 +120,6 @@ export class SchoolMasterService {
       updatedSchools.forEach((school) => {
         delete school.id;
       });
-      console.log('updatedSchools', updatedSchools);
       return updatedSchools;
     }
   }
