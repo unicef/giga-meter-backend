@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -32,6 +33,7 @@ import { GetConnectivityRecordsDto } from 'src/connectivity/connectivity.dto';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { getRateLimitConfig } from 'src/config/rate-limit.config';
+import { CacheInterCeptorOptional } from 'src/config/cache.config';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')
@@ -46,6 +48,7 @@ export class SchoolController {
   ) {}
 
   @Get('')
+  @UseInterceptors(CacheInterCeptorOptional)
   @ApiOperation({
     summary:
       'Returns the list of registered schools on the Giga Meter database',

@@ -1,3 +1,6 @@
+import { CacheInterceptor } from "@nestjs/cache-manager";
+import { NoOpInterceptor } from "src/common/no-op.interceptor";
+
 export interface CacheConfig {
   models: {
     [key: string]: {
@@ -7,5 +10,6 @@ export interface CacheConfig {
   };
 }
 
-// Keep DEFAULT_CACHE_TTL for use in app.module.ts
-export const DEFAULT_CACHE_TTL = 1800; // 30 minutes (in seconds, convert to ms for cache-manager v5)
+export const CACHE_TTL = Number(process.env.CACHE_EXPIRE) || 1800 ; // 30 minutes (in seconds)
+
+export const CacheInterCeptorOptional = process.env.NO_CACHE === 'true' ? NoOpInterceptor : CacheInterceptor

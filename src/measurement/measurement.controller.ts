@@ -41,7 +41,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ValidateSize } from '../common/validation.decorator';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 import { getRateLimitConfig } from '../config/rate-limit.config';
-import { CacheInterceptor } from '@nestjs/cache-manager';
+import { CacheInterCeptorOptional } from '../config/cache.config';
 
 @ApiTags('Measurements')
 @Controller('api/v1/measurements')
@@ -52,7 +52,7 @@ export class MeasurementController {
 
   @Get('')
   @UseGuards(AuthGuard)
-  @UseInterceptors(CacheInterceptor)
+  @UseInterceptors(CacheInterCeptorOptional)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
