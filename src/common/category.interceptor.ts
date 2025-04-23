@@ -10,11 +10,11 @@ import { CategoryConfigProvider } from './category-config.provider';
 
 @Injectable()
 export class CategoryResponseInterceptor implements NestInterceptor {
-  constructor(private categoryConfigProvider: CategoryConfigProvider) {}
+  constructor(private categoryConfigProvider: CategoryConfigProvider) { }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    
+
     return next.handle().pipe(
       map(async (response) => {
         const category = request.category || await this.categoryConfigProvider.getDefaultCategory();
@@ -23,16 +23,21 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         if (response === null || response === undefined) {
           return response;
         }
+        const responseFilters = await this.getResponseFilters(category, path);
+
+        if(!(responseFilters.include.length || responseFilters.exclude.length)) {
+          return response;
+        }
         const data = response?.data;
         // If data is an array, filter each object
         if (Array.isArray(data)) {
-          response.data = await Promise.all(data.map(item => this.filterObjectByCategory(item, category, path)));
+          response.data = await Promise.all(data.map(item => this.filterObjectByCategory(item, responseFilters)));
           return response;
         }
-        
+
         // If data is an object, filter its properties
         if (typeof data === 'object') {
-          response.data = await this.filterObjectByCategory(data, category, path);
+          response.data = await this.filterObjectByCategory(data, responseFilters);
           return response;
         }
 
@@ -42,17 +47,13 @@ export class CategoryResponseInterceptor implements NestInterceptor {
     );
   }
 
-  private async filterObjectByCategory(obj: any, category: string, path: string): Promise<any> {
+  private async filterObjectByCategory(obj: any, responseFilters: any): Promise<any> {
     if (!obj || typeof obj !== 'object') {
       return obj;
     }
-
-    // Get the response filters for this category and endpoint
-    const responseFilters = await this.getResponseFilters(category, path);
-    
     // Create a new object with filtered fields
     const result = { ...obj };
-    
+
     // Apply category-specific field filtering
     if (responseFilters.include && responseFilters.include.length > 0) {
       // Process includes (whitelist approach)
@@ -61,7 +62,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
       // Process excludes (blacklist approach)
       this.applyExcludeFilters(result, responseFilters.exclude);
     }
-    
+
     return result;
   }
 
@@ -73,14 +74,14 @@ export class CategoryResponseInterceptor implements NestInterceptor {
     // First collect all top-level properties to include
     const topLevelProperties = new Set<string>();
     const nestedProperties = new Map<string, string[]>();
-    
+
     // Analyze include paths
     includes.forEach(path => {
       if (path.includes('.') || path.includes('[]')) {
         // This is a nested path
         const topLevel = path.split('.')[0].replace('[]', '');
         topLevelProperties.add(topLevel);
-        
+
         // Store full path for later processing
         const existingPaths = nestedProperties.get(topLevel) || [];
         existingPaths.push(path);
@@ -90,14 +91,14 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         topLevelProperties.add(path);
       }
     });
-    
+
     // Remove all properties that are not in the include list
     Object.keys(obj).forEach(key => {
       if (!topLevelProperties.has(key)) {
         delete obj[key];
       }
     });
-    
+
     // Process nested properties
     nestedProperties.forEach((paths, topLevel) => {
       if (obj[topLevel]) {
@@ -132,7 +133,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
             }
             return p;
           });
-          
+
           this.applyIncludeFilters(obj[topLevel], nestedIncludes);
         }
       }
@@ -147,13 +148,13 @@ export class CategoryResponseInterceptor implements NestInterceptor {
     // Group excludes by their top-level property
     const topLevelExcludes = new Set<string>();
     const nestedExcludes = new Map<string, string[]>();
-    
+
     // Analyze exclude paths
     excludes.forEach(path => {
       if (path.includes('.') || path.includes('[]')) {
         // This is a nested path
         const topLevel = path.split('.')[0].replace('[]', '');
-        
+
         // Store full path for later processing
         const existingPaths = nestedExcludes.get(topLevel) || [];
         existingPaths.push(path);
@@ -163,12 +164,12 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         topLevelExcludes.add(path);
       }
     });
-    
+
     // Remove top-level excluded properties
     topLevelExcludes.forEach(key => {
       delete obj[key];
     });
-    
+
     // Process nested properties
     nestedExcludes.forEach((paths, topLevel) => {
       if (obj[topLevel]) {
@@ -188,7 +189,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
                 }
                 return p;
               });
-              
+
               const result = { ...item };
               this.applyExcludeFilters(result, nestedExcludes);
               return result;
@@ -203,7 +204,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
             }
             return p;
           });
-          
+
           this.applyExcludeFilters(obj[topLevel], nestedExcludes);
         }
       }
@@ -215,35 +216,37 @@ export class CategoryResponseInterceptor implements NestInterceptor {
    */
   private async getResponseFilters(category: string, path: string): Promise<any> {
     const config = await this.categoryConfigProvider.getCategoryConfig(category);
-    
+
     if (!config || !config.responseFilters) {
       return { include: [], exclude: [] };
     }
     const globalExclude = config.responseFilters.exclude || [];
+    const globalInclude = config.responseFilters.include || [];
     // Find the most specific filter for this path
-    const pathFilter = Array.isArray(config.responseFilters) ? 
-      config.responseFilters.find((filter: any) => {
-        if (filter.path === '*') {
+    const entries = Object.entries(config.responseFilters.endpoints);
+    const matchFilter = Array.isArray(entries) ?
+      entries.filter((item) => {
+        const itemPath = item[0];
+        if (itemPath === '*') {
           return true; // Fallback filter
         }
-        
+
         // Convert the filter path to a regex pattern
-        const pattern = filter.path
+        const pattern = itemPath
           .replace(/\//g, '\\/') // Escape forward slashes
           .replace(/\{[^}]+\}/g, '[^/]+') // Replace {param} with regex for any character except /
           .replace(/\*/g, '.*'); // Replace * with regex for any character
-        
+
         const regex = new RegExp(`^${pattern}$`);
         return regex.test(path);
       }) : null;
-    
-    if (pathFilter) {
-      return {
-        include: pathFilter.include || [],
-        exclude: [...globalExclude, ...pathFilter.exclude],
-      };
-    }
-    
-    return { include: [], exclude: [...globalExclude] };
+      // flattern the array
+    const allIncludes = new Set(matchFilter?.map((filter: any) => filter?.[1]?.include || []).flat(2) || []);
+    const allExcludes = new Set(matchFilter?.map((filter: any) => filter?.[1]?.exclude || []).flat(2) || []);
+    return {
+      include: [...globalInclude, ...allIncludes],
+      exclude: [...globalExclude, ...allExcludes],
+    };
   }
+
 }
