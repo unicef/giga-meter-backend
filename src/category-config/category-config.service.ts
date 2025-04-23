@@ -133,13 +133,17 @@ export class CategoryConfigService {
       }
     });
 
+    if(!result) {
+      throw new NotFoundException(`Category config with ID ${id} not found`);
+    }
+
     return this.mapPrismaModelToInterface(result);
   } catch (error) {
     if (error instanceof BadRequestException) {
       throw error;
     }
     console.error('Error updating category config:', error.message);
-    throw new Error('Failed to update category config');
+    throw new BadRequestException('Failed to update category config');
   }
   }
 
