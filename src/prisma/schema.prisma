@@ -345,3 +345,16 @@ model connectivity_ping_checks {
   latency        Float?
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
 } 
+model CategoryConfig {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  isDefault     Boolean?  @default(false)
+  allowedAPIs   Json[]
+  notAllowedAPIs Json[]
+  responseFilters Json?
+  swagger       Json
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("category_config")
+}
