@@ -169,6 +169,7 @@ export class MeasurementController {
   }
 
   @Get('v2')
+  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -277,6 +278,7 @@ export class MeasurementController {
   }
 
   @Get('failed')
+  @UseGuards(AuthGuard)
   @ApiExcludeEndpoint()
   @ApiBearerAuth()
   @ApiOperation({
@@ -373,6 +375,7 @@ export class MeasurementController {
   }
 
   @Get('school_id/:school_id')
+  @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
