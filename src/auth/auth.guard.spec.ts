@@ -4,10 +4,15 @@ import { AuthGuard } from './auth.guard';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { of } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
+import { Reflector } from '@nestjs/core';
 
 const mockHttpService = () => ({
   get: jest.fn(),
 });
+
+const mockReflector = {
+  getAllAndOverride: jest.fn().mockReturnValue(false), // Default to false, adjust as needed
+};
 
 describe('AuthGuard', () => {
   let guard: AuthGuard;
@@ -19,6 +24,10 @@ describe('AuthGuard', () => {
         {
           provide: HttpService,
           useValue: mockHttpService(),
+        },
+        {
+          provide: Reflector,
+          useValue: mockReflector,
         },
       ],
       imports: [HttpModule],
@@ -37,7 +46,9 @@ describe('AuthGuard', () => {
       switchToHttp: () => ({
         getRequest: () => ({ headers: {} }),
       }),
-    } as ExecutionContext;
+      getHandler: jest.fn(),
+      getClass: jest.fn(),
+    } as unknown as ExecutionContext;
 
     expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
       UnauthorizedException,
@@ -51,7 +62,9 @@ describe('AuthGuard', () => {
           headers: { authorization: 'Bearer invalid_token' },
         }),
       }),
-    } as ExecutionContext;
+      getHandler: jest.fn(),
+      getClass: jest.fn(),
+    } as unknown as ExecutionContext;
 
     mockHttpService().get.mockResolvedValueOnce(
       of({

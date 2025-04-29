@@ -308,9 +308,10 @@ export class MeasurementService {
     isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
-    const filteredClientInfo = isSuperUser
-      ? clientInfo
-      : { ...clientInfo, IP: undefined };
+    const filteredClientInfo = clientInfo;
+    // isSuperUser
+    //   ? clientInfo
+    //   : { ...clientInfo, IP: undefined };
 
     // Clean up Results object to remove ConnectionInfo
     const cleanResults = measurement.results
@@ -350,11 +351,11 @@ export class MeasurementService {
       source: measurement.source,
       created_at: measurement.created_at,
     };
-    if (isSuperUser) {
+    // if (isSuperUser) {
       filterMeasurementData['UUID'] = measurement.uuid;
       filterMeasurementData['ip_address'] = measurement.ip_address;
       filterMeasurementData['school_id'] = measurement.school_id;
-    }
+    // }
     return filterMeasurementData;
   }
 
