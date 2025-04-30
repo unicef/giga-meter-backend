@@ -21,6 +21,8 @@ import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
+import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityService } from './connectivity/connectivity.service';
 
 @Module({
   imports: [
@@ -42,6 +44,7 @@ import { MetricsService } from './metrics/metrics.service';
     AdminController,
     DataFixController,
     MetricsController,
+    ConnectivityController,
   ],
   providers: [
     AppService,
@@ -54,6 +57,7 @@ import { MetricsService } from './metrics/metrics.service';
     MeasurementService,
     AdminService,
     MetricsService,
+    ConnectivityService,
   ],
 })
 export class AppModule {}
