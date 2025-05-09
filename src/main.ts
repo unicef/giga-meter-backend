@@ -29,9 +29,13 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
-    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net')
-    .build();
-  const defaultDocument = SwaggerModule.createDocument(app, defaultConfig);
+    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net', 'Production');
+
+  if (process.env.NODE_ENV === 'development') {
+    defaultConfig.addServer('http://localhost:3000', 'Local Development');
+  }
+
+  const defaultDocument = SwaggerModule.createDocument(app, defaultConfig.build());
 
   app.use('/api', (req: Request, res, next) => {
     const defaultPaths = [
@@ -86,14 +90,20 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
-    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net')
-    .build();
-  const allDocument = SwaggerModule.createDocument(app, allConfig);
+    .addServer('https://uni-ooi-giga-meter-backend.azurewebsites.net', 'Production');
 
-  // SwaggerModule.setup('api/all', app, allDocument, {
-  //   customCssUrl: '/swagger-custom.css',
-  //   customJs: '/swagger-custom.js',
-  // });
+  if (process.env.NODE_ENV === 'development') {
+    allConfig.addServer('http://localhost:3000', 'Local Development');
+  }
+
+  const allDocument = SwaggerModule.createDocument(app, allConfig.build());
+
+  if (process.env.NODE_ENV === 'development') {
+    SwaggerModule.setup('api/all', app, allDocument, {
+      customCssUrl: '/swagger-custom.css',
+      customJs: '/swagger-custom.js',
+    });
+  }
 
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
@@ -117,17 +127,20 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionFilter());
 
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    // Performance Monitoring
-    tracesSampleRate: 1.0,
-    environment: process.env.NODE_ENV ?? 'production',
-  });
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      // Performance Monitoring
+      tracesSampleRate: 1.0,
+      environment: process.env.NODE_ENV ?? 'production',
+    });
 
-  // The request handler must be the first middleware on the app
-  app.use(Sentry.Handlers.requestHandler());
-  // TracingHandler creates a trace for every incoming request
-  app.use(Sentry.Handlers.tracingHandler());
+    // The request handler must be the first middleware on the app
+    app.use(Sentry.Handlers.requestHandler());
+    // TracingHandler creates a trace for every incoming request
+    app.use(Sentry.Handlers.tracingHandler());
+  }
+
   dotenv.config();
   await app.listen(3000, () => {
     console.log('Server started on port 3000');
