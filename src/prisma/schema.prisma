@@ -347,7 +347,8 @@ model connectivity_ping_checks {
 } 
 
 model IpMetadata {
-  ip        String  @id @unique
+  id        Int     @id @default(autoincrement())
+  ip        String 
   hostname  String?
   city      String?
   region    String?
@@ -357,4 +358,7 @@ model IpMetadata {
   postal    String?
   timezone  String?
   asn       String?
+  source    String?
+
+  @@unique([ip, source])
 }

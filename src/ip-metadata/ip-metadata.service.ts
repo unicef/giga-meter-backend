@@ -5,16 +5,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
 export interface IpMetadata {
-  ip: string;
-  city: string;
-  region: string;
-  country: string;
-  loc: string;
-  org: string;
-  postal: string;
-  timezone: string;
-  asn: string;
+  ip?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  loc?: string;
+  org?: string;
+  postal?: string;
+  timezone?: string;
+  asn?: string;
   error?: string;
+  hostname?: string;
+  source?: string;
 }
 
 @Injectable()
@@ -33,12 +35,23 @@ export class IpMetadataService {
           `https://ipinfo.io/${ip}/json?token=${ipInfoToken}`,
         ),
       );
+      const { data } = response;
+      const { asn, org } = data;
+
+      let asnValue = '';
+      if (asn && typeof asn === 'object' && typeof asn.asn === 'string') {
+        asnValue = asn.asn;
+      } else if (typeof asn === 'string') {
+        asnValue = asn;
+      } else if (typeof org === 'string') {
+        const match = org.match(/AS\d+/);
+        asnValue = match ? match[0] : '';
+      }
+
       return {
-        ...response.data,
-        asn:
-          response.data?.asn?.asn ??
-          response.data?.org?.match(/AS[0-9]+/)?.[0] ??
-          '',
+        ...data,
+        asn: asnValue,
+        source: 'ipinfo',
       };
     } catch (error) {
       console.error('IPInfo API failed, attempting fallback...');
@@ -58,13 +71,22 @@ export class IpMetadataService {
           postal: '',
           timezone: '',
           asn: '',
+          hostname: '',
           error: 'Unable to fetch IP information from both APIs',
-        }
+        };
       }
     }
   }
 
   private async fetchIpInfoFromFallbackAPI(ip: string): Promise<any> {
+    const ipGeo = await this.prisma.ipMetadata.findUnique({
+      where: {ip_source: { ip, source: 'geojs' }},
+    });
+    if (ipGeo) {
+      if (ipGeo.source) delete ipGeo.source;
+      return ipGeo;
+    }
+
     const response = await firstValueFrom(
       this.httpService.get(`https://ipv4.geojs.io/v1/ip/geo/${ip}.json`),
     );
@@ -77,17 +99,19 @@ export class IpMetadataService {
         response?.data?.latitude && response?.data?.longitude
           ? `${response?.data.latitude},${response?.data.longitude}`
           : '',
-      org: response?.data?.organization_name ?? '',
       postal: response?.data?.area_code ?? '',
       timezone: response?.data?.timezone ?? '',
-      
+      hostname: '',
+      org: response?.data?.organization.split(' ')[1] ?? '',
+      asn: response?.data?.organization.split(' ')[0] ?? '',
+      source: 'geojs',
     };
   }
 
   async getIpInfo(ip: string): Promise<any> {
     console.log('IP Address:', ip);
     let ipInfo = await this.prisma.ipMetadata.findUnique({
-      where: { ip },
+      where: {ip_source: { ip, source: 'ipinfo' }},
     });
 
     if (!ipInfo) {
@@ -105,11 +129,13 @@ export class IpMetadataService {
             postal: ipData.postal,
             timezone: ipData.timezone,
             asn: ipData.asn,
+            hostname: ipData.hostname,
+            source: ipData.source,
           },
         });
       }
     }
-    console.log('IP Info:', ipInfo);
+    if (ipInfo.source) delete ipInfo.source;
     return ipInfo;
   }
 }

@@ -12,7 +12,8 @@ export class IpMetadataController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   async getIpInfo(@Req() request: Request) {
-    let ip = request.ip || request.headers['x-forwarded-for'] || 'unknown';
+    let ip =
+      request.ip === '::1' ? request.headers['x-forwarded-for'] : request.ip;
     if (ip === 'unknown') {
       return { error: 'IP address could not be determined' };
     }
