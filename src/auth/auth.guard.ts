@@ -28,7 +28,6 @@ export class AuthGuard implements CanActivate {
     if (!useAuth) return true;
 
     const request = context.switchToHttp().getRequest();
-    console.log('auth guard url', request.url)
     // Bypass authentication for Prometheus metrics endpoint
     if (request.url === '/metrics') {
       return true;
