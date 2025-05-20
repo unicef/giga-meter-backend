@@ -351,6 +351,21 @@ export class MeasurementService {
       ndtVersion: measurement.ndt_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      elapsed_time_download: measurement.elapsed_time_download,
+      elapsed_time_upload: measurement.elapsed_time_upload,
+      download_rtt_variance: measurement.download_rtt_variance,
+      connection_is_mobile: measurement.connection_is_mobile,
+      connection_is_satellite: measurement.connection_is_satellite,
+      client_ip_address: measurement.client_ip_address,
+      client_city: clientInfo?.client_city,
+      client_region: clientInfo?.client_region,
+      client_country: clientInfo?.client_country,
+      client_geolocation: clientInfo?.client_geolocation,
+      client_timezone: clientInfo?.client_timezone,
+      asn_number: measurement.asn_number,
+      asn_name: measurement.asn_name,
+      asn_network_type: measurement.asn_network_type,
+      asn_network_route: measurement.asn_network_route,
     };
     // if (isSuperUser) {
       filterMeasurementData['UUID'] = measurement.uuid;
@@ -466,11 +481,12 @@ export class MeasurementService {
     const getField = <T = any>(lower: string, upper: string): T | undefined =>
       (client as any)[lower] ?? (client as any)[upper];
 
+    const latitude = getField<number>('latitude', 'Latitude');
+    const longitude = getField<number>('longitude', 'Longitude');
     const geoLoc =
       getField<string>('loc', 'Loc') ??
-      (typeof getField<number>('latitude', 'Latitude') === 'number' &&
-      typeof getField<number>('longitude', 'Longitude') === 'number'
-        ? `${getField<number>('latitude', 'Latitude')},${getField<number>('longitude', 'Longitude')}`
+      (typeof latitude === 'number' && typeof longitude === 'number'
+        ? `${latitude},${longitude}`
         : undefined);
 
     return {
