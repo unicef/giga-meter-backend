@@ -464,11 +464,12 @@ export class MeasurementService {
     const getField = <T = any>(lower: string, upper: string): T | undefined =>
       (client as any)[lower] ?? (client as any)[upper];
 
+    const latitude = getField<number>('latitude', 'Latitude');
+    const longitude = getField<number>('longitude', 'Longitude');
     const geoLoc =
       getField<string>('loc', 'Loc') ??
-      (typeof getField<number>('latitude', 'Latitude') === 'number' &&
-      typeof getField<number>('longitude', 'Longitude') === 'number'
-        ? `${getField<number>('latitude', 'Latitude')},${getField<number>('longitude', 'Longitude')}`
+      (typeof latitude === 'number' && typeof longitude === 'number'
+        ? `${latitude},${longitude}`
         : undefined);
 
     return {
