@@ -14,10 +14,16 @@ export class IpMetadataController {
   async getIpInfo(@Req() request: Request) {
     let ip =
       request.ip === '::1' ? request.headers['x-forwarded-for'] : request.ip;
-    if (ip === 'unknown') {
-      return { error: 'IP address could not be determined' };
+    if (!ip) {
+      ip = request.ip;
     }
-    ip = typeof ip === 'string' ? ip.split(',')[0] : ip[0];
+    if (typeof ip === 'string') {
+      ip = ip.split(',')[0];
+    } else if (Array.isArray(ip) && ip.length > 0) {
+      ip = ip[0];
+    } else {
+      return { error: 'Invalid IP address format' };
+    }
     return this.ipMetadataService.getIpInfo(ip);
   }
 }

@@ -29,7 +29,6 @@ export class IpMetadataService {
   private async fetchIpInfoFromAPI(ip: string): Promise<IpMetadata> {
     const ipInfoToken = process.env.IPINFO_TOKEN;
     try {
-      console.log('Fetching IP info from IPInfo API...');
       const response = await firstValueFrom(
         this.httpService.get(
           `https://ipinfo.io/${ip}/json?token=${ipInfoToken}`,
@@ -78,7 +77,7 @@ export class IpMetadataService {
     }
   }
 
-  private async fetchIpInfoFromFallbackAPI(ip: string): Promise<any> {
+  private async fetchIpInfoFromFallbackAPI(ip: string): Promise<IpMetadata> {
     const ipGeo = await this.prisma.ipMetadata.findUnique({
       where: { ip_source: { ip, source: 'geojs' } },
     });
@@ -104,17 +103,17 @@ export class IpMetadataService {
       hostname: '',
       org:
         typeof response?.data?.organization === 'string'
-          ? response.data.organization.split(' ')[1]
+          ? response.data.organization.match(/^AS\d+\s+(.+)$/)?.[1] ?? ''
           : '',
       asn:
         typeof response?.data?.organization === 'string'
-          ? response.data.organization.split(' ')[0]
+          ? response.data.organization.match(/^(AS\d+)/)?.[1] ?? ''
           : '',
       source: 'geojs',
     };
   }
 
-  async getIpInfo(ip: string): Promise<any> {
+  async getIpInfo(ip: string): Promise<IpMetadata> {
     console.log('IP Address:', ip);
     let ipInfo = await this.prisma.ipMetadata.findUnique({
       where: { ip_source: { ip, source: 'ipinfo' } },
