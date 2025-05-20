@@ -80,7 +80,7 @@ export class IpMetadataService {
 
   private async fetchIpInfoFromFallbackAPI(ip: string): Promise<any> {
     const ipGeo = await this.prisma.ipMetadata.findUnique({
-      where: {ip_source: { ip, source: 'geojs' }},
+      where: { ip_source: { ip, source: 'geojs' } },
     });
     if (ipGeo) {
       if (ipGeo.source) delete ipGeo.source;
@@ -102,8 +102,14 @@ export class IpMetadataService {
       postal: response?.data?.area_code ?? '',
       timezone: response?.data?.timezone ?? '',
       hostname: '',
-      org: response?.data?.organization.split(' ')[1] ?? '',
-      asn: response?.data?.organization.split(' ')[0] ?? '',
+      org:
+        typeof response?.data?.organization === 'string'
+          ? response.data.organization.split(' ')[1]
+          : '',
+      asn:
+        typeof response?.data?.organization === 'string'
+          ? response.data.organization.split(' ')[0]
+          : '',
       source: 'geojs',
     };
   }
@@ -111,7 +117,7 @@ export class IpMetadataService {
   async getIpInfo(ip: string): Promise<any> {
     console.log('IP Address:', ip);
     let ipInfo = await this.prisma.ipMetadata.findUnique({
-      where: {ip_source: { ip, source: 'ipinfo' }},
+      where: { ip_source: { ip, source: 'ipinfo' } },
     });
 
     if (!ipInfo) {
