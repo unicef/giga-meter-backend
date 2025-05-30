@@ -117,7 +117,20 @@ export class SchoolService {
     return school.user_id;
   }
 
-  private toDto(school: School): SchoolDto {
+  async updateSchool(schoolDto: SchoolDto): Promise<string> {
+    const model = await this.toModel(schoolDto);
+    const existingSchool = await this.prisma.dailycheckapp_school.findFirst({
+      where: { mac_address: schoolDto.mac_address, user_id: schoolDto.user_id }
+    });
+
+    const school = await this.prisma.dailycheckapp_school.update({
+      where: { mac_address: existingSchool.mac_address, user_id: existingSchool.user_id },
+      data: model
+    });
+    return school.user_id;
+  }
+
+  private async toDto(school: School): Promise<SchoolDto> {
     return {
       id: school.id.toString(),
       user_id: school.user_id,
@@ -131,10 +144,15 @@ export class SchoolService {
       country_code: school.country_code,
       is_blocked: school.is_blocked,
       created_at: school.created_at,
+      email: school.email
     };
   }
 
-  private toModel(school: SchoolDto): any {
+  private async toModel(school: SchoolDto): Promise<any> {
+    const emails = school.email ? 
+      (Array.isArray(school.email) ? school.email : [school.email])
+        .filter(email => email) : [];
+
     return {
       user_id: school?.user_id || uuidv4(),
       giga_id_school: school.giga_id_school?.toLowerCase().trim(),
@@ -144,6 +162,7 @@ export class SchoolService {
       created: school.created,
       ip_address: school.ip_address,
       country_code: school.country_code,
-    };
+      email: emails
+    }
   }
 }

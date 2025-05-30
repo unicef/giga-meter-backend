@@ -49,6 +49,7 @@ export class AdminService {
       ip_address: school.ip_address,
       country_code: school.country_code,
       is_blocked: school.is_blocked,
+      email: Array.isArray(school.email) ? school.email : [school.email],
       created_at: school.created_at,
     };
   }

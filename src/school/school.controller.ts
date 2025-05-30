@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -308,6 +309,32 @@ export class SchoolController {
     @Body() schoolDto: SchoolDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
     const schoolId = await this.schoolService.createSchool(schoolDto);
+
+    return {
+      success: true,
+      data: { user_id: schoolId },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+
+  @Put()
+  @ApiOperation({
+    summary: 'Update a school in the Giga Meter database',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Returns Id and mac address of school updated',
+    type: String,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async updateSchool(
+    @Body() schoolDto: SchoolDto,
+  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
+    const schoolId = await this.schoolService.updateSchool(schoolDto);
 
     return {
       success: true,

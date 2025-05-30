@@ -35,6 +35,9 @@ export class SchoolDto {
   is_blocked: boolean;
 
   @ApiProperty()
+  email: string[];
+
+  @ApiProperty()
   created_at: Date;
 }
 
