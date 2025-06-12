@@ -7,6 +7,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 @Controller('api/v1/ip-metadata')
 export class IpMetadataController {
   constructor(private readonly ipMetadataService: IpMetadataService) {}
+  @UseGuards(AuthGuard)
   @Get('debug-ip')
   getDebugIp(@Req() req: Request) {
     return {
@@ -19,15 +20,16 @@ export class IpMetadataController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   async getIpInfo(@Req() request: Request) {
+    // Get IP from appropriate source
     let ip =
       request.ip === '::1' ? request.headers['x-forwarded-for'] : request.ip;
-    if (!ip) {
-      ip = request.ip;
-    }
-    if (typeof ip === 'string') {
-      ip = ip.split(',')[0];
-    } else if (Array.isArray(ip) && ip.length > 0) {
+
+    // Handle array format
+    if (Array.isArray(ip)) {
       ip = ip[0];
+    } else if (typeof ip === 'string') {
+      // Extract first IP and remove IPv6 part if present
+      ip = ip.split(',')[0].trim().split(':')[0];
     } else {
       return { error: 'Invalid IP address format' };
     }
