@@ -117,7 +117,7 @@ export class IpMetadataService {
 
   async getIpInfo(ip: string): Promise<IpMetadata> {
     console.log('IP Address:', ip);
-    let ipInfo = await this.prisma.ipMetadata.findUnique({
+    let ipInfo:IpMetadata = await this.prisma.ipMetadata.findUnique({
       where: { ip_source: { ip, source: 'ipinfo' } },
     });
 
@@ -140,9 +140,11 @@ export class IpMetadataService {
             source: ipData.source,
           },
         });
-      }
+      }else
+        ipInfo = ipData;
     }
     if (ipInfo.source) delete ipInfo.source;
+    
     return ipInfo;
   }
 }
