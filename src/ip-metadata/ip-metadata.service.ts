@@ -17,6 +17,7 @@ export interface IpMetadata {
   error?: string;
   hostname?: string;
   source?: string;
+  new?: boolean; // Indicates if this is a new record
 }
 
 @Injectable()
@@ -51,6 +52,7 @@ export class IpMetadataService {
         ...data,
         asn: asnValue,
         source: 'ipinfo',
+        new: true, // Indicating this is a new record
       };
     } catch (error) {
       console.error('IPInfo API failed, attempting fallback...');
@@ -82,7 +84,6 @@ export class IpMetadataService {
       where: { ip_source: { ip, source: 'geojs' } },
     });
     if (ipGeo) {
-      if (ipGeo.source) delete ipGeo.source;
       return ipGeo;
     }
 
@@ -110,6 +111,7 @@ export class IpMetadataService {
           ? response.data.organization.match(/^(AS\d+)/)?.[1] ?? ''
           : '',
       source: 'geojs',
+      new: true, // Indicating this is a new record
     };
   }
 
@@ -122,7 +124,7 @@ export class IpMetadataService {
     if (!ipInfo) {
       const ipData = await this.fetchIpInfoFromAPI(ip);
       console.log('IP Data:', ipData);
-      if (ipData) {
+      if (ipData && ipData.new) {
         ipInfo = await this.prisma.ipMetadata.create({
           data: {
             ip: ipData.ip,
