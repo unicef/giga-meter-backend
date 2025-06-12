@@ -7,7 +7,14 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 @Controller('api/v1/ip-metadata')
 export class IpMetadataController {
   constructor(private readonly ipMetadataService: IpMetadataService) {}
-
+  @Get('debug-ip')
+  getDebugIp(@Req() req: Request) {
+    return {
+      ip: req.ip,
+      ips: req.ips,
+      xForwardedFor: req.headers['x-forwarded-for'],
+    };
+  }
   @Get()
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
