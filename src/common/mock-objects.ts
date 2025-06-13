@@ -130,7 +130,7 @@ export const mockSchoolModel = [
     id: toBigInt(1),
     user_id: 'test_id1',
     giga_id_school: 'gigaid1',
-    mac_address: 'string5',
+    mac_address: 'string3',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -146,7 +146,7 @@ export const mockSchoolModel = [
     id: toBigInt(2),
     user_id: 'test_id',
     giga_id_school: 'gigaid2',
-    mac_address: 'string6',
+    mac_address: 'string4',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -769,3 +769,9 @@ export const mockGigaSchoolMappingModel = [
     created_at: null,
   },
 ];
+
+export const mockSchoolEmailUpdateDto = {
+  mac_address: 'string3',
+  user_id: 'test_id1',
+  email: ['test1@test.com', 'test2@test.com', 'test3@test.com']
+};

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
-import { SchoolDto } from './school.dto';
+import { SchoolDto, SchoolEmailUpdateDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
@@ -46,7 +46,7 @@ export class SchoolService {
       where: filter,
       orderBy: { created: 'desc' },
     });
-    return (await schools).map(this.toDto);
+    return Promise.all((await schools).map(this.toDto));
   }
 
   async schoolsByGigaId(
@@ -65,7 +65,7 @@ export class SchoolService {
     }
 
     const schools = this.prisma.dailycheckapp_school.findMany(query);
-    return (await schools).map(this.toDto);
+    return Promise.all((await schools).map(this.toDto));
   }
 
   async schoolsById(
@@ -84,14 +84,14 @@ export class SchoolService {
     }
 
     const schools = this.prisma.dailycheckapp_school.findMany(query);
-    return (await schools).map(this.toDto);
+    return Promise.all((await schools).map(this.toDto));
   }
 
   async schoolsByCountryId(country_code: string): Promise<SchoolDto[]> {
     const schools = this.prisma.dailycheckapp_school.findMany({
       where: { country_code },
     });
-    return (await schools).map(this.toDto);
+    return Promise.all((await schools).map(this.toDto));
   }
 
   async checkNotify(user_id: string): Promise<boolean> {
@@ -110,22 +110,23 @@ export class SchoolService {
   }
 
   async createSchool(schoolDto: SchoolDto): Promise<string> {
-    const model = this.toModel(schoolDto);
+    const model = await this.toModel(schoolDto);
     const school = await this.prisma.dailycheckapp_school.create({
       data: model,
     });
     return school.user_id;
   }
 
-  async updateSchool(schoolDto: SchoolDto): Promise<string> {
-    const model = await this.toModel(schoolDto);
+  async updateSchoolEmail(schoolDto: SchoolEmailUpdateDto): Promise<string> {
     const existingSchool = await this.prisma.dailycheckapp_school.findFirst({
       where: { mac_address: schoolDto.mac_address, user_id: schoolDto.user_id }
     });
-
+    if (!existingSchool) {
+      throw new Error('School not found');
+    }
     const school = await this.prisma.dailycheckapp_school.update({
       where: { mac_address: existingSchool.mac_address, user_id: existingSchool.user_id },
-      data: model
+      data: { email: schoolDto.email }
     });
     return school.user_id;
   }

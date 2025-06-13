@@ -25,7 +25,7 @@ import {
   AddRecordResponseDto,
   ApiSuccessResponseDto,
 } from '../common/common.dto';
-import { CheckNotifyDto, SchoolDto } from './school.dto';
+import { CheckNotifyDto, SchoolDto, SchoolEmailUpdateDto } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
 import { DynamicResponse } from 'src/utility/decorators';
@@ -318,9 +318,9 @@ export class SchoolController {
     };
   }
 
-  @Put()
+  @Put('email')
   @ApiOperation({
-    summary: 'Update a school in the Giga Meter database',
+    summary: 'Update a school email in the Giga Meter database by mac address',
   })
   @ApiResponse({
     status: 201,
@@ -331,10 +331,10 @@ export class SchoolController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
-  async updateSchool(
-    @Body() schoolDto: SchoolDto,
+  async updateSchoolEmail(
+    @Body() schoolDto: SchoolEmailUpdateDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
-    const schoolId = await this.schoolService.updateSchool(schoolDto);
+    const schoolId = await this.schoolService.updateSchoolEmail(schoolDto);
 
     return {
       success: true,

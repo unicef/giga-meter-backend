@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ArrayMaxSize, IsArray, IsString } from 'class-validator';
 
 export class SchoolDto {
   @ApiProperty()
@@ -47,4 +48,19 @@ export class CheckNotifyDto {
 
   @ApiProperty()
   download_url: string;
+}
+
+export class SchoolEmailUpdateDto {
+  @ApiProperty()
+  @IsString()
+  mac_address: string;
+
+  @ApiProperty({ type: [String], maxItems: 3 })
+  @IsArray()
+  @ArrayMaxSize(3)
+  email: string[];
+
+  @ApiProperty()
+  @IsString()
+  user_id: string;
 }
