@@ -28,6 +28,9 @@ import { AuthGuard } from './auth/auth.guard';
 import { CategoryConfigModule } from './category-config/category-config.module';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { AuthModule } from './auth/auth.module';
+import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityService } from './connectivity/connectivity.service';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
 
 @Module({
   imports: [
@@ -39,6 +42,7 @@ import { AuthModule } from './auth/auth.module';
     }),
     CategoryConfigModule,
     AuthModule,
+    IpMetadataModule,
   ],
   controllers: [
     AppController,
@@ -51,6 +55,7 @@ import { AuthModule } from './auth/auth.module';
     AdminController,
     DataFixController,
     MetricsController,
+    ConnectivityController,
   ],
   providers: [
     AppService,
@@ -76,6 +81,7 @@ import { AuthModule } from './auth/auth.module';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    ConnectivityService,
   ],
 })
 export class AppModule {}

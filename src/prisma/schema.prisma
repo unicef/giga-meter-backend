@@ -115,7 +115,7 @@ model country {
 }
 
 model master_sync_school_static {
-    id                                  Int      @id @default(autoincrement())
+  id                                    Int       @id @default(autoincrement())
   created                               DateTime  @db.Timestamptz
   modified                              DateTime  @db.Timestamptz
   latitude                              Float?
@@ -346,4 +346,33 @@ model CategoryConfig {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("category_config")
+}
+
+model connectivity_ping_checks {
+  id             Int       @id() @default(autoincrement())
+  timestamp      DateTime? @db.Timestamptz(6)
+  isConnected    Boolean?  @map("is_connected")
+  errorMessage   String?   @map("error_message")
+  giga_id_school String    @map("giga_id_school")
+  app_local_uuid String    @unique
+  browserId       String?    @map("browser_id")
+  latency        Float?      @map("latency")
+  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+} 
+
+model IpMetadata {
+  id        Int     @id @default(autoincrement())
+  ip        String 
+  hostname  String?
+  city      String?
+  region    String?
+  country   String?
+  loc       String?
+  org       String?
+  postal    String?
+  timezone  String?
+  asn       String?
+  source    String?
+
+  @@unique([ip, source])
 }
