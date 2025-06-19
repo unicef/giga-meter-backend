@@ -28,13 +28,27 @@ import { AuthGuard } from './auth/auth.guard';
 import { CategoryConfigModule } from './category-config/category-config.module';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { AuthModule } from './auth/auth.module';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { defaultRateLimitConfig } from './config/rate-limit.config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
-import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
+import * as redisStore from 'cache-manager-redis-store';
+
 
 @Module({
   imports: [
     HttpModule,
+    ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
+    CacheModule.register({
+      isGlobal: true,
+      store: redisStore,
+      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      ttl: CACHE_TTL,
+      max: 5000,
+    }),
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
