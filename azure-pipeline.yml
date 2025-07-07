@@ -76,18 +76,18 @@ stages:
   - job: Development
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/development')
     steps: 
-    - task: AzureRmWebAppDeployment@4
-      displayName: 'Azure App Service Deploy: uni-connect-services'
-      inputs:
-        azureSubscription: 'UNI_DATA RS-UNI-OI-CONNECT'
-        appType: webAppContainer
-        WebAppName: 'uni-connect-services'
-        deployToSlotOrASE: true
-        ResourceGroupName: 'RS-UNI-OI-CONNECT'
-        SlotName: dev
-        DockerNamespace: uniconnectacr.azurecr.io
-        DockerRepository: 'main/giga-meter-backend'
-        DockerImageTag: '$(Build.BuildId)'
+    #- task: AzureRmWebAppDeployment@4
+    #  displayName: 'Azure App Service Deploy: uni-connect-services'
+    #  inputs:
+    #    azureSubscription: 'UNI_DATA RS-UNI-OI-CONNECT'
+    #    appType: webAppContainer
+    #    WebAppName: 'uni-connect-services'
+    #    deployToSlotOrASE: true
+    #    ResourceGroupName: 'RS-UNI-OI-CONNECT'
+    #    SlotName: dev
+    #    DockerNamespace: uniconnectacr.azurecr.io
+    #    DockerRepository: 'main/giga-meter-backend'
+    #    DockerImageTag: '$(Build.BuildId)'
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: uni-ooi-giga-meter-backend'
       inputs:
