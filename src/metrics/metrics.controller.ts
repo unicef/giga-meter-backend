@@ -3,9 +3,11 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { MetricsService } from './metrics.service';
 import { ApiSuccessResponseDto } from '../common/common.dto';
 import { MetricsDto } from './metrics.dto';
+import { Public } from '../common/public.decorator';
 
 @ApiTags('Metrics')
 @Controller('api/v1/metrics')
+@Public()
 export class MetricsController {
   constructor(private readonly metricsService: MetricsService) {}
 

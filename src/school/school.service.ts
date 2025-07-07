@@ -39,7 +39,7 @@ export class SchoolService {
       }
       filter.country_code = { in: [dbCountry.code] };
     }
-
+    
     const schools = this.prisma.dailycheckapp_school.findMany({
       skip,
       take,
