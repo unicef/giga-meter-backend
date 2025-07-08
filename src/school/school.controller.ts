@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -24,7 +25,7 @@ import {
   AddRecordResponseDto,
   ApiSuccessResponseDto,
 } from '../common/common.dto';
-import { CheckNotifyDto, SchoolDto } from './school.dto';
+import { CheckNotifyDto, SchoolDto, SchoolEmailUpdateDto } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
 import { DynamicResponse } from 'src/utility/decorators';
@@ -308,6 +309,32 @@ export class SchoolController {
     @Body() schoolDto: SchoolDto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
     const schoolId = await this.schoolService.createSchool(schoolDto);
+
+    return {
+      success: true,
+      data: { user_id: schoolId },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+
+  @Put('email')
+  @ApiOperation({
+    summary: 'Update a school email in the Giga Meter database by mac address',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Returns Id and mac address of school updated',
+    type: String,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async updateSchoolEmail(
+    @Body() schoolDto: SchoolEmailUpdateDto,
+  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
+    const schoolId = await this.schoolService.updateSchoolEmail(schoolDto);
 
     return {
       success: true,
