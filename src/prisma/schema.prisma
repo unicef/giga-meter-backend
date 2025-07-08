@@ -220,11 +220,31 @@ model measurements {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  elapsed_time_download Float?
+  elapsed_time_upload   Float?
+  download_rtt_variance Float?
+
+  connection_is_mobile    Boolean?
+  connection_is_satellite Boolean?
+
+  client_ip_address  String?
+  client_city        String?
+  client_region      String?
+  client_country     String?
+  client_geolocation String?
+  client_timezone    String?
+
+  asn_number        String?
+  asn_name          String?
+  asn_network_type  String?
+  asn_network_route String?
+
   ndt_version      String?
   
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
+
 }
 
 model measurements_failed {
