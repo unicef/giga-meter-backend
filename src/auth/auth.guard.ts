@@ -15,10 +15,17 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const useAuth = process.env.USE_AUTH === 'true';
-
-    if (!useAuth) return true;
-
     const request = context.switchToHttp().getRequest();
+
+    if (!useAuth) {
+      request.has_write_access = true;
+      request.is_super_user = true;
+      request.allowed_countries = ['*'];
+      request.allowed_countries_iso3 = ['*']; 
+      request.is_public_access = true;
+      return true;
+    }
+
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -36,6 +43,12 @@ export class AuthGuard implements CanActivate {
 
   private async validateToken(token: string, request: any): Promise<boolean> {
     try {
+      const useAuth = process.env.USE_AUTH === 'true';
+      
+      if (!useAuth) {
+        return true;
+      }
+
       if (process.env.GIGA_METER_APP_KEY === token) {
         request.has_write_access = true;
         request.is_super_user = true;
