@@ -459,6 +459,7 @@ export class MeasurementController {
           (major === 1 && minor === 0 && patch >= 9);
 
         if (isVersionAbove109) {
+          measurementDto.ndtVersion = 'ndt7';
           const results = measurementDto.Results;
           const dataDownloaded =
             results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo
@@ -483,6 +484,8 @@ export class MeasurementController {
           } else {
             console.warn('Invalid or missing MinRTT value');
           }
+        } else {
+          measurementDto.ndtVersion = 'ndt5';
         }
       } catch (error) {
         console.error('Error processing measurement:', error);

@@ -348,6 +348,7 @@ export class MeasurementService {
           ? clientInfo?.Country
           : measurement.country_code,
       app_version: measurement.app_version,
+      ndtVersion: measurement.ndt_version,
       source: measurement.source,
       created_at: measurement.created_at,
     };
@@ -472,6 +473,7 @@ export class MeasurementService {
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
+      ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
     };
   }
