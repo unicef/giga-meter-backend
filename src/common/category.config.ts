@@ -38,13 +38,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     notAllowedAPIs: [],
     responseFilters: {
       // Global exclusions for all endpoints in this category
-      exclude: ['IP', 'ClientInfo.ISP', 'ClientInfo.Hostname', 'ClientInfo.Region', 'BrowserID', 'ServerInfo'],
-      // Endpoint-specific filters
-      endpoints: {
-        '/api/v1/measurements': {
-          exclude: ['annotation', 'ip_address'],
-        }
-      }
+      exclude: ['ip_address', 'school_id'],
     },
     swagger: {
       visible: true,
@@ -59,48 +53,17 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     id: 2,
     name: 'gov',
     isDefault: false,
-    allowedAPIs: [],
-    notAllowedAPIs: [
-      {
-        url: '/api/v1/measurements*',
-        methods: ['GET']
-      },
-      {
-        url: '/api/v1/schools/features_flags/{giga_id_school}',
-        methods: ['PUT']
-      },
-      {
-        url: '/api/v1/dailycheckapp_schools*',
-        methods: ['GET']
-      },
-      {
-        url: '/api/v1/dailycheckapp_countries*',
-        methods: ['DELETE', 'GET']
-      },
-      {
-        url: '/api/v1/flagged_dailycheckapp_schools*',
-        methods: ['POST', 'GET']
-      }
-   ],
+    allowedAPIs: [
+      { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
+      { url: '/api/v1/dailycheckapp_countries', methods: ['GET'] },
+      { url: '/api/v1/measurements', methods: ['GET'] },
+    ],
+    notAllowedAPIs: [],
     responseFilters: {
       // Global exclusions for all endpoints
-      exclude: ['IP', 'BrowserID', 'ServerInfo'],
-      
-      // Endpoint-specific filters with nested paths
-      endpoints: {
-        '/api/v1/measurements': {
-          exclude: ['IP', 'BrowserID', 'deviceId']
-        },
-        '/api/v1/dailycheckapp_schools': {
-          exclude: []
-        }
-      }
+      exclude: ['ip_address', 'school_id'],
     },
-    swagger: {
-      visible: true,
-      title: 'Giga Meter Government API',
-      description: 'Government access API endpoints for GIGA Meter data'
-    },
+    swagger: null,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -110,9 +73,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     isDefault: false,
     // giga_meter has access to everything
     allowedAPIs: [],
-    notAllowedAPIs: [
-      
-  ],
+    notAllowedAPIs: [],
     responseFilters: {
       // giga_meter sees all fields by default
       exclude: [],
@@ -121,11 +82,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       endpoints: {
       }
     },
-    swagger: {
-      visible: true,
-      title: 'GIGA Meter API',
-      description: 'API documentation for GIGA Meter'
-    },
+    swagger: null,
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -133,11 +90,12 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     id: 4,
     name: 'giga_apps',
     isDefault: false,
-    allowedAPIs: [],
-    notAllowedAPIs: [{
-      url: '/api/v1/category-config*',
-      methods: ['*']
-    }],
+    allowedAPIs: [
+      { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
+      { url: '/api/v1/dailycheckapp_countries', methods: ['GET'] },
+      { url: '/api/v1/measurements', methods: ['GET'] },
+    ],
+    notAllowedAPIs: [],
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: [],
@@ -146,11 +104,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       endpoints: {
       }
     },
-    swagger: {
-      visible: true,
-      title: 'Giga Meter Apps APIs',
-      description: 'API documentation for GIGA Apps'
-    },
+    swagger: null,
     createdAt: new Date(),
     updatedAt: new Date()
   }
