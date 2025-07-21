@@ -41,10 +41,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       exclude: ['ip_address', 'school_id'],
     },
     swagger: {
-      visible: true,
-      title: 'Giga Meter API',
-      description: 'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
-        '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.'
+      visible: true
     },
     createdAt: new Date(),
     updatedAt: new Date()
@@ -63,7 +60,9 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       // Global exclusions for all endpoints
       exclude: ['ip_address', 'school_id'],
     },
-    swagger: null,
+    swagger: {
+      visible: true
+    },
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -82,7 +81,9 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       endpoints: {
       }
     },
-    swagger: null,
+    swagger: {
+      visible: true
+    },
     createdAt: new Date(),
     updatedAt: new Date()
   },
@@ -104,7 +105,9 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       endpoints: {
       }
     },
-    swagger: null,
+    swagger:{
+      visible: true
+    },
     createdAt: new Date(),
     updatedAt: new Date()
   }
