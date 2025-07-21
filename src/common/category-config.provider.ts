@@ -24,7 +24,7 @@ export class CategoryConfigProvider implements OnModuleInit {
       // Try to load configurations from the database
       const configs = await this.categoryConfigService.findAll() as unknown as CategoryConfigType[];
       
-      if (configs.length > 0) {
+      if (configs.length > 0 && false) {
         this.categories = configs.map(config => config.name);
         
         // Find the default category
