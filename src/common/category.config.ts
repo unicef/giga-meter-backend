@@ -51,27 +51,12 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     id: 2,
     name: 'gov',
     isDefault: false,
-    allowedAPIs: [],
-    notAllowedAPIs: [
-      {
-        url: "/api/v1/dailycheckapp_countries",
-        methods: [
-          "GET"
-        ]
-      },
-      {
-        url: "/api/v1/measurements",
-        methods: [
-          "GET"
-        ]
-      },
-      {
-        url: "/api/v1/dailycheckapp_schools",
-        methods: [
-          "GET"
-        ]
-      }
+    allowedAPIs: [
+      { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
+      { url: '/api/v1/dailycheckapp_countries', methods: ['GET'] },
+      { url: '/api/v1/measurements', methods: ['GET'] },
     ],
+    notAllowedAPIs: [],
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: ['ip_address', 'school_id'],
@@ -118,27 +103,12 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     id: 4,
     name: 'giga_apps',
     isDefault: false,
-    allowedAPIs: [],
-    notAllowedAPIs: [
-      {
-        url: "/api/v1/dailycheckapp_countries",
-        methods: [
-          "GET"
-        ]
-      },
-      {
-        url: "/api/v1/measurements",
-        methods: [
-          "GET"
-        ]
-      },
-      {
-        url: "/api/v1/dailycheckapp_schools",
-        methods: [
-          "GET"
-        ]
-      }
+    allowedAPIs: [
+      { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
+      { url: '/api/v1/dailycheckapp_countries', methods: ['GET'] },
+      { url: '/api/v1/measurements', methods: ['GET'] },
     ],
+    notAllowedAPIs: [],
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: [],
