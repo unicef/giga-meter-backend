@@ -25,7 +25,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         }
         const responseFilters = await this.getResponseFilters(category, path);
 
-        if(!(responseFilters?.include?.length || responseFilters?.exclude?.length)) {
+        if (!(responseFilters?.include?.length || responseFilters?.exclude?.length)) {
           return response;
         }
         const data = response?.data;
@@ -223,7 +223,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
     const globalExclude = config?.responseFilters?.exclude || [];
     const globalInclude = config?.responseFilters?.include || [];
     // Find the most specific filter for this path
-    const entries = Object.entries(config?.responseFilters?.endpoints);
+    const entries = Object.entries(config?.responseFilters?.endpoints ?? {});
     const matchFilter = Array.isArray(entries) ?
       entries.filter((item) => {
         const itemPath = item[0];
@@ -240,7 +240,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         const regex = new RegExp(`^${pattern}$`);
         return regex.test(path);
       }) : null;
-      // flattern the array
+    // flattern the array
     const allIncludes = new Set(matchFilter?.map((filter: any) => filter?.[1]?.include || []).flat(2) || []);
     const allExcludes = new Set(matchFilter?.map((filter: any) => filter?.[1]?.exclude || []).flat(2) || []);
     return {

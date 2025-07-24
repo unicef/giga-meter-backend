@@ -39,6 +39,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     responseFilters: {
       // Global exclusions for all endpoints in this category
       exclude: ['ip_address', 'school_id'],
+      endpoints: {}
     },
     swagger: {
       visible: true
@@ -59,6 +60,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: ['ip_address', 'school_id'],
+      endpoints: {}
     },
     swagger: {
       visible: true
@@ -72,14 +74,23 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     isDefault: false,
     // giga_meter has access to everything
     allowedAPIs: [],
-    notAllowedAPIs: [],
+    notAllowedAPIs: [{
+      // category, contact, delete api
+      url: '/api/v1/category-config*',
+      methods: ['*']
+    }, {
+      url: '/api/v1/messages*',
+      methods: ['*']
+    }, {
+      url: '/api/v1/*',
+      methods: ['DELETE']
+    }],
     responseFilters: {
       // giga_meter sees all fields by default
       exclude: [],
       
       // But can still have some endpoint-specific exclusions if needed
-      endpoints: {
-      }
+      endpoints: {}
     },
     swagger: {
       visible: true
@@ -96,6 +107,26 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       { url: '/api/v1/dailycheckapp_countries', methods: ['GET'] },
       { url: '/api/v1/measurements', methods: ['GET'] },
     ],
+    notAllowedAPIs: [],
+    responseFilters: {
+      // Global exclusions for all endpoints
+      exclude: [],
+      
+      // But can still have some endpoint-specific exclusions if needed
+      endpoints: {
+      }
+    },
+    swagger:{
+      visible: true
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 5,
+    name: 'admin',
+    isDefault: false,
+    allowedAPIs: [],
     notAllowedAPIs: [],
     responseFilters: {
       // Global exclusions for all endpoints
