@@ -54,29 +54,28 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     allowedAPIs: [],
     notAllowedAPIs: [
       {
-        url: '/api/v1/measurements*',
-        methods: ['GET']
+        url: "/api/v1/dailycheckapp_countries",
+        methods: [
+          "GET"
+        ]
       },
       {
-        url: '/api/v1/schools/features_flags/{giga_id_school}',
-        methods: ['PUT']
+        url: "/api/v1/measurements",
+        methods: [
+          "GET"
+        ]
       },
       {
-        url: '/api/v1/dailycheckapp_schools*',
-        methods: ['GET']
-      },
-      {
-        url: '/api/v1/dailycheckapp_countries*',
-        methods: ['DELETE', 'GET']
-      },
-      {
-        url: '/api/v1/flagged_dailycheckapp_schools*',
-        methods: ['POST', 'GET']
+        url: "/api/v1/dailycheckapp_schools",
+        methods: [
+          "GET"
+        ]
       }
-   ],
+    ],
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: ['ip_address', 'school_id'],
+      include: [],
       endpoints: {}
     },
     swagger: {
@@ -105,7 +104,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     responseFilters: {
       // giga_meter sees all fields by default
       exclude: [],
-      
+      include: [],
       // But can still have some endpoint-specific exclusions if needed
       endpoints: {}
     },
@@ -120,17 +119,32 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     name: 'giga_apps',
     isDefault: false,
     allowedAPIs: [],
-    notAllowedAPIs: [{
-      url: '/api/v1/category-config*',
-      methods: ['*']
-    }],
+    notAllowedAPIs: [
+      {
+        url: "/api/v1/dailycheckapp_countries",
+        methods: [
+          "GET"
+        ]
+      },
+      {
+        url: "/api/v1/measurements",
+        methods: [
+          "GET"
+        ]
+      },
+      {
+        url: "/api/v1/dailycheckapp_schools",
+        methods: [
+          "GET"
+        ]
+      }
+    ],
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: [],
-      
+      include: [],
       // But can still have some endpoint-specific exclusions if needed
-      endpoints: {
-      }
+      endpoints: {}
     },
     swagger:{
       visible: true
@@ -147,7 +161,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: [],
-      
+      include: [],
       // But can still have some endpoint-specific exclusions if needed
       endpoints: {
       }
