@@ -17,7 +17,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       map(async (response) => {
-        const category = request.category || await this.categoryConfigProvider.getDefaultCategory();
+        const category = request?.category || await this.categoryConfigProvider.getDefaultCategory();
         const path = request.route?.path || request.path;
         // If data is null or undefined, return as is
         if (response === null || response === undefined) {
@@ -25,7 +25,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         }
         const responseFilters = await this.getResponseFilters(category, path);
 
-        if(!(responseFilters.include.length || responseFilters.exclude.length)) {
+        if (!(responseFilters?.include?.length || responseFilters?.exclude?.length)) {
           return response;
         }
         const data = response?.data;
@@ -55,12 +55,12 @@ export class CategoryResponseInterceptor implements NestInterceptor {
     const result = { ...obj };
 
     // Apply category-specific field filtering
-    if (responseFilters.include && responseFilters.include.length > 0) {
+    if (responseFilters?.include && responseFilters?.include?.length > 0) {
       // Process includes (whitelist approach)
       this.applyIncludeFilters(result, responseFilters.include);
-    } else if (responseFilters.exclude && responseFilters.exclude.length > 0) {
+    } else if (responseFilters?.exclude && responseFilters?.exclude?.length > 0) {
       // Process excludes (blacklist approach)
-      this.applyExcludeFilters(result, responseFilters.exclude);
+      this.applyExcludeFilters(result, responseFilters?.exclude);
     }
 
     return result;
@@ -217,13 +217,13 @@ export class CategoryResponseInterceptor implements NestInterceptor {
   private async getResponseFilters(category: string, path: string): Promise<any> {
     const config = await this.categoryConfigProvider.getCategoryConfig(category);
 
-    if (!config || !config.responseFilters) {
+    if (!config || !config?.responseFilters) {
       return { include: [], exclude: [] };
     }
-    const globalExclude = config.responseFilters.exclude || [];
-    const globalInclude = config.responseFilters.include || [];
+    const globalExclude = config?.responseFilters?.exclude || [];
+    const globalInclude = config?.responseFilters?.include || [];
     // Find the most specific filter for this path
-    const entries = Object.entries(config.responseFilters.endpoints);
+    const entries = Object.entries(config?.responseFilters?.endpoints ?? {});
     const matchFilter = Array.isArray(entries) ?
       entries.filter((item) => {
         const itemPath = item[0];
@@ -240,7 +240,7 @@ export class CategoryResponseInterceptor implements NestInterceptor {
         const regex = new RegExp(`^${pattern}$`);
         return regex.test(path);
       }) : null;
-      // flattern the array
+    // flattern the array
     const allIncludes = new Set(matchFilter?.map((filter: any) => filter?.[1]?.include || []).flat(2) || []);
     const allExcludes = new Set(matchFilter?.map((filter: any) => filter?.[1]?.exclude || []).flat(2) || []);
     return {
