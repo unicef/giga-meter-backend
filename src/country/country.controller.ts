@@ -124,6 +124,7 @@ export class CountryController {
     if (!code || code.trim().length === 0)
       throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
 
+    // TODO:// remove this logic after adding countries to non expired api keys 
     if (!write_access && !countries?.includes(code.trim().toUpperCase())) {
       throw new HttpException(
         'not authorized to access',
@@ -176,6 +177,7 @@ export class CountryController {
         'code_iso3 is null/empty',
         HttpStatus.BAD_REQUEST,
       );
+    // TODO:// remove this logic after adding countries to non expired api keys 
     if (!write_access && !countries?.includes(code_iso3.trim().toUpperCase())) {
       throw new HttpException(
         'not authorized to access',

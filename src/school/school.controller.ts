@@ -241,7 +241,7 @@ export class SchoolController {
         'country_id is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-
+    // TODO:// remove this logic after adding countries to non expired api keys  
     if (!write_access && !countries?.includes(country_id.toUpperCase())) {
       throw new HttpException(
         'not authorized to access',
