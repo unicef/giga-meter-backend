@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -30,9 +31,14 @@ import { ValidateSize } from '../common/validation.decorator';
 import { DynamicResponse } from 'src/utility/decorators';
 import { GetConnectivityRecordsDto } from 'src/connectivity/connectivity.dto';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { getRateLimitConfig } from 'src/config/rate-limit.config';
+import { CacheInterCeptorOptional } from 'src/config/cache.config';
 
 @ApiTags('Schools')
 @Controller('api/v1/dailycheckapp_schools')
+@UseGuards(ThrottlerGuard)
+@Throttle(getRateLimitConfig('schools'))
 @UseGuards(AuthGuard)
 @ApiBearerAuth()
 export class SchoolController {
@@ -42,6 +48,7 @@ export class SchoolController {
   ) {}
 
   @Get('')
+  @UseInterceptors(CacheInterCeptorOptional)
   @ApiOperation({
     summary:
       'Returns the list of registered schools on the Giga Meter database',
@@ -234,7 +241,7 @@ export class SchoolController {
         'country_id is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-
+    // TODO:// remove this logic after adding countries to non expired api keys  
     if (!write_access && !countries?.includes(country_id.toUpperCase())) {
       throw new HttpException(
         'not authorized to access',

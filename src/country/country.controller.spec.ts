@@ -4,6 +4,9 @@ import { CountryService } from './country.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { APP_GUARD } from '@nestjs/core';
 import { mockCountryDto } from '../common/mock-objects';
 
 describe('CountryController', () => {
@@ -11,11 +14,50 @@ describe('CountryController', () => {
   let service: CountryService;
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      // Add any required PrismaService methods used in tests
+    };
+
+    const mockCacheManager = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+      reset: jest.fn(),
+    };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [CountryController],
-      providers: [CountryService, PrismaService, AuthGuard],
-      imports: [HttpModule],
-    }).compile();
+      providers: [
+        CountryService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: AuthGuard,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: ThrottlerGuard,
+        },
+      ],
+      imports: [
+        HttpModule,
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60,
+            limit: 10,
+          },
+        ]),
+      ],
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({
+        canActivate: () => Promise.resolve(true),
+      })
+      .compile();
 
     controller = app.get<CountryController>(CountryController);
     service = app.get<CountryService>(CountryService);

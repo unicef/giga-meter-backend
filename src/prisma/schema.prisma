@@ -220,6 +220,9 @@ model measurements {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  @@index([giga_id_school])
+  @@index([country_code])
+  @@index([timestamp])
 }
 
 model measurements_failed {
@@ -332,6 +335,20 @@ model master_sync_intermediate {
   @@index([school_id_govt], map: "master_sync_intermediate_school_id_govt_ab3b376c")
   @@index([status], map: "master_sync_intermediate_status_a2e65bb9")
   @@map("master_sync_intermediate")
+}
+
+model CategoryConfig {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  isDefault     Boolean?  @default(false)
+  allowedAPIs   Json[]
+  notAllowedAPIs Json[]
+  responseFilters Json?
+  swagger       Json
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("category_config")
 }
 
 model connectivity_ping_checks {
