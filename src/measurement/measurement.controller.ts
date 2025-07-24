@@ -545,6 +545,7 @@ function validateGetMeasurementsParams(
       HttpStatus.BAD_REQUEST,
     );
   }
+  // TODO:// remove this logic after adding countries to non expired api keys 
   if (
     !write_access &&
     country_iso3_code &&

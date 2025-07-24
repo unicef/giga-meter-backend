@@ -68,8 +68,10 @@ export class AuthGuard implements CanActivate {
       request.has_write_access = response.data.data.has_write_access;
       const apiCategory = response?.data?.data?.apiCategory?.code;
       // Extract and set the category from the response
+      //TODO:// remove this logic after swagger categories are added 
       request.category = (apiCategory ? apiCategory : request.has_write_access ? 'giga_meter' : DEFAULT_CATEGORY).toLowerCase();
 
+      //TODO:// remove this logic after swagger categories are added 
       if (request?.method == 'GET' && !response.data.data.has_write_access) {
         request.allowed_countries = response.data.data.countries.map(
           (c) => c.code,
