@@ -1,4 +1,4 @@
-import { Controller, Get, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { IpMetadataService } from './ip-metadata.service';
 import { Request } from 'express';
 import { AuthGuard } from 'src/auth/auth.guard';
@@ -32,6 +32,16 @@ export class IpMetadataController {
       ip = ip.split(',')[0].trim().split(':')[0];
     } else {
       return { error: 'Invalid IP address format' };
+    }
+    return this.ipMetadataService.getIpInfo(ip);
+  }
+
+  @Get(':ip')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  async getIpInfoByIp(@Param('ip') ip: string) {
+    if (!ip) {
+      return { error: 'IP address is required' };
     }
     return this.ipMetadataService.getIpInfo(ip);
   }
