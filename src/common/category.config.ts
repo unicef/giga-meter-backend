@@ -38,19 +38,11 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     notAllowedAPIs: [],
     responseFilters: {
       // Global exclusions for all endpoints in this category
-      exclude: ['IP', 'ClientInfo.ISP', 'ClientInfo.Hostname', 'ClientInfo.Region', 'BrowserID', 'ServerInfo'],
-      // Endpoint-specific filters
-      endpoints: {
-        '/api/v1/measurements': {
-          exclude: ['annotation', 'ip_address'],
-        }
-      }
+      exclude: ['ip_address', 'school_id'],
+      endpoints: {}
     },
     swagger: {
-      visible: true,
-      title: 'Giga Meter API',
-      description: 'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
-        '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.'
+      visible: true
     },
     createdAt: new Date(),
     updatedAt: new Date()
@@ -62,44 +54,32 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     allowedAPIs: [],
     notAllowedAPIs: [
       {
-        url: '/api/v1/measurements*',
-        methods: ['GET']
+        url: "/api/v1/dailycheckapp_countries",
+        methods: [
+          "GET"
+        ]
       },
       {
-        url: '/api/v1/schools/features_flags/{giga_id_school}',
-        methods: ['PUT']
+        url: "/api/v1/measurements",
+        methods: [
+          "GET"
+        ]
       },
       {
-        url: '/api/v1/dailycheckapp_schools*',
-        methods: ['GET']
-      },
-      {
-        url: '/api/v1/dailycheckapp_countries*',
-        methods: ['DELETE', 'GET']
-      },
-      {
-        url: '/api/v1/flagged_dailycheckapp_schools*',
-        methods: ['POST', 'GET']
+        url: "/api/v1/dailycheckapp_schools",
+        methods: [
+          "GET"
+        ]
       }
-   ],
+    ],
     responseFilters: {
       // Global exclusions for all endpoints
-      exclude: ['IP', 'BrowserID', 'ServerInfo'],
-      
-      // Endpoint-specific filters with nested paths
-      endpoints: {
-        '/api/v1/measurements': {
-          exclude: ['IP', 'BrowserID', 'deviceId']
-        },
-        '/api/v1/dailycheckapp_schools': {
-          exclude: []
-        }
-      }
+      exclude: ['ip_address', 'school_id'],
+      include: [],
+      endpoints: {}
     },
     swagger: {
-      visible: true,
-      title: 'Giga Meter Government API',
-      description: 'Government access API endpoints for GIGA Meter data'
+      visible: true
     },
     createdAt: new Date(),
     updatedAt: new Date()
@@ -110,21 +90,26 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     isDefault: false,
     // giga_meter has access to everything
     allowedAPIs: [],
-    notAllowedAPIs: [
-      
-  ],
+    notAllowedAPIs: [{
+      // category, contact, delete api
+      url: '/api/v1/category-config*',
+      methods: ['*']
+    }, {
+      url: '/api/v1/messages*',
+      methods: ['*']
+    }, {
+      url: '/api/v1/*',
+      methods: ['DELETE']
+    }],
     responseFilters: {
       // giga_meter sees all fields by default
       exclude: [],
-      
+      include: [],
       // But can still have some endpoint-specific exclusions if needed
-      endpoints: {
-      }
+      endpoints: {}
     },
     swagger: {
-      visible: true,
-      title: 'GIGA Meter API',
-      description: 'API documentation for GIGA Meter'
+      visible: true
     },
     createdAt: new Date(),
     updatedAt: new Date()
@@ -134,22 +119,55 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     name: 'giga_apps',
     isDefault: false,
     allowedAPIs: [],
-    notAllowedAPIs: [{
-      url: '/api/v1/category-config*',
-      methods: ['*']
-    }],
+    notAllowedAPIs: [
+      {
+        url: "/api/v1/dailycheckapp_countries",
+        methods: [
+          "GET"
+        ]
+      },
+      {
+        url: "/api/v1/measurements",
+        methods: [
+          "GET"
+        ]
+      },
+      {
+        url: "/api/v1/dailycheckapp_schools",
+        methods: [
+          "GET"
+        ]
+      }
+    ],
     responseFilters: {
       // Global exclusions for all endpoints
       exclude: [],
-      
+      include: [],
+      // But can still have some endpoint-specific exclusions if needed
+      endpoints: {}
+    },
+    swagger:{
+      visible: true
+    },
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: 5,
+    name: 'admin',
+    isDefault: false,
+    allowedAPIs: [],
+    notAllowedAPIs: [],
+    responseFilters: {
+      // Global exclusions for all endpoints
+      exclude: [],
+      include: [],
       // But can still have some endpoint-specific exclusions if needed
       endpoints: {
       }
     },
-    swagger: {
-      visible: true,
-      title: 'Giga Meter Apps APIs',
-      description: 'API documentation for GIGA Apps'
+    swagger:{
+      visible: true
     },
     createdAt: new Date(),
     updatedAt: new Date()
