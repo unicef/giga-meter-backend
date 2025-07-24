@@ -107,68 +107,57 @@ export class CategoryConfigService {
 
   async update(id: number, updateCategoryConfigDto: UpdateCategoryConfigDto): Promise<CategoryConfig> {
     try {
-    // Check if the category exists
-    await this.findOne(id);
+      const category = await this.findOne(id);
+      if (!category) {
+        throw new NotFoundException(`Category config with id ${id} not found`);
+      }
 
-    // If this is set as default, unset any existing default
-    if (updateCategoryConfigDto.isDefault) {
-      await this.prisma.categoryConfig.updateMany({
-        where: { 
-          isDefault: true,
-          id: { not: id }
-        },
-        data: { isDefault: false }
-      });
-    }
+      if (updateCategoryConfigDto.isDefault) {
+        await this.prisma.categoryConfig.updateMany({
+          where: { isDefault: true, id: { not: id } },
+          data: { isDefault: false },
+        });
+      }
 
-    const result = await this.prisma.categoryConfig.update({
-      where: { id },
-      data: {
+      const data = {
         name: updateCategoryConfigDto.name,
         isDefault: updateCategoryConfigDto.isDefault,
         allowedAPIs: (updateCategoryConfigDto.allowedAPIs ? updateCategoryConfigDto.allowedAPIs : undefined) as any,
         notAllowedAPIs: (updateCategoryConfigDto.notAllowedAPIs ? updateCategoryConfigDto.notAllowedAPIs : undefined) as any,
         responseFilters: (updateCategoryConfigDto.responseFilters ? updateCategoryConfigDto.responseFilters : undefined) as any,
         swagger: (updateCategoryConfigDto.swagger) as any
+      };
+
+      const result = await this.prisma.categoryConfig.update({
+        where: { id },
+        data,
+      });
+
+      return this.mapPrismaModelToInterface(result);
+    } catch (error) {
+      console.error('Error updating category config:', error.message);
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
       }
-    });
-
-    if(!result) {
-      throw new NotFoundException(`Category config with ID ${id} not found`);
+      throw new BadRequestException(`Failed to update category config`);
     }
-
-    return this.mapPrismaModelToInterface(result);
-  } catch (error) {
-    if (error instanceof BadRequestException) {
-      throw error;
-    }
-    console.error('Error updating category config:', error.message);
-    throw new BadRequestException('Failed to update category config');
-  }
   }
 
   async remove(id: number): Promise<CategoryConfig> {
     try {
-    // Check if the category exists
-    const categoryConfig = await this.findOne(id);
-
-    // Don't allow deleting the default category
-    if (categoryConfig.isDefault) {
-      throw new BadRequestException('Cannot delete the default category configuration');
+      const category = await this.findOne(id);
+      if (category.isDefault) {
+        throw new BadRequestException('Cannot delete the default category config');
+      }
+      const result = await this.prisma.categoryConfig.delete({ where: { id } });
+      return this.mapPrismaModelToInterface(result);
+    } catch (error) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Error deleting category config:', error.message);
+      throw new BadRequestException(`Failed to delete category config: ${error.message}`);
     }
-
-    const result = await this.prisma.categoryConfig.delete({
-      where: { id }
-    });
-
-    return this.mapPrismaModelToInterface(result);
-  } catch (error) {
-    console.error('Error deleting category config:', error.message);
-    if (error instanceof BadRequestException) {
-      throw error;
-    }
-    throw new BadRequestException('Failed to delete category config');
-  }
   }
 
   // Helper method to map Prisma model to our interface
