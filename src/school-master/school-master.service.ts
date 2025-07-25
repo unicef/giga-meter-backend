@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
+import {
+  FeatureFlagDto,
+  SchoolFlagsDto,
+  SchoolMasterDto,
+} from './school-master.dto';
 import { plainToInstance } from 'class-transformer';
 import { school } from '@prisma/client';
 
@@ -22,7 +26,7 @@ export class SchoolMasterService {
     });
     console.log('schools', schools);
 
-    return  schools.map(this.toDto);
+    return schools.map(this.toDto);
   }
 
   async flagsByGigaId(giga_id_school: string): Promise<FeatureFlagDto> {
@@ -75,8 +79,48 @@ export class SchoolMasterService {
       giga_id_school: school.giga_id_school,
     };
   }
-
   private updateFlags(school: school, flags: FeatureFlagDto): any {
     return { ...school, feature_flags: flags };
+  }
+
+  async updateSetFlagOnSchools(
+    giga_ids: string[],
+    flagDto: FeatureFlagDto,
+  ): Promise<SchoolFlagsDto[] | false> {
+    const schools = await this.prisma.school.findMany({
+      where: {
+        giga_id_school: { in: giga_ids },
+      },
+      select: {
+        id: true,
+        giga_id_school: true,
+        feature_flags: true,
+      },
+    });
+    if (!schools || schools.length === 0) {
+      return false; // No schools found
+    }
+    if (schools.length > 0) {
+      const updatedSchools = schools.map((school) => ({
+        ...school,
+        feature_flags: {
+          ...((school?.feature_flags as object) ?? {}),
+          ...flagDto,
+        },
+      }));
+
+      await this.prisma.$transaction(
+        updatedSchools.map((school) =>
+          this.prisma.school.update({
+            where: { id: school.id },
+            data: { feature_flags: school.feature_flags },
+          }),
+        ),
+      );
+      updatedSchools.forEach((school) => {
+        delete school.id;
+      });
+      return updatedSchools;
+    }
   }
 }
