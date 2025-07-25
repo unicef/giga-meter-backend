@@ -24,11 +24,19 @@ export interface CategorySwaggerConfig {
 
 export type CategoryConfigType = Pick<CategoryConfig, 'id' | 'name' | 'isDefault' | 'createdAt' | 'updatedAt'> & { swagger: CategorySwaggerConfig, allowedAPIs: CategoryApiEndpoint[], notAllowedAPIs: CategoryApiEndpoint[], responseFilters: CategoryResponseFilters }
 
+export enum Category {
+  PUBLIC = 'PUBLIC',
+  GOV = 'GOV',
+  GIGA_METER = 'GIGA_METER',
+  GIGA_APPS = 'GIGA_APPS',
+  ADMIN = 'ADMIN',
+}
+
 // Default configuration for categories
 export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
   {
     id: 1,
-    name: 'public',
+    name: Category.PUBLIC,
     isDefault: true,
     allowedAPIs: [
       { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
@@ -49,7 +57,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
   },
   {
     id: 2,
-    name: 'gov',
+    name: Category.GOV,
     isDefault: false,
     allowedAPIs: [
       { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
@@ -71,7 +79,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
   },
   {
     id: 3,
-    name: 'giga_meter',
+    name: Category.GIGA_METER,
     isDefault: false,
     // giga_meter has access to everything
     allowedAPIs: [],
@@ -101,7 +109,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
   },
   {
     id: 4,
-    name: 'giga_apps',
+    name: Category.GIGA_APPS,
     isDefault: false,
     allowedAPIs: [
       { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
@@ -124,7 +132,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
   },
   {
     id: 5,
-    name: 'admin',
+    name: Category.ADMIN,
     isDefault: false,
     allowedAPIs: [],
     notAllowedAPIs: [],
@@ -148,7 +156,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
 export const CATEGORIES = DEFAULT_CATEGORY_CONFIG.map(config => config.name);
 
 // // Default category to use when none is specified
-export const DEFAULT_CATEGORY = DEFAULT_CATEGORY_CONFIG.find(config => config.isDefault)?.name || CATEGORIES[0];
+export const DEFAULT_CATEGORY = DEFAULT_CATEGORY_CONFIG.find(config => config.isDefault)?.name || Category.PUBLIC;
 
 // all categories
 export let CATEGORY_CONFIG = DEFAULT_CATEGORY_CONFIG;

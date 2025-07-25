@@ -71,7 +71,7 @@ export class CategoryConfigProvider implements OnModuleInit {
     if (!this.isInitialized) {
       await this.initialize();
     }
-    const config = this.categoryConfigs.find(config => config.name === category);
+    const config = this.categoryConfigs.find(config => config.name.toLowerCase() === category.toLowerCase());
     return config;
   }
 
