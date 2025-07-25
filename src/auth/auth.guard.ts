@@ -1,5 +1,5 @@
 import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { DEFAULT_CATEGORY } from '../common/category.config';
+import { Category, DEFAULT_CATEGORY } from '../common/category.config';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../common/public.decorator';
 import { firstValueFrom } from 'rxjs';
@@ -69,7 +69,7 @@ export class AuthGuard implements CanActivate {
       const apiCategory = response?.data?.data?.apiCategory?.code;
       // Extract and set the category from the response
       //TODO:// remove this logic after swagger categories are added 
-      request.category = (apiCategory ? apiCategory : request.has_write_access ? 'giga_meter' : DEFAULT_CATEGORY).toLowerCase();
+      request.category = (apiCategory ? apiCategory : request.has_write_access ? Category.GIGA_METER : DEFAULT_CATEGORY).toLowerCase();
 
       //TODO:// remove this logic after swagger categories are added 
       if (request?.method == 'GET' && !response.data.data.has_write_access) {
