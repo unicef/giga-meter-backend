@@ -220,6 +220,9 @@ model measurements {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  @@index([giga_id_school])
+  @@index([country_code])
+  @@index([timestamp])
 }
 
 model measurements_failed {
@@ -334,6 +337,20 @@ model master_sync_intermediate {
   @@map("master_sync_intermediate")
 }
 
+model CategoryConfig {
+  id            Int      @id @default(autoincrement())
+  name          String   @unique
+  isDefault     Boolean?  @default(false)
+  allowedAPIs   Json[]
+  notAllowedAPIs Json[]
+  responseFilters Json?
+  swagger       Json
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("category_config")
+}
+
 model connectivity_ping_checks {
   id             Int       @id() @default(autoincrement())
   timestamp      DateTime? @db.Timestamptz(6)
@@ -344,4 +361,21 @@ model connectivity_ping_checks {
   browserId       String?    @map("browser_id")
   latency        Float?      @map("latency")
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+} 
+
+model IpMetadata {
+  id        Int     @id @default(autoincrement())
+  ip        String 
+  hostname  String?
+  city      String?
+  region    String?
+  country   String?
+  loc       String?
+  org       String?
+  postal    String?
+  timezone  String?
+  asn       String?
+  source    String?
+
+  @@unique([ip, source])
 }

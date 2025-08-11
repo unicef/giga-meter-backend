@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -38,14 +39,20 @@ import {
 } from '../common/common.decorator';
 import { v4 as uuidv4 } from 'uuid';
 import { ValidateSize } from '../common/validation.decorator';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
+import { getRateLimitConfig } from '../config/rate-limit.config';
+import { CacheInterCeptorOptional } from '../config/cache.config';
 
 @ApiTags('Measurements')
 @Controller('api/v1/measurements')
+@UseGuards(ThrottlerGuard)
+@Throttle(getRateLimitConfig('measurements'))
 export class MeasurementController {
   constructor(private readonly measurementService: MeasurementService) {}
 
   @Get('')
   @UseGuards(AuthGuard)
+  @UseInterceptors(CacheInterCeptorOptional)
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -271,8 +278,8 @@ export class MeasurementController {
   }
 
   @Get('failed')
-  @ApiExcludeEndpoint()
   @UseGuards(AuthGuard)
+  @ApiExcludeEndpoint()
   @ApiBearerAuth()
   @ApiOperation({
     summary:
@@ -535,6 +542,7 @@ function validateGetMeasurementsParams(
       HttpStatus.BAD_REQUEST,
     );
   }
+  // TODO:// remove this logic after adding countries to non expired api keys 
   if (
     !write_access &&
     country_iso3_code &&
