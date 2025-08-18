@@ -61,6 +61,13 @@ The device token authentication system works alongside the existing Bearer token
    - HSTS for enforced HTTPS connections
    - Additional security headers for comprehensive protection
 
+7. **Input Validation Pipeline** (`src/main.ts`)
+   - Global ValidationPipe with strict parsing rules
+   - Automatic request validation and transformation
+   - Protection against injection and resource exhaustion attacks
+   - Whitelist mode to strip unknown properties
+   - Production-safe error handling
+
 ## API Endpoints
 
 ### Generate Device Token
@@ -281,6 +288,7 @@ The device token authentication system implements multiple layers of security:
 2. **Nonce Validation** (Redis-based replay prevention)
 3. **HMAC Signature Verification** (Message integrity)
 4. **HTTP Security Headers** (Web vulnerability protection)
+5. **Input Validation Pipeline** (Request validation and sanitization)
 
 ### Encryption Details
 
@@ -318,6 +326,60 @@ request.has_write_access = false; // Device tokens have limited access
 ```
 
 This allows controllers and services to differentiate between Bearer and Device token requests.
+
+## Input Validation Pipeline (ValidationPipe)
+
+The application implements a comprehensive input validation system using NestJS ValidationPipe with strict security configurations to protect against injection attacks and ensure data integrity.
+
+### Configuration Details
+
+```typescript
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true, // Strip properties that do not have any decorators
+    forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are present
+    transform: true, // Automatically transform payloads to be objects typed according to their DTO classes
+    transformOptions: {
+      enableImplicitConversion: false, // Disable implicit type conversion for security
+    },
+    disableErrorMessages: process.env.NODE_ENV === 'production', // Hide detailed error messages in production
+    stopAtFirstError: true, // Stop validation on first error for performance
+    skipMissingProperties: false, // Validate all properties including undefined ones
+    skipNullProperties: false, // Validate null properties
+    skipUndefinedProperties: false, // Validate undefined properties
+    dismissDefaultMessages: false, // Keep default validation messages
+    validationError: {
+      target: false, // Don't expose the target object in validation errors
+      value: false, // Don't expose the value in validation errors for security
+    },
+  }),
+);
+```
+
+### Security Features
+
+#### Injection Protection
+- **Whitelist Mode**: Only properties with validation decorators are allowed
+- **Property Stripping**: Unknown properties are automatically removed
+- **Type Safety**: Prevents type confusion attacks by disabling implicit conversion
+
+#### Resource Exhaustion Protection
+- **Early Termination**: `stopAtFirstError` prevents validation bombing
+- **Memory Safety**: Limits object size and complexity through validation rules
+- **Performance Optimization**: Efficient validation pipeline with minimal overhead
+
+#### Information Security
+- **Error Sanitization**: Production mode hides detailed validation errors
+- **Object Exposure Prevention**: Validation errors don't expose internal objects
+- **Value Hiding**: Sensitive values are not included in error responses
+
+### Validation Benefits
+
+1. **🛡️ Attack Prevention**: Blocks injection attacks, parameter pollution, and malformed requests
+2. **⚡ Performance**: Fast validation with early error termination
+3. **🔒 Data Integrity**: Ensures all incoming data matches expected formats
+4. **📊 Consistency**: Standardized validation across all API endpoints
+5. **🔍 Debugging**: Clear error messages in development, secure in production
 
 ## Error Handling
 

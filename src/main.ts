@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 import { AllExceptionFilter } from './common/common.filter';
@@ -64,6 +65,30 @@ async function bootstrap() {
   }));
   
   app.useStaticAssets(join(__dirname, '..', 'public'));
+
+  // Configure global validation pipes with strict parsing
+  // Validates structure and size of incoming requests
+  // Protects against injection and resource exhaustion
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true, // Strip properties that do not have any decorators
+      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are present
+      transform: true, // Automatically transform payloads to be objects typed according to their DTO classes
+      transformOptions: {
+        enableImplicitConversion: false, // Disable implicit type conversion for security
+      },
+      disableErrorMessages: process.env.NODE_ENV === 'production', // Hide detailed error messages in production
+      stopAtFirstError: true, // Stop validation on first error for performance
+      skipMissingProperties: false, // Validate all properties including undefined ones
+      skipNullProperties: false, // Validate null properties
+      skipUndefinedProperties: false, // Validate undefined properties
+      dismissDefaultMessages: false, // Keep default validation messages
+      validationError: {
+        target: false, // Don't expose the target object in validation errors
+        value: false, // Don't expose the value in validation errors for security
+      },
+    }),
+  );
 
   // Get the Category
   const categoryConfigProvider = app.get(CategoryConfigProvider);
