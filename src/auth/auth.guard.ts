@@ -5,12 +5,17 @@ import { IS_PUBLIC_KEY } from '../common/public.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
+import { DeviceTokenService } from './device-token.service';
 
 
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly httpService: HttpService, private reflector: Reflector) { }
+  constructor(
+    private readonly httpService: HttpService, 
+    private readonly deviceTokenService: DeviceTokenService,
+    private reflector: Reflector
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if the route is marked as public
@@ -33,19 +38,67 @@ export class AuthGuard implements CanActivate {
     if (request.url === '/metrics') {
       return true;
     }
-    const token = request.headers.authorization?.split(' ')[1];
 
-    if (!token) {
+    // Extract token from Authorization header
+    const authHeader = request.headers.authorization;
+    if (!authHeader) {
       throw new UnauthorizedException('Missing authorization token');
     }
 
-    const response = await this.validateToken(token, request);
-    if (!response) {
-      throw new UnauthorizedException(
-        'Invalid token or not authorized to access',
-      );
+    // Check if it's a Bearer token or device token
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2) {
+      throw new UnauthorizedException('Invalid authorization header format');
     }
-    return true;
+
+    const [scheme, token] = parts;
+    
+    // Handle Bearer tokens (existing logic)
+    if (scheme.toLowerCase() === 'bearer') {
+      const response = await this.validateToken(token, request);
+      if (!response) {
+        throw new UnauthorizedException(
+          'Invalid bearer token or not authorized to access',
+        );
+      }
+      return true;
+    }
+    
+    // Handle Device tokens (new logic)
+    if (scheme.toLowerCase() === 'device') {
+      const isValid = await this.validateDeviceToken(token, request);
+      if (!isValid) {
+        throw new UnauthorizedException(
+          'Invalid device token or not authorized to access',
+        );
+      }
+      return true;
+    }
+
+    throw new UnauthorizedException('Unsupported authorization scheme. Use Bearer or Device');
+  }
+
+  /**
+   * Validates device token and sets request context
+   * @param token - Device token to validate
+   * @param request - HTTP request object
+   * @returns Promise<boolean> indicating if token is valid
+   */
+  private async validateDeviceToken(token: string, request: any): Promise<boolean> {
+    try {
+      const payload = await this.deviceTokenService.validateToken(token);
+      if (!payload) {
+        return false;
+      }
+
+      // Set device-specific context on request
+      request.deviceId = payload.deviceId;
+      request.category = Category.GIGA_METER.toLowerCase();
+      return true;
+    } catch (error) {
+      console.error('Device token validation failed:', error.message);
+      return false;
+    }
   }
 
   public async validateToken(token: string, request: any): Promise<boolean> {

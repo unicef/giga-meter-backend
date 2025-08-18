@@ -36,7 +36,8 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import * as redisStore from 'cache-manager-redis-store';
-
+import { DeviceTokenController } from './auth/device-token.controller';
+import { DeviceTokenService } from './auth/device-token.service';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import * as redisStore from 'cache-manager-redis-store';
     DataFixController,
     MetricsController,
     ConnectivityController,
+    DeviceTokenController,
   ],
   providers: [
     AppService,
@@ -83,6 +85,7 @@ import * as redisStore from 'cache-manager-redis-store';
     AdminService,
     MetricsService,
     CategoryConfigProvider,
+    DeviceTokenService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
