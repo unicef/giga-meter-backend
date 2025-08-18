@@ -1,4 +1,4 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
 import { Category, DEFAULT_CATEGORY } from '../common/category.config';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../common/public.decorator';
@@ -6,14 +6,18 @@ import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { DeviceTokenService } from './device-token.service';
+import { NonceService } from './nonce.service';
 
 
 
 @Injectable()
 export class AuthGuard implements CanActivate {
+  private readonly logger = new Logger(AuthGuard.name);
+
   constructor(
     private readonly httpService: HttpService, 
     private readonly deviceTokenService: DeviceTokenService,
+    private readonly nonceService: NonceService,
     private reflector: Reflector
   ) { }
 
@@ -79,24 +83,51 @@ export class AuthGuard implements CanActivate {
   }
 
   /**
-   * Validates device token and sets request context
+   * Validates device token and nonce, then sets request context
    * @param token - Device token to validate
    * @param request - HTTP request object
-   * @returns Promise<boolean> indicating if token is valid
+   * @returns Promise<boolean> indicating if token and nonce are valid
    */
   private async validateDeviceToken(token: string, request: any): Promise<boolean> {
     try {
+      // First, validate the device token
       const payload = await this.deviceTokenService.validateToken(token);
       if (!payload) {
         return false;
       }
 
+      // Extract nonce from request headers
+      const nonce = request.headers['x-device-nonce'];
+      if (!nonce) {
+        this.logger.warn('Device token request missing required nonce header');
+        throw new UnauthorizedException('Missing x-device-nonce header for device token authentication');
+      }
+
+      // Validate nonce format
+      if (!this.nonceService.isValidNonceFormat(nonce)) {
+        this.logger.warn('Invalid nonce format provided');
+        throw new UnauthorizedException('Invalid nonce format');
+      }
+
+      // Validate and consume the nonce (prevents replay attacks)
+      const nonceValidation = await this.nonceService.validateAndConsumeNonce(nonce, payload.deviceId);
+      if (!nonceValidation.isValid) {
+        this.logger.warn(`Nonce validation failed: ${nonceValidation.reason}`);
+        throw new UnauthorizedException(`Nonce validation failed: ${nonceValidation.reason}`);
+      }
+
       // Set device-specific context on request
       request.deviceId = payload.deviceId;
+      request.nonce = nonce;
+      request.tokenType = 'device';
       request.category = Category.GIGA_METER.toLowerCase();
+      
       return true;
     } catch (error) {
-      console.error('Device token validation failed:', error.message);
+      if (error instanceof UnauthorizedException) {
+        throw error; // Re-throw auth errors as-is
+      }
+      this.logger.error('Device token validation failed:', error.message);
       return false;
     }
   }

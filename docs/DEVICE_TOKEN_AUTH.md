@@ -1,16 +1,18 @@
-# Device Token Authentication
+# Device Token Authentication with Nonce Validation
 
-This document describes the device token authentication system implemented in the NestJS application. This system provides secure token-based authentication for devices using device fingerprints or UUIDs.
+This document describes the device token authentication system implemented in the NestJS application. This system provides secure token-based authentication for devices using device fingerprints or UUIDs, enhanced with nonce validation to prevent replay attacks.
 
 ## Overview
 
-The device token authentication system works alongside the existing Bearer token authentication without interfering with it. It uses AES-256-GCM encryption to generate secure, time-limited tokens for device-based authentication.
+The device token authentication system works alongside the existing Bearer token authentication without interfering with it. It uses AES-256-GCM encryption to generate secure, time-limited tokens for device-based authentication, and implements nonce validation using Redis to prevent replay attacks.
 
 ### Key Features
 
 - **Secure Encryption**: Uses AES-256-GCM with random IVs and authentication tags
 - **Device-Based**: Tokens are tied to specific device fingerprints or UUIDs
 - **Time-Limited**: Tokens expire after 24 hours by default
+- **Replay Attack Prevention**: Nonce validation ensures each request can only be used once
+- **Redis Integration**: Uses Redis for distributed nonce storage with TTL-based cleanup
 - **Non-Interfering**: Works alongside existing Bearer token authentication
 - **Comprehensive Testing**: Full unit test coverage for all components
 
@@ -23,13 +25,20 @@ The device token authentication system works alongside the existing Bearer token
    - Manages encryption/decryption using AES-256-GCM
    - Provides device ID hashing for consistency
 
-2. **DeviceTokenController** (`src/auth/device-token.controller.ts`)
+2. **NonceService** (`src/auth/nonce.service.ts`)
+   - Generates cryptographically secure nonces
+   - Validates and consumes nonces to prevent replay attacks
+   - Uses Redis for distributed nonce storage
+   - Provides nonce format validation and statistics
+
+3. **DeviceTokenController** (`src/auth/device-token.controller.ts`)
    - Exposes REST endpoints for token operations
    - Handles input validation and error responses
    - Provides token generation and validation endpoints
 
-3. **AuthGuard** (`src/auth/auth.guard.ts`) - Enhanced
+4. **AuthGuard** (`src/auth/auth.guard.ts`) - Enhanced
    - Modified to support both Bearer and Device token schemes
+   - Integrates nonce validation for device tokens
    - Routes requests to appropriate validation logic
    - Maintains backward compatibility with existing Bearer tokens
 
@@ -90,19 +99,47 @@ Validates a device token and returns its payload. This endpoint is intended for 
 }
 ```
 
-## Authentication Usage
+## Authentication Usage with Nonce Validation
 
-### Using Device Tokens
+### Using Device Tokens with Nonces
 
-To authenticate with a device token, include it in the Authorization header with the `Device` scheme:
+To authenticate with a device token, include both the token and a nonce in the request headers:
 
 ```http
 Authorization: Device <base64-encoded-token>
+X-Device-Nonce: <base64-encoded-nonce>
+```
+
+### Nonce Requirements
+
+- **Format**: Base64-encoded random bytes (minimum 16 bytes when decoded)
+- **Uniqueness**: Each nonce can only be used once
+- **Generation**: Use cryptographically secure random number generation
+- **Lifetime**: Nonces are stored in Redis with the same TTL as tokens (24 hours default)
+
+### Example Nonce Generation
+
+```javascript
+// Node.js example
+const crypto = require('crypto');
+const nonce = crypto.randomBytes(32).toString('base64');
+```
+
+```python
+# Python example
+import base64
+import secrets
+nonce = base64.b64encode(secrets.token_bytes(32)).decode('utf-8')
+```
+
+```bash
+# Command line example
+openssl rand -base64 32
 ```
 
 ### Using Bearer Tokens (Existing)
 
-Bearer tokens continue to work as before:
+Bearer tokens continue to work as before without nonce requirements:
 
 ```http
 Authorization: Bearer <jwt-or-api-key>
@@ -111,17 +148,22 @@ Authorization: Bearer <jwt-or-api-key>
 ### Token Type Detection
 
 The AuthGuard automatically detects the token type based on the authorization scheme:
-- `Bearer`: Routes to existing Bearer token validation
-- `Device`: Routes to new device token validation
+- `Bearer`: Routes to existing Bearer token validation (no nonce required)
+- `Device`: Routes to new device token validation (nonce required)
 
 ## Environment Configuration
 
-Add the following environment variable to your `.env` file:
+Add the following environment variables to your `.env` file:
 
 ```bash
 # Device Token Configuration
 # Master encryption key for device tokens (32 bytes, base64 encoded)
-DEVICE_TOKEN_MASTER_KEY=dGVzdC1rZXktMzItYnl0ZXMtZm9yLWRldmljZS10b2tlbg==
+DEVICE_TOKEN_MASTER_KEY=YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=
+
+# Device Token Nonce Configuration
+# TTL for nonce storage in Redis (in seconds) - should match or exceed token TTL
+# Default: 86400 (24 hours)
+DEVICE_TOKEN_NONCE_TTL=86400
 ```
 
 ### Generating a New Master Key
@@ -133,9 +175,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
 **Important**: 
-- Use a different key for each environment (development, staging, production)
+- Use different keys for each environment (development, staging, production)
 - Keep the master key secure and never commit it to version control
 - Changing the master key will invalidate all existing device tokens
+- Nonce TTL should match or exceed token TTL to prevent valid tokens from being rejected
 
 ## Security Considerations
 
