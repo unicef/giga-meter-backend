@@ -5,6 +5,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 import { AllExceptionFilter } from './common/common.filter';
+import helmet from 'helmet';
 
 import * as Sentry from '@sentry/node';
 import { CategoryConfigProvider } from './common/category-config.provider';
@@ -14,6 +15,54 @@ import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
+  // Apply Helmet security headers middleware
+  // Configure security headers to protect against common web vulnerabilities
+  app.use(helmet({
+    // Content Security Policy - Prevents XSS and code injection attacks
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"], // Only allow resources from same origin by default
+        scriptSrc: [
+          "'self'", 
+          "'unsafe-inline'", // Required for Swagger UI
+          "https://unpkg.com", // Allow Swagger UI scripts
+        ],
+        styleSrc: [
+          "'self'", 
+          "'unsafe-inline'", // Required for Swagger UI
+          "https://unpkg.com",
+          "https://fonts.googleapis.com" // Allow Google Fonts
+        ],
+        imgSrc: [
+          "'self'", 
+          "data:", // Allow data URLs for images
+          "https:" // Allow HTTPS images
+        ],
+        objectSrc: ["'none'"], // Disable object, embed, and applet elements
+        upgradeInsecureRequests: [], // Upgrade HTTP to HTTPS automatically
+      },
+    },
+    // Frame Guard - Prevents clickjacking attacks
+    frameguard: { action: 'deny' },
+    // Referrer Policy - Controls referrer information sent with requests
+    referrerPolicy: { policy: 'same-origin' },
+    // Cross-Origin Embedder Policy - Enables cross-origin isolation
+    crossOriginEmbedderPolicy: true,
+    // HTTP Strict Transport Security - Forces HTTPS connections
+    hsts: {
+      maxAge: 31536000, // 1 year in seconds
+      includeSubDomains: true, // Apply to all subdomains
+      preload: true // Include in browser preload lists
+    },
+    // Hide X-Powered-By header to reduce information disclosure
+    hidePoweredBy: true,
+    // X-Content-Type-Options - Prevents MIME type sniffing
+    noSniff: true,
+    // X-XSS-Protection - Enables XSS filtering in older browsers
+    xssFilter: true,
+  }));
+  
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
   // Get the Category

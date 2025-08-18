@@ -1,10 +1,10 @@
-# Device Token Authentication with Nonce Validation
+# Device Token Authentication with Security Enhancements
 
-This document describes the device token authentication system implemented in the NestJS application. This system provides secure token-based authentication for devices using device fingerprints or UUIDs, enhanced with nonce validation to prevent replay attacks.
+This document describes the comprehensive device token authentication system implemented in the NestJS application. This system provides secure token-based authentication for devices using device fingerprints or UUIDs, enhanced with multiple layers of security including nonce validation, HMAC signature verification, and HTTP security headers.
 
 ## Overview
 
-The device token authentication system works alongside the existing Bearer token authentication without interfering with it. It uses AES-256-GCM encryption to generate secure, time-limited tokens for device-based authentication, and implements nonce validation using Redis to prevent replay attacks.
+The device token authentication system works alongside the existing Bearer token authentication without interfering with it. It uses AES-256-GCM encryption to generate secure, time-limited tokens for device-based authentication, implements nonce validation using Redis to prevent replay attacks, HMAC signature verification for message integrity, and Helmet security headers for comprehensive HTTP security.
 
 ### Key Features
 
@@ -12,7 +12,9 @@ The device token authentication system works alongside the existing Bearer token
 - **Device-Based**: Tokens are tied to specific device fingerprints or UUIDs
 - **Time-Limited**: Tokens expire after 24 hours by default
 - **Replay Attack Prevention**: Nonce validation ensures each request can only be used once
+- **Message Integrity**: HMAC-SHA256 signatures verify request authenticity
 - **Redis Integration**: Uses Redis for distributed nonce storage with TTL-based cleanup
+- **HTTP Security Headers**: Helmet middleware protects against common web vulnerabilities
 - **Non-Interfering**: Works alongside existing Bearer token authentication
 - **Comprehensive Testing**: Full unit test coverage for all components
 
@@ -35,16 +37,29 @@ The device token authentication system works alongside the existing Bearer token
 - **Distributed Security**: Redis-based nonce storage works across multiple server instances
 - **Timing Attack Resistance**: HMAC validation uses timing-safe comparison methods
 
-3. **DeviceTokenController** (`src/auth/device-token.controller.ts`)
+3. **HmacSignatureService** (`src/auth/hmac-signature.service.ts`)
+   - Generates and validates HMAC-SHA256 signatures for request integrity
+   - Uses timing-safe comparison to prevent timing attacks
+   - Supports timestamp validation with configurable tolerance
+   - Provides comprehensive signature validation with detailed error reporting
+
+4. **DeviceTokenController** (`src/auth/device-token.controller.ts`)
    - Exposes REST endpoints for token operations
    - Handles input validation and error responses
    - Provides token generation and validation endpoints
 
-4. **AuthGuard** (`src/auth/auth.guard.ts`) - Enhanced
+5. **AuthGuard** (`src/auth/auth.guard.ts`) - Enhanced
    - Modified to support both Bearer and Device token schemes
-   - Integrates nonce validation for device tokens
+   - Integrates nonce validation and HMAC signature verification for device tokens
    - Routes requests to appropriate validation logic
    - Maintains backward compatibility with existing Bearer tokens
+
+6. **HTTP Security Headers** (`src/main.ts`)
+   - Helmet middleware configured with comprehensive security headers
+   - Content Security Policy (CSP) to prevent XSS attacks
+   - Frame protection against clickjacking
+   - HSTS for enforced HTTPS connections
+   - Additional security headers for comprehensive protection
 
 ## API Endpoints
 
@@ -257,6 +272,15 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 - Use a strong, randomly generated HMAC secret (64 bytes recommended)
 
 ## Security Considerations
+
+### Multi-Layer Security Architecture
+
+The device token authentication system implements multiple layers of security:
+
+1. **Token Encryption** (AES-256-GCM)
+2. **Nonce Validation** (Redis-based replay prevention)
+3. **HMAC Signature Verification** (Message integrity)
+4. **HTTP Security Headers** (Web vulnerability protection)
 
 ### Encryption Details
 
