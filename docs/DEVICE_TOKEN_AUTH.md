@@ -30,6 +30,10 @@ The device token authentication system works alongside the existing Bearer token
    - Validates and consumes nonces to prevent replay attacks
    - Uses Redis for distributed nonce storage
    - Provides nonce format validation and statistics
+   - **Replay Prevention**: Nonces prevent replay attacks
+- **Message Integrity**: HMAC signatures ensure request data hasn't been tampered with
+- **Distributed Security**: Redis-based nonce storage works across multiple server instances
+- **Timing Attack Resistance**: HMAC validation uses timing-safe comparison methods
 
 3. **DeviceTokenController** (`src/auth/device-token.controller.ts`)
    - Exposes REST endpoints for token operations
@@ -101,13 +105,15 @@ Validates a device token and returns its payload. This endpoint is intended for 
 
 ## Authentication Usage with Nonce Validation
 
-### Using Device Tokens with Nonces
+### Using Device Tokens with Nonces and HMAC Signatures
 
-To authenticate with a device token, include both the token and a nonce in the request headers:
+To authenticate with a device token, include the token, nonce, and HMAC signature in the request headers:
 
 ```http
 Authorization: Device <base64-encoded-token>
 X-Device-Nonce: <base64-encoded-nonce>
+X-HMAC-Signature: <base64-encoded-hmac-signature>
+X-Timestamp: <unix-timestamp-milliseconds>
 ```
 
 ### Nonce Requirements
@@ -116,6 +122,21 @@ X-Device-Nonce: <base64-encoded-nonce>
 - **Uniqueness**: Each nonce can only be used once
 - **Generation**: Use cryptographically secure random number generation
 - **Lifetime**: Nonces are stored in Redis with the same TTL as tokens (24 hours default)
+
+### Nonce Security
+
+- **Generation**: Uses `crypto.randomBytes(32)` for cryptographically secure randomness
+- **Storage**: SHA-256 hashed for Redis keys to prevent key enumeration
+- **Uniqueness**: Redis atomic operations ensure no race conditions
+- **Cleanup**: Automatic TTL-based cleanup prevents Redis bloat
+
+### HMAC Signature Security
+
+- **Algorithm**: HMAC-SHA256 for cryptographic integrity verification
+- **Secret Management**: Uses environment variable for secret key storage
+- **Timing Safety**: Uses `timingSafeEqual` to prevent timing attacks
+- **Message Structure**: Combines token, nonce, timestamp, and payload for comprehensive integrity
+- **Timestamp Validation**: Optional timestamp validation with configurable tolerance (5 minutes default)
 
 ### Example Nonce Generation
 
@@ -135,6 +156,54 @@ nonce = base64.b64encode(secrets.token_bytes(32)).decode('utf-8')
 ```bash
 # Command line example
 openssl rand -base64 32
+```
+
+### Example HMAC Signature Generation
+
+```javascript
+// Node.js example
+const crypto = require('crypto');
+
+function generateHmacSignature(token, nonce, payload, timestamp, secret) {
+  const message = [token, nonce, timestamp.toString(), JSON.stringify(payload || '')].join('|');
+  const hmac = crypto.createHmac('sha256', secret);
+  hmac.update(message, 'utf8');
+  return hmac.digest('base64');
+}
+
+const token = 'your-device-token';
+const nonce = 'your-generated-nonce';
+const payload = { test: 'data' };
+const timestamp = Date.now();
+const secret = process.env.DEVICE_TOKEN_HMAC_SECRET;
+
+const signature = generateHmacSignature(token, nonce, payload, timestamp, secret);
+```
+
+```python
+# Python example
+import hmac
+import hashlib
+import json
+import time
+
+def generate_hmac_signature(token, nonce, payload, timestamp, secret):
+    message_parts = [token, nonce, str(timestamp), json.dumps(payload or '')]
+    message = '|'.join(message_parts)
+    signature = hmac.new(
+        secret.encode('utf-8'),
+        message.encode('utf-8'),
+        hashlib.sha256
+    ).digest()
+    return base64.b64encode(signature).decode('utf-8')
+
+token = 'your-device-token'
+nonce = 'your-generated-nonce'
+payload = {'test': 'data'}
+timestamp = int(time.time() * 1000)
+secret = os.environ['DEVICE_TOKEN_HMAC_SECRET']
+
+signature = generate_hmac_signature(token, nonce, payload, timestamp, secret)
 ```
 
 ### Using Bearer Tokens (Existing)
@@ -164,6 +233,11 @@ DEVICE_TOKEN_MASTER_KEY=YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=
 # TTL for nonce storage in Redis (in seconds) - should match or exceed token TTL
 # Default: 86400 (24 hours)
 DEVICE_TOKEN_NONCE_TTL=86400
+
+# Device Token HMAC Configuration
+# Secret key for HMAC signature generation and validation (64 bytes recommended)
+# Generate with: node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+DEVICE_TOKEN_HMAC_SECRET=aGVsbG8td29ybGQtaG1hYy1zZWNyZXQtZm9yLWRldmljZS10b2tlbi1zaWduYXR1cmUtdmFsaWRhdGlvbg==
 ```
 
 ### Generating a New Master Key
@@ -179,6 +253,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 - Keep the master key secure and never commit it to version control
 - Changing the master key will invalidate all existing device tokens
 - Nonce TTL should match or exceed token TTL to prevent valid tokens from being rejected
+- HMAC secret should be different from the device token master key
+- Use a strong, randomly generated HMAC secret (64 bytes recommended)
 
 ## Security Considerations
 
@@ -210,9 +286,11 @@ When a device token is validated, the following properties are added to the requ
 
 ```typescript
 request.deviceId = "hashed-device-id";
-request.tokenType = "device";
+request.nonce = nonce;
+request.hmacSignature = signature;
+request.tokenType = 'device';
+request.category = "giga_meter";
 request.has_write_access = false; // Device tokens have limited access
-request.category = "device";
 ```
 
 This allows controllers and services to differentiate between Bearer and Device token requests.
@@ -230,29 +308,65 @@ This allows controllers and services to differentiate between Bearer and Device 
 }
 ```
 
-#### Invalid Device ID
-```json
-{
-  "statusCode": 400,
-  "message": "Device ID must be at least 8 characters long",
-  "error": "Bad Request"
-}
-```
-
-#### Token Generation Failure
-```json
-{
-  "statusCode": 400,
-  "message": "Failed to generate token",
-  "error": "Bad Request"
-}
-```
-
-#### Authentication Errors
+#### Missing Nonce Header
 ```json
 {
   "statusCode": 401,
-  "message": "Invalid device token or not authorized to access",
+  "message": "Missing x-device-nonce header for device token authentication",
+  "error": "Unauthorized"
+}
+```
+
+#### Invalid Nonce Format
+```json
+{
+  "statusCode": 401,
+  "message": "Invalid nonce format",
+  "error": "Unauthorized"
+}
+```
+
+#### Replay Attack Detected
+```json
+{
+  "statusCode": 401,
+  "message": "Nonce validation failed: Nonce has already been used (replay attack detected)",
+  "error": "Unauthorized"
+}
+```
+
+#### Missing HMAC Signature
+```json
+{
+  "statusCode": 401,
+  "message": "HMAC signature validation failed: Missing X-HMAC-Signature header",
+  "error": "Unauthorized"
+}
+```
+
+#### Invalid HMAC Signature Format
+```json
+{
+  "statusCode": 401,
+  "message": "HMAC signature validation failed: Invalid HMAC signature format",
+  "error": "Unauthorized"
+}
+```
+
+#### HMAC Signature Mismatch
+```json
+{
+  "statusCode": 401,
+  "message": "HMAC signature validation failed: HMAC signature mismatch",
+  "error": "Unauthorized"
+}
+```
+
+#### HMAC Timestamp Too Old
+```json
+{
+  "statusCode": 401,
+  "message": "HMAC signature validation failed: HMAC signature timestamp is too old",
   "error": "Unauthorized"
 }
 ```

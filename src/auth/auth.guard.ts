@@ -7,6 +7,7 @@ import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { DeviceTokenService } from './device-token.service';
 import { NonceService } from './nonce.service';
+import { HmacSignatureService } from './hmac-signature.service';
 
 
 
@@ -18,6 +19,7 @@ export class AuthGuard implements CanActivate {
     private readonly httpService: HttpService, 
     private readonly deviceTokenService: DeviceTokenService,
     private readonly nonceService: NonceService,
+    private readonly hmacSignatureService: HmacSignatureService,
     private reflector: Reflector
   ) { }
 
@@ -114,6 +116,13 @@ export class AuthGuard implements CanActivate {
       if (!nonceValidation.isValid) {
         this.logger.warn(`Nonce validation failed: ${nonceValidation.reason}`);
         throw new UnauthorizedException(`Nonce validation failed: ${nonceValidation.reason}`);
+      }
+
+      // Validate HMAC signature for request integrity
+      const hmacValidation = await this.hmacSignatureService.validateRequestIntegrity(request, token, nonce);
+      if (!hmacValidation.isValid) {
+        this.logger.warn(`HMAC signature validation failed: ${hmacValidation.reason}`);
+        throw new UnauthorizedException(`HMAC signature validation failed: ${hmacValidation.reason}`);
       }
 
       // Set device-specific context on request
