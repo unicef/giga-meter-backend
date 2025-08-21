@@ -70,25 +70,34 @@ async function bootstrap() {
       });
     }
   }
-  if (process.env.NODE_ENV === 'development') {
-    app.enableCors({
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT'],
-      preflightContinue: false,
-    });
-  } else {
-    app.enableCors({
-      // origin: [
-      //   'capacitor-electron://-',
-      //   'https://meter.giga.global/',
-      //   'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
-      //   'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
-      // ],
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT'],
-      preflightContinue: false,
-    });
-  }
+
+  const corsOptions = {
+    origin: (origin, callback) => {
+      console.log(`[CORS] Validating origin: ${origin}`);
+      // In development, allow all origins
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[CORS] Devlopment mode - allowing all origins');
+        return callback(null, true);
+      }
+      
+      // In production, check against allowed origins
+      const allowedOrigins = process.env.ALLOWED_HOSTS?.split('|') ?? [];
+      
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin || allowedOrigins.includes(origin)) {
+        console.log(`[CORS] Allowed origin: ${origin}`);
+        return callback(null, true);
+      }
+      
+      console.log(`[CORS] Rejected origin: ${origin}`);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT'],
+    preflightContinue: false,
+    credentials: true
+  };
+  
+  app.enableCors(corsOptions);
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(
