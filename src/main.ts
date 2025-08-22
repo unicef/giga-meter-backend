@@ -73,10 +73,10 @@ async function bootstrap() {
     origin: (origin, callback) => {
       console.log(`[CORS] Validating origin: ${origin}`);
       // In development, allow all origins
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[CORS] Devlopment mode - allowing all origins');
-        return callback(null, true);
-      }
+      // if (process.env.NODE_ENV === 'development') {
+      //   console.log('[CORS] Devlopment mode - allowing all origins');
+      //   return callback(null, true);
+      // }
       
       // In production, check against allowed origins
       const allowedOrigins = process.env.ALLOWED_HOSTS?.split('|') ?? [];
