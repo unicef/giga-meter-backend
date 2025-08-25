@@ -23,7 +23,10 @@ export class NonceService {
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-  ) {}
+  ) {
+    // console.log('nonce value')
+    // console.log(this.generateNonce());
+  }
 
   /**
    * Generates a cryptographically secure nonce
