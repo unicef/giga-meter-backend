@@ -92,6 +92,7 @@ export class CategoryConfigService {
         allowedAPIs: (createCategoryConfigDto.allowedAPIs ? createCategoryConfigDto.allowedAPIs : []) as any,
         notAllowedAPIs: (createCategoryConfigDto.notAllowedAPIs ? createCategoryConfigDto.notAllowedAPIs : []) as any,
         responseFilters: (createCategoryConfigDto.responseFilters ? createCategoryConfigDto.responseFilters : null) as any,
+        allowedCountries: (createCategoryConfigDto.allowedCountries ? createCategoryConfigDto.allowedCountries : []),
         swagger: (createCategoryConfigDto.swagger) as any
       }
     });
@@ -129,6 +130,7 @@ export class CategoryConfigService {
         allowedAPIs: (updateCategoryConfigDto.allowedAPIs ? updateCategoryConfigDto.allowedAPIs : undefined) as any,
         notAllowedAPIs: (updateCategoryConfigDto.notAllowedAPIs ? updateCategoryConfigDto.notAllowedAPIs : undefined) as any,
         responseFilters: (updateCategoryConfigDto.responseFilters ? updateCategoryConfigDto.responseFilters : undefined) as any,
+        allowedCountries: (updateCategoryConfigDto.allowedCountries ? updateCategoryConfigDto.allowedCountries : undefined),
         swagger: (updateCategoryConfigDto.swagger) as any
       }
     });
@@ -180,6 +182,7 @@ export class CategoryConfigService {
       allowedAPIs: model.allowedAPIs,
       notAllowedAPIs: model.notAllowedAPIs,
       responseFilters: model.responseFilters,
+      allowedCountries: model.allowedCountries,
       swagger: model.swagger,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt

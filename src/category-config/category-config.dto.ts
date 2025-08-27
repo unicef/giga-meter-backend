@@ -74,6 +74,11 @@ export class CreateCategoryConfigDto {
   @ApiProperty({ description: 'Swagger documentation configuration' })
   @IsObject()
   swagger: SwaggerConfigDto;
+
+  @ApiProperty({ description: 'ISO country codes allowed for this category', type: [String], required: false, default: null })
+  @IsArray()
+  @IsOptional()
+  allowedCountries?: string[];
 }
 
 export class UpdateCategoryConfigDto extends CreateCategoryConfigDto {}
