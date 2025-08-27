@@ -90,4 +90,18 @@ export class CountryService {
       created: new Date().toISOString().split('T')[0],
     };
   }
+
+  async getAllCountries(params: {
+    skip?: number;
+    take?: number;
+  }): Promise<CountryDto[]> {
+    const { skip, take } = params;
+
+    const records = this.prisma.dailycheckapp_country.findMany({
+      skip,
+      take,
+      orderBy: { name: 'asc' },
+    });
+    return (await records).map(this.toDto);
+  }
 }
