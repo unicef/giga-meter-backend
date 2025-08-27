@@ -80,8 +80,8 @@ export class DeviceTokenController {
 
       // Validate device ID format (basic validation)
       const deviceId = generateTokenDto.deviceId.trim();
-      if (deviceId.length < 8) {
-        throw new BadRequestException('Device ID must be at least 8 characters long');
+      if (deviceId.length < 6) {
+        throw new BadRequestException('Device ID must be at least 6 characters long');
       }
 
       // Check if it's a valid UUID format (optional, but recommended)
