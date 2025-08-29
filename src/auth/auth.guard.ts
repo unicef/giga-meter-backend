@@ -130,7 +130,7 @@ export class AuthGuard implements CanActivate {
       request.nonce = nonce;
       request.tokenType = 'device';
       request.category = Category.GIGA_METER.toLowerCase();
-      
+      request.has_write_access = true;
       return true;
     } catch (error) {
       if (error instanceof UnauthorizedException) {
