@@ -5,7 +5,7 @@ export const Countries = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     const allowedCategoryCountries = request.category_allowed_countries || [];
     return allowedCategoryCountries.length > 0
-      ? (request.allowed_countries || []).filter((code: string) => allowedCategoryCountries.includes(code))
+      ? (request.allowed_countries || []).filter((code: string) => allowedCategoryCountries.includes(request.allowed_countries_map?.[code]))
       : request.allowed_countries;
   },
 );
@@ -15,7 +15,7 @@ export const CountriesIso3 = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     const allowedCategoryCountries = request.category_allowed_countries || [];
     return allowedCategoryCountries.length > 0
-      ? (request.allowed_countries_iso3 || []).filter((code: string) => allowedCategoryCountries.includes(request.allowed_countries_map?.[code]))
+      ? (request.allowed_countries_iso3 || []).filter((code: string) => allowedCategoryCountries.includes(code))
       : request.allowed_countries_iso3;
   },
 );
