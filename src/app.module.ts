@@ -21,8 +21,6 @@ import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
-import { ConnectivityController } from './connectivity/connectivity.controller';
-import { ConnectivityService } from './connectivity/connectivity.service';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CategoryGuard } from './common/category.guard';
 import { CategoryResponseInterceptor } from './common/category.interceptor';
@@ -34,6 +32,9 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
+import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityService } from './connectivity/connectivity.service';
+import { GeolocationModule } from './geolocation/geolocation.module';
 import * as redisStore from 'cache-manager-redis-store';
 
 
@@ -55,6 +56,7 @@ import * as redisStore from 'cache-manager-redis-store';
     }),
     CategoryConfigModule,
     AuthModule,
+    GeolocationModule,
   ],
   controllers: [
     AppController,
