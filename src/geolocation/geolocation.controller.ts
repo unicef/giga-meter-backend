@@ -2,14 +2,16 @@ import { Controller, Post, Body, HttpException, HttpStatus } from '@nestjs/commo
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Public } from 'src/common/public.decorator';
 
 @ApiTags('geolocation')
-@Controller('geolocation')
+@Controller('api/v1/geolocation')
 export class GeolocationController {
   private readonly googleApiUrl = 'https://www.googleapis.com/geolocation/v1/geolocate';
 
   constructor(private readonly httpService: HttpService) {}
 
+  @Public()
   @Post('geolocate')
   @ApiOperation({ summary: 'Proxy for Google Geolocation API' })
   @ApiResponse({ status: 200, description: 'Location data retrieved successfully' })
