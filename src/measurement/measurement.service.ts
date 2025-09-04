@@ -351,6 +351,21 @@ export class MeasurementService {
       ndtVersion: measurement.ndt_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      elapsed_time_download: measurement.elapsed_time_download,
+      elapsed_time_upload: measurement.elapsed_time_upload,
+      download_rtt_variance: measurement.download_rtt_variance,
+      connection_is_mobile: measurement.connection_is_mobile,
+      connection_is_satellite: measurement.connection_is_satellite,
+      client_ip_address: measurement.client_ip_address,
+      client_city: clientInfo?.client_city,
+      client_region: clientInfo?.client_region,
+      client_country: clientInfo?.client_country,
+      client_geolocation: clientInfo?.client_geolocation,
+      client_timezone: clientInfo?.client_timezone,
+      asn_number: measurement.asn_number,
+      asn_name: measurement.asn_name,
+      asn_network_type: measurement.asn_network_type,
+      asn_network_route: measurement.asn_network_route,
     };
     // if (isSuperUser) {
       filterMeasurementData['UUID'] = measurement.uuid;
@@ -452,6 +467,28 @@ export class MeasurementService {
   }
 
   private toModel(measurement: AddMeasurementDto): any {
+    // Extraer los resultados NDT7 si existen
+    const results = measurement.Results || {};
+    const c2sServer = results['NDTResult.C2S']?.LastServerMeasurement;
+    const s2cServer = results['NDTResult.S2C']?.LastServerMeasurement;
+    const c2sTCP = c2sServer?.TCPInfo;
+    const s2cTCP = s2cServer?.TCPInfo;
+    const c2sConn = c2sServer?.ConnectionInfo;
+
+    const client = measurement.ClientInfo || {};
+    //Get params from ClientInfo object from upper or lower case
+    // This is to avoid the error: TypeError: Cannot read properties of undefined (reading 'lower')
+    const getField = <T = any>(lower: string, upper: string): T | undefined =>
+      (client as any)[lower] ?? (client as any)[upper];
+
+    const latitude = getField<number>('latitude', 'Latitude');
+    const longitude = getField<number>('longitude', 'Longitude');
+    const geoLoc =
+      getField<string>('loc', 'Loc') ??
+      (typeof latitude === 'number' && typeof longitude === 'number'
+        ? `${latitude},${longitude}`
+        : undefined);
+
     return {
       timestamp: measurement.Timestamp,
       uuid: measurement.UUID,
@@ -475,6 +512,33 @@ export class MeasurementService {
       app_version: measurement.app_version,
       ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
+
+      elapsed_time_download: c2sTCP?.ElapsedTime, // ms
+      elapsed_time_upload: s2cTCP?.ElapsedTime, // ms
+      download_rtt_variance: c2sTCP?.RTTVar, // ms²
+
+      connection_is_mobile:
+        typeof getField<string>('network_type', 'NetworkType') === 'string' &&
+        getField<string>('network_type', 'NetworkType')!
+          .toLowerCase()
+          .includes('mobile'),
+      connection_is_satellite:
+        typeof getField<string>('network_type', 'NetworkType') === 'string' &&
+        getField<string>('network_type', 'NetworkType')!
+          .toLowerCase()
+          .includes('satellite'),
+
+      client_ip_address: client.IP ?? c2sConn?.Client?.split(':')[0],
+      client_city: getField<string>('city', 'City'),
+      client_region: getField<string>('region', 'Region'),
+      client_country: getField<string>('country', 'Country'),
+      client_geolocation: geoLoc,
+      client_timezone: getField<string>('timezone', 'Timezone'),
+
+      asn_number: (client.ASN as any)?.asn ?? getField<string>('ASN', 'Asn'),
+      asn_name: (client.ASN as any)?.name ?? getField<string>('ISP', 'Isp'),
+      asn_network_type: (client.ASN as any)?.type,
+      asn_network_route: (client.ASN as any)?.route,
     };
   }
 
