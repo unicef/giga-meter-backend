@@ -5,12 +5,18 @@ import { IS_PUBLIC_KEY } from '../common/public.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly httpService: HttpService, private reflector: Reflector) { }
+
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly categoryConfigProvider: CategoryConfigProvider,
+    private reflector: Reflector,
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if the route is marked as public
@@ -24,11 +30,11 @@ export class AuthGuard implements CanActivate {
     }
 
     const useAuth = process.env.USE_AUTH === 'true';
-
+    
     if (!useAuth) return true;
-
+    
     const request = context.switchToHttp().getRequest();
-
+    
     // Bypass authentication for Prometheus metrics endpoint
     if (request.url === '/metrics') {
       return true;
@@ -79,7 +85,14 @@ export class AuthGuard implements CanActivate {
         request.allowed_countries_iso3 = response.data.data.countries.map(
           (c) => c.iso3_format,
         );
+        request.allowed_countries_map = response.data.data.countries.reduce((acc, country) => {
+          acc[country.code] = country.iso3_format;
+          return acc;
+        }, {});
       }
+      const config = await this.categoryConfigProvider.getCategoryConfig(request.category);
+      request.category_allowed_countries = config?.allowedCountries ?? [];
+
       return true;
     } catch (error) {
       console.error('Token validation failed:', error.message);
