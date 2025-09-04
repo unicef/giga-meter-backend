@@ -60,3 +60,11 @@ export class SchoolMasterDto {
   @ApiProperty()
   giga_id_school?: string;
 }
+
+export class SchoolFlagsDto {
+  @ApiProperty()
+  giga_id_school: string;
+
+  @ApiProperty()
+  feature_flags: FeatureFlagDto;
+}

@@ -18,7 +18,11 @@ import {
 import { SchoolMasterService } from './school-master.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { ApiSuccessResponseDto } from '../common/common.dto';
-import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
+import {
+  FeatureFlagDto,
+  SchoolFlagsDto,
+  SchoolMasterDto,
+} from './school-master.dto';
 
 @ApiTags('SchoolsMaster')
 @Controller('api/v1/schools')
@@ -127,8 +131,7 @@ export class SchoolMasterController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      'Set feature flags for a school in to the Giga Meter database',
+    summary: 'Set feature flags for a school in to the Giga Meter database',
   })
   @ApiResponse({
     status: 200,
@@ -159,6 +162,42 @@ export class SchoolMasterController {
       giga_id_school,
       featureFlagDto,
     );
+
+    return {
+      success: true,
+      data: response,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+  @Put('features_flags')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Set feature flags for multiple schools in to the Giga Meter database',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the list of updated schools with their flags',
+    type: SchoolFlagsDto,
+  })
+  async setManyFlagsByGigaId(
+    @Body('giga_school_ids') giga_school_ids: string[],
+    @Body('featureFlags') featureFlags: FeatureFlagDto,
+  ): Promise<ApiSuccessResponseDto<SchoolFlagsDto[]>> {
+    const response = await this.schoolService.updateSetFlagOnSchools(
+      giga_school_ids,
+      featureFlags,
+    );
+    if (response === false) {
+      return {
+        success: false,
+        data: [],
+        timestamp: new Date().toISOString(),
+        message: 'No schools found for the provided giga_ids',
+      };
+    }
 
     return {
       success: true,
