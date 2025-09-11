@@ -70,6 +70,7 @@ describe('CategoryResponseInterceptor', () => {
       const callHandler = mockCallHandler(response);
       const config: Partial<CategoryConfigType> = {
         responseFilters: { include: ['id', 'name'] },
+        allowedCountries: [],
       };
       configProvider.getCategoryConfig.mockResolvedValue(config as any);
 
@@ -85,6 +86,7 @@ describe('CategoryResponseInterceptor', () => {
         const callHandler = mockCallHandler(response);
         const config: Partial<CategoryConfigType> = {
           responseFilters: { include: ['id', 'user.id', 'user.name'] },
+          allowedCountries: [],
         };
         configProvider.getCategoryConfig.mockResolvedValue(config as any);
   
@@ -99,6 +101,7 @@ describe('CategoryResponseInterceptor', () => {
         const callHandler = mockCallHandler(response);
         const config: Partial<CategoryConfigType> = {
           responseFilters: { include: ['id'] },
+          allowedCountries: [],
         };
         configProvider.getCategoryConfig.mockResolvedValue(config as any);
   
@@ -115,6 +118,7 @@ describe('CategoryResponseInterceptor', () => {
         const callHandler = mockCallHandler(response);
         const config: Partial<CategoryConfigType> = {
           responseFilters: { exclude: ['secret'] },
+          allowedCountries: [],
         };
         configProvider.getCategoryConfig.mockResolvedValue(config as any);
   
@@ -129,6 +133,7 @@ describe('CategoryResponseInterceptor', () => {
         const callHandler = mockCallHandler(response);
         const config: Partial<CategoryConfigType> = {
           responseFilters: { exclude: ['user.role'] },
+          allowedCountries: [],
         };
         configProvider.getCategoryConfig.mockResolvedValue(config as any);
   
@@ -151,6 +156,7 @@ describe('CategoryResponseInterceptor', () => {
           },
         },
       },
+      allowedCountries: [],
     };
     configProvider.getCategoryConfig.mockResolvedValue(config as any);
 
