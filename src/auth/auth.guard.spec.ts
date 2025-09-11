@@ -5,6 +5,8 @@ import { HttpModule, HttpService } from '@nestjs/axios';
 import { of } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { Reflector } from '@nestjs/core';
+import { CategoryConfigProvider } from '../common/category-config.provider';
+import { mockCategoryConfigProvider } from 'src/common/mock-objects';
 
 const mockHttpService = () => ({
   get: jest.fn(),
@@ -28,6 +30,10 @@ describe('AuthGuard', () => {
         {
           provide: Reflector,
           useValue: mockReflector,
+        },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
         },
       ],
       imports: [HttpModule],

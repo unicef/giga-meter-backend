@@ -4,7 +4,8 @@ import { MetricsService } from './metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import { AuthGuard } from '../auth/auth.guard';
-import { mockMetricsDto } from '../common/mock-objects';
+import { mockCategoryConfigProvider, mockMetricsDto } from '../common/mock-objects';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 describe('MetricsController', () => {
   let controller: MetricsController;
@@ -13,7 +14,12 @@ describe('MetricsController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [MetricsController],
-      providers: [MetricsService, PrismaService, AuthGuard],
+      providers: [
+        MetricsService, 
+        PrismaService, 
+        AuthGuard,
+        { provide: CategoryConfigProvider, useValue: mockCategoryConfigProvider },
+      ],
       imports: [HttpModule],
     }).compile();
 

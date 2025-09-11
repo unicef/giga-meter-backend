@@ -763,3 +763,12 @@ export const mockGigaSchoolMappingModel = [
     created_at: null,
   },
 ];
+
+export const mockCategoryConfigProvider = {
+  getCategoryConfig: jest.fn().mockResolvedValue({
+    allowedCountries: [],
+    allowedAPIs: [],
+    notAllowedAPIs: [],
+    responseFilters: {}
+  }),
+};
