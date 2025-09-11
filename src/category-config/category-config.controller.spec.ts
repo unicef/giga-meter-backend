@@ -6,16 +6,31 @@ import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 import {
   CreateCategoryConfigDto,
   UpdateCategoryConfigDto,
 } from './category-config.dto';
 
+// Extended type to include allowedCountries field
+type MockCategoryConfig = {
+  id: number;
+  name: string;
+  isDefault: boolean;
+  allowedAPIs: any[];
+  notAllowedAPIs: any[];
+  responseFilters: any;
+  swagger: any;
+  allowedCountries: string[];
+  createdAt: Date;
+  updatedAt: Date;
+};
+
 describe('CategoryConfigController', () => {
   let controller: CategoryConfigController;
   let service: CategoryConfigService;
 
-  const mockCategoryConfig = {
+  const mockCategoryConfig: MockCategoryConfig = {
     id: 1,
     name: 'test-category',
     isDefault: false,
@@ -45,6 +60,7 @@ describe('CategoryConfigController', () => {
       title: 'Test API',
       description: 'Test API description',
     },
+    allowedCountries: [],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -56,6 +72,15 @@ describe('CategoryConfigController', () => {
     findOne: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+  };
+
+  const mockCategoryConfigProvider = {
+    getCategoryConfig: jest.fn().mockResolvedValue({
+      allowedCountries: [],
+      allowedAPIs: [],
+      notAllowedAPIs: [],
+      responseFilters: {}
+    }),
   };
 
   beforeEach(async () => {
@@ -82,6 +107,10 @@ describe('CategoryConfigController', () => {
         {
           provide: APP_GUARD,
           useClass: ThrottlerGuard,
+        },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
         },
       ],
       imports: [
@@ -139,6 +168,7 @@ describe('CategoryConfigController', () => {
           title: 'Test API',
           description: 'Test API description',
         },
+        allowedCountries: [],
       };
 
       mockCategoryConfigService.create.mockResolvedValue(mockCategoryConfig);
@@ -206,6 +236,7 @@ describe('CategoryConfigController', () => {
           title: 'Updated API',
           description: 'Updated description',
         },
+        allowedCountries: ['US', 'CA'],
         allowedAPIs: [
           {
             url: '/api/updated',

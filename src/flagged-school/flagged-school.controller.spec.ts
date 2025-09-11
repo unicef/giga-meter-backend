@@ -6,7 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { mockFlaggedSchoolDto } from '../common/mock-objects';
+import { mockCategoryConfigProvider, mockFlaggedSchoolDto } from '../common/mock-objects';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 describe('FlaggedSchoolController', () => {
   let controller: FlaggedSchoolController;
@@ -29,6 +30,10 @@ describe('FlaggedSchoolController', () => {
         {
           provide: APP_GUARD,
           useClass: ThrottlerGuard,
+        },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
         },
       ],
       imports: [

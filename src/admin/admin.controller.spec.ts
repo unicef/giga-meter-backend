@@ -4,7 +4,8 @@ import { AdminService } from './admin.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockAdminSchoolDto } from '../common/mock-objects';
+import { mockAdminSchoolDto, mockCategoryConfigProvider } from '../common/mock-objects';
+import { CategoryConfigProvider } from 'src/common/category-config.provider';
 
 describe('AdminController', () => {
   let controller: AdminController;
@@ -13,7 +14,12 @@ describe('AdminController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AdminController],
-      providers: [AdminService, PrismaService, AuthGuard],
+      providers: [
+        AdminService, 
+        PrismaService, 
+        AuthGuard,
+        { provide: CategoryConfigProvider, useValue: mockCategoryConfigProvider },
+      ],
       imports: [HttpModule],
     }).compile();
 

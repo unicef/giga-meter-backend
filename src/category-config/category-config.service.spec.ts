@@ -2,8 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CategoryConfigService } from './category-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CategoryConfig } from '@prisma/client';
+import { CategoryConfig as PrismaCategoryConfig } from '@prisma/client';
 import { CreateCategoryConfigDto, UpdateCategoryConfigDto } from './category-config.dto';
+
+// Extended type to include allowedCountries field
+type CategoryConfig = PrismaCategoryConfig & {
+  allowedCountries: string[];
+};
 
 // Mock Prisma Service
 const mockPrismaService = {
@@ -25,6 +30,7 @@ const mockCategoryConfig: CategoryConfig = {
   allowedAPIs: [],
   notAllowedAPIs: [],
   responseFilters: {},
+  allowedCountries: [],
   swagger: { visible: false },
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -119,6 +125,7 @@ describe('CategoryConfigService', () => {
         allowedAPIs: [],
         notAllowedAPIs: [],
         responseFilters: {},
+        allowedCountries: [],
         swagger: { visible: false }
       };
     it('should create a new category config', async () => {
