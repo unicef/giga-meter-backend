@@ -22,7 +22,7 @@ export interface CategorySwaggerConfig {
   description?: string; // Custom description for this category's Swagger docs
 }
 
-export type CategoryConfigType = Pick<CategoryConfig, 'id' | 'name' | 'isDefault' | 'createdAt' | 'updatedAt'> & { swagger: CategorySwaggerConfig, allowedAPIs: CategoryApiEndpoint[], notAllowedAPIs: CategoryApiEndpoint[], responseFilters: CategoryResponseFilters }
+export type CategoryConfigType = Pick<CategoryConfig, 'id' | 'name' | 'isDefault' | 'createdAt' | 'updatedAt'> & { swagger: CategorySwaggerConfig, allowedAPIs: CategoryApiEndpoint[], notAllowedAPIs: CategoryApiEndpoint[], responseFilters: CategoryResponseFilters, allowedCountries: string[] }
 
 export enum Category {
   PUBLIC = 'PUBLIC',
@@ -49,6 +49,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       exclude: ['ip_address', 'school_id'],
       endpoints: {}
     },
+    allowedCountries: [],
     swagger: {
       visible: true
     },
@@ -71,7 +72,8 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       include: [],
       endpoints: {}
     },
-    swagger: {
+    allowedCountries: ['BR'],
+      swagger: {
       visible: true
     },
     createdAt: new Date(),
@@ -101,6 +103,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       // But can still have some endpoint-specific exclusions if needed
       endpoints: {}
     },
+    allowedCountries: [],
     swagger: {
       visible: true
     },
@@ -124,6 +127,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       // But can still have some endpoint-specific exclusions if needed
       endpoints: {}
     },
+    allowedCountries: [],
     swagger:{
       visible: true
     },
@@ -144,6 +148,7 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       endpoints: {
       }
     },
+    allowedCountries: [],
     swagger:{
       visible: true
     },

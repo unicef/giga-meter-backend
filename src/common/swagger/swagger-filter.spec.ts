@@ -39,6 +39,7 @@ describe('filterSwaggerDocByCategory', () => {
     const config: CategoryConfigType = {
       name: 'hidden',
       swagger: { visible: false },
+      allowedCountries: [],
     } as any;
     const filtered = filterSwaggerDocByCategory(mockDocument, config);
     expect(filtered.paths).toEqual({});
@@ -48,6 +49,7 @@ describe('filterSwaggerDocByCategory', () => {
     const config: CategoryConfigType = {
       name: 'custom-info',
       swagger: { visible: true, title: 'Custom Title', description: 'Custom Description' },
+      allowedCountries: [],
     } as any;
     const filtered = filterSwaggerDocByCategory(mockDocument, config);
     expect(filtered.info.title).toBe('Custom Title');
@@ -59,6 +61,7 @@ describe('filterSwaggerDocByCategory', () => {
       name: 'user-only',
       swagger: { visible: true },
       allowedAPIs: [{ url: '/users', methods: ['GET'] }],
+      allowedCountries: [],
     } as any;
     const filtered = filterSwaggerDocByCategory(mockDocument, config);
     expect(filtered.paths).toHaveProperty('/users');
@@ -73,6 +76,7 @@ describe('filterSwaggerDocByCategory', () => {
       name: 'no-admin',
       swagger: { visible: true },
       notAllowedAPIs: [{ url: '/admin', methods: ['*'] }],
+      allowedCountries: [],
     } as any;
     const filtered = filterSwaggerDocByCategory(mockDocument, config);
     expect(filtered.paths).toHaveProperty('/users');
@@ -85,6 +89,7 @@ describe('filterSwaggerDocByCategory', () => {
       name: 'post-viewer',
       swagger: { visible: true },
       allowedAPIs: [{ url: '/posts/{postId}', methods: ['GET'] }],
+      allowedCountries: [],
     } as any;
     const filtered = filterSwaggerDocByCategory(mockDocument, config);
     expect(filtered.components.schemas).toHaveProperty('Post');
@@ -97,6 +102,7 @@ describe('filterSwaggerDocByCategory', () => {
       swagger: { visible: true },
       allowedAPIs: [{ url: '/users', methods: ['GET'] }],
       responseFilters: { exclude: ['password'] },
+      allowedCountries: [],
     } as any;
     const filtered = filterSwaggerDocByCategory(mockDocument, config);
     const userSchema = filtered.components.schemas.User as any;
