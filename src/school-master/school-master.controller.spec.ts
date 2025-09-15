@@ -4,7 +4,9 @@ import { SchoolMasterService } from './school-master.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 import {
+  mockCategoryConfigProvider,
   mockFeatureFlagsDto,
   mockSchoolDto,
   mockSchoolMasterDto,
@@ -17,7 +19,12 @@ describe('SchoolMasterController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [SchoolMasterController],
-      providers: [SchoolMasterService, PrismaService, AuthGuard],
+      providers: [
+        SchoolMasterService, 
+        PrismaService, 
+        AuthGuard,
+        { provide: CategoryConfigProvider, useValue: mockCategoryConfigProvider },
+      ],
       imports: [HttpModule],
     }).compile();
 

@@ -7,7 +7,8 @@ import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { APP_GUARD } from '@nestjs/core';
-import { mockCountryDto } from '../common/mock-objects';
+import { mockCategoryConfigProvider, mockCountryDto } from '../common/mock-objects';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 describe('CountryController', () => {
   let controller: CountryController;
@@ -41,6 +42,10 @@ describe('CountryController', () => {
         {
           provide: APP_GUARD,
           useClass: ThrottlerGuard,
+        },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
         },
       ],
       imports: [
