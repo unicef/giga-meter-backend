@@ -1,11 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["tracing"]
+  previewFeatures = ["tracing", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
 }
 
 model EFMigrationsHistory {
@@ -61,6 +62,10 @@ model dailycheckapp_school {
   is_blocked          Boolean   @default(false)
   notify              Boolean   @default(false)
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  location_coordinates       Unsupported("geography(Point, 4326)")?  // PostGIS point for school location
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 model school {
@@ -220,6 +225,10 @@ model measurements {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  detected_coordinates        Unsupported("geography(Point, 4326)")?  // PostGIS point for detected location
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -250,6 +259,10 @@ model measurements_failed {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  detected_coordinates        Unsupported("geography(Point, 4326)")?  // PostGIS point for detected location
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
