@@ -14,12 +14,13 @@ import {
   ServerInfoDto,
 } from './measurement.dto';
 import { plainToInstance } from 'class-transformer';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 
 @Injectable()
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private geolocationUtility: GeolocationUtility) {}
 
   async measurements(
     skip?: number,
@@ -200,9 +201,48 @@ export class MeasurementService {
 
       default: {
         const model = this.toModel(measurementDto);
-        await this.prisma.measurements.create({
+        const measurement = await this.prisma.measurements.create({
           data: model,
         });
+
+        // Process geolocation data if available
+        if (measurementDto.geolocation && 
+            measurementDto.geolocation.location &&
+            measurementDto.geolocation.accuracy) {
+          try {
+            // Get the school coordinates based on giga_id_school
+            if (measurementDto.giga_id_school) {
+              // Use the common utility to calculate distance and set flags
+              const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
+                measurementDto.giga_id_school,
+                measurementDto.geolocation.location,
+                measurementDto.geolocation.accuracy
+              );
+              
+              // Store the results in the measurement DTO
+              measurementDto.detected_location_accuracy = geoResult.accuracy;
+              measurementDto.detected_location_distance = geoResult.distance;
+              measurementDto.detected_location_is_flagged = geoResult.isFlagged;
+            }
+          } catch (error) {
+            console.error('Error processing geolocation data:', error);
+          }
+        }
+        
+        // If there are geolocation coordinates, update the record with PostGIS point
+        try {
+          // Use raw SQL to set the PostGIS geography point
+          await this.geolocationUtility.createPostGISPoint(
+            'measurements',
+            'id',
+            measurement.id,
+            measurementDto.geolocation.location.lat, 
+            measurementDto.geolocation.location.lng,
+          );
+        } catch (error) {
+          console.error('Error updating geolocation point:', error);
+        }
+        
         return '';
       }
     }
@@ -452,6 +492,10 @@ export class MeasurementService {
   }
 
   private toModel(measurement: AddMeasurementDto): any {
+    // If there are geolocation coordinates, prepare PostGIS point
+      // We don't directly set the PostGIS point here as Prisma doesn't handle it natively
+      // Instead, we'll use raw SQL in a separate query
+    
     return {
       timestamp: measurement.Timestamp,
       uuid: measurement.UUID,
@@ -475,6 +519,9 @@ export class MeasurementService {
       app_version: measurement.app_version,
       ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
+      detected_location_accuracy: measurement.detected_location_accuracy,
+      detected_location_distance: measurement.detected_location_distance,
+      detected_location_is_flagged: measurement.detected_location_is_flagged
     };
   }
 
