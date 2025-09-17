@@ -74,7 +74,7 @@ model school {
   modified                   DateTime?                  @db.Timestamptz(6)
   name                       String?                    @db.VarChar
   timezone                   String?                    @db.VarChar
-  geopoint                   String?                    @db.VarChar
+  geopoint                   Unsupported("geography(Point, 4326)")?  // PostGIS point for school location
   gps_confidence             Float?
   altitude                   Int?
   address                    String?                    @db.VarChar
