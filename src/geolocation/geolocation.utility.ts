@@ -7,8 +7,8 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class GeolocationUtility {
   // Distance and accuracy thresholds in meters
-  private readonly DISTANCE_THRESHOLD = 1000; // 1km
-  private readonly ACCURACY_THRESHOLD = 1000; // 1km
+  private readonly DISTANCE_THRESHOLD = 4000; // 1km
+  private readonly ACCURACY_THRESHOLD = 4000; // 1km
 
   constructor(private prisma: PrismaService) {}
 
@@ -19,26 +19,27 @@ export class GeolocationUtility {
    * @returns School data including latitude and longitude
    */
   async getSchoolCoordinates(giga_id_school: string): Promise<{ latitude: number; longitude: number }> {
-    // If not found in master_sync_school_static, try to extract from geopoint in school table
-    const school = await this.prisma.school.findFirst({
-      where: { 
-        giga_id_school: giga_id_school?.toLowerCase().trim() 
-      },
-      select: {
-        geopoint: true
+    try {
+      // Use raw SQL to extract coordinates from PostGIS geography column
+      const result = await this.prisma.$queryRaw<
+        { latitude: number; longitude: number }[]
+      >`
+        SELECT 
+          ST_Y(geopoint::geometry) as latitude,
+          ST_X(geopoint::geometry) as longitude
+        FROM school 
+        WHERE giga_id_school = ${giga_id_school?.toLowerCase().trim()}
+        AND geopoint IS NOT NULL
+        LIMIT 1
+      `;
+      if (result.length > 0 && result[0].latitude && result[0].longitude) {
+        return {
+          latitude: result[0].latitude,
+          longitude: result[0].longitude
+        };
       }
-    });
-    
-    if (school?.geopoint) {
-      // Parse geopoint which might be in format "lat,lng"
-      try {
-        const [lat, lng] = school.geopoint.split(',').map(Number);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          return { latitude: lat, longitude: lng };
-        }
-      } catch (e) {
-        console.error(`Error parsing geopoint for school ${giga_id_school}: ${e}`);
-      }
+    } catch (error) {
+      console.error(`Error getting school coordinates for ${giga_id_school}:`, error);
     }
     
     return { latitude: null, longitude: null };
@@ -120,7 +121,6 @@ export class GeolocationUtility {
         schoolCoords.latitude,
         schoolCoords.longitude
       );
-      
       // Determine if the location should be flagged
       const isFlagged = distance !== null && 
                       deviceAccuracy !== null && 
@@ -139,40 +139,6 @@ export class GeolocationUtility {
         accuracy: deviceAccuracy,
         isFlagged: null
       };
-    }
-  }
-
-  /**
-   * Creates a PostGIS point from latitude and longitude
-   * 
-   * @param tableName The database table name
-   * @param idField The ID field name
-   * @param id The record ID
-   * @param lat Latitude
-   * @param lng Longitude
-   * @param fieldName The field to update with the PostGIS point
-   */
-  async createPostGISPoint(
-    tableName: string,
-    idField: string,
-    id: string | number | bigint,
-    lat: number,
-    lng: number,
-    fieldName: string = 'detected_coordinates'
-  ): Promise<void> {
-    try {
-      // Using string interpolation for table and field names since Prisma doesn't support
-      // parameterized identifiers in raw queries
-      if(!lat || !lng) return;
-      const query = `
-        UPDATE "${tableName}"
-        SET "${fieldName}" = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
-        WHERE "${idField}" = $3
-      `;
-      
-      await this.prisma.$executeRawUnsafe(query, lng, lat, id);
-    } catch (error) {
-      console.error(`Error creating PostGIS point in ${tableName}:`, error);
     }
   }
 }

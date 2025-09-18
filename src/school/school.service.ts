@@ -139,20 +139,6 @@ export class SchoolService {
       data: model,
     });
     
-    // If geolocation data is provided, process it
-    try {
-      // Use raw SQL to set the PostGIS geography point
-      await this.geolocationUtility.createPostGISPoint(
-        'dailycheckapp_school',
-        'id',
-        school.id,
-        schoolDto.geolocation.location.lat, 
-        schoolDto.geolocation.location.lng,
-      );
-    } catch (error) {
-      console.error('Error updating geolocation point:', error);
-    }
-    
     return school.user_id;
   }
 
@@ -183,6 +169,8 @@ export class SchoolService {
       created: school.created,
       ip_address: school.ip_address,
       country_code: school.country_code,
+      detected_latitude: school.geolocation.location.lat, 
+      detected_longitude: school.geolocation.location.lng, 
       detected_location_accuracy: school.detected_location_accuracy,
       detected_location_distance: school.detected_location_distance,
       detected_location_is_flagged: school.detected_location_is_flagged
