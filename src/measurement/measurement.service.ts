@@ -14,12 +14,13 @@ import {
   ServerInfoDto,
 } from './measurement.dto';
 import { plainToInstance } from 'class-transformer';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 
 @Injectable()
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private geolocationUtility: GeolocationUtility) {}
 
   async measurements(
     skip?: number,
@@ -199,10 +200,35 @@ export class MeasurementService {
       }
 
       default: {
+        // Process geolocation data if available
+        if (measurementDto.geolocation && 
+            measurementDto.geolocation.location &&
+            measurementDto.geolocation.accuracy) {
+          try {
+            // Get the school coordinates based on giga_id_school
+            if (measurementDto.giga_id_school) {
+              // Use the common utility to calculate distance and set flags
+              const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
+                measurementDto.giga_id_school,
+                measurementDto.geolocation.location,
+                measurementDto.geolocation.accuracy
+              );
+              
+              // Store the results in the measurement DTO
+              measurementDto.detected_location_accuracy = geoResult.accuracy;
+              measurementDto.detected_location_distance = geoResult.distance;
+              measurementDto.detected_location_is_flagged = geoResult.isFlagged;
+            }
+          } catch (error) {
+            console.error('Error processing geolocation data:', error);
+          }
+        }
+
         const model = this.toModel(measurementDto);
         await this.prisma.measurements.create({
           data: model,
         });
+        
         return '';
       }
     }
@@ -475,6 +501,11 @@ export class MeasurementService {
       app_version: measurement.app_version,
       ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
+      detected_latitude: measurement.geolocation.location.lat, 
+      detected_longitude: measurement.geolocation.location.lng, 
+      detected_location_accuracy: measurement.detected_location_accuracy,
+      detected_location_distance: measurement.detected_location_distance,
+      detected_location_is_flagged: measurement.detected_location_is_flagged
     };
   }
 

@@ -21,8 +21,6 @@ import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
-import { ConnectivityController } from './connectivity/connectivity.controller';
-import { ConnectivityService } from './connectivity/connectivity.service';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CategoryGuard } from './common/category.guard';
 import { CategoryResponseInterceptor } from './common/category.interceptor';
@@ -30,10 +28,14 @@ import { AuthGuard } from './auth/auth.guard';
 import { CategoryConfigModule } from './category-config/category-config.module';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { AuthModule } from './auth/auth.module';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
+import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityService } from './connectivity/connectivity.service';
+import { GeolocationModule } from './geolocation/geolocation.module';
 import * as redisStore from 'cache-manager-redis-store';
 
 
@@ -55,6 +57,8 @@ import * as redisStore from 'cache-manager-redis-store';
     }),
     CategoryConfigModule,
     AuthModule,
+    IpMetadataModule,
+    GeolocationModule,
   ],
   controllers: [
     AppController,
@@ -80,7 +84,6 @@ import * as redisStore from 'cache-manager-redis-store';
     MeasurementService,
     AdminService,
     MetricsService,
-    ConnectivityService,
     CategoryConfigProvider,
     {
       provide: APP_GUARD,
@@ -94,6 +97,7 @@ import * as redisStore from 'cache-manager-redis-store';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    ConnectivityService,
   ],
 })
 export class AppModule {}

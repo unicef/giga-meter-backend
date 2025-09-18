@@ -1,11 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["tracing"]
+  previewFeatures = ["tracing", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
 }
 
 model EFMigrationsHistory {
@@ -61,6 +62,11 @@ model dailycheckapp_school {
   is_blocked          Boolean   @default(false)
   notify              Boolean   @default(false)
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 model school {
@@ -69,7 +75,7 @@ model school {
   modified                   DateTime?                  @db.Timestamptz(6)
   name                       String?                    @db.VarChar
   timezone                   String?                    @db.VarChar
-  geopoint                   String?                    @db.VarChar
+  geopoint                   Unsupported("geography(Point, 4326)")?  // PostGIS point for school location
   gps_confidence             Float?
   altitude                   Int?
   address                    String?                    @db.VarChar
@@ -221,7 +227,11 @@ model measurements {
   data_uploaded   BigInt?
   data_usage      BigInt?
   ndt_version      String?
-  
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -252,6 +262,11 @@ model measurements_failed {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -339,17 +354,6 @@ model master_sync_intermediate {
   @@map("master_sync_intermediate")
 }
 
-model connectivity_ping_checks {
-  id             Int       @id() @default(autoincrement())
-  timestamp      DateTime? @db.Timestamptz(6)
-  isConnected    Boolean?  @map("is_connected")
-  errorMessage   String?   @map("error_message")
-  giga_id_school String
-  app_local_uuid String    @unique
-  deviceId       String    @map("device_id")
-  latency        Float?
-  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-} 
 model CategoryConfig {
   id            Int      @id @default(autoincrement())
   name          String   @unique
@@ -363,4 +367,33 @@ model CategoryConfig {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("category_config")
+}
+
+model connectivity_ping_checks {
+  id             Int       @id() @default(autoincrement())
+  timestamp      DateTime? @db.Timestamptz(6)
+  isConnected    Boolean?  @map("is_connected")
+  errorMessage   String?   @map("error_message")
+  giga_id_school String
+  app_local_uuid String    @unique
+  deviceId       String    @map("device_id")
+  latency        Float?
+  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+} 
+
+model IpMetadata {
+  id        Int     @id @default(autoincrement())
+  ip        String 
+  hostname  String?
+  city      String?
+  region    String?
+  country   String?
+  loc       String?
+  org       String?
+  postal    String?
+  timezone  String?
+  asn       String?
+  source    String?
+
+  @@unique([ip, source])
 }

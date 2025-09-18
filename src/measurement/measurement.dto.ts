@@ -1,5 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+export class GeoLocationDto {
+  @ApiProperty({
+    description: 'Location coordinates with latitude and longitude',
+    example: { lat: 28.655616, lng: 77.2079616 }
+  })
+  location?: { lat: number; lng: number };
+
+  @ApiProperty({
+    description: 'Accuracy of the geolocation in meters',
+    example: 741820.5619146812
+  })
+  accuracy?: number;
+}
+
 export class ASNDto {
   @ApiProperty()
   asn?: string;
@@ -420,6 +434,27 @@ export class MeasurementDto {
 
   @ApiProperty()
   created_at?: Date;
+
+  @ApiProperty({
+    description: 'Geolocation data from device',
+    type: GeoLocationDto
+  })
+  geolocation?: GeoLocationDto;
+
+  @ApiProperty({
+    description: 'Distance between school location and detected location in meters'
+  })
+  detected_location_distance?: number;
+
+  @ApiProperty({
+    description: 'Accuracy of the geolocation in meters'
+  })
+  detected_location_accuracy?: number;
+
+  @ApiProperty({
+    description: 'Flag if distance > X & accuracy > Y'
+  })
+  detected_location_is_flagged?: boolean;
 }
 
 export class MeasurementV2Dto {
@@ -458,6 +493,27 @@ export class MeasurementV2Dto {
 
   @ApiProperty()
   created_at?: Date;
+  
+  @ApiProperty({
+    description: 'Geolocation data from device',
+    type: GeoLocationDto
+  })
+  geolocation?: GeoLocationDto;
+
+  @ApiProperty({
+    description: 'Distance between school location and detected location in meters'
+  })
+  detected_location_distance?: number;
+
+  @ApiProperty({
+    description: 'Accuracy of the geolocation in meters'
+  })
+  detected_location_accuracy?: number;
+
+  @ApiProperty({
+    description: 'Flag if distance > X & accuracy > Y'
+  })
+  detected_location_is_flagged?: boolean;
 }
 
 export class AddMeasurementDto extends MeasurementDto {
