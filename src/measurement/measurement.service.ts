@@ -200,11 +200,6 @@ export class MeasurementService {
       }
 
       default: {
-        const model = this.toModel(measurementDto);
-        const measurement = await this.prisma.measurements.create({
-          data: model,
-        });
-
         // Process geolocation data if available
         if (measurementDto.geolocation && 
             measurementDto.geolocation.location &&
@@ -228,20 +223,11 @@ export class MeasurementService {
             console.error('Error processing geolocation data:', error);
           }
         }
-        
-        // If there are geolocation coordinates, update the record with PostGIS point
-        try {
-          // Use raw SQL to set the PostGIS geography point
-          await this.geolocationUtility.createPostGISPoint(
-            'measurements',
-            'id',
-            measurement.id,
-            measurementDto.geolocation.location.lat, 
-            measurementDto.geolocation.location.lng,
-          );
-        } catch (error) {
-          console.error('Error updating geolocation point:', error);
-        }
+
+        const model = this.toModel(measurementDto);
+        await this.prisma.measurements.create({
+          data: model,
+        });
         
         return '';
       }
@@ -492,10 +478,6 @@ export class MeasurementService {
   }
 
   private toModel(measurement: AddMeasurementDto): any {
-    // If there are geolocation coordinates, prepare PostGIS point
-      // We don't directly set the PostGIS point here as Prisma doesn't handle it natively
-      // Instead, we'll use raw SQL in a separate query
-    
     return {
       timestamp: measurement.Timestamp,
       uuid: measurement.UUID,
@@ -519,6 +501,8 @@ export class MeasurementService {
       app_version: measurement.app_version,
       ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
+      detected_latitude: measurement.geolocation.location.lat, 
+      detected_longitude: measurement.geolocation.location.lng, 
       detected_location_accuracy: measurement.detected_location_accuracy,
       detected_location_distance: measurement.detected_location_distance,
       detected_location_is_flagged: measurement.detected_location_is_flagged

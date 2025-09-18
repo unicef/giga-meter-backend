@@ -62,7 +62,8 @@ model dailycheckapp_school {
   is_blocked          Boolean   @default(false)
   notify              Boolean   @default(false)
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  location_coordinates       Unsupported("geography(Point, 4326)")?  // PostGIS point for school location
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
@@ -226,7 +227,8 @@ model measurements {
   data_uploaded   BigInt?
   data_usage      BigInt?
   ndt_version      String?
-  detected_coordinates        Unsupported("geography(Point, 4326)")?  // PostGIS point for detected location
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
@@ -260,7 +262,8 @@ model measurements_failed {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
-  detected_coordinates        Unsupported("geography(Point, 4326)")?  // PostGIS point for detected location
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
