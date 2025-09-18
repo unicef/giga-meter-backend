@@ -5,6 +5,7 @@
 
 */
 -- AlterTable
+CREATE EXTENSION IF NOT EXISTS "postgis";
 
 UPDATE "school" SET "geopoint" = NULL;
 
