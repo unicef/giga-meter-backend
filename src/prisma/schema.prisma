@@ -380,3 +380,105 @@ model IpMetadata {
 
   @@unique([ip, source])
 }
+
+// User model for application users, linked to B2C
+model User {
+  id          Int      @id @default(autoincrement())
+  b2cObjectId String   @unique @map("b2c_object_id") // The unique object ID from Azure AD B2C
+  email       String   @unique
+  displayName String?  @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  roles UserRole[]
+  roleCategories UserRoleCategoryMapping[]
+
+  @@map("users")
+}
+
+// A category to group roles, e.g., "Admin", "Data Entry"
+model RoleCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  roles RoleCategoryMapping[]
+  users UserRoleCategoryMapping[]
+
+  @@map("role_categories")
+}
+
+// Defines a specific role
+model Role {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique // e.g., "super-admin", "country-manager"
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users      UserRole[]
+  categories RoleCategoryMapping[]
+
+  @@map("roles")
+}
+
+// Maps roles to categories (many-to-many)
+model RoleCategoryMapping {
+  id         Int      @id @default(autoincrement())
+  roleId     Int
+  categoryId Int
+
+  role     Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  category RoleCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy Int       @map("created_by")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  updatedBy Int?      @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy Int?      @map("deleted_by")
+
+  @@unique([roleId, categoryId])
+  @@map("role_category_mappings")
+}
+
+// Maps users to roles (many-to-many)
+model UserRole {
+  id     Int  @id @default(autoincrement())
+  userId Int 
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy Int       @map("created_by")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  updatedBy Int?      @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy Int?      @map("deleted_by")
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// Maps users to role categories (many-to-many)
+model UserRoleCategoryMapping {
+  id         Int  @id @default(autoincrement())
+  userId     Int
+  categoryId Int
+
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category RoleCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  createdBy Int       @map("created_by")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+  updatedBy Int?      @map("updated_by")
+  deletedAt DateTime? @map("deleted_at")
+  deletedBy Int?      @map("deleted_by")
+
+  @@unique([userId, categoryId])
+  @@map("user_role_category_mappings")
+}
