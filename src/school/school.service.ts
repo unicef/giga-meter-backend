@@ -169,11 +169,11 @@ export class SchoolService {
       created: school.created,
       ip_address: school.ip_address,
       country_code: school.country_code,
-      detected_latitude: school.geolocation.location.lat, 
-      detected_longitude: school.geolocation.location.lng, 
-      detected_location_accuracy: school.detected_location_accuracy,
-      detected_location_distance: school.detected_location_distance,
-      detected_location_is_flagged: school.detected_location_is_flagged
+      detected_latitude: school.geolocation?.location?.lat || null, 
+      detected_longitude: school.geolocation?.location?.lng || null, 
+      detected_location_accuracy: school.detected_location_accuracy || null,
+      detected_location_distance: school.detected_location_distance || null,
+      detected_location_is_flagged: school.detected_location_is_flagged || false
     };
   }
 }

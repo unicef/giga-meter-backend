@@ -377,6 +377,10 @@ export class MeasurementService {
       ndtVersion: measurement.ndt_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      geolocation: undefined,
+      detected_location_distance: measurement.detected_location_distance,
+      detected_location_accuracy: measurement.detected_location_accuracy,
+      detected_location_is_flagged: measurement.detected_location_is_flagged,
     };
     // if (isSuperUser) {
       filterMeasurementData['UUID'] = measurement.uuid;
@@ -501,11 +505,11 @@ export class MeasurementService {
       app_version: measurement.app_version,
       ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
-      detected_latitude: measurement.geolocation.location.lat, 
-      detected_longitude: measurement.geolocation.location.lng, 
-      detected_location_accuracy: measurement.detected_location_accuracy,
-      detected_location_distance: measurement.detected_location_distance,
-      detected_location_is_flagged: measurement.detected_location_is_flagged
+      detected_latitude: measurement.geolocation?.location?.lat || null, 
+      detected_longitude: measurement.geolocation?.location?.lng || null, 
+      detected_location_accuracy: measurement.detected_location_accuracy || null,
+      detected_location_distance: measurement.detected_location_distance || null,
+      detected_location_is_flagged: measurement.detected_location_is_flagged || false
     };
   }
 
@@ -530,6 +534,11 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
       reason,
+      detected_latitude: measurement.geolocation?.location?.lat || null, 
+      detected_longitude: measurement.geolocation?.location?.lng || null, 
+      detected_location_accuracy: measurement.detected_location_accuracy || null,
+      detected_location_distance: measurement.detected_location_distance || null,
+      detected_location_is_flagged: measurement.detected_location_is_flagged || false
     };
   }
 }
