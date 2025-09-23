@@ -4,7 +4,8 @@ import { MessagesService } from './messages.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import { AuthGuard } from '../auth/auth.guard';
-import { mockMessagesDto } from '../common/mock-objects';
+import { mockCategoryConfigProvider, mockMessagesDto } from '../common/mock-objects';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 describe('MessagesController', () => {
   let controller: MessagesController;
@@ -13,7 +14,12 @@ describe('MessagesController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [MessagesController],
-      providers: [MessagesService, PrismaService, AuthGuard],
+      providers: [
+        MessagesService, 
+        PrismaService, 
+        AuthGuard,
+        { provide: CategoryConfigProvider, useValue: mockCategoryConfigProvider },
+      ],
       imports: [HttpModule],
     }).compile();
 

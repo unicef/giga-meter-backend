@@ -4,19 +4,71 @@ import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockSchoolDto } from '../common/mock-objects';
+import { mockCategoryConfigProvider, mockSchoolDto } from '../common/mock-objects';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 describe('SchoolController', () => {
   let controller: SchoolController;
   let service: SchoolService;
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      // Add any required PrismaService methods used in tests
+    };
+
+    const mockConnectivityService = {
+      // Add any required ConnectivityService methods used in tests
+    };
+
+    const mockCacheManager = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+      reset: jest.fn(),
+    };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [SchoolController],
-      providers: [SchoolService, PrismaService, AuthGuard, ConnectivityService],
-      imports: [HttpModule],
-    }).compile();
+      providers: [
+        SchoolService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: ConnectivityService, useValue: mockConnectivityService },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: AuthGuard,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: ThrottlerGuard,
+        },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
+        },
+      ],
+      imports: [
+        HttpModule,
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60,
+            limit: 10,
+          },
+        ]),
+      ],
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({
+        canActivate: () => Promise.resolve(true),
+      })
+      .compile();
 
     controller = app.get<SchoolController>(SchoolController);
     service = app.get<SchoolService>(SchoolService);
