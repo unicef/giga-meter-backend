@@ -344,6 +344,7 @@ model CategoryConfig {
   allowedAPIs   Json[]
   notAllowedAPIs Json[]
   responseFilters Json?
+  allowedCountries String[]
   swagger       Json
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

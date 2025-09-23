@@ -8,7 +8,7 @@ import { HttpService } from '@nestjs/axios';
 import { DeviceTokenService } from './device-token.service';
 import { NonceService } from './nonce.service';
 import { HmacSignatureService } from './hmac-signature.service';
-
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 
 @Injectable()
@@ -17,6 +17,7 @@ export class AuthGuard implements CanActivate {
 
   constructor(
     private readonly httpService: HttpService, 
+    private readonly categoryConfigProvider: CategoryConfigProvider,
     private readonly deviceTokenService: DeviceTokenService,
     private readonly nonceService: NonceService,
     private readonly hmacSignatureService: HmacSignatureService,
@@ -35,11 +36,11 @@ export class AuthGuard implements CanActivate {
     }
 
     const useAuth = process.env.USE_AUTH === 'true';
-
+    
     if (!useAuth) return true;
-
+    
     const request = context.switchToHttp().getRequest();
-
+    
     // Bypass authentication for Prometheus metrics endpoint
     if (request.url === '/metrics') {
       return true;
@@ -172,7 +173,14 @@ export class AuthGuard implements CanActivate {
         request.allowed_countries_iso3 = response.data.data.countries.map(
           (c) => c.iso3_format,
         );
+        request.allowed_countries_map = response.data.data.countries.reduce((acc, country) => {
+          acc[country.code] = country.iso3_format;
+          return acc;
+        }, {});
       }
+      const config = await this.categoryConfigProvider.getCategoryConfig(request.category);
+      request.category_allowed_countries = config?.allowedCountries ?? [];
+
       return true;
     } catch (error) {
       console.error('Token validation failed:', error.message);

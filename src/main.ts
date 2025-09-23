@@ -134,9 +134,7 @@ async function bootstrap() {
       SwaggerModule.setup(`api/${config.name}`, app, categoryDocument, {
         customCssUrl: '/swagger-custom.css',
         customJs: '/swagger-custom.js',
-        swaggerOptions: {
-          persistAuthorization: true,
-        },
+        swaggerOptions: {},
       });
     }
   }
