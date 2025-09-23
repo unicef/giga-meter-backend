@@ -420,4 +420,22 @@ describe('MeasurementService', () => {
       ).rejects.toThrow('Database error');
     });
   });
+  describe('createMultipleMeasurement', () => {
+    it('should create multiple measurements', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const response = await service.createMultipleMeasurement([
+        { ...mockAddMeasurementDto[0], Results: {}, app_version: '1.0.9' },
+      ]);
+      expect(response.length).toBe(0);
+    });
+  });
 });
