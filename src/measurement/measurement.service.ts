@@ -55,7 +55,7 @@ export class MeasurementService {
       }
       filter.country_code = { in: [dbCountry.code] };
     }
-    
+
     const measurements = this.prisma.measurements.findMany({
       where: filter,
       skip,
@@ -208,6 +208,71 @@ export class MeasurementService {
     }
   }
 
+  async createMultipleMeasurement(
+    multipleMeasurementDto: AddMeasurementDto[],
+  ): Promise<any[]> {
+    const allResponse: any[] = [];
+    for (const measurementDto of multipleMeasurementDto) {
+      if (measurementDto.Results && measurementDto.app_version) {
+        try {
+          // Validate app_version format
+          const versionParts = measurementDto.app_version.toString().split('.');
+          if (
+            versionParts.length !== 3 ||
+            versionParts.some((part) => !/^\d+$/.test(part))
+          ) {
+            console.warn(
+              `Invalid version format: ${measurementDto.app_version}`,
+            );
+            return;
+          }
+
+          const [major, minor, patch] = versionParts.map(Number);
+          const isVersionAbove109 =
+            major > 1 ||
+            (major === 1 && minor > 0) ||
+            (major === 1 && minor === 0 && patch >= 9);
+
+          if (isVersionAbove109) {
+            const results = measurementDto.Results;
+            const dataDownloaded =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo
+                ?.BytesAcked;
+            const dataUploaded =
+              results['NDTResult.C2S']?.LastServerMeasurement?.TCPInfo
+                ?.BytesReceived;
+            // Use strict null check (==) to handle both null and undefined
+            // Use nullish coalescing (??) instead of OR (||) to only replace null/undefined with 0
+            // This ensures we don't accidentally convert falsy values like 0 to 0
+            const dataUsage =
+              dataDownloaded == null && dataUploaded == null
+                ? null // If both are null/undefined, return null
+                : (dataDownloaded ?? 0) + (dataUploaded ?? 0); // Otherwise sum them, replacing null/undefined with 0
+            measurementDto.DataDownloaded = dataDownloaded;
+            measurementDto.DataUploaded = dataUploaded;
+            measurementDto.DataUsage = dataUsage;
+            const minRTT =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo?.MinRTT;
+            if (typeof minRTT === 'number' && !isNaN(minRTT)) {
+              measurementDto.Latency = Number((minRTT / 1000).toFixed(0));
+            } else {
+              console.warn('Invalid or missing MinRTT value');
+            }
+          }
+        } catch (error) {
+          console.error('Error processing measurement:', error);
+        }
+      }
+      const response = await this.createMeasurement(measurementDto);
+
+      if (response.length) {
+        allResponse.push(response);
+      }
+    }
+
+    return allResponse;
+  }
+
   private async processMeasurement(
     dto: AddMeasurementDto,
   ): Promise<string | null> {
@@ -305,6 +370,7 @@ export class MeasurementService {
 
   private toDto(
     measurement: Measurement,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
@@ -352,9 +418,9 @@ export class MeasurementService {
       created_at: measurement.created_at,
     };
     // if (isSuperUser) {
-      filterMeasurementData['UUID'] = measurement.uuid;
-      filterMeasurementData['ip_address'] = measurement.ip_address;
-      filterMeasurementData['school_id'] = measurement.school_id;
+    filterMeasurementData['UUID'] = measurement.uuid;
+    filterMeasurementData['ip_address'] = measurement.ip_address;
+    filterMeasurementData['school_id'] = measurement.school_id;
     // }
     return filterMeasurementData;
   }
