@@ -20,7 +20,10 @@ import { GeolocationUtility } from '../geolocation/geolocation.utility';
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService, private geolocationUtility: GeolocationUtility) {}
+  constructor(
+    private prisma: PrismaService,
+    private geolocationUtility: GeolocationUtility,
+  ) {}
 
   async measurements(
     skip?: number,
@@ -56,7 +59,7 @@ export class MeasurementService {
       }
       filter.country_code = { in: [dbCountry.code] };
     }
-    
+
     const measurements = this.prisma.measurements.findMany({
       where: filter,
       skip,
@@ -201,19 +204,22 @@ export class MeasurementService {
 
       default: {
         // Process geolocation data if available
-        if (measurementDto.geolocation && 
-            measurementDto.geolocation.location &&
-            measurementDto.geolocation.accuracy) {
+        if (
+          measurementDto.geolocation &&
+          measurementDto.geolocation.location &&
+          measurementDto.geolocation.accuracy
+        ) {
           try {
             // Get the school coordinates based on giga_id_school
             if (measurementDto.giga_id_school) {
               // Use the common utility to calculate distance and set flags
-              const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
-                measurementDto.giga_id_school,
-                measurementDto.geolocation.location,
-                measurementDto.geolocation.accuracy
-              );
-              
+              const geoResult =
+                await this.geolocationUtility.calculateDistanceAndSetFlag(
+                  measurementDto.giga_id_school,
+                  measurementDto.geolocation.location,
+                  measurementDto.geolocation.accuracy,
+                );
+
               // Store the results in the measurement DTO
               measurementDto.detected_location_accuracy = geoResult.accuracy;
               measurementDto.detected_location_distance = geoResult.distance;
@@ -228,10 +234,75 @@ export class MeasurementService {
         await this.prisma.measurements.create({
           data: model,
         });
-        
+
         return '';
       }
     }
+  }
+
+  async createMultipleMeasurement(
+    multipleMeasurementDto: AddMeasurementDto[],
+  ): Promise<any[]> {
+    const allResponse: any[] = [];
+    for (const measurementDto of multipleMeasurementDto) {
+      if (measurementDto.Results && measurementDto.app_version) {
+        try {
+          // Validate app_version format
+          const versionParts = measurementDto.app_version.toString().split('.');
+          if (
+            versionParts.length !== 3 ||
+            versionParts.some((part) => !/^\d+$/.test(part))
+          ) {
+            console.warn(
+              `Invalid version format: ${measurementDto.app_version}`,
+            );
+            return;
+          }
+
+          const [major, minor, patch] = versionParts.map(Number);
+          const isVersionAbove109 =
+            major > 1 ||
+            (major === 1 && minor > 0) ||
+            (major === 1 && minor === 0 && patch >= 9);
+
+          if (isVersionAbove109) {
+            const results = measurementDto.Results;
+            const dataDownloaded =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo
+                ?.BytesAcked;
+            const dataUploaded =
+              results['NDTResult.C2S']?.LastServerMeasurement?.TCPInfo
+                ?.BytesReceived;
+            // Use strict null check (==) to handle both null and undefined
+            // Use nullish coalescing (??) instead of OR (||) to only replace null/undefined with 0
+            // This ensures we don't accidentally convert falsy values like 0 to 0
+            const dataUsage =
+              dataDownloaded == null && dataUploaded == null
+                ? null // If both are null/undefined, return null
+                : (dataDownloaded ?? 0) + (dataUploaded ?? 0); // Otherwise sum them, replacing null/undefined with 0
+            measurementDto.DataDownloaded = dataDownloaded;
+            measurementDto.DataUploaded = dataUploaded;
+            measurementDto.DataUsage = dataUsage;
+            const minRTT =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo?.MinRTT;
+            if (typeof minRTT === 'number' && !isNaN(minRTT)) {
+              measurementDto.Latency = Number((minRTT / 1000).toFixed(0));
+            } else {
+              console.warn('Invalid or missing MinRTT value');
+            }
+          }
+        } catch (error) {
+          console.error('Error processing measurement:', error);
+        }
+      }
+      const response = await this.createMeasurement(measurementDto);
+
+      if (response.length) {
+        allResponse.push(response);
+      }
+    }
+
+    return allResponse;
   }
 
   private async processMeasurement(
@@ -331,6 +402,7 @@ export class MeasurementService {
 
   private toDto(
     measurement: Measurement,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
@@ -383,9 +455,9 @@ export class MeasurementService {
       detected_location_is_flagged: measurement.detected_location_is_flagged,
     };
     // if (isSuperUser) {
-      filterMeasurementData['UUID'] = measurement.uuid;
-      filterMeasurementData['ip_address'] = measurement.ip_address;
-      filterMeasurementData['school_id'] = measurement.school_id;
+    filterMeasurementData['UUID'] = measurement.uuid;
+    filterMeasurementData['ip_address'] = measurement.ip_address;
+    filterMeasurementData['school_id'] = measurement.school_id;
     // }
     return filterMeasurementData;
   }
@@ -505,11 +577,14 @@ export class MeasurementService {
       app_version: measurement.app_version,
       ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
-      detected_latitude: measurement.geolocation?.location?.lat || null, 
-      detected_longitude: measurement.geolocation?.location?.lng || null, 
-      detected_location_accuracy: measurement.detected_location_accuracy || null,
-      detected_location_distance: measurement.detected_location_distance || null,
-      detected_location_is_flagged: measurement.detected_location_is_flagged || false
+      detected_latitude: measurement.geolocation?.location?.lat || null,
+      detected_longitude: measurement.geolocation?.location?.lng || null,
+      detected_location_accuracy:
+        measurement.detected_location_accuracy || null,
+      detected_location_distance:
+        measurement.detected_location_distance || null,
+      detected_location_is_flagged:
+        measurement.detected_location_is_flagged || false,
     };
   }
 
@@ -534,11 +609,14 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
       reason,
-      detected_latitude: measurement.geolocation?.location?.lat || null, 
-      detected_longitude: measurement.geolocation?.location?.lng || null, 
-      detected_location_accuracy: measurement.detected_location_accuracy || null,
-      detected_location_distance: measurement.detected_location_distance || null,
-      detected_location_is_flagged: measurement.detected_location_is_flagged || false
+      detected_latitude: measurement.geolocation?.location?.lat || null,
+      detected_longitude: measurement.geolocation?.location?.lng || null,
+      detected_location_accuracy:
+        measurement.detected_location_accuracy || null,
+      detected_location_distance:
+        measurement.detected_location_distance || null,
+      detected_location_is_flagged:
+        measurement.detected_location_is_flagged || false,
     };
   }
 }
