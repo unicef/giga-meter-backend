@@ -1,4 +1,4 @@
-import { CategoryConfig } from "@prisma/client";
+import { CategoryConfig } from '@prisma/client';
 
 export interface CategoryApiEndpoint {
   url: string;
@@ -10,9 +10,9 @@ export interface CategoryResponseFilters {
   exclude?: string[]; // Fields to exclude (if include is not specified)
   endpoints?: {
     [path: string]: {
-      include?: string[];  // Path-specific fields to include
-      exclude?: string[];  // Path-specific fields to exclude
-    }
+      include?: string[]; // Path-specific fields to include
+      exclude?: string[]; // Path-specific fields to exclude
+    };
   };
 }
 
@@ -22,7 +22,16 @@ export interface CategorySwaggerConfig {
   description?: string; // Custom description for this category's Swagger docs
 }
 
-export type CategoryConfigType = Pick<CategoryConfig, 'id' | 'name' | 'isDefault' | 'createdAt' | 'updatedAt'> & { swagger: CategorySwaggerConfig, allowedAPIs: CategoryApiEndpoint[], notAllowedAPIs: CategoryApiEndpoint[], responseFilters: CategoryResponseFilters, allowedCountries: string[] }
+export type CategoryConfigType = Pick<
+  CategoryConfig,
+  'id' | 'name' | 'isDefault' | 'createdAt' | 'updatedAt'
+> & {
+  swagger: CategorySwaggerConfig;
+  allowedAPIs: CategoryApiEndpoint[];
+  notAllowedAPIs: CategoryApiEndpoint[];
+  responseFilters: CategoryResponseFilters;
+  allowedCountries: string[];
+};
 
 export enum Category {
   PUBLIC = 'PUBLIC',
@@ -47,14 +56,14 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     responseFilters: {
       // Global exclusions for all endpoints in this category
       exclude: ['ip_address', 'school_id'],
-      endpoints: {}
+      endpoints: {},
     },
     allowedCountries: [],
     swagger: {
-      visible: true
+      visible: true,
     },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     id: 2,
@@ -70,14 +79,14 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       // Global exclusions for all endpoints
       exclude: ['ip_address', 'school_id'],
       include: [],
-      endpoints: {}
+      endpoints: {},
     },
     allowedCountries: ['BR'],
-      swagger: {
-      visible: true
+    swagger: {
+      visible: true,
     },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     id: 3,
@@ -85,30 +94,34 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     isDefault: false,
     // giga_meter has access to everything
     allowedAPIs: [],
-    notAllowedAPIs: [{
-      // category, contact, delete api
-      url: '/api/v1/category-config*',
-      methods: ['*']
-    }, {
-      url: '/api/v1/messages*',
-      methods: ['*']
-    }, {
-      url: '/api/v1/*',
-      methods: ['DELETE']
-    }],
+    notAllowedAPIs: [
+      {
+        // category, contact, delete api
+        url: '/api/v1/category-config*',
+        methods: ['*'],
+      },
+      {
+        url: '/api/v1/messages*',
+        methods: ['*'],
+      },
+      {
+        url: '/api/v1/*',
+        methods: ['DELETE'],
+      },
+    ],
     responseFilters: {
       // giga_meter sees all fields by default
       exclude: [],
       include: [],
       // But can still have some endpoint-specific exclusions if needed
-      endpoints: {}
+      endpoints: {},
     },
     allowedCountries: [],
     swagger: {
-      visible: true
+      visible: true,
     },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     id: 4,
@@ -125,14 +138,14 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       exclude: [],
       include: [],
       // But can still have some endpoint-specific exclusions if needed
-      endpoints: {}
+      endpoints: {},
     },
     allowedCountries: [],
-    swagger:{
-      visible: true
+    swagger: {
+      visible: true,
     },
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   },
   {
     id: 5,
@@ -145,23 +158,24 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       exclude: [],
       include: [],
       // But can still have some endpoint-specific exclusions if needed
-      endpoints: {
-      }
+      endpoints: {},
     },
     allowedCountries: [],
-    swagger:{
-      visible: true
+    swagger: {
+      visible: true,
     },
     createdAt: new Date(),
-    updatedAt: new Date()
-  }
+    updatedAt: new Date(),
+  },
 ];
 
 // // List of all supported categories
-export const CATEGORIES = DEFAULT_CATEGORY_CONFIG.map(config => config.name);
+export const CATEGORIES = DEFAULT_CATEGORY_CONFIG.map((config) => config.name);
 
 // // Default category to use when none is specified
-export const DEFAULT_CATEGORY = DEFAULT_CATEGORY_CONFIG.find(config => config.isDefault)?.name || Category.PUBLIC;
+export const DEFAULT_CATEGORY =
+  DEFAULT_CATEGORY_CONFIG.find((config) => config.isDefault)?.name ||
+  Category.PUBLIC;
 
 // all categories
 export let CATEGORY_CONFIG = DEFAULT_CATEGORY_CONFIG;

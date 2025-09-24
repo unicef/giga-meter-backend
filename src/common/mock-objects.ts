@@ -266,7 +266,6 @@ export const mockFlaggedSchoolModel = [
   },
 ];
 
-
 export const mockMeasurementDto = (showAllMeasurement: boolean) => {
   const items = [
     {
@@ -822,6 +821,6 @@ export const mockCategoryConfigProvider = {
     allowedCountries: [],
     allowedAPIs: [],
     notAllowedAPIs: [],
-    responseFilters: {}
+    responseFilters: {},
   }),
 };

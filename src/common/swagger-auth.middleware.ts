@@ -10,7 +10,7 @@ interface AuthenticatedRequest extends Request {
 
 @Injectable()
 export class SwaggerAuthMiddleware implements NestMiddleware {
-  constructor(private authGuard: AuthGuard) { }
+  constructor(private authGuard: AuthGuard) {}
 
   async use(req: AuthenticatedRequest, res: Response, next: NextFunction) {
     let requestedCategory;
@@ -27,16 +27,18 @@ export class SwaggerAuthMiddleware implements NestMiddleware {
       const token = req.query.token as string;
 
       if (!token || !requestedCategory) {
-        throw new Error('Unauthorized access - No token provided')
+        throw new Error('Unauthorized access - No token provided');
       }
 
       const isValid = await this.authGuard.validateToken(token, req);
       if (!isValid) {
-        throw new Error('Unauthorized access - Invalid token')
+        throw new Error('Unauthorized access - Invalid token');
       }
 
       if (req.category !== requestedCategory) {
-        throw new Error(`Forbidden access - Your category '${req.category}' does not have access to '${requestedCategory}' documentation`)
+        throw new Error(
+          `Forbidden access - Your category '${req.category}' does not have access to '${requestedCategory}' documentation`,
+        );
       }
 
       next();

@@ -28,7 +28,7 @@ describe('MeasurementService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        MeasurementService, 
+        MeasurementService,
         PrismaService,
         {
           provide: GeolocationUtility,
