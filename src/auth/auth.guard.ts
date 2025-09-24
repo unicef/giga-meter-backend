@@ -26,23 +26,15 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if the route is marked as public
+    const request = context.switchToHttp().getRequest();
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
-
-    if (isPublic) {
-      return true;
-    }
-
+    const isMetrics = request.url === '/metrics';
     const useAuth = process.env.USE_AUTH === 'true';
     
-    if (!useAuth) return true;
-    
-    const request = context.switchToHttp().getRequest();
-    
-    // Bypass authentication for Prometheus metrics endpoint
-    if (request.url === '/metrics') {
+    if (!useAuth || isPublic || request.category || isMetrics) {
       return true;
     }
 
