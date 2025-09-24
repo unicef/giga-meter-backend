@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiExcludeEndpoint,
   ApiOperation,
   ApiParam,
@@ -111,9 +112,10 @@ export class MeasurementController {
   })
   @ApiQuery({
     name: 'size',
-    description: 'The number of measurements to return (min: 1, max: 100), default: 10',
+    description:
+      'The number of measurements to return (min: 1, max: 100), default: 10',
     required: false,
-    type: 'number'
+    type: 'number',
   })
   @ApiQuery({
     name: 'page',
@@ -241,8 +243,9 @@ export class MeasurementController {
   })
   async getMeasurementsV2(
     @Query('page') page?: number,
-    @ValidateSize({ min: 1, max: 1000 }) 
-    @Query('size') size?: number,
+    @ValidateSize({ min: 1, max: 1000 })
+    @Query('size')
+    size?: number,
     @Query('orderBy') orderBy?: string,
     @Query('giga_id_school') giga_id_school?: string,
     @Query('country_iso3_code') country_iso3_code?: string,
@@ -507,6 +510,45 @@ export class MeasurementController {
       message: 'success',
     };
   }
+
+  @Post('/multiple')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiBody({
+    type: AddMeasurementDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Returns Id of measurement created',
+    type: ApiSuccessResponseDto<AddRecordResponseDto>,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async createMultipleMeasurement(
+    @Body() multipleMeasurementDto: AddMeasurementDto[],
+  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
+    console.log(multipleMeasurementDto);
+    const allResponse = await this.measurementService.createMultipleMeasurement(
+      multipleMeasurementDto,
+    );
+    const allResponseErrorsCount = allResponse.filter((r) => r.length).length;
+    if (allResponseErrorsCount == multipleMeasurementDto.length) {
+      throw new HttpException(
+        'Failed to add measurements with error for each records : ' +
+          allResponse.join(','),
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return {
+      success: true,
+      data: { user_id: uuidv4() },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
 }
 
 function validateGetMeasurementsParams(
@@ -545,7 +587,7 @@ function validateGetMeasurementsParams(
       HttpStatus.BAD_REQUEST,
     );
   }
-  // TODO:// remove this logic after adding countries to non expired api keys 
+  // TODO:// remove this logic after adding countries to non expired api keys
   if (
     !write_access &&
     country_iso3_code &&
