@@ -10,6 +10,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 
 describe('SchoolController', () => {
   let controller: SchoolController;
@@ -22,6 +23,13 @@ describe('SchoolController', () => {
 
     const mockConnectivityService = {
       // Add any required ConnectivityService methods used in tests
+    };
+
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
     };
 
     const mockCacheManager = {
@@ -37,6 +45,7 @@ describe('SchoolController', () => {
         SchoolService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: ConnectivityService, useValue: mockConnectivityService },
+        { provide: GeolocationUtility, useValue: mockGeolocationUtility },
         {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager,

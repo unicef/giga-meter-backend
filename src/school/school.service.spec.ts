@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SchoolService } from './school.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   mockCountryModel,
   mockSchoolDto,
@@ -12,8 +13,22 @@ describe('SchoolService', () => {
   let prisma: PrismaService;
 
   beforeEach(async () => {
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [SchoolService, PrismaService],
+      providers: [
+        SchoolService, 
+        PrismaService,
+        {
+          provide: GeolocationUtility,
+          useValue: mockGeolocationUtility,
+        },
+      ],
     }).compile();
 
     service = module.get<SchoolService>(SchoolService);
@@ -145,7 +160,13 @@ describe('SchoolService', () => {
     it('should return notify', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirstOrThrow')
-        .mockResolvedValue(mockSchoolModel[0]);
+        .mockResolvedValue({ ...mockSchoolModel[0], 
+          detected_latitude: null,
+          detected_longitude: null,
+          detected_location_accuracy: null,
+          detected_location_distance: null,
+          detected_location_is_flagged: false
+        });
       jest
         .spyOn(prisma.dailycheckapp_school, 'updateMany')
         .mockResolvedValue(null);

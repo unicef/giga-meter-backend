@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MeasurementService } from './measurement.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   mockAddMeasurementDto,
   mockCountryModel,
@@ -18,8 +19,22 @@ describe('MeasurementService', () => {
   let prisma: PrismaService;
 
   beforeEach(async () => {
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MeasurementService, PrismaService],
+      providers: [
+        MeasurementService, 
+        PrismaService,
+        {
+          provide: GeolocationUtility,
+          useValue: mockGeolocationUtility,
+        },
+      ],
     }).compile();
 
     service = module.get<MeasurementService>(MeasurementService);
