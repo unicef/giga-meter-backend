@@ -30,9 +30,15 @@ export class AuthGuard implements CanActivate {
     }
 
     const useAuth = process.env.USE_AUTH === 'true';
-    
-    if (!useAuth) return true;
-    
+
+    if (!useAuth) {
+      // When auth is disabled, set default permissions for all requests
+      const request = context.switchToHttp().getRequest();
+      request.has_write_access = true;
+      request.category = Category.GIGA_METER.toLowerCase();
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest();
     
     // Bypass authentication for Prometheus metrics endpoint
