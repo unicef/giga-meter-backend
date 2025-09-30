@@ -14,16 +14,13 @@ import { CategoryConfigProvider } from './common/category-config.provider';
 import { SwaggerAuthMiddleware } from './common/swagger-auth.middleware';
 import { AuthGuard } from './auth/auth.guard';
 import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
-import { validateEnvironmentVariables } from './config/env-validation';
 
 async function bootstrap() {
-  // Validate environment variables before starting the app
-  validateEnvironmentVariables();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   
   // Configure body parser limits to prevent DoS attacks
-  app.use(express.json({ limit: '10mb' })); // Limit JSON body size
-  app.use(express.urlencoded({ limit: '10mb', extended: true })); // Limit URL-encoded body size
+  app.use(express.json({ limit: '5mb' })); // Limit JSON body size
+  app.use(express.urlencoded({ limit: '2mb', extended: true })); // Limit URL-encoded body size
   
   // Apply Helmet security headers middleware
   // Configure security headers to protect against common web vulnerabilities
@@ -74,29 +71,6 @@ async function bootstrap() {
   
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
-  // Configure global validation pipes with strict parsing
-  // Validates structure and size of incoming requests
-  // Protects against injection and resource exhaustion
-  // app.useGlobalPipes(
-  //   new ValidationPipe({
-  //     whitelist: true, // Strip properties that do not have any decorators
-  //     forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are present
-  //     transform: true, // Automatically transform payloads to be objects typed according to their DTO classes
-  //     transformOptions: {
-  //       enableImplicitConversion: false, // Disable implicit type conversion for security
-  //     },
-  //     disableErrorMessages: process.env.NODE_ENV === 'production', // Hide detailed error messages in production
-  //     stopAtFirstError: true, // Stop validation on first error for performance
-  //     skipMissingProperties: false, // Validate all properties including undefined ones
-  //     skipNullProperties: false, // Validate null properties
-  //     skipUndefinedProperties: false, // Validate undefined properties
-  //     dismissDefaultMessages: false, // Keep default validation messages
-  //     validationError: {
-  //       target: false, // Don't expose the target object in validation errors
-  //       value: false, // Don't expose the value in validation errors for security
-  //     },
-  //   }),
-  // );
 
   // Get the Category
   const categoryConfigProvider = app.get(CategoryConfigProvider);
@@ -149,10 +123,9 @@ async function bootstrap() {
 
   const corsOptions = {
     origin: (origin, callback) => {
-      console.log(`[CORS] Validating origin: ${origin}`);
       // In development, allow all origins
       if (process.env.NODE_ENV === 'development') {
-        console.log('[CORS] Devlopment mode - allowing all origins');
+        logger.log('[CORS] Devlopment mode - allowing all origins');
         return callback(null, true);
       }
       
@@ -161,11 +134,8 @@ async function bootstrap() {
       
       // Allow requests with no origin (like mobile apps, curl, etc.)
       if (!origin || allowedOrigins.includes(origin)) {
-        console.log(`[CORS] Allowed origin: ${origin}`);
         return callback(null, true);
       }
-      
-      console.log(`[CORS] Rejected origin: ${origin}`);
       return callback(new Error('Not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT'],
