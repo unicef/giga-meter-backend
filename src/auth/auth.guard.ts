@@ -79,9 +79,6 @@ export class AuthGuard implements CanActivate {
 
   /**
    * Validates device token and nonce, then sets request context
-   * @param token - Device token to validate
-   * @param request - HTTP request object
-   * @returns Promise<boolean> indicating if token and nonce are valid
    */
   private async validateDeviceToken(token: string, request: any): Promise<boolean> {
     try {
@@ -134,6 +131,9 @@ export class AuthGuard implements CanActivate {
     }
   }
 
+  /**
+   * Normal flow: Validates API key and sets request context
+   */
   public async validateToken(token: string, request: any): Promise<boolean> {
     try {
       const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
@@ -175,7 +175,7 @@ export class AuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      console.error('Token validation failed:', error.message);
+      this.logger.error(`Token validation failed: ${error.message}`);
       return false;
     }
   }

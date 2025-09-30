@@ -47,9 +47,18 @@ export class DeviceTokenService {
    */
   private getMasterKey(): Buffer {
     let masterKey = process.env.DEVICE_TOKEN_MASTER_KEY;
+    const isProduction = process.env.NODE_ENV === 'production';
     
     if (!masterKey) {
-      // Generate a new key if not set (for development)
+      if (isProduction) {
+        this.logger.error('DEVICE_TOKEN_MASTER_KEY not set in production environment');
+        throw new Error(
+          'DEVICE_TOKEN_MASTER_KEY is required in production. ' +
+          'Generate one using: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"'
+        );
+      }
+      
+      // Generate a new key if not set (for development only)
       masterKey = this.generateEncryptionKey();
       this.logger.warn(
         'DEVICE_TOKEN_MASTER_KEY not set in environment. Generated temporary key. ' +

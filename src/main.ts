@@ -2,20 +2,28 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 import { AllExceptionFilter } from './common/common.filter';
 import helmet from 'helmet';
+import * as express from 'express';
 
 import * as Sentry from '@sentry/node';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { SwaggerAuthMiddleware } from './common/swagger-auth.middleware';
 import { AuthGuard } from './auth/auth.guard';
 import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
+import { validateEnvironmentVariables } from './config/env-validation';
 
 async function bootstrap() {
+  // Validate environment variables before starting the app
+  validateEnvironmentVariables();
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
+  // Configure body parser limits to prevent DoS attacks
+  app.use(express.json({ limit: '10mb' })); // Limit JSON body size
+  app.use(express.urlencoded({ limit: '10mb', extended: true })); // Limit URL-encoded body size
   
   // Apply Helmet security headers middleware
   // Configure security headers to protect against common web vulnerabilities
@@ -173,9 +181,11 @@ async function bootstrap() {
   app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
 
+  const logger = new Logger('Bootstrap');
   app.set('trust proxy', true);
   await app.listen(3000, () => {
-    console.log('Server started on port 3000');
+    logger.log('Server started on port 3000');
+    logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 bootstrap();

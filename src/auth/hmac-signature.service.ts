@@ -29,19 +29,23 @@ export class HmacSignatureService {
   private readonly algorithm = 'sha256';
   private readonly timestampToleranceMs = 5 * 60 * 1000; // 5 minutes tolerance for timestamp validation
 
-
-  // constructor() {
-  //   console.log('HMAC signature service initialized1');
-  //   console.log(this.createSignatureWithTimestamp({ token: '9oR6Q1uE+78APRelQZgNt54B4gow3wQ8biVDasYw4bx1cI7qN05iCN8MPYrGbYkyCSpDs0GwjEDOxHt7YbXqMCMvCaahA3Li1bGjGtu3tfcIuaTx5iWOx4Q6uu75CStBSAWj8GCXoB1GBamRC8Wt0A3RbkswXVzMjmJjxi/umeE0YtZld37xAjN+ItbF49EvkZCEorBttFN2MTKr1DUDf1KgHw==', nonce: 'oc1CZhjEumbTYnJLi7F14EBcEikLMFsiNVLAsjFDUcI=' }));
-  // }
   /**
    * Gets the HMAC secret key from environment variables
    * @returns HMAC secret key as string
    */
   private getHmacSecret(): string {
     const secret = process.env.DEVICE_TOKEN_HMAC_SECRET;
+    const isProduction = process.env.NODE_ENV === 'production';
     
     if (!secret) {
+      if (isProduction) {
+        this.logger.error('DEVICE_TOKEN_HMAC_SECRET not set in production environment');
+        throw new Error(
+          'DEVICE_TOKEN_HMAC_SECRET is required in production. ' +
+          'Generate one using: node -e "console.log(require(\'crypto\').randomBytes(64).toString(\'base64\'))"'
+        );
+      }
+      
       this.logger.warn(
         'DEVICE_TOKEN_HMAC_SECRET not set in environment. Using default secret for development. ' +
         'Please set this in production for security.'
@@ -137,7 +141,6 @@ export class HmacSignatureService {
       }
 
       // Generate expected signature
-      console.log(params);
       const expectedSignature = this.generateSignature(params);
       
       // Use timing-safe comparison to prevent timing attacks

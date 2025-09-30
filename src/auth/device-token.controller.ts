@@ -5,8 +5,10 @@ import {
   HttpCode, 
   HttpStatus, 
   BadRequestException,
-  Logger 
+  Logger,
+  UseGuards 
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { DeviceTokenService, TokenGenerationResponse } from './device-token.service';
 import { Public } from '../common/public.decorator';
 
@@ -56,6 +58,7 @@ export class DeviceTokenResponseDto {
  * Provides secure token generation for device-based authentication
  */
 @Controller('api/v1/auth')
+@UseGuards(ThrottlerGuard)
 export class DeviceTokenController {
   private readonly logger = new Logger(DeviceTokenController.name);
 
@@ -63,11 +66,13 @@ export class DeviceTokenController {
 
   /**
    * Generates a secure token for device authentication
+   * Rate limited to prevent abuse: 10 requests per minute
    * @param generateTokenDto - Contains device fingerprint or UUID
    * @returns Promise containing the generated token and metadata
    */
   @Post('initialize')
   @Public() // This endpoint should be public to allow initial token generation
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
   @HttpCode(HttpStatus.OK)
   async generateToken(
     @Body() generateTokenDto: GenerateDeviceTokenDto,
@@ -122,50 +127,6 @@ export class DeviceTokenController {
     }
   }
 
-  /**
-   * Validates a device token (for testing purposes)
-   * In production, token validation should be handled by the auth guard
-   * @param body - Contains token to validate
-   * @returns Promise containing validation result
-   */
-  @Post('validate')
-  @Public() // Public for testing, remove in production or add proper auth
-  @HttpCode(HttpStatus.OK)
-  async validateToken(
-    @Body() body: { token: string },
-  ): Promise<{ valid: boolean; payload?: any; message: string }> {
-    try {
-      if (!body.token) {
-        return {
-          valid: false,
-          message: 'Token is required',
-        };
-      }
-
-      const payload = await this.deviceTokenService.validateToken(body.token);
-      
-      if (payload) {
-        return {
-          valid: true,
-          payload: {
-            deviceId: payload.deviceId,
-            timestamp: payload.timestamp,
-            expiresAt: payload.expiresAt,
-          },
-          message: 'Token is valid',
-        };
-      } else {
-        return {
-          valid: false,
-          message: 'Token is invalid or expired',
-        };
-      }
-    } catch (error) {
-      this.logger.error(`Token validation failed: ${error.message}`);
-      return {
-        valid: false,
-        message: 'Token validation failed',
-      };
-    }
-  }
+  // Token validation endpoint removed for security reasons
+  // Token validation is handled by AuthGuard for all protected endpoints
 }
