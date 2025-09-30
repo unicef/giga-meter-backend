@@ -19,7 +19,7 @@ export interface NonceValidationResult {
 export class NonceService {
   private readonly logger = new Logger(NonceService.name);
   private readonly noncePrefix = 'nonce:';
-  private readonly defaultTtlSeconds = 24 * 60 * 60; // 24 hours - same as token TTL
+  private readonly defaultTtlSeconds = 2 * 60 * 60; // 2 hours - same as token TTL
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
@@ -96,7 +96,7 @@ export class NonceService {
       await this.cacheManager.set(nonceKey, {
         deviceId: deviceId || 'unknown',
         usedAt: Date.now(),
-        originalNonce: nonce.substring(0, 16) + '...', // Store partial for debugging
+        originalNonce: nonce
       }, ttlMs);
 
       this.logger.log(
@@ -142,7 +142,7 @@ export class NonceService {
    * @returns TTL in milliseconds
    */
   private getTtlMs(): number {
-    const ttlSeconds = parseInt(process.env.DEVICE_TOKEN_NONCE_TTL || this.defaultTtlSeconds.toString());
+    const ttlSeconds = parseInt(this.defaultTtlSeconds.toString());
     return ttlSeconds * 1000;
   }
 
