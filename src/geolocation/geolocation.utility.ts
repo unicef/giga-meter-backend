@@ -7,8 +7,8 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class GeolocationUtility {
   // Distance and accuracy thresholds in meters
-  private readonly DISTANCE_THRESHOLD = 4000; // 1km
-  private readonly ACCURACY_THRESHOLD = 4000; // 1km
+  private readonly DISTANCE_THRESHOLD = 4000; // 4km
+  private readonly ACCURACY_THRESHOLD = 500; // 500 meter
 
   constructor(private prisma: PrismaService) {}
 
@@ -122,10 +122,10 @@ export class GeolocationUtility {
         schoolCoords.longitude
       );
       // Determine if the location should be flagged
-      const isFlagged = distance !== null && 
-                      deviceAccuracy !== null && 
-                      distance > this.DISTANCE_THRESHOLD && 
-                      deviceAccuracy > this.ACCURACY_THRESHOLD;
+           const isFlagged = distance !== null && 
+                         deviceAccuracy !== null && 
+                         (distance > this.DISTANCE_THRESHOLD || 
+                          deviceAccuracy > this.ACCURACY_THRESHOLD);
       
       return {
         distance,
