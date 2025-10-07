@@ -29,6 +29,8 @@ export class GenerateDeviceTokenDto {
 export class DeviceTokenResponseDto {
   token: string; // Generated encrypted token
   expiresAt: number; //Token expiration timestamp
+  expiresIn: number; //Token expiration in milliseconds
+  issuedAt: number; //Token issue timestamp
   deviceId: string; //Hashed device identifier
   success: boolean;
   message: string;
@@ -80,6 +82,8 @@ export class DeviceTokenController {
       const response: DeviceTokenResponseDto = {
         token: tokenResponse.token,
         expiresAt: tokenResponse.expiresAt,
+        expiresIn: tokenResponse.expiresIn,
+        issuedAt: tokenResponse.issuedAt,
         deviceId: tokenResponse.deviceId,
         success: true,
         message: 'Token generated successfully',

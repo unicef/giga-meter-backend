@@ -10,6 +10,8 @@ export interface DeviceTokenPayload {
 export interface TokenGenerationResponse {
   token: string;
   expiresAt: number;
+  expiresIn: number;
+  issuedAt: number;
   deviceId: string;
 }
 
@@ -24,7 +26,7 @@ export class DeviceTokenService {
   private readonly keyLength = 32; // 32 bytes for AES-256
   private readonly ivLength = 16; // 16 bytes for GCM IV
   private readonly tagLength = 16; // 16 bytes for GCM auth tag
-  private readonly tokenTtlHours = 24; // Token valid for 24 hours
+  private readonly tokenTtlHours = 0.05; // Token valid for 24 hours
 
   /**
    * Generates a secure encryption key - Base64 encoded 32-byte random key
@@ -120,6 +122,8 @@ export class DeviceTokenService {
       return {
         token,
         expiresAt,
+        expiresIn: this.tokenTtlHours * 60 * 60 * 1000,
+        issuedAt: now,
         deviceId: hashedDeviceId,
       };
     } catch (error) {
