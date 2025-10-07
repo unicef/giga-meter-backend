@@ -2,6 +2,7 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 import { AllExceptionFilter } from './common/common.filter';
@@ -9,6 +10,8 @@ import {
   PrismaClientExceptionFilter,
   PrismaClientValidationErrorFilter,
 } from './prisma/prisma-client-exception.filter';
+import helmet from 'helmet';
+import * as express from 'express';
 
 import * as Sentry from '@sentry/node';
 import { CategoryConfigProvider } from './common/category-config.provider';
@@ -18,7 +21,60 @@ import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  
+  // Configure body parser limits to prevent DoS attacks
+  app.use(express.json({ limit: '5mb' })); // Limit JSON body size
+  app.use(express.urlencoded({ limit: '2mb', extended: true })); // Limit URL-encoded body size
+  
+  // Apply Helmet security headers middleware
+  // Configure security headers to protect against common web vulnerabilities
+  app.use(helmet({
+    // Content Security Policy - Prevents XSS and code injection attacks
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"], // Only allow resources from same origin by default
+        scriptSrc: [
+          "'self'", 
+          "'unsafe-inline'", // Required for Swagger UI
+          "https://unpkg.com", // Allow Swagger UI scripts
+        ],
+        styleSrc: [
+          "'self'", 
+          "'unsafe-inline'", // Required for Swagger UI
+          "https://unpkg.com",
+          "https://fonts.googleapis.com" // Allow Google Fonts
+        ],
+        imgSrc: [
+          "'self'", 
+          "data:", // Allow data URLs for images
+          "https:" // Allow HTTPS images
+        ],
+        objectSrc: ["'none'"], // Disable object, embed, and applet elements
+        upgradeInsecureRequests: [], // Upgrade HTTP to HTTPS automatically
+      },
+    },
+    // Frame Guard - Prevents clickjacking attacks
+    frameguard: { action: 'deny' },
+    // Referrer Policy - Controls referrer information sent with requests
+    referrerPolicy: { policy: 'same-origin' },
+    // Cross-Origin Embedder Policy - Enables cross-origin isolation
+    crossOriginEmbedderPolicy: true,
+    // HTTP Strict Transport Security - Forces HTTPS connections
+    hsts: {
+      maxAge: 31536000, // 1 year in seconds
+      includeSubDomains: true, // Apply to all subdomains
+      preload: true // Include in browser preload lists
+    },
+    // Hide X-Powered-By header to reduce information disclosure
+    hidePoweredBy: true,
+    // X-Content-Type-Options - Prevents MIME type sniffing
+    noSniff: true,
+    // X-XSS-Protection - Enables XSS filtering in older browsers
+    xssFilter: true,
+  }));
+  
   app.useStaticAssets(join(__dirname, '..', 'public'));
+
 
   // Get the Category
   const categoryConfigProvider = app.get(CategoryConfigProvider);
@@ -68,25 +124,30 @@ async function bootstrap() {
       });
     }
   }
-  if (process.env.NODE_ENV === 'development') {
-    app.enableCors({
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT'],
-      preflightContinue: false,
-    });
-  } else {
-    app.enableCors({
-      // origin: [
-      //   'capacitor-electron://-',
-      //   'https://meter.giga.global/',
-      //   'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
-      //   'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
-      // ],
-      origin: '*',
-      methods: ['GET', 'POST', 'PUT'],
-      preflightContinue: false,
-    });
-  }
+
+  const corsOptions = {
+    origin: (origin, callback) => {
+      // In development, allow all origins
+      if (process.env.NODE_ENV === 'development') {
+        logger.log('[CORS] Devlopment mode - allowing all origins');
+        return callback(null, true);
+      }
+      
+      // In production, check against allowed origins
+      const allowedOrigins = process.env.ALLOWED_HOSTS?.split('|') ?? [];
+      
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
+    methods: ['GET', 'POST', 'PUT'],
+    preflightContinue: false,
+    credentials: true
+  };
+  
+  app.enableCors(corsOptions);
 
   const { httpAdapter } = app.get(HttpAdapterHost);
   app.useGlobalFilters(
@@ -108,8 +169,10 @@ async function bootstrap() {
   app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
 
+const logger = new Logger('Bootstrap');
   await app.listen(3000, () => {
-    console.log('Server started on port 3000');
+    logger.log('Server started on port 3000');
+    logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
 }
 bootstrap();
