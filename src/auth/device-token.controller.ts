@@ -27,36 +27,13 @@ export class GenerateDeviceTokenDto {
  * DTO for device token generation response
  */
 export class DeviceTokenResponseDto {
-  /**
-   * Generated encrypted token
-   */
-  token: string;
-
-  /**
-   * Token expiration timestamp
-   */
-  expiresAt: number;
-
-  /**
-   * Hashed device identifier
-   */
-  deviceId: string;
-
-  /**
-   * Success status
-   */
+  token: string; // Generated encrypted token
+  expiresAt: number; //Token expiration timestamp
+  deviceId: string; //Hashed device identifier
   success: boolean;
-
-  /**
-   * Response message
-   */
   message: string;
 }
 
-/**
- * Controller responsible for device token generation endpoints
- * Provides secure token generation for device-based authentication
- */
 @Controller('api/v1/auth')
 @UseGuards(ThrottlerGuard)
 export class DeviceTokenController {
@@ -66,12 +43,9 @@ export class DeviceTokenController {
 
   /**
    * Generates a secure token for device authentication
-   * Rate limited to prevent abuse: 10 requests per minute
-   * @param generateTokenDto - Contains device fingerprint or UUID
-   * @returns Promise containing the generated token and metadata
    */
   @Post('initialize')
-  @Public() // This endpoint should be public to allow initial token generation
+  @Public() 
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
   @HttpCode(HttpStatus.OK)
   async generateToken(
@@ -94,16 +68,15 @@ export class DeviceTokenController {
       const isValidUuid = uuidRegex.test(deviceId);
       
       if (!isValidUuid && deviceId.length < 16) {
-        this.logger.warn(`Received non-UUID device ID: ${deviceId.substring(0, 8)}...`);
         // Still allow non-UUID device IDs but log for monitoring
+        this.logger.warn(`Received non-UUID device ID: ${deviceId}...`);
       }
 
-      this.logger.log(`Generating token for device: ${deviceId.substring(0, 8)}...`);
+      this.logger.log(`Generating token for device: ${deviceId}...`);
 
       // Generate the token
       const tokenResponse: TokenGenerationResponse = await this.deviceTokenService.generateToken(deviceId);
 
-      // Return formatted response
       const response: DeviceTokenResponseDto = {
         token: tokenResponse.token,
         expiresAt: tokenResponse.expiresAt,
@@ -122,11 +95,7 @@ export class DeviceTokenController {
         throw error;
       }
 
-      // Return generic error for security
       throw new BadRequestException('Failed to generate token');
     }
   }
-
-  // Token validation endpoint removed for security reasons
-  // Token validation is handled by AuthGuard for all protected endpoints
 }

@@ -1,18 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
 
-/**
- * Interface for device token payload
- */
 export interface DeviceTokenPayload {
   deviceId: string;
   timestamp: number;
   expiresAt: number;
 }
 
-/**
- * Interface for token generation response
- */
 export interface TokenGenerationResponse {
   token: string;
   expiresAt: number;
@@ -33,8 +27,7 @@ export class DeviceTokenService {
   private readonly tokenTtlHours = 24; // Token valid for 24 hours
 
   /**
-   * Generates a secure encryption key
-   * @returns Base64 encoded 32-byte random key
+   * Generates a secure encryption key - Base64 encoded 32-byte random key
    */
   private generateEncryptionKey(): string {
     const key = randomBytes(this.keyLength);
@@ -42,8 +35,7 @@ export class DeviceTokenService {
   }
 
   /**
-   * Gets or generates the master encryption key from environment
-   * @returns Buffer containing the encryption key
+   * Gets or generates the master encryption key from environment - Buffer containing the encryption key
    */
   private getMasterKey(): Buffer {
     let masterKey = process.env.DEVICE_TOKEN_MASTER_KEY;
@@ -57,7 +49,6 @@ export class DeviceTokenService {
           'Generate one using: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"'
         );
       }
-      
       // Generate a new key if not set (for development only)
       masterKey = this.generateEncryptionKey();
       this.logger.warn(
@@ -194,7 +185,7 @@ export class DeviceTokenService {
 
   /**
    * Checks if a token string appears to be a device token
-   * Device tokens are base64 encoded and longer than typical JWT tokens
+   * Device tokens are base64 encoded and longer
    * @param token - Token string to check
    * @returns True if token appears to be a device token
    */
@@ -219,7 +210,7 @@ export class DeviceTokenService {
    * Validates a device token against a specific device ID
    * @param token - Token to validate
    * @param deviceId - Expected device ID
-   * @returns Promise containing validation result
+   * @returns Promise - true / false
    */
   async validateTokenForDevice(token: string, deviceId: string): Promise<boolean> {
     try {

@@ -3,9 +3,6 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { randomBytes, createHash } from 'crypto';
 
-/**
- * Interface for nonce validation result
- */
 export interface NonceValidationResult {
   isValid: boolean;
   reason?: string;
@@ -26,7 +23,7 @@ export class NonceService {
   ) {}
 
   /**
-   * Generates a cryptographically secure nonce
+   * Generates a cryptographically secure nonce - this is only to test the nonce validation
    * @returns Base64 encoded random nonce
    */
   generateNonce(): string {
@@ -41,7 +38,7 @@ export class NonceService {
   }
 
   /**
-   * Creates a deterministic nonce hash for consistent Redis key generation
+   * Creates a deterministic nonce hash for consistent Redis key generation - this is only to test the nonce validation
    * @param nonce - Original nonce value
    * @returns SHA-256 hash of the nonce
    */

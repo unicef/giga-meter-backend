@@ -1,17 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 
-/**
- * Interface for HMAC signature validation result
- */
+
 export interface HmacValidationResult {
   isValid: boolean;
   reason?: string;
 }
 
-/**
- * Interface for HMAC signature generation parameters
- */
+
 export interface HmacSignatureParams {
   token: string;
   nonce: string;
@@ -57,8 +53,7 @@ export class HmacSignatureService {
   }
 
   /**
-   * Generates HMAC signature for the given parameters
-   * @param params - Parameters for signature generation
+   * Generates HMAC signature - this is used to verify the integrity of the device token request to test the signature
    * @returns Base64 encoded HMAC signature
    */
   generateSignature(params: HmacSignatureParams): string {
@@ -228,7 +223,7 @@ export class HmacSignatureService {
   }
 
   /**
-   * Creates a complete HMAC signature with timestamp for client use
+   * Creates a complete HMAC signature with timestamp - this is used to verify the integrity of the device token request to test the signature
    * @param params - Parameters for signature generation
    * @returns Object containing signature and timestamp
    */
