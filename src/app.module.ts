@@ -35,13 +35,16 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
+import { DeltaLakeScheduler } from './scheduler/delta-lake/delta-lake.scheduler';
 import * as redisStore from 'cache-manager-redis-store';
-
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     HttpModule,
     ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
+    ScheduleModule.forRoot(),
+
     CacheModule.register({
       isGlobal: true,
       store: redisStore,
@@ -96,6 +99,7 @@ import * as redisStore from 'cache-manager-redis-store';
       useClass: CategoryResponseInterceptor,
     },
     ConnectivityService,
+    DeltaLakeScheduler,
   ],
 })
 export class AppModule {}
