@@ -1,63 +1,12 @@
 import { Logger } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { TableClient } from '@azure/data-tables';
 
-import { randomUUID } from 'crypto';
 // inside the thread do some thread work
 import { parentPort, workerData } from 'worker_threads';
 
 const logger = new Logger('DeltaLakeWorker');
 const prisma = new PrismaClient();
-
-//
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function backgroundWorkOld(data: any) {
-  logger.log(`Worker received job: ${data.jobName}`);
-
-  // Example of using Prisma Client to access the database
-  const schoolCount = await prisma.school.count();
-
-  //insert 100 records random 7th months older in connectivity_ping_checks data. example data
-  /**timestamp	is_connected	error_message	giga_id_school	app_local_uuid	browser_id	latency	created_at
-2025-09-10 11:53:28.257+00	TRUE	NULL	5ff8f4cc-9f74-3f48-8cb1-e68e063a7c05	8e7602fd-3129-47bd-841e-9257cc4ea9d4	4b47fc23-c962-465e-b1f6-7eb8ad810917	69.2	2025-09-16 09:43:59.124696+00
- */
-  const recordsToInsert = 1000;
-  const sevenMonthsAgo = new Date();
-  sevenMonthsAgo.setMonth(sevenMonthsAgo.getMonth() - 7);
-  const dataToInsert: Prisma.connectivity_ping_checksCreateManyInput[] =
-    [] as any;
-
-  for (let i = 0; i < recordsToInsert; i++) {
-    const randomDate = new Date(
-      sevenMonthsAgo.getTime() +
-        Math.random() * (new Date().getTime() - sevenMonthsAgo.getTime()),
-    );
-    dataToInsert.push({
-      timestamp: randomDate,
-      isConnected: true,
-      errorMessage: null,
-      giga_id_school: '5ff8f4cc-9f74-3f48-8cb1-e68e063a7c05', // Example giga_id_school
-      app_local_uuid: randomUUID(), // Generate a unique UUID for each record
-      latency: parseFloat((Math.random() * 100).toFixed(2)), // Random latency
-      created_at: new Date(),
-      browserId: '4b47fc23-c962-465e-b1f6-7ebad810917', // Example browserId
-    });
-  }
-  await prisma.connectivity_ping_checks.createMany({
-    data: dataToInsert,
-  });
-  logger.log(`Inserted ${recordsToInsert} random connectivity ping checks.`);
-
-  logger.log(`Found ${schoolCount} schools in the database.`);
-
-  const result = {
-    status: 'completed',
-    data: `Processed ${
-      data.jobName
-    } at ${new Date().toISOString()}. School count: ${schoolCount}`,
-  };
-  return result;
-}
 
 async function backgroundWork(data: any) {
   logger.log(`Worker received job: ${data?.jobName}`);
@@ -124,8 +73,16 @@ async function backgroundWork(data: any) {
       );
 
       const successfullySaved: number[] = result.subResponses
-        .filter((el) => el.status <= 400)
+        .filter((el) => el.status < 400)
         .map((el) => parseInt(el.rowKey));
+      const errorResponsesSaved: number[] = result.subResponses
+        .filter((el) => el.status > 400)
+        .map((el) => parseInt(el.rowKey));
+      if (errorResponsesSaved.length > 0) {
+        logger.error(
+          `Error saving some records to Azure Table Storage: ${errorResponsesSaved.join(',')}`,
+        );
+      }
       if (successfullySaved.length > 0) {
         const deletedRecords = await prisma.connectivity_ping_checks.deleteMany(
           {
