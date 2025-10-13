@@ -9,7 +9,7 @@ export class DeltaLakeScheduler {
   private readonly logger = new Logger(DeltaLakeScheduler.name);
 
   // This Cron job will run executing of application.
-  @Cron(CronExpression.EVERY_10_HOURS)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   handleCron() {
     this.logger.log(
       'Scheduled job triggered. Offloading work to worker thread.',
@@ -25,21 +25,26 @@ export class DeltaLakeScheduler {
       const worker = new Worker(workerPath, {
         workerData: { jobName: 'Scheduled Heavy Calculation' },
       });
-
-      // Listen for messages/results from the worker thread
+      const terminateTimeout = setTimeout(
+        () => {
+          worker.terminate();
+        },
+        1000 * 60 * 60, // 1hour wait
+      );
       worker.on('message', (result) => {
+        clearTimeout(terminateTimeout);
         this.logger.log(
           'Worker task complete. Result: ' + JSON.stringify(result),
         );
       });
 
-      // Listen for errors from the worker thread
       worker.on('error', (err) => {
+        clearTimeout(terminateTimeout);
         this.logger.error('Worker error:', err);
       });
 
-      // Listen for the worker thread to exit
       worker.on('exit', (code) => {
+        clearTimeout(terminateTimeout);
         if (code !== 0) {
           this.logger.error(`Worker stopped with exit code ${code}`);
         }

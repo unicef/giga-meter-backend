@@ -77,7 +77,7 @@ async function backgroundWork(data: any) {
       const errorResponsesSaved: number[] = result.subResponses
         .filter((el) => el.status > 400)
         .map((el) => parseInt(el.rowKey));
-      if (errorResponsesSaved.length > 0) {
+      if (result.status > 400 || errorResponsesSaved.length > 0) {
         logger.error(
           `Error saving some records to Azure Table Storage: ${errorResponsesSaved.join(',')}`,
         );
