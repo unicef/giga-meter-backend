@@ -58,7 +58,6 @@ async function backgroundWork(data: any) {
         ...record,
       };
 
-      // Clean up any properties that aren't part of the final entity (like the original 'id')
       delete entity.id;
 
       // 2. Create the TableTransactionAction object
@@ -118,7 +117,6 @@ async function backgroundWork(data: any) {
     logger.error('Error in DeltaLakeWorker:', error);
     parentPort.postMessage({ status: 'failed', error: error.message });
   } finally {
-    // Ensure the Prisma Client disconnects when the worker is finished.
     await prisma.$disconnect();
   }
 })();
