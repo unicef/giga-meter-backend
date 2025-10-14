@@ -35,7 +35,9 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
+import { DeltaLakeScheduler } from './scheduler/delta-lake/delta-lake.scheduler';
 import * as redisStore from 'cache-manager-redis-store';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
 
@@ -43,6 +45,8 @@ import { DeviceTokenService } from './auth/device-token.service';
   imports: [
     HttpModule,
     ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
+    ScheduleModule.forRoot(),
+
     CacheModule.register({
       isGlobal: true,
       store: redisStore,
@@ -99,6 +103,7 @@ import { DeviceTokenService } from './auth/device-token.service';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    DeltaLakeScheduler,
   ],
 })
 export class AppModule {}
