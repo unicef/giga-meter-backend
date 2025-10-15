@@ -7,8 +7,8 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class GeolocationUtility {
   // Distance and accuracy thresholds in meters
-  private readonly DISTANCE_THRESHOLD = 4000; // 4km
-  private readonly ACCURACY_THRESHOLD = 500; // 500 meter
+  private readonly DISTANCE_THRESHOLD = parseInt(process.env.DISTANCE_THRESHOLD || '4000', 10); // 4km
+  private readonly ACCURACY_THRESHOLD = parseInt(process.env.ACCURACY_THRESHOLD || '500', 10); // 500 meters
 
   constructor(private prisma: PrismaService) {}
 
