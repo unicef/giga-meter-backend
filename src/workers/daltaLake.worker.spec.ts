@@ -18,13 +18,20 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn(() => mockPrisma),
 }));
 
-const mockTableClient = {
-  createTable: jest.fn().mockResolvedValue(undefined),
-  submitTransaction: jest.fn(),
+const mockBlockBlobClient = {
+  upload: jest.fn().mockResolvedValue({}),
 };
-jest.mock('@azure/data-tables', () => ({
-  TableClient: {
-    fromConnectionString: jest.fn(() => mockTableClient),
+const mockContainerClient = {
+  createIfNotExists: jest.fn().mockResolvedValue(undefined),
+  getBlockBlobClient: jest.fn(() => mockBlockBlobClient),
+};
+const mockBlobServiceClient = {
+  getContainerClient: jest.fn(() => mockContainerClient),
+};
+
+jest.mock('@azure/storage-blob', () => ({
+  BlobServiceClient: {
+    fromConnectionString: jest.fn(() => mockBlobServiceClient),
   },
 }));
 
@@ -48,7 +55,7 @@ describe('DeltaLakeWorker', () => {
     process.env = {
       ...originalEnv,
       AZURE_STORAGE_CONNECTION_STRING: 'test-connection-string',
-      AZURE_TABLE_NAME: 'test-table',
+      AZURE_BLOB_CONTAINER_NAME: 'test-container',
     };
   });
 
@@ -66,7 +73,7 @@ describe('DeltaLakeWorker', () => {
 
   it('should throw an error if environment variables are not set', async () => {
     delete process.env.AZURE_STORAGE_CONNECTION_STRING;
-    delete process.env.AZURE_TABLE_NAME;
+    delete process.env.AZURE_BLOB_CONTAINER_NAME;
 
     await runWorker();
 
@@ -76,7 +83,8 @@ describe('DeltaLakeWorker', () => {
     );
     expect(mockParentPort.postMessage).toHaveBeenCalledWith({
       status: 'failed',
-      error: 'Azure Storage connection string or table name is not configured.',
+      error:
+        'Azure Storage connection string or blob container name is not configured.',
     });
     expect(mockPrisma.$disconnect).toHaveBeenCalled();
   });
@@ -86,11 +94,11 @@ describe('DeltaLakeWorker', () => {
 
     await runWorker();
 
-    expect(mockTableClient.createTable).toHaveBeenCalled();
+    expect(mockContainerClient.createIfNotExists).toHaveBeenCalled();
     expect(mockPrisma.connectivity_ping_checks.findMany).toHaveBeenCalledTimes(
       1,
     );
-    expect(mockTableClient.submitTransaction).not.toHaveBeenCalled();
+    expect(mockBlockBlobClient.upload).not.toHaveBeenCalled();
     expect(
       mockPrisma.connectivity_ping_checks.deleteMany,
     ).not.toHaveBeenCalled();
@@ -102,7 +110,7 @@ describe('DeltaLakeWorker', () => {
     expect(mockPrisma.$disconnect).toHaveBeenCalled();
   });
 
-  it('should move records from Prisma to Azure Table Storage and delete them', async () => {
+  it('should move records from Prisma to Azure Blob Storage and delete them', async () => {
     const records = [
       { id: 1, data: 'record1' },
       { id: 2, data: 'record2' },
@@ -111,24 +119,21 @@ describe('DeltaLakeWorker', () => {
       .mockResolvedValueOnce(records)
       .mockResolvedValueOnce([]); // For the second loop iteration
 
-    mockTableClient.submitTransaction.mockResolvedValue({
-      subResponses: [
-        { status: 204, rowKey: '1' },
-        { status: 204, rowKey: '2' },
-      ],
-    });
-
     mockPrisma.connectivity_ping_checks.deleteMany.mockResolvedValue({
       count: 2,
     });
 
     await runWorker();
 
-    expect(mockTableClient.createTable).toHaveBeenCalled();
+    expect(mockContainerClient.createIfNotExists).toHaveBeenCalled();
     expect(mockPrisma.connectivity_ping_checks.findMany).toHaveBeenCalledTimes(
       2,
     );
-    expect(mockTableClient.submitTransaction).toHaveBeenCalledTimes(1);
+    expect(mockBlockBlobClient.upload).toHaveBeenCalledTimes(1);
+    expect(mockBlockBlobClient.upload).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      expect.any(Number),
+    );
     expect(mockPrisma.connectivity_ping_checks.deleteMany).toHaveBeenCalledWith(
       {
         where: { id: { in: [1, 2] } },
@@ -146,14 +151,14 @@ describe('DeltaLakeWorker', () => {
     const records = [{ id: 1, data: 'record1' }];
     mockPrisma.connectivity_ping_checks.findMany.mockResolvedValueOnce(records);
 
-    const submissionError = new Error('Submission failed');
-    mockTableClient.submitTransaction.mockRejectedValue(submissionError);
+    const uploadError = new Error('Upload failed');
+    mockBlockBlobClient.upload.mockRejectedValue(uploadError);
 
     await runWorker();
 
     expect(mockLogger.error).toHaveBeenCalledWith(
-      'Error uploading to Azure Table Storage :',
-      submissionError,
+      expect.stringContaining('Error uploading blob'),
+      uploadError,
     );
     expect(
       mockPrisma.connectivity_ping_checks.deleteMany,

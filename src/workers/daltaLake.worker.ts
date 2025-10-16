@@ -1,8 +1,11 @@
 import { Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { TableClient } from '@azure/data-tables';
-
+import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
+import { ParquetSchema, ParquetWriter } from 'parquetjs';
 // inside the thread do some thread work
+import { promises as fs } from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { parentPort, workerData } from 'worker_threads';
 
 const logger = new Logger('DeltaLakeWorker');
@@ -12,101 +15,124 @@ async function backgroundWork(data: any) {
   logger.log(`Worker received job: ${data?.jobName}`);
 
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
-  const tableName = process.env.AZURE_TABLE_NAME;
+  const containerName = process.env.AZURE_TABLE_NAME;
 
-  if (!connectionString || !tableName) {
+  if (!connectionString || !containerName) {
     throw new Error(
-      'Azure Storage connection string or table name is not configured.',
+      'Azure Storage connection string or blob container name is not configured.',
     );
   }
+  try {
+    const blobServiceClient = new BlobServiceClient(connectionString);
+    const accountInfo = await blobServiceClient.getAccountInfo();
+    console.log('✅ Connected successfully');
+    console.log(accountInfo);
 
-  const tableClient = TableClient.fromConnectionString(
-    connectionString,
-    tableName,
-  );
-  // Create the table if it doesn't exist
-  await tableClient.createTable();
+    const containerClient = blobServiceClient.getContainerClient(containerName);
 
-  const BATCH_SIZE = 1000;
-  let hasMoreRecords = true;
-  let totalRecordsMoved = 0;
+    await containerClient.createIfNotExists();
 
-  while (hasMoreRecords) {
-    const recordsToMove = await prisma.connectivity_ping_checks.findMany({
-      take: BATCH_SIZE,
-      where: {
-        timestamp: {
-          lt: new Date(new Date().setMonth(new Date().getMonth() - 3)),
-        },
-      },
-      orderBy: {
-        id: 'asc',
-      },
-    });
+    const BATCH_SIZE = 100;
+    let hasMoreRecords = true;
+    let totalRecordsMoved = 0;
 
-    if (recordsToMove.length === 0) {
-      hasMoreRecords = false;
-      break;
-    }
-
-    const transactions: any[] = [];
-    for (const record of JSON.parse(JSON.stringify(recordsToMove))) {
-      const entity = {
-        partitionKey: 'connectivityPing', // Set the PartitionKey
-        rowKey: record.id.toString(), // Set the RowKey
-        // Spread the rest of the properties from the record
-        ...record,
-      };
-
-      delete entity.id;
-
-      // 2. Create the TableTransactionAction object
-      transactions.push(['create', entity]);
-    }
-
-    try {
-      const result = await tableClient.submitTransaction(transactions);
-
-      logger.log(
-        `Successfully backed up ${recordsToMove.length} records. Deleting from source.`,
-      );
-
-      const successfullySaved: number[] = result.subResponses
-        .filter((el) => el.status < 400)
-        .map((el) => parseInt(el.rowKey));
-      const errorResponsesSaved: number[] = result.subResponses
-        .filter((el) => el.status > 400)
-        .map((el) => parseInt(el.rowKey));
-      if (result.status > 400 || errorResponsesSaved.length > 0) {
-        logger.error(
-          `Error saving some records to Azure Table Storage: ${errorResponsesSaved.join(',')}`,
-        );
-      }
-      if (successfullySaved.length > 0) {
-        const deletedRecords = await prisma.connectivity_ping_checks.deleteMany(
-          {
-            where: {
-              id: {
-                in: successfullySaved,
-              },
-            },
+    while (hasMoreRecords) {
+      const recordsToMove = await prisma.connectivity_ping_checks.findMany({
+        take: BATCH_SIZE,
+        where: {
+          timestamp: {
+            lt: new Date(new Date().setMonth(new Date().getMonth() - 3)),
           },
-        );
-        totalRecordsMoved += deletedRecords.count;
+        },
+        orderBy: {
+          id: 'asc',
+        },
+      });
+
+      if (recordsToMove.length === 0) {
+        hasMoreRecords = false;
+        break;
       }
-    } catch (error) {
-      logger.error('Error uploading to Azure Table Storage :', error);
-      break;
+
+      const blobName = `connectivity-pings-backup-${new Date().toISOString()}-${Math.random()}.parquet`;
+      const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+      // Define the Parquet schema based on your Prisma model
+      const schema = new ParquetSchema({
+        id: { type: 'INT64' },
+        timestamp: { type: 'TIMESTAMP_MILLIS' },
+        isConnected: { type: 'BOOLEAN' },
+        errorMessage: { type: 'UTF8', optional: true },
+        giga_id_school: { type: 'UTF8', optional: true },
+        app_local_uuid: { type: 'UTF8', optional: true },
+        browserId: { type: 'UTF8', optional: true },
+        latency: { type: 'INT32', optional: true },
+        created_at: { type: 'TIMESTAMP_MILLIS' },
+      });
+
+      const tempFilePath = path.join(
+        os.tmpdir(),
+        `backup-${Date.now()}.parquet`,
+      );
+      let data: Buffer;
+
+      try {
+        // Create a Parquet file on the local filesystem
+        const writer = await ParquetWriter.openFile(schema, tempFilePath);
+        for (const record of recordsToMove) {
+          await writer.appendRow(record);
+        }
+        await writer.close();
+
+        // Read the temporary file into a buffer for upload
+        data = await fs.readFile(tempFilePath);
+
+        const uploadResponse = await blockBlobClient.upload(data, data.length);
+
+        if (!uploadResponse?.errorCode) {
+          logger.log(
+            `Successfully backed up ${recordsToMove.length} records to blob: ${blobName}. Deleting from source.`,
+          );
+
+          const idsToDelete = recordsToMove.map((r) => r.id);
+
+          if (idsToDelete.length > 0) {
+            const deletedRecords =
+              await prisma.connectivity_ping_checks.deleteMany({
+                where: {
+                  id: { in: idsToDelete },
+                },
+              });
+            totalRecordsMoved += deletedRecords.count;
+          }
+        }
+      } catch (error) {
+        logger.error(
+          `Error uploading blob ${blobName} to Azure Blob Storage:`,
+          error,
+        );
+        break;
+      } finally {
+        // Ensure the temporary file is deleted
+        await fs
+          .unlink(tempFilePath)
+          .catch((err) =>
+            logger.error(`Failed to delete temp file: ${tempFilePath}`, err),
+          );
+      }
     }
+
+    logger.log(`Total records moved: ${totalRecordsMoved}`);
+
+    const result = {
+      status: 'completed',
+      data: `Total records moved: ${totalRecordsMoved}`,
+    };
+    return result;
+  } catch (error) {
+    logger.error('Error in DeltaLakeWorker:', error);
+    throw error;
   }
-
-  logger.log(`Total records moved: ${totalRecordsMoved}`);
-
-  const result = {
-    status: 'completed',
-    data: `Total records moved: ${totalRecordsMoved}`,
-  };
-  return result;
 }
 
 (async () => {
