@@ -1,12 +1,17 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryConfigDto, UpdateCategoryConfigDto } from './category-config.dto';
 import { CategoryConfig } from '@prisma/client';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 
 @Injectable()
 export class CategoryConfigService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => CategoryConfigProvider))
+    private categoryConfigProvider: CategoryConfigProvider,
+  ) {}
 
   async findAll(): Promise<CategoryConfig[]> {
     try {
@@ -159,6 +164,20 @@ export class CategoryConfigService {
       }
       console.error('Error deleting category config:', error.message);
       throw new BadRequestException(`Failed to delete category config: ${error.message}`);
+    }
+  }
+
+  async getAllowedCountries(): Promise<{ category: string; allowedCountries: string[] }[]> {
+    try {
+      const configs = await this.categoryConfigProvider.getAllCategoryConfigs();
+      
+      return configs.map(config => ({
+        category: config.name,
+        allowedCountries: config.allowedCountries || []
+      }));
+    } catch (error) {
+      console.error('Error fetching allowed countries:', error.message);
+      throw new BadRequestException('Failed to fetch allowed countries');
     }
   }
 

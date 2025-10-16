@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { CategoryConfigService } from '../category-config/category-config.service';
 import { CATEGORIES, DEFAULT_CATEGORY, CATEGORY_CONFIG, CategoryConfigType} from './category.config';
 
@@ -13,7 +13,10 @@ export class CategoryConfigProvider implements OnModuleInit {
   private categoryConfigs: CategoryConfigType[] = [];
   private isInitialized = false;
 
-  constructor(private categoryConfigService: CategoryConfigService) {}
+  constructor(
+    @Inject(forwardRef(() => CategoryConfigService))
+    private categoryConfigService: CategoryConfigService,
+  ) {}
 
   async onModuleInit() {
     await this.initialize();
