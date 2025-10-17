@@ -14,7 +14,9 @@ import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
+import { MeasurementV2Controller } from './measurement/measurement.v2.controller';
 import { MeasurementService } from './measurement/measurement.service';
+import { MeasurementServiceV2 } from './measurement/measurement.service.v2';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
@@ -67,6 +69,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     SchoolMasterController,
     CountryController,
     MeasurementController,
+    MeasurementV2Controller,
     AdminController,
     DataFixController,
     MetricsController,
@@ -82,6 +85,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     SchoolMasterService,
     CountryService,
     MeasurementService,
+    MeasurementServiceV2,
     AdminService,
     MetricsService,
     ConnectivityService,
