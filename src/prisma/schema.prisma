@@ -379,3 +379,19 @@ model CategoryConfig {
 
   @@map("category_config")
 }
+
+model ConnectivityPingChecksDailyAggr {
+  id                   Int      @id @default(autoincrement())
+  timestamp_date       DateTime
+  giga_id_school       String
+  browser_id           String?
+  is_connected_true    Int
+  is_connected_all     Int
+  uptime               Float
+  unloaded_latency_avg Float?
+  created_at           DateTime @default(now())
+
+  @@index([giga_id_school, timestamp_date])
+  @@index([giga_id_school, browser_id, timestamp_date])
+  @@map("connectivity_ping_checks_daily_aggr")
+}
