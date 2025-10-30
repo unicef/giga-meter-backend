@@ -26,7 +26,7 @@ export class PingAggregationController {
     private readonly pingAggregationService: PingAggregationService,
   ) {}
 
-  // @Get('sync')
+  @Get('sync')
   async aggregateDailyPingData(
     @Query('syncDate', {
       transform(value) {
