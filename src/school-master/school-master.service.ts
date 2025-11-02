@@ -30,7 +30,20 @@ export class SchoolMasterService {
     };
 
     const school = await this.prisma.school.findFirstOrThrow(query);
-    return plainToInstance(FeatureFlagDto, school?.feature_flags);
+    let flags = plainToInstance(FeatureFlagDto, school?.feature_flags);
+
+    // If flags is null/undefined, initialize with default pingService: true
+    if (!flags) {
+      flags = new FeatureFlagDto();
+      flags.pingService = true;
+    } else {
+      // Ensure pingService defaults to true unless explicitly set to false
+      if (flags.pingService !== false) {
+        flags.pingService = true;
+      }
+    }
+
+    return flags;
   }
 
   async setFlagsByGigaId(

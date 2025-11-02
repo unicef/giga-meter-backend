@@ -39,7 +39,7 @@ export class SchoolService {
       }
       filter.country_code = { in: [dbCountry.code] };
     }
-    
+
     const schools = this.prisma.dailycheckapp_school.findMany({
       skip,
       take,
@@ -117,6 +117,148 @@ export class SchoolService {
     return school.user_id;
   }
 
+  async checkExistingInstallation(device_hardware_id: string): Promise<{
+    exists: boolean;
+    user_id?: string;
+    school_id?: string;
+    giga_id_school?: string;
+    mac_address?: string;
+    os?: string;
+    ip_address?: string;
+    app_version?: string;
+    country_code?: string;
+    source?: string;
+    schoolInfo?: any;
+  }> {
+    // First check in dailycheckapp_school table
+    const school = await this.prisma.dailycheckapp_school.findFirst({
+      where: { device_hardware_id },
+    });
+
+    if (school) {
+      // Fetch school information from the school table
+      let schoolInfo = null;
+      let externalSchoolId = null;
+      if (school.giga_id_school) {
+        const schoolData = await this.prisma.school.findFirst({
+          where: {
+            giga_id_school: school.giga_id_school,
+            deleted: null,
+          },
+        });
+
+        // Format school data to DTO structure
+        if (schoolData) {
+          externalSchoolId = schoolData.external_id;
+          schoolInfo = {
+            id: parseInt(schoolData.id.toString()),
+            school_id: schoolData.external_id,
+            code: '',
+            name: schoolData.name,
+            country_id: schoolData.country_id,
+            country: schoolData.country_code,
+            location_id: schoolData.location_id,
+            address: schoolData.address,
+            email: schoolData.email,
+            postal_code: schoolData.postal_code,
+            education_level: schoolData.education_level,
+            environment: schoolData.environment,
+            admin_1_name: schoolData.admin_1_name,
+            admin_2_name: schoolData.admin_2_name,
+            admin_3_name: schoolData.admin_3_name,
+            admin_4_name: schoolData.admin_4_name,
+            giga_id_school: schoolData.giga_id_school,
+          };
+        }
+      }
+
+      return {
+        exists: true,
+        user_id: school.user_id,
+        school_id: externalSchoolId,
+        giga_id_school: school.giga_id_school,
+        mac_address: school.mac_address,
+        os: school.os,
+        ip_address: school.ip_address,
+        app_version: school.app_version,
+        country_code: school.country_code,
+        source: 'dailycheckapp_school',
+        schoolInfo: schoolInfo,
+      };
+    }
+
+    // If not found, check in measurements table
+    const measurement = await this.prisma.measurements.findFirst({
+      where: { device_hardware_id },
+      orderBy: { timestamp: 'desc' }, // Get the most recent measurement
+    });
+
+    if (measurement && measurement.browser_id) {
+      // Try to find a school with matching user_id (browser_id maps to user_id)
+      const schoolByBrowserId =
+        await this.prisma.dailycheckapp_school.findFirst({
+          where: { user_id: measurement.browser_id },
+        });
+
+      if (schoolByBrowserId) {
+        // Fetch school information from the school table
+        let schoolInfo = null;
+        let externalSchoolId = null;
+        if (schoolByBrowserId.giga_id_school) {
+          const schoolData = await this.prisma.school.findFirst({
+            where: {
+              giga_id_school: schoolByBrowserId.giga_id_school,
+              deleted: null,
+            },
+          });
+
+          // Format school data to DTO structure
+          if (schoolData) {
+            externalSchoolId = schoolData.external_id;
+            schoolInfo = {
+              id: parseInt(schoolData.id.toString()),
+              school_id: schoolData.external_id,
+              code: '',
+              name: schoolData.name,
+              country_id: schoolData.country_id,
+              country: schoolData.country_code,
+              location_id: schoolData.location_id,
+              address: schoolData.address,
+              email: schoolData.email,
+              postal_code: schoolData.postal_code,
+              education_level: schoolData.education_level,
+              environment: schoolData.environment,
+              admin_1_name: schoolData.admin_1_name,
+              admin_2_name: schoolData.admin_2_name,
+              admin_3_name: schoolData.admin_3_name,
+              admin_4_name: schoolData.admin_4_name,
+              giga_id_school: schoolData.giga_id_school,
+            };
+          }
+        }
+
+        return {
+          exists: true,
+          user_id: schoolByBrowserId.user_id,
+          school_id: externalSchoolId,
+          giga_id_school: schoolByBrowserId.giga_id_school,
+          mac_address: schoolByBrowserId.mac_address,
+          os: schoolByBrowserId.os,
+          ip_address: schoolByBrowserId.ip_address,
+          app_version: schoolByBrowserId.app_version,
+          country_code: schoolByBrowserId.country_code,
+          source: 'measurements',
+          schoolInfo: schoolInfo,
+        };
+      }
+    }
+
+    // No installation found
+    return {
+      exists: false,
+    };
+  }
+
   private toDto(school: School): SchoolDto {
     return {
       id: school.id.toString(),
@@ -131,6 +273,7 @@ export class SchoolService {
       country_code: school.country_code,
       is_blocked: school.is_blocked,
       created_at: school.created_at,
+      device_hardware_id: school.device_hardware_id,
     };
   }
 
@@ -144,6 +287,7 @@ export class SchoolService {
       created: school.created,
       ip_address: school.ip_address,
       country_code: school.country_code,
+      device_hardware_id: school.device_hardware_id,
     };
   }
 }
