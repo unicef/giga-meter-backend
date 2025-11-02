@@ -157,6 +157,7 @@ export const mockSchoolModel = [
 export const mockFeatureFlagsDto = {
   feature_flag: true,
   feature_flag_2: false,
+  pingService: true,
 };
 
 export const mockSchoolMasterModel = {
@@ -769,6 +770,6 @@ export const mockCategoryConfigProvider = {
     allowedCountries: [],
     allowedAPIs: [],
     notAllowedAPIs: [],
-    responseFilters: {}
+    responseFilters: {},
   }),
 };

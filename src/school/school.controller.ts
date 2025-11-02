@@ -25,7 +25,11 @@ import {
   AddRecordResponseDto,
   ApiSuccessResponseDto,
 } from '../common/common.dto';
-import { CheckNotifyDto, SchoolDto } from './school.dto';
+import {
+  CheckNotifyDto,
+  CheckExistingInstallationDto,
+  SchoolDto,
+} from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
 import { DynamicResponse } from 'src/utility/decorators';
@@ -91,8 +95,9 @@ export class SchoolController {
   })
   async getSchools(
     @Query('page') page?: number,
-    @ValidateSize({ min: 1, max: 100 }) 
-    @Query('size') size?: number,
+    @ValidateSize({ min: 1, max: 100 })
+    @Query('size')
+    size?: number,
     @Query('giga_id_school') giga_id_school?: string,
     @Query('country_iso3_code') country_iso3_code?: string,
     @WriteAccess() write_access?: boolean,
@@ -175,8 +180,7 @@ export class SchoolController {
 
   @Get('id/:id')
   @ApiOperation({
-    summary:
-      'Returns the list of schools on the Giga Meter database by id',
+    summary: 'Returns the list of schools on the Giga Meter database by id',
   })
   @ApiResponse({
     status: 200,
@@ -241,7 +245,7 @@ export class SchoolController {
         'country_id is null/empty',
         HttpStatus.BAD_REQUEST,
       );
-    // TODO:// remove this logic after adding countries to non expired api keys  
+    // TODO:// remove this logic after adding countries to non expired api keys
     if (!write_access && !countries?.includes(country_id.toUpperCase())) {
       throw new HttpException(
         'not authorized to access',
@@ -256,6 +260,47 @@ export class SchoolController {
     return {
       success: true,
       data: schools,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+
+  @Get('checkExistingInstallation/:device_hardware_id')
+  @ApiOperation({
+    summary:
+      'Check if an existing installation is present for a specific device hardware id',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns whether installation exists, and if so, the user_id and giga_id_school',
+    type: CheckExistingInstallationDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiParam({
+    name: 'device_hardware_id',
+    description: 'The device hardware id to check',
+    required: true,
+    type: 'string',
+  })
+  async checkExistingInstallation(
+    @Param('device_hardware_id') device_hardware_id: string,
+  ): Promise<ApiSuccessResponseDto<CheckExistingInstallationDto>> {
+    if (!device_hardware_id || device_hardware_id.trim().length === 0)
+      throw new HttpException(
+        'device_hardware_id is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+
+    const result =
+      await this.schoolService.checkExistingInstallation(device_hardware_id);
+
+    return {
+      success: true,
+      data: result,
       timestamp: new Date().toISOString(),
       message: 'success',
     };

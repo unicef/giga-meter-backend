@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { SchoolMasterDto } from '../school-master/school-master.dto';
 
 export class SchoolDto {
   @ApiProperty()
@@ -36,6 +37,9 @@ export class SchoolDto {
 
   @ApiProperty()
   created_at: Date;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
 }
 
 export class CheckNotifyDto {
@@ -44,4 +48,39 @@ export class CheckNotifyDto {
 
   @ApiProperty()
   download_url: string;
+}
+
+export class CheckExistingInstallationDto {
+  @ApiProperty()
+  exists: boolean;
+
+  @ApiProperty({ required: false })
+  user_id?: string;
+
+  @ApiProperty({ required: false })
+  school_id?: string;
+
+  @ApiProperty({ required: false })
+  giga_id_school?: string;
+
+  @ApiProperty({ required: false })
+  mac_address?: string;
+
+  @ApiProperty({ required: false })
+  os?: string;
+
+  @ApiProperty({ required: false })
+  ip_address?: string;
+
+  @ApiProperty({ required: false })
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  source?: string; // 'dailycheckapp_school' or 'measurements'
+
+  @ApiProperty({ required: false, type: SchoolMasterDto })
+  schoolInfo?: SchoolMasterDto; // School record from the school table matched by giga_id_school
 }
