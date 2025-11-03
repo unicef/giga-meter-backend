@@ -40,10 +40,10 @@ describe('PingAggregationService', () => {
   });
 
   describe('getRawPings', () => {
-    it('should throw an error if schoolId is not provided', async () => {
-      const query = { page: 1, pageSize: 10 };
+    it('should throw an error if from and to are not provided', async () => {
+      const query = { schoolId: 'school-1', page: 1, pageSize: 10 };
       await expect(service.getRawPings(query as any)).rejects.toThrow(
-        'School ID is required',
+        'from and to both are required',
       );
     });
 
@@ -155,6 +155,8 @@ describe('PingAggregationService', () => {
         schoolId: 'school-1',
         page: 1,
         pageSize: 10,
+        from: '2025-01-01',
+        to: '2025-01-31',
       };
       const error = new Error('Test Error');
       mockPrismaService.connectivityPingChecksDailyAggr.count.mockRejectedValue(

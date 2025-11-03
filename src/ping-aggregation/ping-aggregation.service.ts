@@ -10,18 +10,16 @@ export class PingAggregationService {
   async getRawPings(query: GetRawPingsQueryDto) {
     try {
       const { schoolId, from, to, page, pageSize } = query;
-      if (!schoolId) {
-        throw new Error('School ID is required');
-      }
-      const where: Prisma.ConnectivityPingChecksDailyAggrWhereInput = {
-        giga_id_school: schoolId,
-      };
-      if (from || to)
+
+      const where: Prisma.ConnectivityPingChecksDailyAggrWhereInput = {};
+      if (schoolId) where.giga_id_school = schoolId;
+
+      if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime()))
         where.timestamp_date = {
           ...(from && { gte: new Date(from) }),
           ...(to && { lte: new Date(to) }),
         };
-
+      else throw new Error('from and to both are required');
       const total = await this.prisma.connectivityPingChecksDailyAggr.count({
         where,
       });
@@ -66,6 +64,9 @@ export class PingAggregationService {
        SUM(1) as isConnectedAllSum, AVG(latency) AS latencyAvg 
        FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} GROUP BY giga_id_school, device_id order by giga_id_school asc`;
 
+      // To ensure idempotency, we check for and delete any existing aggregated data
+      // for the target date and the specific school/device combinations before inserting
+      // the new aggregations. This prevents duplicate records if the job is run multiple times.
       const existingData =
         await this.prisma.connectivityPingChecksDailyAggr.findMany({
           where: {

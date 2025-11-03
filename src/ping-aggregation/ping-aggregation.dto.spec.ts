@@ -1,7 +1,11 @@
-import { PingAggregationDto } from './ping-aggregation.dto';
+import {
+  GetRawPingsQueryDto,
+  GetRawPingsResponseDto,
+} from './ping-aggregation.dto';
 
 describe('PingAggregationDto', () => {
   it('should be defined', () => {
-    expect(new PingAggregationDto()).toBeDefined();
+    expect(new GetRawPingsQueryDto()).toBeDefined();
+    expect(new GetRawPingsResponseDto()).toBeDefined();
   });
 });

@@ -15,8 +15,10 @@ import {
 import {
   GetRawPingsQueryDto,
   GetRawPingsResponseDto,
+  SyncQueryDto,
 } from './ping-aggregation.dto';
 import { PingAggregationService } from './ping-aggregation.service';
+import { getDateFromString } from 'src/utility/utility';
 
 @ApiTags('Ping Aggregation')
 @Controller('api/v1/ping-aggregation')
@@ -27,24 +29,32 @@ export class PingAggregationController {
   ) {}
 
   @Get('sync')
-  async aggregateDailyPingData(
-    @Query('syncDate', {
-      transform(value) {
-        try {
-          const date = new Date(value);
-          if (isNaN(date.getTime())) {
-            return undefined;
-          }
-          return date;
-        } catch (error) {
-          return undefined;
-        }
+  @ApiOperation({
+    summary: 'Trigger daily ping data aggregation',
+    description:
+      'Manually triggers the aggregation of daily ping data. Can specify a date, otherwise defaults to the previous day.',
+  })
+  @ApiOkResponse({
+    description: 'Daily ping data aggregation initiated successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
       },
-    })
-    syncDate?: Date | undefined,
-  ) {
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request. Invalid input or aggregation failed.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error. An unexpected error occurred.',
+  })
+  async aggregateDailyPingData(@Query() query: SyncQueryDto) {
     try {
-      await this.pingAggregationService.aggregateDailyPingData(syncDate);
+      const date = getDateFromString(query?.syncDate);
+      await this.pingAggregationService.aggregateDailyPingData(date);
       return { success: true };
     } catch (error) {
       this.logger.error(error);

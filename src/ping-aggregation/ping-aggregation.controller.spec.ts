@@ -39,7 +39,9 @@ describe('PingAggregationController', () => {
 
   describe('aggregateDailyPingData', () => {
     it('should initiate daily ping data aggregation and return a message', async () => {
-      const result = await controller.aggregateDailyPingData();
+      const result = await controller.aggregateDailyPingData({
+        syncDate: '2025-01-01',
+      });
       expect(service.aggregateDailyPingData).toHaveBeenCalled();
       expect(result.success).toBe(true);
     });
