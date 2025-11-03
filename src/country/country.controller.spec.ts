@@ -7,8 +7,14 @@ import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { APP_GUARD } from '@nestjs/core';
-import { mockCategoryConfigProvider, mockCountryDto } from '../common/mock-objects';
+import {
+  mockCategoryConfigProvider,
+  mockCountryDto,
+} from '../common/mock-objects';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import { DeviceTokenService } from '../auth/device-token.service';
+import { NonceService } from '../auth/nonce.service';
+import { HmacSignatureService } from '../auth/hmac-signature.service';
 
 describe('CountryController', () => {
   let controller: CountryController;
@@ -24,6 +30,19 @@ describe('CountryController', () => {
       set: jest.fn(),
       del: jest.fn(),
       reset: jest.fn(),
+    };
+
+    const mockDeviceTokenService = {
+      validateToken: jest.fn(),
+    };
+
+    const mockNonceService = {
+      isValidNonceFormat: jest.fn(),
+      validateAndConsumeNonce: jest.fn(),
+    };
+
+    const mockHmacSignatureService = {
+      validateRequestIntegrity: jest.fn(),
     };
 
     const app: TestingModule = await Test.createTestingModule({
@@ -47,6 +66,9 @@ describe('CountryController', () => {
           provide: CategoryConfigProvider,
           useValue: mockCategoryConfigProvider,
         },
+        { provide: DeviceTokenService, useValue: mockDeviceTokenService },
+        { provide: NonceService, useValue: mockNonceService },
+        { provide: HmacSignatureService, useValue: mockHmacSignatureService },
       ],
       imports: [
         HttpModule,

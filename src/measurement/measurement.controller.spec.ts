@@ -9,6 +9,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import { DeviceTokenService } from '../auth/device-token.service';
+import { NonceService } from '../auth/nonce.service';
+import { HmacSignatureService } from '../auth/hmac-signature.service';
 import {
   mockAddMeasurementDto,
   mockCategoryConfigProvider,
@@ -40,6 +43,19 @@ describe('MeasurementController', () => {
       reset: jest.fn(),
     };
 
+    const mockDeviceTokenService = {
+      validateToken: jest.fn(),
+    };
+
+    const mockNonceService = {
+      isValidNonceFormat: jest.fn(),
+      validateAndConsumeNonce: jest.fn(),
+    };
+
+    const mockHmacSignatureService = {
+      validateRequestIntegrity: jest.fn(),
+    };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [MeasurementController],
       providers: [
@@ -62,6 +78,9 @@ describe('MeasurementController', () => {
           provide: CategoryConfigProvider,
           useValue: mockCategoryConfigProvider,
         },
+        { provide: DeviceTokenService, useValue: mockDeviceTokenService },
+        { provide: NonceService, useValue: mockNonceService },
+        { provide: HmacSignatureService, useValue: mockHmacSignatureService },
       ],
       imports: [
         HttpModule,
