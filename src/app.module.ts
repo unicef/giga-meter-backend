@@ -38,6 +38,10 @@ import { GeolocationModule } from './geolocation/geolocation.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
 
 @Module({
   imports: [
@@ -55,6 +59,7 @@ import { DeviceTokenService } from './auth/device-token.service';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
     AuthModule,
     GeolocationModule,
@@ -72,6 +77,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     MetricsController,
     ConnectivityController,
     DeviceTokenController,
+    PingAggregationController,
   ],
   providers: [
     AppService,
@@ -87,6 +93,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     ConnectivityService,
     CategoryConfigProvider,
     DeviceTokenService,
+    PingAggregationService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -99,6 +106,7 @@ import { DeviceTokenService } from './auth/device-token.service';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    SchedulerService,
   ],
 })
 export class AppModule {}
