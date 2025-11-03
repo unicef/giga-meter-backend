@@ -4,13 +4,19 @@ import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockCategoryConfigProvider, mockSchoolDto } from '../common/mock-objects';
+import {
+  mockCategoryConfigProvider,
+  mockSchoolDto,
+} from '../common/mock-objects';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import { DeviceTokenService } from '../auth/device-token.service';
+import { NonceService } from '../auth/nonce.service';
+import { HmacSignatureService } from '../auth/hmac-signature.service';
 
 describe('SchoolController', () => {
   let controller: SchoolController;
@@ -39,6 +45,19 @@ describe('SchoolController', () => {
       reset: jest.fn(),
     };
 
+    const mockDeviceTokenService = {
+      validateToken: jest.fn(),
+    };
+
+    const mockNonceService = {
+      isValidNonceFormat: jest.fn(),
+      validateAndConsumeNonce: jest.fn(),
+    };
+
+    const mockHmacSignatureService = {
+      validateRequestIntegrity: jest.fn(),
+    };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [SchoolController],
       providers: [
@@ -62,6 +81,9 @@ describe('SchoolController', () => {
           provide: CategoryConfigProvider,
           useValue: mockCategoryConfigProvider,
         },
+        { provide: DeviceTokenService, useValue: mockDeviceTokenService },
+        { provide: NonceService, useValue: mockNonceService },
+        { provide: HmacSignatureService, useValue: mockHmacSignatureService },
       ],
       imports: [
         HttpModule,

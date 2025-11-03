@@ -266,7 +266,6 @@ export const mockFlaggedSchoolModel = [
   },
 ];
 
-
 export const mockMeasurementDto = (showAllMeasurement: boolean) => {
   const items = [
     {
@@ -586,6 +585,7 @@ export const mockMeasurementModel = [
     country_code: 'KZ',
     ip_address: null,
     app_version: null,
+    ndt_version: 'ndt5',
     source: 'MLab',
     created_at: null,
     detected_latitude: null,
@@ -616,6 +616,7 @@ export const mockMeasurementModel = [
     country_code: 'KZ',
     ip_address: '0',
     app_version: '1.0.0',
+    ndt_version: 'ndt7',
     source: 'DailyCheckApp',
     created_at: null,
     detected_latitude: null,
@@ -646,6 +647,7 @@ export const mockMeasurementModel = [
     country_code: 'KZ',
     ip_address: '0',
     app_version: '1.0.0',
+    ndt_version: 'ndt7',
     source: 'DailyCheckApp',
     created_at: null,
     detected_latitude: null,
@@ -679,6 +681,7 @@ export const mockMeasurementFailedModel = [
     country_code: 'KZ',
     ip_address: null,
     app_version: null,
+    ndt_version: 'ndt5',
     source: 'MLab',
     created_at: null,
     reason: 'PCDC school does not exist',
@@ -710,6 +713,7 @@ export const mockMeasurementFailedModel = [
     country_code: 'KZ',
     ip_address: '0',
     app_version: '1.0.0',
+    ndt_version: 'ndt7',
     source: 'DailyCheckApp',
     created_at: null,
     reason: 'Wrong country code',
@@ -741,6 +745,7 @@ export const mockMeasurementFailedModel = [
     country_code: 'KZ',
     ip_address: '0',
     app_version: '1.0.0',
+    ndt_version: 'ndt7',
     source: 'DailyCheckApp',
     created_at: null,
     reason: 'Wrong country code',
@@ -822,6 +827,6 @@ export const mockCategoryConfigProvider = {
     allowedCountries: [],
     allowedAPIs: [],
     notAllowedAPIs: [],
-    responseFilters: {}
+    responseFilters: {},
   }),
 };
