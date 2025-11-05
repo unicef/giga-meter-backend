@@ -285,15 +285,16 @@ export class SchoolService {
     });
 
     if (!school) {
+      // For backward compatibility, if no record exists, treat as active (not deactivated)
       return {
-        is_active: false,
+        is_active: true,
         message: 'Device not found',
         exists: false,
       };
     }
 
     // Only consider device deactivated if is_active is explicitly false
-    // Treat true, null, or undefined as active
+    // Treat true, null, or undefined as active (for backward compatibility)
     if (school.is_active === false) {
       return {
         is_active: false,
