@@ -40,6 +40,9 @@ export class SchoolDto {
 
   @ApiProperty({ required: false })
   device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  is_active?: boolean;
 }
 
 export class CheckNotifyDto {
@@ -83,4 +86,23 @@ export class CheckExistingInstallationDto {
 
   @ApiProperty({ required: false, type: SchoolMasterDto })
   schoolInfo?: SchoolMasterDto; // School record from the school table matched by giga_id_school
+
+  @ApiProperty({ required: false })
+  is_active?: boolean;
+}
+
+export class DeactivateDeviceDto {
+  @ApiProperty()
+  device_hardware_id: string;
+
+  @ApiProperty()
+  giga_id_school: string;
+}
+
+export class DeactivateDeviceResponseDto {
+  @ApiProperty()
+  deactivated: boolean;
+
+  @ApiProperty({ required: false })
+  message?: string;
 }

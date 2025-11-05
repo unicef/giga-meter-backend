@@ -62,6 +62,7 @@ model dailycheckapp_school {
   notify              Boolean   @default(false)
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   device_hardware_id  String?
+  is_active           Boolean?
 }
 
 model school {
