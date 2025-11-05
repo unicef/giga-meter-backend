@@ -29,6 +29,7 @@ import {
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
+  CheckDeviceStatusDto,
   DeactivateDeviceDto,
   DeactivateDeviceResponseDto,
   SchoolDto,
@@ -306,6 +307,67 @@ export class SchoolController {
       data: result,
       timestamp: new Date().toISOString(),
       message: 'success',
+    };
+  }
+
+  @Get('checkDeviceStatus/:device_hardware_id/:giga_id_school')
+  @ApiOperation({
+    summary:
+      'Check if a device has been deactivated (logged out) by another user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns whether the device is active or has been deactivated',
+    type: CheckDeviceStatusDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiParam({
+    name: 'device_hardware_id',
+    description: 'The device hardware id to check',
+    required: true,
+    type: 'string',
+  })
+  @ApiParam({
+    name: 'giga_id_school',
+    description: 'The GIGA id of the school',
+    required: true,
+    type: 'string',
+  })
+  async checkDeviceStatus(
+    @Param('device_hardware_id') device_hardware_id: string,
+    @Param('giga_id_school') giga_id_school: string,
+  ): Promise<ApiSuccessResponseDto<CheckDeviceStatusDto>> {
+    if (!device_hardware_id || device_hardware_id.trim().length === 0) {
+      throw new HttpException(
+        'device_hardware_id is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!giga_id_school || giga_id_school.trim().length === 0) {
+      throw new HttpException(
+        'giga_id_school is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.schoolService.checkDeviceStatus(
+      device_hardware_id,
+      giga_id_school,
+    );
+
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: result.message,
     };
   }
 

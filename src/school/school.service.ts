@@ -269,6 +269,47 @@ export class SchoolService {
     };
   }
 
+  async checkDeviceStatus(
+    device_hardware_id: string,
+    giga_id_school: string,
+  ): Promise<{ is_active: boolean; message: string; exists: boolean }> {
+    // Find the latest installation based on created timestamp
+    const school = await this.prisma.dailycheckapp_school.findFirst({
+      where: {
+        device_hardware_id,
+        giga_id_school: giga_id_school?.toLowerCase().trim(),
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    if (!school) {
+      return {
+        is_active: false,
+        message: 'Device not found',
+        exists: false,
+      };
+    }
+
+    // Only consider device deactivated if is_active is explicitly false
+    // Treat true, null, or undefined as active
+    if (school.is_active === false) {
+      return {
+        is_active: false,
+        message: 'Device has been deactivated',
+        exists: true,
+      };
+    }
+
+    // Device is active (is_active is true, null, or undefined)
+    return {
+      is_active: true,
+      message: 'Device is active',
+      exists: true,
+    };
+  }
+
   async deactivateDevice(
     device_hardware_id: string,
     giga_id_school: string,
