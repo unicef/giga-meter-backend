@@ -108,12 +108,15 @@ export class DeactivateDeviceResponseDto {
 }
 
 export class CheckDeviceStatusDto {
-  @ApiProperty({ description: 'Whether the device is active or not' })
+  @ApiProperty({
+    description:
+      'Whether the device is active. Only false if explicitly deactivated. Returns true for backward compatibility if device not found or is_active is null/undefined.',
+  })
   is_active: boolean;
 
   @ApiProperty({
     description:
-      'Message indicating device status (e.g., "Device is active", "Device has been deactivated")',
+      'Message indicating device status (e.g., "Device is active", "Device has been deactivated", "Device not found")',
   })
   message: string;
 
