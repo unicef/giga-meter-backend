@@ -129,12 +129,16 @@ export class SchoolService {
     country_code?: string;
     source?: string;
     schoolInfo?: any;
+    is_active?: boolean;
   }> {
     // First check in dailycheckapp_school table
+    // Include records where is_active is NOT false (true, null, or undefined)
     const school = await this.prisma.dailycheckapp_school.findFirst({
-      where: { device_hardware_id },
+      where: {
+        device_hardware_id,
+        OR: [{ is_active: null }, { is_active: true }],
+      },
     });
-
     if (school) {
       // Fetch school information from the school table
       let schoolInfo = null;
@@ -184,6 +188,7 @@ export class SchoolService {
         country_code: school.country_code,
         source: 'dailycheckapp_school',
         schoolInfo: schoolInfo,
+        is_active: school.is_active,
       };
     }
 
@@ -195,9 +200,13 @@ export class SchoolService {
 
     if (measurement && measurement.browser_id) {
       // Try to find a school with matching user_id (browser_id maps to user_id)
+      // Include records where is_active is NOT false (true, null, or undefined)
       const schoolByBrowserId =
         await this.prisma.dailycheckapp_school.findFirst({
-          where: { user_id: measurement.browser_id },
+          where: {
+            user_id: measurement.browser_id,
+            OR: [{ is_active: null }, { is_active: true }],
+          },
         });
 
       if (schoolByBrowserId) {
@@ -249,6 +258,7 @@ export class SchoolService {
           country_code: schoolByBrowserId.country_code,
           source: 'measurements',
           schoolInfo: schoolInfo,
+          is_active: schoolByBrowserId.is_active,
         };
       }
     }
@@ -256,6 +266,36 @@ export class SchoolService {
     // No installation found
     return {
       exists: false,
+    };
+  }
+
+  async deactivateDevice(
+    device_hardware_id: string,
+    giga_id_school: string,
+  ): Promise<{ deactivated: boolean; message?: string }> {
+    // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
+    const result = await this.prisma.dailycheckapp_school.updateMany({
+      where: {
+        device_hardware_id,
+        giga_id_school: giga_id_school?.toLowerCase().trim(),
+        OR: [{ is_active: null }, { is_active: true }],
+      },
+      data: {
+        is_active: false,
+      },
+    });
+
+    if (result.count > 0) {
+      return {
+        deactivated: true,
+        message: `Successfully deactivated ${result.count} device(s)`,
+      };
+    }
+
+    return {
+      deactivated: false,
+      message:
+        'No active device found with the provided hardware_id and giga_id_school',
     };
   }
 
@@ -274,6 +314,7 @@ export class SchoolService {
       is_blocked: school.is_blocked,
       created_at: school.created_at,
       device_hardware_id: school.device_hardware_id,
+      is_active: school.is_active,
     };
   }
 
@@ -288,6 +329,7 @@ export class SchoolService {
       ip_address: school.ip_address,
       country_code: school.country_code,
       device_hardware_id: school.device_hardware_id,
+      is_active: school.is_active,
     };
   }
 }

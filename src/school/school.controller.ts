@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
   UseInterceptors,
@@ -28,6 +29,8 @@ import {
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
+  DeactivateDeviceDto,
+  DeactivateDeviceResponseDto,
   SchoolDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
@@ -366,6 +369,59 @@ export class SchoolController {
       data: { user_id: schoolId },
       timestamp: new Date().toISOString(),
       message: 'success',
+    };
+  }
+
+  @Put('deactivate')
+  @ApiOperation({
+    summary: 'Deactivate a device by setting is_active to false',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns whether the device was successfully deactivated',
+    type: DeactivateDeviceResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async deactivateDevice(
+    @Body() deactivateDto: DeactivateDeviceDto,
+  ): Promise<ApiSuccessResponseDto<DeactivateDeviceResponseDto>> {
+    if (
+      !deactivateDto.device_hardware_id ||
+      deactivateDto.device_hardware_id.trim().length === 0
+    ) {
+      throw new HttpException(
+        'device_hardware_id is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (
+      !deactivateDto.giga_id_school ||
+      deactivateDto.giga_id_school.trim().length === 0
+    ) {
+      throw new HttpException(
+        'giga_id_school is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.schoolService.deactivateDevice(
+      deactivateDto.device_hardware_id,
+      deactivateDto.giga_id_school,
+    );
+
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: result.message || 'success',
     };
   }
 }
