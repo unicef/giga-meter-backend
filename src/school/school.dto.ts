@@ -43,6 +43,15 @@ export class SchoolDto {
 
   @ApiProperty({ required: false })
   is_active?: boolean;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class CheckNotifyDto {
