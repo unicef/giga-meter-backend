@@ -417,6 +417,15 @@ export class MeasurementDto {
 
   @ApiProperty()
   created_at?: Date;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class MeasurementV2Dto {
@@ -455,6 +464,15 @@ export class MeasurementV2Dto {
 
   @ApiProperty()
   created_at?: Date;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class AddMeasurementDto extends MeasurementDto {

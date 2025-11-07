@@ -357,6 +357,11 @@ export class SchoolService {
       created_at: school.created_at,
       device_hardware_id: school.device_hardware_id,
       is_active: school.is_active,
+      windows_username: school.windows_username,
+      installed_path: school.installed_path,
+      wifi_connections: school.wifi_connections
+        ? JSON.parse(JSON.stringify(school.wifi_connections))
+        : undefined,
     };
   }
 
@@ -372,6 +377,9 @@ export class SchoolService {
       country_code: school.country_code,
       device_hardware_id: school.device_hardware_id,
       is_active: school.is_active,
+      windows_username: school.windows_username,
+      installed_path: school.installed_path,
+      wifi_connections: school.wifi_connections,
     };
   }
 }

@@ -63,6 +63,9 @@ model dailycheckapp_school {
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   device_hardware_id  String?
   is_active           Boolean?
+  windows_username    String?
+  installed_path      String?
+  wifi_connections    Json?
 }
 
 model school {
@@ -223,6 +226,9 @@ model measurements {
   data_uploaded      BigInt?
   data_usage         BigInt?
   device_hardware_id String?
+  windows_username   String?
+  installed_path     String?
+  wifi_connections   Json?
 
   @@index([giga_id_school])
   @@index([country_code])
