@@ -419,6 +419,9 @@ export class MeasurementDto {
   created_at?: Date;
 
   @ApiProperty({ required: false })
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
   windows_username?: string;
 
   @ApiProperty({ required: false })
@@ -464,6 +467,9 @@ export class MeasurementV2Dto {
 
   @ApiProperty()
   created_at?: Date;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
 
   @ApiProperty({ required: false })
   windows_username?: string;

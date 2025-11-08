@@ -360,6 +360,8 @@ export class MeasurementService {
     filterMeasurementData['UUID'] = measurement.uuid;
     filterMeasurementData['ip_address'] = measurement.ip_address;
     filterMeasurementData['school_id'] = measurement.school_id;
+    filterMeasurementData['device_hardware_id'] =
+      measurement.device_hardware_id;
     // }
     return filterMeasurementData;
   }
@@ -478,6 +480,7 @@ export class MeasurementService {
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
+      device_hardware_id: measurement.device_hardware_id,
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
