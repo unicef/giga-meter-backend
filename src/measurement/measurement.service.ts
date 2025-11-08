@@ -55,7 +55,7 @@ export class MeasurementService {
       }
       filter.country_code = { in: [dbCountry.code] };
     }
-    
+
     const measurements = this.prisma.measurements.findMany({
       where: filter,
       skip,
@@ -350,11 +350,18 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      windows_username: measurement.windows_username,
+      installed_path: measurement.installed_path,
+      wifi_connections: measurement.wifi_connections
+        ? JSON.parse(JSON.stringify(measurement.wifi_connections))
+        : undefined,
     };
     // if (isSuperUser) {
-      filterMeasurementData['UUID'] = measurement.uuid;
-      filterMeasurementData['ip_address'] = measurement.ip_address;
-      filterMeasurementData['school_id'] = measurement.school_id;
+    filterMeasurementData['UUID'] = measurement.uuid;
+    filterMeasurementData['ip_address'] = measurement.ip_address;
+    filterMeasurementData['school_id'] = measurement.school_id;
+    filterMeasurementData['device_hardware_id'] =
+      measurement.device_hardware_id;
     // }
     return filterMeasurementData;
   }
@@ -473,6 +480,10 @@ export class MeasurementService {
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
+      device_hardware_id: measurement.device_hardware_id,
+      windows_username: measurement.windows_username,
+      installed_path: measurement.installed_path,
+      wifi_connections: measurement.wifi_connections,
     };
   }
 
