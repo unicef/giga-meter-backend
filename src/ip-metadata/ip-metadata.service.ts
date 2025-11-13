@@ -107,7 +107,7 @@ export class IpMetadataService {
           ? response.data.organization.match(/^AS\d+\s+(.+)$/)?.[1] ?? ''
           : '',
       asn:
-        typeof response?.data?.organization === 'string'
+        response?.data?.asn || typeof response?.data?.organization === 'string'
           ? response.data.organization.match(/^(AS\d+)/)?.[1] ?? ''
           : '',
       source: 'geojs',
@@ -117,7 +117,7 @@ export class IpMetadataService {
 
   async getIpInfo(ip: string): Promise<IpMetadata> {
     console.log('IP Address:', ip);
-    let ipInfo:IpMetadata = await this.prisma.ipMetadata.findUnique({
+    let ipInfo: IpMetadata = await this.prisma.ipMetadata.findUnique({
       where: { ip_source: { ip, source: 'ipinfo' } },
     });
 
@@ -140,11 +140,10 @@ export class IpMetadataService {
             source: ipData.source,
           },
         });
-      }else
-        ipInfo = ipData;
+      } else ipInfo = ipData;
     }
     if (ipInfo.source) delete ipInfo.source;
-    
+
     return ipInfo;
   }
 }
