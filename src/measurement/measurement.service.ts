@@ -56,7 +56,7 @@ export class MeasurementService {
       }
       filter.country_code = { in: [dbCountry.code] };
     }
-    
+
     const measurements = this.prisma.measurements.findMany({
       where: filter,
       skip,
@@ -380,11 +380,18 @@ export class MeasurementService {
       detected_location_distance: measurement.detected_location_distance,
       detected_location_accuracy: measurement.detected_location_accuracy,
       detected_location_is_flagged: measurement.detected_location_is_flagged,
+      windows_username: measurement.windows_username,
+      installed_path: measurement.installed_path,
+      wifi_connections: measurement.wifi_connections
+        ? JSON.parse(JSON.stringify(measurement.wifi_connections))
+        : undefined,
     };
     // if (isSuperUser) {
-      filterMeasurementData['UUID'] = measurement.uuid;
-      filterMeasurementData['ip_address'] = measurement.ip_address;
-      filterMeasurementData['school_id'] = measurement.school_id;
+    filterMeasurementData['UUID'] = measurement.uuid;
+    filterMeasurementData['ip_address'] = measurement.ip_address;
+    filterMeasurementData['school_id'] = measurement.school_id;
+    filterMeasurementData['device_hardware_id'] =
+      measurement.device_hardware_id;
     // }
     return filterMeasurementData;
   }
@@ -508,6 +515,10 @@ export class MeasurementService {
       detected_location_accuracy: measurement.detected_location_accuracy || null,
       detected_location_distance: measurement.detected_location_distance || null,
       detected_location_is_flagged: measurement.detected_location_is_flagged || false
+      device_hardware_id: measurement.device_hardware_id,
+      windows_username: measurement.windows_username,
+      installed_path: measurement.installed_path,
+      wifi_connections: measurement.wifi_connections,
     };
   }
 

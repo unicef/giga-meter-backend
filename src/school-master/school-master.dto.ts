@@ -6,6 +6,9 @@ export class FeatureFlagDto {
 
   @ApiProperty()
   feature_flag_2?: boolean;
+
+  @ApiProperty()
+  pingService?: boolean;
 }
 
 export class SchoolMasterDto {

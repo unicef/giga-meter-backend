@@ -452,6 +452,17 @@ export class MeasurementDto {
     description: 'Flag if distance > X & accuracy > Y'
   })
   detected_location_is_flagged?: boolean;
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class MeasurementV2Dto {
@@ -511,6 +522,18 @@ export class MeasurementV2Dto {
     description: 'Flag if distance > X & accuracy > Y'
   })
   detected_location_is_flagged?: boolean;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class AddMeasurementDto extends MeasurementDto {
