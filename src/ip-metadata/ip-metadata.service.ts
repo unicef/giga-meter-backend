@@ -107,9 +107,9 @@ export class IpMetadataService {
           ? response.data.organization.match(/^AS\d+\s+(.+)$/)?.[1] ?? ''
           : '',
       asn:
-        response?.data?.asn || typeof response?.data?.organization === 'string'
-          ? response.data.organization.match(/^(AS\d+)/)?.[1] ?? ''
-          : '',
+        (typeof response?.data?.organization === 'string'
+          ? response.data.organization.match(/^(AS\d+)/)?.[0] ?? ''
+          : response?.data?.asn) || '',
       source: 'geojs',
       new: true, // Indicating this is a new record
     };
