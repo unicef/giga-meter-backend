@@ -14,6 +14,7 @@ import {
   ServerInfoDto,
 } from './measurement.dto';
 import { plainToInstance } from 'class-transformer';
+import { sanitizeHardwareId } from '../common/hardware-id.utils';
 
 @Injectable()
 export class MeasurementService {
@@ -480,7 +481,7 @@ export class MeasurementService {
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
-      device_hardware_id: measurement.device_hardware_id,
+      device_hardware_id: sanitizeHardwareId(measurement.device_hardware_id),
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
