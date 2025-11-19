@@ -3,7 +3,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
 import { SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
-import { sanitizeHardwareId, isHardwareIdBlocked } from '../common/hardware-id.utils';
+import {
+  sanitizeHardwareId,
+  isHardwareIdBlocked,
+} from '../common/hardware-id.utils';
 
 @Injectable()
 export class SchoolService {
@@ -345,8 +348,7 @@ export class SchoolService {
       );
       return {
         deactivated: false,
-        message:
-          'Cannot deactivate device with blocked/generic hardware ID',
+        message: 'Cannot deactivate device with blocked/generic hardware ID',
       };
     }
 

@@ -16,15 +16,21 @@ export const BLOCKED_HARDWARE_IDS = [
  * @param hardwareId - The hardware ID to check
  * @returns null if the ID is blocked, otherwise returns the original ID
  */
-export function sanitizeHardwareId(hardwareId: string | null | undefined): string | null {
+export function sanitizeHardwareId(
+  hardwareId: string | null | undefined,
+): string | null {
   if (!hardwareId) {
     return null;
   }
 
   const trimmedId = hardwareId.trim();
-  
-  // Check if the hardware ID is in the blocklist
-  if (BLOCKED_HARDWARE_IDS.includes(trimmedId)) {
+
+  // Check if the hardware ID is in the blocklist (case-insensitive comparison)
+  const isBlocked = BLOCKED_HARDWARE_IDS.some(
+    (blockedId) => blockedId.toLowerCase() === trimmedId.toLowerCase(),
+  );
+
+  if (isBlocked) {
     console.warn(`Blocked hardware ID detected and ignored: ${trimmedId}`);
     return null;
   }
@@ -37,11 +43,17 @@ export function sanitizeHardwareId(hardwareId: string | null | undefined): strin
  * @param hardwareId - The hardware ID to check
  * @returns true if the ID is blocked, false otherwise
  */
-export function isHardwareIdBlocked(hardwareId: string | null | undefined): boolean {
+export function isHardwareIdBlocked(
+  hardwareId: string | null | undefined,
+): boolean {
   if (!hardwareId) {
     return false;
   }
 
-  return BLOCKED_HARDWARE_IDS.includes(hardwareId.trim());
-}
+  const trimmedId = hardwareId.trim();
 
+  // Case-insensitive comparison
+  return BLOCKED_HARDWARE_IDS.some(
+    (blockedId) => blockedId.toLowerCase() === trimmedId.toLowerCase(),
+  );
+}
