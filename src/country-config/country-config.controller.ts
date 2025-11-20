@@ -117,13 +117,13 @@ export class CountryConfigController {
   }
   @Get('/code/:code')
   @ApiOperation({
-    summary: 'Get a single country configuration by its country code', 
+    summary: 'Get a single country configuration by its country code',
   })
   @ApiResponse({
     status: 200,
     description: 'Country configuration retrieved successfully',
     type: CountryConfigDto,
-  })  
+  })
   async findByCode(
     @Param('code') code: string,
   ): Promise<ApiSuccessResponseDto<CountryConfigDto>> {
@@ -135,7 +135,6 @@ export class CountryConfigController {
       message: 'Country configuration retrieved successfully',
     };
   }
-
 
   @Patch(':id')
   @ApiOperation({
