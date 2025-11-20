@@ -398,3 +398,19 @@ enum MeasurementProvider {
   mlab
   cloudflare
 }
+model IpMetadata {
+  id       Int     @id @default(autoincrement())
+  ip       String
+  hostname String?
+  city     String?
+  region   String?
+  country  String?
+  loc      String?
+  org      String?
+  postal   String?
+  timezone String?
+  asn      String?
+  source   String?
+
+  @@unique([ip, source])
+}

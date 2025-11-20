@@ -41,6 +41,7 @@ import { CountryConfigModule } from './country-config/country-config.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     CountryConfigModule,
     AuthModule,
     GeolocationModule,
+    IpMetadataModule,
   ],
   controllers: [
     AppController,
