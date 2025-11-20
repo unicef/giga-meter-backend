@@ -105,7 +105,7 @@ export class CountryConfigController {
     type: CountryConfigDto,
   })
   async findOne(
-    @Param('id') id: string,
+    @Param('code') id: string,
   ): Promise<ApiSuccessResponseDto<CountryConfigDto>> {
     const result = await this.countryConfigService.findOne(+id);
     return {
@@ -115,6 +115,27 @@ export class CountryConfigController {
       message: 'Country configuration retrieved successfully',
     };
   }
+  @Get('/code/:code')
+  @ApiOperation({
+    summary: 'Get a single country configuration by its country code', 
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Country configuration retrieved successfully',
+    type: CountryConfigDto,
+  })  
+  async findByCode(
+    @Param('code') code: string,
+  ): Promise<ApiSuccessResponseDto<CountryConfigDto>> {
+    const result = await this.countryConfigService.findByCode(code);
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: 'Country configuration retrieved successfully',
+    };
+  }
+
 
   @Patch(':id')
   @ApiOperation({

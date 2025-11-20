@@ -166,4 +166,16 @@ export class CountryConfigService {
       updatedAt: model.updatedAt,
     };
   }
+  async findByCode(code: string): Promise<CountryConfigDto> {
+    const countryCode = this.normalizeCountryCode(code);
+    const config = await this.prisma.countryConfig.findUnique({
+      where: { countryCode },
+    });
+    if (!config) {
+      throw new NotFoundException(
+        `Country configuration with code ${countryCode} was not found`,
+      );
+    }
+    return this.toDto(config);
+  }
 }
