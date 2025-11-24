@@ -8,6 +8,9 @@ export const BLOCKED_HARDWARE_IDS = [
   '03000200-0400-0500-0006-000700080009',
   'NO_UUID_AVAILABLE',
   'fefefefe-fefe-fefe-fefe-fefefefefefe',
+  '00000000-0000-0000-0000-000000000000',
+  '12345678-1234-1234-1234-123456789abc',
+  'ffffffff-ffff-ffff-ffff-ffffffffffff',
   // Add more problematic IDs here as they are discovered
 ];
 
