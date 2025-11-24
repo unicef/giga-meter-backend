@@ -288,16 +288,16 @@ export class SchoolService {
     giga_id_school: string,
   ): Promise<{ is_active: boolean; message: string; exists: boolean }> {
     // If the hardware ID is blocked/generic, treat as active (allow operation)
-    // if (isHardwareIdBlocked(device_hardware_id)) {
-    //   console.warn(
-    //     `Blocked hardware ID provided to checkDeviceStatus: ${device_hardware_id}`,
-    //   );
-    //   return {
-    //     is_active: true,
-    //     message: 'Device not found (blocked hardware ID)',
-    //     exists: false,
-    //   };
-    // }
+    if (isHardwareIdBlocked(device_hardware_id)) {
+      console.warn(
+        `Blocked hardware ID provided to checkDeviceStatus: ${device_hardware_id}`,
+      );
+      return {
+        is_active: true,
+        message: 'Device not found (blocked hardware ID)',
+        exists: false,
+      };
+    }
 
     // Find the latest installation based on created timestamp
     const school = await this.prisma.dailycheckapp_school.findFirst({
