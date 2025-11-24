@@ -135,6 +135,28 @@ export class CountryConfigController {
       message: 'Country configuration retrieved successfully',
     };
   }
+  @Patch('/code/:code')
+  @ApiOperation({
+    summary:
+      'Update the measurement provider or options for a country configuration',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Country configuration updated successfully',
+    type: CountryConfigDto,
+  })
+  async updateByCode(
+    @Param('code') code: string,
+    @Body() dto: UpdateCountryConfigDto,
+  ): Promise<ApiSuccessResponseDto<CountryConfigDto>> {
+    const result = await this.countryConfigService.updateByCode(code, dto);
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: 'Country configuration updated successfully',
+    };
+  }
 
   @Patch(':id')
   @ApiOperation({

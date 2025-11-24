@@ -112,6 +112,21 @@ export class CountryConfigService {
       this.handlePrismaError(error, countryCode);
     }
   }
+  async updateByCode(
+    code: string,
+    dto: UpdateCountryConfigDto,
+  ): Promise<CountryConfigDto> {
+    const countryCode = this.normalizeCountryCode(code);
+    const config = await this.prisma.countryConfig.findUnique({
+      where: { countryCode },
+    });
+    if (!config) {
+      throw new NotFoundException(
+        `Country configuration with code ${countryCode} was not found`,
+      );
+    }
+    return this.update(config.id, dto);
+  }
 
   async remove(id: number): Promise<CountryConfigDto> {
     await this.findOne(id);
