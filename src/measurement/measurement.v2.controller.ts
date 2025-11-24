@@ -19,7 +19,7 @@ import { getRateLimitConfig } from '../config/rate-limit.config';
 export class MeasurementV2Controller {
   constructor(private readonly measurementService: MeasurementServiceV2) {}
 
-  @Post()
+  @Post('cloudflare')
   @Public()
   @ApiOperation({
     summary: 'Register a Cloudflare measurement in the Giga Meter database',
