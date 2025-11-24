@@ -30,6 +30,7 @@ Giga Meter Backend </h1>
       <a href="#getting-started">Getting Started</a>
     </li>
     <li><a href="#infrastructure-requirements">Infrastructure Requirements</a></li>
+    <li><a href="#docker">Running app with Docker</a></li>
     <li><a href="#code-of-conduct">Code of Conduct</a></li>
     <li><a href="#contribution-guidelines">Contribution Guidelines</a></li>
     <li><a href="#license">License/Legal</a></li>
@@ -53,7 +54,7 @@ Giga Meter Backend works with a very large range of operating systems, as it onl
 <h3><a id="system-requirements" class="anchor" aria-hidden="true" href="#system-requirements"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"></svg></a>
 System Requirements </h3>
 <p></p>
-To run Giga Meter Backend, you need to install a few things. Node.js, Git, and PostgreSQL. We use Prisma for database maintenance, and is one of the dependencies. We won’t publish installation guides for these as they have their own resources available on the internet.
+To run Giga Meter Backend, you need to install a few things. Node.js, Git, and PostgreSQL. We use Prisma for database maintenance, and is one of the dependencies. We won't publish installation guides for these as they have their own resources available on the internet.
 
 <h3><a id="giga-meter-repos" class="anchor" aria-hidden="true" href="#giga-meter-repos"><svg class="octicon octicon-link" align="center" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"></svg></a>
 Github Repositories of Giga Meter </h3>
@@ -72,6 +73,9 @@ Getting Started</h2>
 - Node Package Manager (npm)
 - [Node.js](https://nodejs.org/) 20+
 - [PostgreSQL](https://www.postgresql.org/) DB v15+
+- [Redis (optional, for caching)](https://redis.io/downloads/)
+- [Git](https://git-scm.com/downloads)
+- [Docker (optional)](https://docs.docker.com/get-started/get-docker/)
 
 #### Installation
 
@@ -97,34 +101,73 @@ npm install
 
 #### Setup Environment Variables
 
-Create an .env file in root folder and add below variables to run locally:
+Create an .env file in root folder and add below variables to run locally (Refer to the .env.example file in this repository as well):
 
 ```bash
-DATABASE_URL="database-url"
-USE_AUTH="true"
+# Database Configuration
+POSTGRES_USER=username
+POSTGRES_PASSWORD=test_
+POSTGRES_DB=giga_meter_db
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?schema=public
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_URL=redis://${REDIS_HOST}:${REDIS_PORT}
+
+# Application Configuration
+PORT=3000
+NODE_ENV="environment"
+
+# Authentication & Security
+USE_AUTH=false
+GIGA_METER_APP_KEY="giga_meter_api_key"
+DAILY_CHECK_APP_API_CODE="daily_check_app_api_code"
+
+# External Services
 PROJECT_CONNECT_SERVICE_URL="project-connect-service-url"
-DAILY_CHECK_APP_API_CODE="daily-check-app-code"
 PCDC_APP_DOWNLOAD_URL="pcdc-app-download-url"
-SENTRY_DSN="your-sentry-dsn"
-NODE_ENV="ENVIRONMENT"
+
+# Cache Configuration
+NO_CACHE=TRUE
+CACHE_EXPIRE=1
+
+# Optional Services
+SENTRY_DSN=
 ```
 
-- DATABASE_URL: is the url of the database like <i>postgresql://username:password@localhost:5432/pcdc?schema=public</i>.
-- USE_AUTH: set "true" if APIs should use authentication which uses Giga Maps service API to validate api key generated in Giga Maps generated [here](https://uni-ooi-giga-maps-frontend-dev.azurewebsites.net/docs/explore-api). You can check the current auth logic in auth.guard.ts file which calls [this](https://uni-ooi-giga-maps-service-dev.azurewebsites.net/api/v1/#/Validate%20Api%20Key/get_api_v1_validate_api_key__apiCode_) endpoint.
-- PROJECT_CONNECT_SERVICE_URL: Base API URL of the Giga Maps service used for authentication. For Dev, it should be pointed to https://uni-ooi-giga-maps-service-dev.azurewebsites.net
-- DAILY_CHECK_APP_API_CODE: API code for daily check app used in calling Giga Maps service API. Ideally, it should always <i>DAILY_CHECK_APP</i> but check with the Giga Maps team if this doesn't work.
-- PCDC_APP_DOWNLOAD_URL: Download URL of the latest version of [Giga Meter](https://github.com/unicef/project-connect-daily-check-app) Windows application.
-- SENTRY_DSN: To send data to [Sentry](https://docs.sentry.io/) you will set a client key, usually referred to as the SENTRY_DSN value.
-- NODE_ENV: The application environment, should be "development" or "production"
-  <br />
-  NOTE: <i>PROJECT_CONNECT_SERVICE_URL</i> and
-  <i> DAILY_CHECK_APP_API_CODE</i> values are only required if you
-  want to use in-built Giga Meter authentication and
-  <i> USE_AUTH</i> is set "true" else you can skip them.
+- `DATABASE_URL`: PostgreSQL connection string using the above variables, to create a connection URL with the following format: postgresql://username:password@localhost:5432/db_name?schema=public.
+- `REDIS_URL`: Redis connection string using the above variables
+- `PORT`: The port number on which the application will run. Default is 3000
+- `NODE_ENV`: The application environment. Must be either "development" - ideal for local development,  or "production".
+- `USE_AUTH`: Set to "true" to enable API authentication with GIGA_METER_APP_KEY.
+- `GIGA_METER_APP_KEY`: API key for Giga Meter API application authentication. For local development a default key can be used.
+- `DAILY_CHECK_APP_API_CODE`: API code for daily check app used in calling Giga Maps service API. Ideally, it should always DAILY_CHECK_APP but check with the Giga Maps team if this doesn't work.
+- `PROJECT_CONNECT_SERVICE_URL`:  Base API URL of the Giga Maps service used for authentication. For Dev, it should be pointed to https://uni-ooi-giga-maps-service-dev.azurewebsites.net
+- `PCDC_APP_DOWNLOAD_URL`: URL for downloading the latest version of the Giga Meter Windows application
+- `NO_CACHE`: Set to "TRUE" to disable Redis caching
+- `CACHE_EXPIRE`: Cache expiration time in hours. Default is 1
+- `SENTRY_DSN`: Sentry client key for error tracking and monitoring. Optional
 
 #### Database Setup
 
-Once the DATABASE_URL is set correctly in the .env file variables, generate prisma client to run the app locally.
+##### Create a database using psql
+
+1. Run the commands below in your terminal to create a database if needed.
+```bash
+psql -U postgres # using the default postgres user
+CREATE DATABASE giga_meter;
+```
+
+Note** When creating a unique user, make sure that your database user has the proper [permissions](https://www.prisma.io/docs/orm/prisma-migrate/understanding-prisma-migrate/shadow-database#shadow-database-user-permissions) needed to create a Shadow Database for Prisma. 
+
+Use the credentials created here  or your personal credentials to update the DATABASE_URL correctly in the .env file variables, replacing the username, password, and db name. Then generate prisma client to run the database migrations.
+
+
+
+#### Database Migration
 
 1. Run below command inside src/prisma folder to generate prisma client
 
@@ -132,14 +175,21 @@ Once the DATABASE_URL is set correctly in the .env file variables, generate pris
 npx prisma generate
 ```
 
-#### Database Migration
-
 Make the required changes in the prisma.schema file (present inside src/prisma folder).
 
-1. Run below command inside src/prisma folder to migrate database changes
+2. Run below command inside src/prisma folder to migrate database changes
 
 ```
 npx prisma migrate dev
+```
+
+
+#### Database Seed Data
+
+1. If using your local database, load test data
+
+```bash
+npx prisma db seed
 ```
 
 #### Authentication
@@ -231,30 +281,80 @@ Make sure you have docker & docker compose installed on the server or system.
 
 Note: docker compose without the hyphen is now the primary method of using docker-compose, per the Docker documentation.
 
-#### Getting Started
+#### Getting Started 
 
-We have added a docker file which can be used to create an image and deploy the app in your infrastructure. You can have a look at the file here.
+We have added a docker file and docker compose file which can be used to create an image and deploy the app in your infrastructure
 
-#### Building Docker Image
 
-Building docker image is quite straight forward and can be done using the following command
+#### Build App using Docker Compose
 
+The easiest way to get started running the app is using Docker Compose, which will set up all required services (PostgreSQL, Redis, and the backend) automatically:
+
+1. Update the .env file with the desired database credentials for creation of the db with docker
+
+2. Run the application with the docker compose command:
+```bash
+docker compose build --no-cache && docker compose up -d
 ```
-docker build -f Dockerfile -t repo:tag
+
+3. Seed the database with test data from the cli of your local project directory:
+```bash
+npm install
+npx prisma db seed
 ```
 
-##### Deployment
+The application will be available at http://localhost:3000
 
-The application is running on port 3000. The following command runs the docker container on port 3000
+To stop all services:
+```bash
+docker compose down -v
+```
 
+To view logs:
+```bash
+docker compose logs -f
 ```
-docker run -d -p 3000:3000 -e
-DAILY_CHECK_APP_API_CODE=DAILY_CHECK_APP -e
-DATABASE_URL=YOUR_POSTGRES_DATABASE_CONNECTION_STRING -e
-PCDC_APP_DOWNLOAD_URL=PCDC_APP_DOWNLOAD_URL -e
-PROJECT_CONNECT_SERVICE_URL=PROJECT_CONNECT_SERVICE_URL -e
-USE_AUTH=true_or_false image_repo:tag
+
+#### Build App Components using Docker
+
+You can also run each service in its own container as required:
+
+##### Giga Meter Backend Container
+```bash
+# Build the image
+docker build -t giga-meter-backend .
+
+# Run the container
+docker run -d \
+  -p 3000:3000 \
+  --env-file .env \
+  giga-meter-backend
 ```
+
+The app will be running on localhost:3000
+
+##### PostgreSQL Container
+```bash
+docker run -d \
+  --name giga-meter-db \
+  -e POSTGRES_DB=giga_meter_db\
+  -e POSTGRES_USER=<username>\
+  -e POSTGRES_PASSWORD=<password>\
+  -p 5432:5432 \
+  postgres:15
+```
+
+The postgresql database will be running on port 5432.
+Note: Update your local .env file with the credentials used to create the db, and if using a docker deployed db with a locally deployed giga-meter-backend, make sure to change `POSTGRES_HOST` to `host.docker.internal`.
+
+##### Redis Container
+```bash
+docker run -d --name giga-meter-redis -p 6379:6379 redis
+```
+
+The redis service will be running on port 6379
+If using a docker deployed redis instance with a locally deployed giga-meter-backend, make sure to change `REDIS_HOST` to `host.docker.internal`.
+
 
 <h2><a id="code-of-conduct" class="anchor" aria-hidden="true" href="#code-of-conduct"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"></svg></a>
 Code of Conduct</h2>

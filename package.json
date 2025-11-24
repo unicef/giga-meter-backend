@@ -6,7 +6,8 @@
   "private": "false",
   "license": "AGPL-3.0-only",
   "prisma": {
-    "schema": "src/prisma/schema.prisma"
+    "schema": "src/prisma/schema.prisma",
+    "seed": "ts-node src/prisma/seed.ts"
   },
   "scripts": {
     "build": "nest build",
@@ -23,7 +24,8 @@
     "test:cov": "jest --coverage",
     "test:covpip": "jest --coverage --silent --maxWorkers=2 -u",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:seed": "npx prisma db seed"
   },
   "dependencies": {
     "@nestjs/axios": "^3.0.2",
