@@ -1,6 +1,6 @@
 services:
   giga-meter-db:
-    image: postgres:15
+    image: postgis/postgis:15-3.3
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
