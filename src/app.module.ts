@@ -36,6 +36,7 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import * as redisStore from 'cache-manager-redis-store';
+import { CmsModule, SchemaValidationService } from './cms';
 
 
 @Module({
@@ -57,6 +58,7 @@ import * as redisStore from 'cache-manager-redis-store';
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
+    CmsModule
   ],
   controllers: [
     AppController,
@@ -96,6 +98,7 @@ import * as redisStore from 'cache-manager-redis-store';
       useClass: CategoryResponseInterceptor,
     },
     ConnectivityService,
+    SchemaValidationService
   ],
 })
 export class AppModule {}
