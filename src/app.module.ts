@@ -40,6 +40,8 @@ import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
 import { UsersController } from './users/users.controller';
 import { UsersService } from './users/users.service';
+import { RolesController } from './roles/roles.controller';
+import { RolesService } from './roles/roles.service';
 
 @Module({
   imports: [
@@ -75,6 +77,7 @@ import { UsersService } from './users/users.service';
     ConnectivityController,
     DeviceTokenController,
     UsersController,
+    RolesController,
   ],
   providers: [
     AppService,
@@ -103,6 +106,7 @@ import { UsersService } from './users/users.service';
       useClass: CategoryResponseInterceptor,
     },
     UsersService,
+    RolesService,
   ],
 })
 export class AppModule {}
