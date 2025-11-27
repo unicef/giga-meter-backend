@@ -18,8 +18,9 @@ export class StorageService implements IStorageService {
 
   private async initializeStorage(): Promise<void> {
     const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+    this.logger.debug('connection string', connectionString);
     const containerName =
-      process.env.AZURE_STORAGE_CONTAINER || 'giga-cms-media';
+      process.env.AZURE_STORAGE_CONTAINER || 'giga-meter-cms-media';
 
     if (connectionString && connectionString.trim() !== '') {
       try {
@@ -29,9 +30,9 @@ export class StorageService implements IStorageService {
           blobServiceClient.getContainerClient(containerName);
 
         // Create container if it doesn't exist
-        await this.containerClient.createIfNotExists({
-          access: 'blob', // Public access for blobs
-        });
+        // await this.containerClient.createIfNotExists({
+        //   access: 'blob', // Public access for blobs
+        // });
 
         this.useAzure = true;
         this.logger.log(

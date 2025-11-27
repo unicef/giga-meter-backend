@@ -48,10 +48,6 @@ export class ContentController {
     description: 'Content retrieved successfully',
     type: ContentResponseDto,
   })
-  @ApiResponse({
-    status: 404,
-    description: 'Content not found',
-  })
   async getContent(
     @Query() query: GetContentQueryDto,
   ): Promise<ContentResponseDto> {
