@@ -38,6 +38,8 @@ import { GeolocationModule } from './geolocation/geolocation.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
+import { UsersController } from './users/users.controller';
+import { UsersService } from './users/users.service';
 
 @Module({
   imports: [
@@ -72,6 +74,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     MetricsController,
     ConnectivityController,
     DeviceTokenController,
+    UsersController,
   ],
   providers: [
     AppService,
@@ -99,6 +102,7 @@ import { DeviceTokenService } from './auth/device-token.service';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    UsersService,
   ],
 })
 export class AppModule {}
