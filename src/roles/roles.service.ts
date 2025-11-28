@@ -129,8 +129,8 @@ export class RolesService {
   async remove(roleId: number) {
     try {
       const now = new Date();
-      await this.findOne(roleId);
-
+      const role = await this.findOne(roleId);
+      if (role.deleted) throw new NotFoundException('Role not found');
       const roleStatus = await this.prisma.customAuthRole.update({
         where: { id: roleId },
         data: { deleted: now },
