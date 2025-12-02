@@ -391,33 +391,6 @@ model IpMetadata {
   @@unique([ip, source])
 }
 
-model Users {
-  id            Int       @id @default(autoincrement())
-  first_name    String?
-  last_name     String?
-  username      String     @unique
-  email         String     @unique
-  user_name     String?
-  last_login    DateTime?
-  is_active     Boolean    @default(true)
-  is_superuser  Boolean    @default(false)
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @updatedAt
-
-  // Relationships
-  createdRoles          CustomAuthRole[]           @relation("RoleCreatedBy")
-  modifiedRoles         CustomAuthRole[]           @relation("RoleModifiedBy")
-
-  createdRolePermissions CustomAuthRolePermission[] @relation("RolePermCreatedBy")
-  modifiedRolePermissions CustomAuthRolePermission[] @relation("RolePermModifiedBy")
-
-  createdUserRoles      CustomAuthUserRoleRelationship[] @relation("UserRoleCreatedBy")
-  modifiedUserRoles     CustomAuthUserRoleRelationship[] @relation("UserRoleModifiedBy")
-
-  roleAssignments       CustomAuthUserRoleRelationship[] @relation("UserRoleAssignment")
-  @@map("users")
-}
-
 model CustomAuthRole {
   id                    Int       @id @default(autoincrement())
   deleted               DateTime? @db.Timestamptz
