@@ -20,8 +20,7 @@ export class MessagesController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary:
-      'Returns the list of contact messages on the Giga Meter database',
+    summary: 'Returns the list of contact messages on the Giga Meter database',
   })
   @ApiResponse({
     status: 200,

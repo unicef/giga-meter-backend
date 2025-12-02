@@ -7,9 +7,6 @@ import {
   Param,
   Post,
   Query,
-  Res,
-  NotFoundException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -34,12 +31,8 @@ export class RolesController {
     description: 'The role has been successfully created.',
   })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
-  async create(@Body() dto: CreateOrUpdateRoleDto) {
-    try {
-      return await this.rolesService.create(dto);
-    } catch (error) {
-      throw new InternalServerErrorException('Internal server error');
-    }
+  create(@Body() dto: CreateOrUpdateRoleDto) {
+    return this.rolesService.create(dto);
   }
 
   @Put(':roleId')
@@ -48,20 +41,11 @@ export class RolesController {
   @ApiBody({ type: CreateOrUpdateRoleDto })
   @ApiResponse({
     status: 200,
-    description: 'The role has been successfully updated',
+    description: 'The role has been successfully updated.',
   })
   @ApiResponse({ status: 404, description: 'Role not found.' })
-  async update(
-    @Param('roleId') roleId: string,
-    @Body() dto: CreateOrUpdateRoleDto,
-  ) {
-    try {
-      return await this.rolesService.update(Number(roleId), dto);
-    } catch (error) {
-      if (error instanceof NotFoundException)
-        throw new NotFoundException(error.message);
-      else throw new InternalServerErrorException('Internal server error');
-    }
+  update(@Param('roleId') roleId: string, @Body() dto: CreateOrUpdateRoleDto) {
+    return this.rolesService.update(Number(roleId), dto);
   }
 
   @Get()
@@ -85,16 +69,12 @@ export class RolesController {
     description: 'Search term for role name',
   })
   @ApiResponse({ status: 200, description: 'A list of roles.' })
-  async list(
+  list(
     @Query('page') page = 1,
     @Query('limit') limit = 20,
     @Query('search') search?: string,
   ) {
-    try {
-      return this.rolesService.findAll(Number(page), Number(limit), search);
-    } catch (error) {
-      throw new InternalServerErrorException('Internal server error');
-    }
+    return this.rolesService.findAll(Number(page), Number(limit), search);
   }
 
   @Get(':roleId')
@@ -102,17 +82,8 @@ export class RolesController {
   @ApiParam({ name: 'roleId', description: 'The ID of the role to retrieve' })
   @ApiResponse({ status: 200, description: 'The role details.' })
   @ApiResponse({ status: 404, description: 'Role not found.' })
-  async findOne(@Param('roleId') roleId: string) {
-    try {
-      const role = await this.rolesService.findOne(Number(roleId));
-      if (!role) throw new NotFoundException('Role not found');
-      role.rolePermissions = role.rolePermissions.map(
-        (permission) => permission.slug,
-      ) as any;
-      return role;
-    } catch (error) {
-      throw new InternalServerErrorException('Internal server error');
-    }
+  findOne(@Param('roleId') roleId: string) {
+    return this.rolesService.findOne(Number(roleId));
   }
 
   @Delete(':roleId')
@@ -123,14 +94,7 @@ export class RolesController {
     description: 'The role has been successfully deleted.',
   })
   @ApiResponse({ status: 404, description: 'Role not found.' })
-  async delete(@Param('roleId') roleId: string) {
-    try {
-      await this.rolesService.remove(Number(roleId));
-      return { message: 'Role deleted successfully' };
-    } catch (error) {
-      if (error instanceof NotFoundException)
-        throw new NotFoundException(error.message);
-      else throw new InternalServerErrorException('Internal server error');
-    }
+  delete(@Param('roleId') roleId: string) {
+    return this.rolesService.remove(Number(roleId));
   }
 }

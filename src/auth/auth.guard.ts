@@ -102,7 +102,7 @@ export class AuthGuard implements CanActivate {
   private jwksClient = jwksRsa({
     cache: true,
     cacheMaxEntries: 5,
-    jwksUri: `https://unicefpartners.b2clogin.com/unicefpartners.onmicrosoft.com/B2C_1_UNICEF_SOCIAL_signup_signin/discovery/v2.0/keys`,
+    jwksUri: process.env.B2C_JWKS_URI,
   });
 
   private async validateB2cToken(token: string) {
@@ -112,9 +112,8 @@ export class AuthGuard implements CanActivate {
         this.getSigningKey.bind(this),
         {
           algorithms: ['RS256'],
-          audience: '67c00d3b-40d4-4ce0-b94c-a51ed891e80b', // your client ID
-          issuer:
-            'https://unicefpartners.b2clogin.com/48e05529-88b8-40e1-825a-18c4e1077b3a/v2.0/',
+          audience: process.env.B2C_CLIENT_ID, // your client ID
+          issuer: process.env.B2C_ISSUER_URL,
         },
         (err, decoded) => {
           if (err) resolve(null);
