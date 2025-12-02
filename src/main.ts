@@ -15,6 +15,13 @@ import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'public'));
+  
+  // Serve .storage directory for local file uploads (development only)
+  if (process.env.NODE_ENV === 'development') {
+    app.useStaticAssets(join(__dirname, '..', '.storage'), {
+      prefix: '/storage/',
+    });
+  }
 
   // Get the Category
   const categoryConfigProvider = app.get(CategoryConfigProvider);
@@ -67,7 +74,7 @@ async function bootstrap() {
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
       origin: '*',
-      methods: ['GET', 'POST', 'PUT'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE'],
       preflightContinue: false,
     });
   } else {

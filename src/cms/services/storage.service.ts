@@ -10,9 +10,11 @@ export class StorageService implements IStorageService {
   private containerClient: ContainerClient | null = null;
   private useAzure = false;
   private localStoragePath: string;
+  private hostUrl: string;
 
   constructor() {
-    this.localStoragePath = path.join(process.cwd(), 'content', 'media');
+    this.localStoragePath = path.join(process.cwd(), '.storage');
+    this.hostUrl = process.env.GIGA_METER_BE_HOST || 'http://localhost:3000';
     this.initializeStorage();
   }
 
@@ -124,8 +126,8 @@ export class StorageService implements IStorageService {
 
     this.logger.log(`File uploaded locally: ${fullPath}`);
 
-    // Return relative URL for local files
-    const url = `/content/media/${filePath}`;
+    // Return full URL for local files with host
+    const url = `${this.hostUrl}/storage/${filePath.replace(/\\/g, '/')}`;
 
     return {
       url,
@@ -170,7 +172,7 @@ export class StorageService implements IStorageService {
       const blockBlobClient = this.containerClient.getBlockBlobClient(filePath);
       return blockBlobClient.url;
     } else {
-      return `/content/media/${filePath}`;
+      return `${this.hostUrl}/storage/${filePath.replace(/\\/g, '/')}`;
     }
   }
 

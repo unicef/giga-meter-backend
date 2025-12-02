@@ -61,7 +61,7 @@ export class MediaService {
   ) {
     this.mediaJsonPath = path.join(
       process.cwd(),
-      'content',
+      '.storage',
       'media',
       'media.json',
     );
