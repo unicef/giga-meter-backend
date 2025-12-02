@@ -45,6 +45,8 @@
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.5",
     "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.2.0",
     "pg": "^8.11.5",
     "prisma": "^5.14.0",
     "prom-client": "^15.1.3",

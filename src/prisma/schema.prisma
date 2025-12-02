@@ -379,3 +379,116 @@ model CategoryConfig {
 
   @@map("category_config")
 }
+
+model Users {
+  id            Int       @id @default(autoincrement())
+  first_name    String?
+  last_name     String?
+  username      String     @unique
+  email         String     @unique
+  user_name     String?
+  last_login    DateTime?
+  is_active     Boolean    @default(true)
+  is_superuser  Boolean    @default(false)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  // Relationships
+  createdRoles          CustomAuthRole[]           @relation("RoleCreatedBy")
+  modifiedRoles         CustomAuthRole[]           @relation("RoleModifiedBy")
+
+  createdRolePermissions CustomAuthRolePermission[] @relation("RolePermCreatedBy")
+  modifiedRolePermissions CustomAuthRolePermission[] @relation("RolePermModifiedBy")
+
+  createdUserRoles      CustomAuthUserRoleRelationship[] @relation("UserRoleCreatedBy")
+  modifiedUserRoles     CustomAuthUserRoleRelationship[] @relation("UserRoleModifiedBy")
+
+  roleAssignments       CustomAuthUserRoleRelationship[] @relation("UserRoleAssignment")
+  @@map("users")
+}
+
+
+model CustomAuthRole {
+  id                    Int       @id @default(autoincrement())
+  deleted               DateTime? @db.Timestamptz
+  last_modified_at      DateTime  @db.Timestamptz
+  created               DateTime  @db.Timestamptz
+  name                  String    @db.VarChar(255)
+  description           String?   @db.VarChar(255)
+  category              String    @db.VarChar(50)
+
+  created_by_id         Int?
+  createdBy             Users?     @relation("RoleCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id   Int?
+  modifiedBy            Users?     @relation("RoleModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  // Role Permissions
+  rolePermissions       CustomAuthRolePermission[]
+
+  // User-Role Assignment
+  userRoleRelationships CustomAuthUserRoleRelationship[]
+
+  @@index([created_by_id])
+  @@index([last_modified_by_id])
+  @@index([deleted])
+  @@index([name])
+  @@index([name], map: "custom_auth_role_name_4ba7d950_like")
+
+  @@map("custom_auth_role")
+}
+
+
+model CustomAuthRolePermission {
+  id                  Int       @id @default(autoincrement())
+  deleted             DateTime? @db.Timestamptz
+  last_modified_at    DateTime  @db.Timestamptz
+  created             DateTime  @db.Timestamptz
+  slug                String    @db.VarChar(100)
+
+  created_by_id       Int?
+  createdBy           Users?     @relation("RolePermCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id Int?
+  modifiedBy          Users?     @relation("RolePermModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  role_id             Int
+  role                CustomAuthRole @relation(fields: [role_id], references: [id])
+
+  @@index([created_by_id])
+  @@index([deleted])
+  @@index([last_modified_by_id])
+  @@index([role_id])
+  @@index([slug])
+  @@index([slug], map: "custom_auth_rolepermission_slug_858572f8_like")
+
+  @@map("custom_auth_rolepermission")
+}
+
+
+model CustomAuthUserRoleRelationship {
+  id                   Int       @id @default(autoincrement())
+  deleted              DateTime? @db.Timestamptz
+  last_modified_at     DateTime  @db.Timestamptz
+  created              DateTime  @db.Timestamptz
+
+  created_by_id        Int?
+  createdBy            Users?     @relation("UserRoleCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id  Int?
+  modifiedBy           Users?     @relation("UserRoleModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  role_id              Int
+  role                 CustomAuthRole @relation(fields: [role_id], references: [id])
+
+  user_id              Int
+  user                 Users     @relation("UserRoleAssignment", fields: [user_id], references: [id])
+
+  @@index([created_by_id])
+  @@index([deleted])
+  @@index([last_modified_by_id])
+  @@index([role_id])
+  @@index([user_id])
+
+  @@map("custom_auth_userrolerelationship")
+}
