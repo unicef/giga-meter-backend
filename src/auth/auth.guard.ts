@@ -3,6 +3,7 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
 import * as jwksRsa from 'jwks-rsa';
@@ -13,6 +14,8 @@ import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import { ROLES_KEY } from 'src/roles/roles.decorator';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -20,6 +23,7 @@ export class AuthGuard implements CanActivate {
     private readonly httpService: HttpService,
     private readonly categoryConfigProvider: CategoryConfigProvider,
     private reflector: Reflector,
+    private readonly prisma: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -49,14 +53,31 @@ export class AuthGuard implements CanActivate {
     // Handle Bearer tokens (existing logic)
     if (scheme.toLowerCase() === 'bearer') {
       if (request.headers?.tokentype === 'b2c') {
-        const response = await this.validateB2cToken(token);
-        if (!response) {
+        const decodedToken: any = await this.validateB2cToken(token);
+        if (!decodedToken) {
           throw new UnauthorizedException(
             'Invalid bearer token or not authorized to access for b2c',
           );
         }
         request.category = Category.ADMIN;
-        request.b2cUser = response;
+        request.b2cUser = decodedToken;
+
+        const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+          ROLES_KEY,
+          [context.getHandler(), context.getClass()],
+        );
+
+        if (requiredRoles) {
+          debugger;
+          const hasPermission = await this.validateUserRole(
+            decodedToken.email,
+            requiredRoles,
+          );
+          if (!hasPermission) {
+            throw new ForbiddenException('Insufficient permissions');
+          }
+        }
+
         return true;
       }
     }
@@ -83,6 +104,8 @@ export class AuthGuard implements CanActivate {
   private jwksClient = jwksRsa({
     cache: true,
     cacheMaxEntries: 5,
+    timeout: 60000,
+    cacheMaxAge: 3600000,
     jwksUri: process.env.B2C_JWKS_URI,
   });
 
@@ -95,13 +118,49 @@ export class AuthGuard implements CanActivate {
           algorithms: ['RS256'],
           audience: process.env.B2C_CLIENT_ID, // your client ID
           issuer: process.env.B2C_ISSUER_URL,
+          clockTolerance: 30, // seconds
         },
         (err, decoded) => {
-          if (err) resolve(null);
-          else resolve(decoded);
+          if (err) {
+            console.error('B2C token validation error:', err);
+            resolve(null);
+          } else resolve(decoded);
         },
       );
     });
+  }
+
+  private async validateUserRole(
+    email: string,
+    requiredRoles: string[],
+  ): Promise<boolean> {
+    const user = await this.prisma.users.findFirst({
+      where: { email },
+      include: {
+        roleAssignments: {
+          where: { deleted: null },
+          orderBy: { id: 'desc' },
+          include: {
+            role: {
+              include: {
+                rolePermissions: {
+                  where: {
+                    deleted: null,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) return false;
+    const userPermissions =
+      user.roleAssignments?.[0]?.role?.rolePermissions?.map?.(
+        (role) => role.slug,
+      ) || [];
+    return requiredRoles.every((role) => userPermissions.includes(role));
   }
 
   private getSigningKey(header: any, callback: any) {

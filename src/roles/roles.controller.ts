@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateOrUpdateRoleDto } from './roles.dto';
+import { Roles } from './roles.decorator';
 @ApiTags('Roles')
 @Controller('api/v1/roles')
 export class RolesController {
@@ -49,6 +50,7 @@ export class RolesController {
   }
 
   @Get()
+  @Roles('can_view_all_roles')
   @ApiOperation({ summary: 'List all roles with pagination and search' })
   @ApiQuery({
     name: 'page',
@@ -87,6 +89,7 @@ export class RolesController {
   }
 
   @Delete(':roleId')
+  @Roles('can_delete_role')
   @ApiOperation({ summary: 'Soft delete a role by ID' })
   @ApiParam({ name: 'roleId', description: 'The ID of the role to delete' })
   @ApiResponse({
