@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ROLES } from 'src/roles/roles.constants';
 
 type TypeRoles = {
   id: number;
@@ -25,7 +26,7 @@ export class UsersService {
         },
       });
       const defaultRoles = await this.prisma.customAuthRole.findMany({
-        where: { deleted: null, name: { in: ['Read Only', 'Admin'] } },
+        where: { deleted: null, name: { in: [ROLES.READ_ONLY, ROLES.ADMIN] } },
         select: {
           id: true,
           name: true,
@@ -47,7 +48,7 @@ export class UsersService {
           },
         });
         const userRole = defaultRoles.filter(
-          (role) => role.name === 'Read Only',
+          (role) => role.name === ROLES.READ_ONLY,
         )[0];
         //insert new readonly relationship
         await this.prisma.customAuthUserRoleRelationship.create({
@@ -59,7 +60,7 @@ export class UsersService {
           },
         });
         const prittyRoles = this.formatRoles(
-          defaultRoles.filter((el) => el.name == 'Admin')[0],
+          defaultRoles.filter((el) => el.name == ROLES.ADMIN)[0],
           userRole,
         );
         return { ...newUser, userRole: prittyRoles };
@@ -77,7 +78,7 @@ export class UsersService {
         },
       });
       const prittyRoles = this.formatRoles(
-        defaultRoles.filter((el) => el.name == 'Admin')[0],
+        defaultRoles.filter((el) => el.name == ROLES.ADMIN)[0],
         userRole,
       );
 

@@ -19,12 +19,14 @@ import {
 import { RolesService } from './roles.service';
 import { CreateOrUpdateRoleDto } from './roles.dto';
 import { Roles } from './roles.decorator';
+import { PERMISSION_SLUGS } from './roles.constants';
 @ApiTags('Roles')
 @Controller('api/v1/roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
+  @Roles(PERMISSION_SLUGS.CAN_CREATE_ROLE_CONFIGURATIONS)
   @ApiOperation({ summary: 'Create a new role' })
   @ApiBody({ type: CreateOrUpdateRoleDto })
   @ApiResponse({
@@ -37,6 +39,7 @@ export class RolesController {
   }
 
   @Put(':roleId')
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_ROLE_CONFIGURATIONS)
   @ApiOperation({ summary: 'Update an existing role' })
   @ApiParam({ name: 'roleId', description: 'The ID of the role to update' })
   @ApiBody({ type: CreateOrUpdateRoleDto })
@@ -50,7 +53,7 @@ export class RolesController {
   }
 
   @Get()
-  @Roles('can_view_all_roles')
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_ALL_ROLES)
   @ApiOperation({ summary: 'List all roles with pagination and search' })
   @ApiQuery({
     name: 'page',
@@ -80,6 +83,7 @@ export class RolesController {
   }
 
   @Get(':roleId')
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_ALL_ROLES)
   @ApiOperation({ summary: 'Get a single role by ID' })
   @ApiParam({ name: 'roleId', description: 'The ID of the role to retrieve' })
   @ApiResponse({ status: 200, description: 'The role details.' })
@@ -89,7 +93,10 @@ export class RolesController {
   }
 
   @Delete(':roleId')
-  @Roles('can_delete_role')
+  @Roles(
+    PERMISSION_SLUGS.CAN_DELETE_ROLE_CONFIGURATIONS,
+    PERMISSION_SLUGS.CAN_CREATE_ROLE_CONFIGURATIONS,
+  )
   @ApiOperation({ summary: 'Soft delete a role by ID' })
   @ApiParam({ name: 'roleId', description: 'The ID of the role to delete' })
   @ApiResponse({

@@ -2,6 +2,7 @@ import { Controller, Get, Logger, Req, Res } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { SignUserDtoResponse } from './users.dto';
+import { Roles } from 'src/roles/roles.decorator';
 
 @ApiTags('Users Management')
 @Controller('api/v1/users')
@@ -10,6 +11,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('signin')
+  @Roles('')
   @ApiOperation({
     summary: 'user signin',
     description: 'user signin status',
