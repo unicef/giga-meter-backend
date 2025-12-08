@@ -68,7 +68,6 @@ export class AuthGuard implements CanActivate {
         );
 
         if (requiredRoles) {
-          debugger;
           const hasPermission = await this.validateUserRole(
             decodedToken.email,
             requiredRoles,
@@ -157,6 +156,8 @@ export class AuthGuard implements CanActivate {
     });
 
     if (!user) return false;
+    if (!user.is_active)
+      throw new UnauthorizedException("We can't seem to find your account.");
     const userPermissions =
       user.roleAssignments?.[0]?.role?.rolePermissions?.map?.(
         (role) => role.slug,

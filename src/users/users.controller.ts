@@ -1,4 +1,12 @@
-import { Controller, Get, Logger, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Logger,
+  NotFoundException,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { SignUserDtoResponse } from './users.dto';
@@ -37,6 +45,14 @@ export class UsersController {
       });
     } catch (error) {
       this.logger.error(error);
+      if (error instanceof ForbiddenException) {
+        return response.status(403).json({
+          data: null,
+          message: error.message,
+          status: 403,
+        });
+      }
+
       return response.status(500).json({
         data: null,
         message: 'Error during user signin',

@@ -1,4 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ROLES } from 'src/roles/roles.constants';
 
@@ -65,7 +70,9 @@ export class UsersService {
         );
         return { ...newUser, userRole: prittyRoles };
       }
-
+      if (!user.is_active) {
+        throw new ForbiddenException(`We can't seem to find your account.`);
+      }
       const userRole = await this.prisma.customAuthRole.findFirst({
         where: { id: user?.roleAssignments[0]?.role_id },
         select: {
