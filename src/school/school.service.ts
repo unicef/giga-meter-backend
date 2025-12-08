@@ -4,6 +4,10 @@ import { dailycheckapp_school as School } from '@prisma/client';
 import { SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import {
+  sanitizeHardwareId,
+  isHardwareIdBlocked,
+} from '../common/hardware-id.utils';
 
 @Injectable()
 export class SchoolService {
@@ -156,6 +160,16 @@ export class SchoolService {
     schoolInfo?: any;
     is_active?: boolean;
   }> {
+    // If the hardware ID is blocked/generic, treat as no installation found
+    if (isHardwareIdBlocked(device_hardware_id)) {
+      console.warn(
+        `Blocked hardware ID provided to checkExistingInstallation: ${device_hardware_id}`,
+      );
+      return {
+        exists: false,
+      };
+    }
+
     // First check in dailycheckapp_school table
     // Include records where is_active is NOT false (true, null, or undefined)
     const school = await this.prisma.dailycheckapp_school.findFirst({
@@ -298,6 +312,18 @@ export class SchoolService {
     device_hardware_id: string,
     giga_id_school: string,
   ): Promise<{ is_active: boolean; message: string; exists: boolean }> {
+    // If the hardware ID is blocked/generic, treat as active (allow operation)
+    if (isHardwareIdBlocked(device_hardware_id)) {
+      console.warn(
+        `Blocked hardware ID provided to checkDeviceStatus: ${device_hardware_id}`,
+      );
+      return {
+        is_active: true,
+        message: 'Device not found (blocked hardware ID)',
+        exists: false,
+      };
+    }
+
     // Find the latest installation based on created timestamp
     const school = await this.prisma.dailycheckapp_school.findFirst({
       where: {
@@ -340,6 +366,17 @@ export class SchoolService {
     device_hardware_id: string,
     giga_id_school: string,
   ): Promise<{ deactivated: boolean; message?: string }> {
+    // If the hardware ID is blocked/generic, don't perform deactivation
+    // if (isHardwareIdBlocked(device_hardware_id)) {
+    //   console.warn(
+    //     `Blocked hardware ID provided to deactivateDevice: ${device_hardware_id}`,
+    //   );
+    //   return {
+    //     deactivated: false,
+    //     message: 'Cannot deactivate device with blocked/generic hardware ID',
+    //   };
+    // }
+
     // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
     const result = await this.prisma.dailycheckapp_school.updateMany({
       where: {
@@ -404,8 +441,8 @@ export class SchoolService {
       detected_longitude: school.geolocation?.location?.lng || null, 
       detected_location_accuracy: school.detected_location_accuracy || null,
       detected_location_distance: school.detected_location_distance || null,
-      detected_location_is_flagged: school.detected_location_is_flagged || false
-      device_hardware_id: school.device_hardware_id,
+      detected_location_is_flagged: school.detected_location_is_flagged || false,
+      device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
       is_active: school.is_active,
       windows_username: school.windows_username,
       installed_path: school.installed_path,
