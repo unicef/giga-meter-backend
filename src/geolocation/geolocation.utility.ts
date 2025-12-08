@@ -122,11 +122,10 @@ export class GeolocationUtility {
         schoolCoords.longitude
       );
       // Determine if the location should be flagged
-           const isFlagged = distance !== null && 
-                         deviceAccuracy !== null && 
-                         (distance > this.DISTANCE_THRESHOLD || 
-                          deviceAccuracy > this.ACCURACY_THRESHOLD);
-      
+      let isFlagged = true;
+      if(distance !== null && deviceAccuracy !== null) {
+        isFlagged = (distance > this.DISTANCE_THRESHOLD || deviceAccuracy > this.ACCURACY_THRESHOLD);
+      }
       return {
         distance,
         accuracy: deviceAccuracy,

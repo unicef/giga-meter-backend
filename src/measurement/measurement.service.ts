@@ -577,14 +577,11 @@ export class MeasurementService {
       app_version: measurement.app_version,
       ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
-      detected_latitude: measurement.geolocation?.location?.lat || null,
-      detected_longitude: measurement.geolocation?.location?.lng || null,
-      detected_location_accuracy:
-        measurement.detected_location_accuracy || null,
-      detected_location_distance:
-        measurement.detected_location_distance || null,
-      detected_location_is_flagged:
-        measurement.detected_location_is_flagged || false,
+      detected_latitude: measurement.geolocation?.location?.lat ?? null, 
+      detected_longitude: measurement.geolocation?.location?.lng ?? null, 
+      detected_location_accuracy: measurement.detected_location_accuracy ?? null,
+      detected_location_distance: measurement.detected_location_distance ?? null,
+      detected_location_is_flagged: measurement.detected_location_is_flagged ?? null,
     };
   }
 
