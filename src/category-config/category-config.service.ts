@@ -1,9 +1,17 @@
-import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateCategoryConfigDto, UpdateCategoryConfigDto } from './category-config.dto';
+import {
+  CreateCategoryConfigDto,
+  UpdateCategoryConfigDto,
+} from './category-config.dto';
 import { CategoryConfig } from '@prisma/client';
 import { CategoryConfigProvider } from '../common/category-config.provider';
-
 
 @Injectable()
 export class CategoryConfigService {
@@ -19,99 +27,118 @@ export class CategoryConfigService {
       return results.map(this.mapPrismaModelToInterface);
     } catch (error) {
       console.error('Error fetching category configs:', error.message);
-      return [];  
+      return [];
     }
   }
 
   async findOne(id: number): Promise<CategoryConfig> {
     try {
-    const result = await this.prisma.categoryConfig.findUnique({
-      where: { id }
-    });
-    
-    if (!result) {
+      const result = await this.prisma.categoryConfig.findUnique({
+        where: { id },
+      });
+
+      if (!result) {
+        throw new NotFoundException(`Category config with ID ${id} not found`);
+      }
+
+      return this.mapPrismaModelToInterface(result);
+    } catch (error) {
+      console.error('Error fetching category config:', error.message);
       throw new NotFoundException(`Category config with ID ${id} not found`);
     }
-
-    return this.mapPrismaModelToInterface(result);
-  } catch (error) {
-    console.error('Error fetching category config:', error.message);
-    throw new NotFoundException(`Category config with ID ${id} not found`);
-  }
   }
 
   async findByName(name: string): Promise<CategoryConfig> {
     try {
-    const result = await this.prisma.categoryConfig.findUnique({
-      where: { name }
-    });
-    
-    if (!result) {
-      throw new NotFoundException(`Category config with name ${name} not found`);
-    }
+      const result = await this.prisma.categoryConfig.findUnique({
+        where: { name },
+      });
 
-    return this.mapPrismaModelToInterface(result);
-  } catch (error) {
-    console.error('Error fetching category config:', error.message);
-    throw new NotFoundException(`Category config with name ${name} not found`);
-  }
+      if (!result) {
+        throw new NotFoundException(
+          `Category config with name ${name} not found`,
+        );
+      }
+
+      return this.mapPrismaModelToInterface(result);
+    } catch (error) {
+      console.error('Error fetching category config:', error.message);
+      throw new NotFoundException(
+        `Category config with name ${name} not found`,
+      );
+    }
   }
 
   async findDefault(): Promise<CategoryConfig> {
     try {
-    const result = await this.prisma.categoryConfig.findFirst({
-      where: { isDefault: true }
-    });
-    
-    if (!result) {
+      const result = await this.prisma.categoryConfig.findFirst({
+        where: { isDefault: true },
+      });
+
+      if (!result) {
+        throw new NotFoundException('No default category config found');
+      }
+
+      return this.mapPrismaModelToInterface(result);
+    } catch (error) {
+      console.error('Error fetching default category config:', error.message);
       throw new NotFoundException('No default category config found');
     }
-
-    return this.mapPrismaModelToInterface(result);
-  } catch (error) {
-    console.error('Error fetching default category config:', error.message);
-    throw new NotFoundException('No default category config found');
-  }
   }
 
-  async create(createCategoryConfigDto: CreateCategoryConfigDto): Promise<CategoryConfig> {
+  async create(
+    createCategoryConfigDto: CreateCategoryConfigDto,
+  ): Promise<CategoryConfig> {
     try {
-    // If this is set as default, unset any existing default
-    if (createCategoryConfigDto.isDefault) {
-      await this.prisma.categoryConfig.updateMany({
-        where: { isDefault: true },
-        data: { isDefault: false }
-      });
-    }
-    // check if category config with name already exists
-    const existingConfig = await this.prisma.categoryConfig.findUnique({
-      where: { name: createCategoryConfigDto.name }
-    });
-    if (existingConfig) {
-      throw new BadRequestException(`Category config with name ${createCategoryConfigDto.name} already exists`);
-    }
-    const result = await this.prisma.categoryConfig.create({
-      data: {
-        name: createCategoryConfigDto.name,
-        isDefault: createCategoryConfigDto.isDefault || false,
-        allowedAPIs: (createCategoryConfigDto.allowedAPIs ? createCategoryConfigDto.allowedAPIs : []) as any,
-        notAllowedAPIs: (createCategoryConfigDto.notAllowedAPIs ? createCategoryConfigDto.notAllowedAPIs : []) as any,
-        responseFilters: (createCategoryConfigDto.responseFilters ? createCategoryConfigDto.responseFilters : null) as any,
-        allowedCountries: (createCategoryConfigDto.allowedCountries ? createCategoryConfigDto.allowedCountries : []),
-        swagger: (createCategoryConfigDto.swagger) as any
+      // If this is set as default, unset any existing default
+      if (createCategoryConfigDto.isDefault) {
+        await this.prisma.categoryConfig.updateMany({
+          where: { isDefault: true },
+          data: { isDefault: false },
+        });
       }
-    });
-    return this.mapPrismaModelToInterface(result);
-  } catch (error) {
-    console.error('Error creating category config:', error.message);
-    if (error instanceof BadRequestException) {
-      throw error;
+      // check if category config with name already exists
+      const existingConfig = await this.prisma.categoryConfig.findUnique({
+        where: { name: createCategoryConfigDto.name },
+      });
+      if (existingConfig) {
+        throw new BadRequestException(
+          `Category config with name ${createCategoryConfigDto.name} already exists`,
+        );
+      }
+      const result = await this.prisma.categoryConfig.create({
+        data: {
+          name: createCategoryConfigDto.name,
+          isDefault: createCategoryConfigDto.isDefault || false,
+          allowedAPIs: (createCategoryConfigDto.allowedAPIs
+            ? createCategoryConfigDto.allowedAPIs
+            : []) as any,
+          notAllowedAPIs: (createCategoryConfigDto.notAllowedAPIs
+            ? createCategoryConfigDto.notAllowedAPIs
+            : []) as any,
+          responseFilters: (createCategoryConfigDto.responseFilters
+            ? createCategoryConfigDto.responseFilters
+            : null) as any,
+          allowedCountries: createCategoryConfigDto.allowedCountries
+            ? createCategoryConfigDto.allowedCountries
+            : [],
+          swagger: createCategoryConfigDto.swagger as any,
+        },
+      });
+      return this.mapPrismaModelToInterface(result);
+    } catch (error) {
+      console.error('Error creating category config:', error.message);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new Error('Failed to create category config');
     }
-    throw new Error('Failed to create category config');
-  }
   }
 
-  async update(id: number, updateCategoryConfigDto: UpdateCategoryConfigDto): Promise<CategoryConfig> {
+  async update(
+    id: number,
+    updateCategoryConfigDto: UpdateCategoryConfigDto,
+  ): Promise<CategoryConfig> {
     try {
       const category = await this.findOne(id);
       if (!category) {
@@ -128,11 +155,19 @@ export class CategoryConfigService {
       const data = {
         name: updateCategoryConfigDto.name,
         isDefault: updateCategoryConfigDto.isDefault,
-        allowedAPIs: (updateCategoryConfigDto.allowedAPIs ? updateCategoryConfigDto.allowedAPIs : undefined) as any,
-        notAllowedAPIs: (updateCategoryConfigDto.notAllowedAPIs ? updateCategoryConfigDto.notAllowedAPIs : undefined) as any,
-        responseFilters: (updateCategoryConfigDto.responseFilters ? updateCategoryConfigDto.responseFilters : undefined) as any,
-        allowedCountries: (updateCategoryConfigDto.allowedCountries ? updateCategoryConfigDto.allowedCountries : undefined),
-        swagger: (updateCategoryConfigDto.swagger) as any
+        allowedAPIs: (updateCategoryConfigDto.allowedAPIs
+          ? updateCategoryConfigDto.allowedAPIs
+          : undefined) as any,
+        notAllowedAPIs: (updateCategoryConfigDto.notAllowedAPIs
+          ? updateCategoryConfigDto.notAllowedAPIs
+          : undefined) as any,
+        responseFilters: (updateCategoryConfigDto.responseFilters
+          ? updateCategoryConfigDto.responseFilters
+          : undefined) as any,
+        allowedCountries: updateCategoryConfigDto.allowedCountries
+          ? updateCategoryConfigDto.allowedCountries
+          : undefined,
+        swagger: updateCategoryConfigDto.swagger as any,
       };
 
       const result = await this.prisma.categoryConfig.update({
@@ -143,7 +178,10 @@ export class CategoryConfigService {
       return this.mapPrismaModelToInterface(result);
     } catch (error) {
       console.error('Error updating category config:', error.message);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new BadRequestException(`Failed to update category config`);
@@ -154,26 +192,35 @@ export class CategoryConfigService {
     try {
       const category = await this.findOne(id);
       if (category.isDefault) {
-        throw new BadRequestException('Cannot delete the default category config');
+        throw new BadRequestException(
+          'Cannot delete the default category config',
+        );
       }
       const result = await this.prisma.categoryConfig.delete({ where: { id } });
       return this.mapPrismaModelToInterface(result);
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       console.error('Error deleting category config:', error.message);
-      throw new BadRequestException(`Failed to delete category config: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to delete category config: ${error.message}`,
+      );
     }
   }
 
-  async getAllowedCountries(): Promise<{ category: string; allowedCountries: string[] }[]> {
+  async getAllowedCountries(): Promise<
+    { category: string; allowedCountries: string[] }[]
+  > {
     try {
       const configs = await this.categoryConfigProvider.getAllCategoryConfigs();
-      
-      return configs.map(config => ({
+
+      return configs.map((config) => ({
         category: config.name,
-        allowedCountries: config.allowedCountries || []
+        allowedCountries: config.allowedCountries || [],
       }));
     } catch (error) {
       console.error('Error fetching allowed countries:', error.message);
@@ -193,7 +240,7 @@ export class CategoryConfigService {
       allowedCountries: model.allowedCountries,
       swagger: model.swagger,
       createdAt: model.createdAt,
-      updatedAt: model.updatedAt
+      updatedAt: model.updatedAt,
     };
   }
 }

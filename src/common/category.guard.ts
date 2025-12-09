@@ -19,7 +19,14 @@ export class CategoryGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     
+<<<<<<< HEAD
     const isMetrics = request.url === '/metrics';
+=======
+    if (request.url === '/metrics') {
+      return true;
+    }
+    // Check if the route is marked as public
+>>>>>>> main
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),

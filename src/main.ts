@@ -124,6 +124,28 @@ async function bootstrap() {
       });
     }
   }
+<<<<<<< HEAD
+=======
+  if (process.env.NODE_ENV === 'development') {
+    app.enableCors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT'],
+      preflightContinue: false,
+    });
+  } else {
+    app.enableCors({
+      // origin: [
+      //   'capacitor-electron://-',
+      //   'https://meter.giga.global/',
+      //   'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
+      //   'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
+      // ],
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT'],
+      preflightContinue: false,
+    });
+  }
+>>>>>>> main
 
   const corsOptions = {
     origin: (origin, callback) => {
@@ -169,7 +191,11 @@ async function bootstrap() {
   app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
 
+<<<<<<< HEAD
 const logger = new Logger('Bootstrap');
+=======
+  app.set('trust proxy', true);
+>>>>>>> main
   await app.listen(3000, () => {
     logger.log('Server started on port 3000');
     logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

@@ -3,13 +3,13 @@ import { ApiProperty } from '@nestjs/swagger';
 export class GeoLocationDto {
   @ApiProperty({
     description: 'Location coordinates with latitude and longitude',
-    example: { lat: 28.655616, lng: 77.2079616 }
+    example: { lat: 28.655616, lng: 77.2079616 },
   })
   location?: { lat: number; lng: number };
 
   @ApiProperty({
     description: 'Accuracy of the geolocation in meters',
-    example: 741820.5619146812
+    example: 741820.5619146812,
   })
   accuracy?: number;
 }
@@ -437,24 +437,36 @@ export class MeasurementDto {
 
   @ApiProperty({
     description: 'Geolocation data from device',
-    type: GeoLocationDto
+    type: GeoLocationDto,
   })
   geolocation?: GeoLocationDto;
 
   @ApiProperty({
-    description: 'Distance between school location and detected location in meters'
+    description:
+      'Distance between school location and detected location in meters',
   })
   detected_location_distance?: number;
 
   @ApiProperty({
-    description: 'Accuracy of the geolocation in meters'
+    description: 'Accuracy of the geolocation in meters',
   })
   detected_location_accuracy?: number;
 
   @ApiProperty({
-    description: 'Flag if distance > X & accuracy > Y'
+    description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class MeasurementV2Dto {
@@ -493,27 +505,40 @@ export class MeasurementV2Dto {
 
   @ApiProperty()
   created_at?: Date;
-  
+
   @ApiProperty({
     description: 'Geolocation data from device',
-    type: GeoLocationDto
+    type: GeoLocationDto,
   })
   geolocation?: GeoLocationDto;
 
   @ApiProperty({
-    description: 'Distance between school location and detected location in meters'
+    description:
+      'Distance between school location and detected location in meters',
   })
   detected_location_distance?: number;
 
   @ApiProperty({
-    description: 'Accuracy of the geolocation in meters'
+    description: 'Accuracy of the geolocation in meters',
   })
   detected_location_accuracy?: number;
 
   @ApiProperty({
-    description: 'Flag if distance > X & accuracy > Y'
+    description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class AddMeasurementDto extends MeasurementDto {

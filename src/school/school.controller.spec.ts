@@ -4,7 +4,10 @@ import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockCategoryConfigProvider, mockSchoolDto } from '../common/mock-objects';
+import {
+  mockCategoryConfigProvider,
+  mockSchoolDto,
+} from '../common/mock-objects';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';

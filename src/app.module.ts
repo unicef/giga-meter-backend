@@ -28,6 +28,7 @@ import { AuthGuard } from './auth/auth.guard';
 import { CategoryConfigModule } from './category-config/category-config.module';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { AuthModule } from './auth/auth.module';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -35,9 +36,9 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
-import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
+import * as redisStore from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     CategoryConfigModule,
     AuthModule,
     GeolocationModule,
+    IpMetadataModule,
   ],
   controllers: [
     AppController,
@@ -99,6 +101,7 @@ import { DeviceTokenService } from './auth/device-token.service';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    ConnectivityService,
   ],
 })
 export class AppModule {}
