@@ -92,7 +92,7 @@ export class RolesService {
 
     const [data, total] = await Promise.all([
       this.prisma.customAuthRole.findMany({
-        where,
+        where: { ...where, deleted: null },
         skip,
         take: limit,
         orderBy: { id: 'asc' },
