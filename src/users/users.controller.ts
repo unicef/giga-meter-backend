@@ -3,7 +3,6 @@ import {
   ForbiddenException,
   Get,
   Logger,
-  NotFoundException,
   Req,
   Res,
 } from '@nestjs/common';
