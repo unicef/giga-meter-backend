@@ -87,8 +87,8 @@ export class RolesService {
     const skip = (page - 1) * limit;
 
     const where = search
-      ? { name: { contains: search, mode: 'insensitive' } }
-      : ({} as any);
+      ? { name: { contains: search, mode: 'insensitive', deleted: null } }
+      : ({ deleted: null } as any);
 
     const [data, total] = await Promise.all([
       this.prisma.customAuthRole.findMany({
