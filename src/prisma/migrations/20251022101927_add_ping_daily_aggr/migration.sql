@@ -16,3 +16,4 @@ CREATE TABLE "connectivity_ping_checks_daily_aggr" (
 -- CreateIndex
 CREATE INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_timestam_idx" ON "connectivity_ping_checks_daily_aggr"("giga_id_school", "timestamp_date");
 CREATE INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" ON "connectivity_ping_checks_daily_aggr"("giga_id_school", "browser_id", "timestamp_date");
+ALTER INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" RENAME TO "connectivity_ping_checks_daily_aggr_giga_id_school_browser__idx";
