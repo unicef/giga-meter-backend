@@ -60,6 +60,7 @@ model dailycheckapp_school {
   ip_address          String?
   country_code        String?
   is_blocked          Boolean   @default(false)
+  is_active           Boolean   @default(false)
   notify              Boolean   @default(false)
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   detected_latitude           Float?    // Detected latitude from device

@@ -36,26 +36,30 @@ export class SchoolDto {
   is_blocked: boolean;
 
   @ApiProperty()
+  is_active: boolean;
+
+  @ApiProperty()
   created_at: Date;
-  
+
   @ApiProperty({
     description: 'Geolocation data from device',
-    type: GeoLocationDto
+    type: GeoLocationDto,
   })
   geolocation?: GeoLocationDto;
 
   @ApiProperty({
-    description: 'Distance between school location and detected location in meters'
+    description:
+      'Distance between school location and detected location in meters',
   })
   detected_location_distance?: number;
 
   @ApiProperty({
-    description: 'Accuracy of the geolocation in meters'
+    description: 'Accuracy of the geolocation in meters',
   })
   detected_location_accuracy?: number;
 
   @ApiProperty({
-    description: 'Flag if distance > X & accuracy > Y'
+    description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
 }
