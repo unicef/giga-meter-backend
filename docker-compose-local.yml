@@ -1,0 +1,93 @@
+services:
+  giga-meter-db:
+    image: postgis/postgis:15-3.3
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_INITDB_ARGS: "--data-checksums"
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    command: >
+      postgres
+      -c log_statement=all
+      -c log_duration=on
+      -c log_connections=on
+      -c log_disconnections=on
+      -c log_min_duration_statement=0
+    ports:
+      - '${POSTGRES_PORT}:${POSTGRES_PORT}'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  giga-meter-redis:
+    image: redis:latest
+    restart: always
+    command: redis-server --loglevel verbose
+    ports:
+      - '${REDIS_PORT}:${REDIS_PORT}'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  giga-meter-backend:
+    build: .
+    depends_on:
+      giga-meter-db:
+        condition: service_healthy
+      giga-meter-redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@giga-meter-db:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
+      REDIS_URL: redis://giga-meter-redis:${REDIS_PORT}
+      PORT: ${PORT:-3000}
+      NODE_ENV: ${NODE_ENV}
+      USE_AUTH: ${USE_AUTH}
+      GIGA_METER_APP_KEY: ${GIGA_METER_APP_KEY}
+      DAILY_CHECK_APP_API_CODE: ${DAILY_CHECK_APP_API_CODE}
+      PROJECT_CONNECT_SERVICE_URL: ${PROJECT_CONNECT_SERVICE_URL}
+      PCDC_APP_DOWNLOAD_URL: ${PCDC_APP_DOWNLOAD_URL}
+      NO_CACHE: ${NO_CACHE:-FALSE}
+      CACHE_EXPIRE: ${CACHE_EXPIRE:-1000}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    ports:
+      - '${PORT}:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: >
+      sh -c "set -ex &&
+        npx prisma migrate dev --force &&
+        npx prisma generate &&
+        npx prisma db seed &&
+        npm run dev
+      "
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres-data:
+  redis-data:

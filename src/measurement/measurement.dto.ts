@@ -1,15 +1,236 @@
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class CloudflareDataUsageDto {
+  @ApiProperty({
+    required: false,
+    description: 'Bytes downloaded during the measurement',
+  })
+  @IsOptional()
+  @IsNumber()
+  download?: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Bytes uploaded during the measurement',
+  })
+  @IsOptional()
+  @IsNumber()
+  upload?: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Total bytes transferred during the measurement',
+  })
+  @IsOptional()
+  @IsNumber()
+  total?: number;
+}
+
+export class CloudflareResultsSummaryDto {
+  @ApiProperty({
+    required: false,
+    description: 'Measured download bandwidth in bits per second',
+  })
+  @IsOptional()
+  @IsNumber()
+  download?: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Measured upload bandwidth in bits per second',
+  })
+  @IsOptional()
+  @IsNumber()
+  upload?: number;
+
+  @ApiProperty({
+    required: false,
+    description: 'Measured latency in milliseconds',
+  })
+  @IsOptional()
+  @IsNumber()
+  latency?: number;
+}
+
+export class CloudflareAccessInformationDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  ip?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  hostname?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  region?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  loc?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  org?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  postal?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsObject()
+  asn?: Record<string, any> | string;
+}
+
+export class CloudflareMeasurementDto {
+  @ApiProperty({ description: 'Unique identifier for the measurement run' })
+  @IsUUID()
+  uuid: string;
+
+  @ApiProperty({ description: 'Version of the Cloudflare speed test' })
+  @IsString()
+  version: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Provider responsible for the measurement',
+  })
+  @IsOptional()
+  @IsString()
+  provider?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Optional notes about the measurement',
+  })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @ApiProperty({
+    description: 'Measurement timestamp as Unix epoch in milliseconds',
+  })
+  @IsNumber()
+  timestamp: number;
+
+  @ApiProperty({ description: 'Application version sending the measurement' })
+  @IsString()
+  appVersion: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Aggregated usage values reported by Cloudflare',
+    type: () => CloudflareDataUsageDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CloudflareDataUsageDto)
+  dataUsage?: CloudflareDataUsageDto;
+
+  @ApiProperty({
+    required: false,
+    description: 'Access related metadata reported by Cloudflare',
+    type: () => CloudflareAccessInformationDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CloudflareAccessInformationDto)
+  accessInformation?: CloudflareAccessInformationDto;
+
+  @ApiProperty({
+    required: false,
+    description: 'Detailed measurement results returned by Cloudflare',
+    type: Object,
+  })
+  @IsOptional()
+  @IsObject()
+  results?: Record<string, any>;
+
+  @ApiProperty({
+    required: false,
+    description: 'Identifier of the browser that triggered the measurement',
+  })
+  @IsOptional()
+  @IsString()
+  browserID?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Type of device running the measurement',
+  })
+  @IsOptional()
+  @IsString()
+  deviceType?: string;
+
+  @ApiProperty({
+    description: 'School identifier (legacy Daily Check App user id)',
+  })
+  @IsString()
+  schoolID: string;
+
+  @ApiProperty({ required: false, description: 'Giga ID of the school' })
+  @IsOptional()
+  @IsString()
+  gigaIDSchool?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'IP address captured during the test',
+  })
+  @IsOptional()
+  @IsString()
+  ipAddress?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Country code associated with the measurement',
+  })
+  @IsOptional()
+  @IsString()
+  countryCode?: string;
+}
 
 export class GeoLocationDto {
   @ApiProperty({
     description: 'Location coordinates with latitude and longitude',
-    example: { lat: 28.655616, lng: 77.2079616 }
+    example: { lat: 28.655616, lng: 77.2079616 },
   })
   location?: { lat: number; lng: number };
 
   @ApiProperty({
     description: 'Accuracy of the geolocation in meters',
-    example: 741820.5619146812
+    example: 741820.5619146812,
   })
   accuracy?: number;
 }
@@ -437,22 +658,23 @@ export class MeasurementDto {
 
   @ApiProperty({
     description: 'Geolocation data from device',
-    type: GeoLocationDto
+    type: GeoLocationDto,
   })
   geolocation?: GeoLocationDto;
 
   @ApiProperty({
-    description: 'Distance between school location and detected location in meters'
+    description:
+      'Distance between school location and detected location in meters',
   })
   detected_location_distance?: number;
 
   @ApiProperty({
-    description: 'Accuracy of the geolocation in meters'
+    description: 'Accuracy of the geolocation in meters',
   })
   detected_location_accuracy?: number;
 
   @ApiProperty({
-    description: 'Flag if distance > X & accuracy > Y'
+    description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
 }
@@ -493,25 +715,26 @@ export class MeasurementV2Dto {
 
   @ApiProperty()
   created_at?: Date;
-  
+
   @ApiProperty({
     description: 'Geolocation data from device',
-    type: GeoLocationDto
+    type: GeoLocationDto,
   })
   geolocation?: GeoLocationDto;
 
   @ApiProperty({
-    description: 'Distance between school location and detected location in meters'
+    description:
+      'Distance between school location and detected location in meters',
   })
   detected_location_distance?: number;
 
   @ApiProperty({
-    description: 'Accuracy of the geolocation in meters'
+    description: 'Accuracy of the geolocation in meters',
   })
   detected_location_accuracy?: number;
 
   @ApiProperty({
-    description: 'Flag if distance > X & accuracy > Y'
+    description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
 }

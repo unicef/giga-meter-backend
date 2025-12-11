@@ -118,6 +118,7 @@ model country {
   latest_school_master_data_version Int?
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
+  countryConfigs                    CountryConfig[]
 }
 
 model master_sync_school_static {
@@ -364,7 +365,7 @@ model connectivity_ping_checks {
   deviceId       String    @map("device_id")
   latency        Float?
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-} 
+}
 model CategoryConfig {
   id            Int      @id @default(autoincrement())
   name          String   @unique
@@ -378,4 +379,38 @@ model CategoryConfig {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("category_config")
+}
+
+model CountryConfig {
+  id                  Int                   @id @default(autoincrement())
+  countryCode         String                @unique @map("country_code")
+  measurementProvider MeasurementProvider   @default(mlab) @map("measurement_provider")
+  options             Json?                 @map("options")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  country             country               @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  @@map("country_config")
+}
+
+enum MeasurementProvider {
+  mlab
+  cloudflare
+}
+model IpMetadata {
+  id       Int     @id @default(autoincrement())
+  ip       String
+  hostname String?
+  city     String?
+  region   String?
+  country  String?
+  loc      String?
+  org      String?
+  postal   String?
+  timezone String?
+  asn      String?
+  source   String?
+
+  @@unique([ip, source])
 }
