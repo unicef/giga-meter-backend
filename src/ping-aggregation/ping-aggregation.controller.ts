@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Get,
   HttpException,
@@ -13,8 +14,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import {
+  GetRawPingConnectivityDto,
   GetRawPingsQueryDto,
   GetRawPingsResponseDto,
+  PingRecordResponseDto,
   SyncQueryDto,
 } from './ping-aggregation.dto';
 import { PingAggregationService } from './ping-aggregation.service';
@@ -64,10 +67,10 @@ export class PingAggregationController {
 
   @Get('records')
   @ApiOperation({
-    summary: 'Returns the raw ping data for a school',
+    summary: 'Returns the daily ping data for a school',
   })
   @ApiOkResponse({
-    description: 'Returns the raw ping data for a school',
+    description: 'Returns the daily ping data for a school',
     type: GetRawPingsResponseDto,
   })
   @ApiResponse({
@@ -80,6 +83,30 @@ export class PingAggregationController {
     } catch (error) {
       this.logger.error(error);
       throw new HttpException(error, HttpStatus.BAD_REQUEST);
+    }
+  }
+
+  @Get('raw-ping-records')
+  @ApiOperation({
+    summary: 'Returns the raw ping data for a school',
+  })
+  @ApiOkResponse({
+    description: 'Returns the raw ping data for a school',
+    type: PingRecordResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async getRawPingConnectivity(@Query() query: GetRawPingConnectivityDto) {
+    try {
+      return this.pingAggregationService.getRawPingConnectivity(query);
+    } catch (error) {
+      this.logger.error(error);
+      throw new HttpException(
+        'Internal server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 }

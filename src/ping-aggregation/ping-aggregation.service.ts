@@ -1,7 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { GetRawPingsQueryDto } from './ping-aggregation.dto';
+import {
+  GetRawPingConnectivityDto,
+  GetRawPingsQueryDto,
+} from './ping-aggregation.dto';
 
 @Injectable()
 export class PingAggregationService {
@@ -52,17 +60,21 @@ export class PingAggregationService {
       const end = new Date(
         Date.UTC(utcYear, utcMonth, utcDate, 23, 59, 59, 999),
       );
+      let colNameDeviceOrBrowserId = 'browser_id';
+      const col = (this.prisma.connectivity_ping_checks.fields as any)
+        ?.deviceId;
+      if (col) colNameDeviceOrBrowserId = 'device_id';
 
       this.logger.log(
         `Starting aggregation for ${start.toISOString()} and end ${end.toISOString()}`,
       );
-
+      const colName = Prisma.sql([colNameDeviceOrBrowserId]);
       const data = await this.prisma.$queryRaw<
         any[]
-      >`SELECT giga_id_school, device_id, 
+      >`SELECT giga_id_school, ${colName}, 
       SUM( CASE WHEN is_connected = TRUE THEN 1 ELSE 0 END ) AS isConnectedTrueSum,
-       SUM(1) as isConnectedAllSum, AVG(latency) AS latencyAvg 
-       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} GROUP BY giga_id_school, device_id order by giga_id_school asc`;
+       count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg 
+       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} GROUP BY giga_id_school, ${colName} order by giga_id_school asc`;
 
       // To ensure idempotency, we check for and delete any existing aggregated data
       // for the target date and the specific school/device combinations before inserting
@@ -75,7 +87,7 @@ export class PingAggregationService {
               in: data.map((item) => item.giga_id_school),
             },
             browser_id: {
-              in: data.map((item) => item.device_id),
+              in: data.map((item) => item[colNameDeviceOrBrowserId]),
             },
           },
           select: {
@@ -99,7 +111,7 @@ export class PingAggregationService {
         insertData.push({
           timestamp_date: start,
           giga_id_school: record.giga_id_school,
-          browser_id: record.device_id || null,
+          browser_id: record?.[colNameDeviceOrBrowserId] || null,
           is_connected_true,
           is_connected_all,
           uptime,
@@ -117,6 +129,35 @@ export class PingAggregationService {
     } catch (error) {
       this.logger.error(error);
       throw error;
+    }
+  }
+
+  async getRawPingConnectivity(query: GetRawPingConnectivityDto) {
+    try {
+      const { schoolId, from, to } = query;
+
+      const where: Prisma.connectivity_ping_checksWhereInput = {};
+      if (schoolId) where.giga_id_school = schoolId;
+
+      if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime()))
+        where.timestamp = {
+          ...(from && { gte: new Date(from) }),
+          ...(to && { lte: new Date(to) }),
+        };
+      else throw new BadRequestException('from and to both are required');
+
+      const data = await this.prisma.connectivity_ping_checks.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        take: 10000,
+      });
+
+      return { data };
+    } catch (error) {
+      this.logger.log(error);
+      if (error instanceof BadRequestException) throw error;
+
+      throw new HttpException('Internal server error', error.status);
     }
   }
 }
