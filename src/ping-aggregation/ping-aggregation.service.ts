@@ -134,7 +134,10 @@ export class PingAggregationService {
 
   async getRawPingConnectivity(query: GetRawPingConnectivityDto) {
     try {
-      const { schoolId, from, to } = query;
+      if (!query?.size) {
+        query.size = 100;
+      }
+      const { schoolId, from, to, size } = query;
 
       const where: Prisma.connectivity_ping_checksWhereInput = {};
       if (schoolId) where.giga_id_school = schoolId;
@@ -149,7 +152,7 @@ export class PingAggregationService {
       const data = await this.prisma.connectivity_ping_checks.findMany({
         where,
         orderBy: { timestamp: 'desc' },
-        take: 10000,
+        take: size,
       });
 
       return { data };

@@ -113,6 +113,24 @@ export class GetRawPingConnectivityDto {
   })
   @IsDateString()
   to: string;
+
+  @ApiProperty({
+    description: 'record size number',
+    required: true,
+    default: 100,
+    minimum: 100,
+    maximum: 10000,
+  })
+  @IsInt()
+  @Type(() => Number)
+  size: number = 100;
+}
+
+export class GetRawPingConnectivityResponseDto {
+  @ApiProperty({ type: MetaDto })
+  meta: MetaDto;
+  @ApiProperty({ type: [PingCheckDto] })
+  data: PingCheckDto[];
 }
 
 export class PingRecordDto {

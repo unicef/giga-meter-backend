@@ -22,6 +22,7 @@ import {
 } from './ping-aggregation.dto';
 import { PingAggregationService } from './ping-aggregation.service';
 import { getDateFromString } from 'src/utility/utility';
+import { ValidateSize } from 'src/common/validation.decorator';
 
 @ApiTags('Ping Aggregation')
 @Controller('api/v1/ping-aggregation')
@@ -98,9 +99,15 @@ export class PingAggregationController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
-  async getRawPingConnectivity(@Query() query: GetRawPingConnectivityDto) {
+  async getRawPingConnectivity(
+    @Query() query: GetRawPingConnectivityDto,
+    @ValidateSize({ min: 100, max: 10000 }) @Query('size') size: number,
+  ) {
     try {
-      return this.pingAggregationService.getRawPingConnectivity(query);
+      return this.pingAggregationService.getRawPingConnectivity({
+        ...query,
+        size,
+      });
     } catch (error) {
       this.logger.error(error);
       throw new HttpException(
