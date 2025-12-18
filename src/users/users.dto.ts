@@ -112,10 +112,13 @@ export class UpdateUserDto {
   @IsBoolean()
   is_active?: boolean;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsBoolean()
-  is_superuser?: boolean;
+  @ApiProperty()
+  @IsEmail()
+  email: string;
+
+  @ApiProperty()
+  @Type(() => Number)
+  roleId: number;
 }
 
 export class SignUserDataDto {

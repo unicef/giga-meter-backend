@@ -2,11 +2,12 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { ROLES } from 'src/roles/roles.constants';
+import { PERMISSION_SLUGS, ROLES } from 'src/roles/roles.constants';
 import { GetUsersQueryDto, UpdateUserDto } from './users.dto';
 import { Prisma } from '@prisma/client';
 
@@ -75,8 +76,23 @@ export class UsersService {
   }
 
   async getUserById(id: number) {
-    const user = await this.prisma.users.findFirst({
+    const user = await this.prisma.users.findUnique({
       where: { id: parseInt(id.toString()) },
+      include: {
+        roleAssignments: {
+          where: { deleted: null },
+          include: {
+            role: {
+              include: {
+                rolePermissions: {
+                  where: { deleted: null },
+                  select: { id: true, slug: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user) {
@@ -90,10 +106,33 @@ export class UsersService {
     };
   }
 
-  async updateUser(id: number, data: UpdateUserDto) {
-    await this.getUserById(id);
+  async updateUser(id: number, data: UpdateUserDto, loggedInUser: any) {
+    id = parseInt(id.toString());
+    const user = await this.getUserById(id);
+    if (data.roleId && user.data.roleAssignments[0].role_id != data.roleId) {
+      if (loggedInUser.userRole[PERMISSION_SLUGS.CAN_UPDATE_USER_ROLE]) {
+        await this.prisma.customAuthUserRoleRelationship.update({
+          where: {
+            id: user.data.roleAssignments[0].id,
+          },
+          data: {
+            role_id: data.roleId,
+            last_modified_by_id: loggedInUser.id,
+            last_modified_at: new Date(),
+          },
+        });
+      } else {
+        throw new ForbiddenException(
+          "You don't have permission to update this user role.",
+        );
+      }
+    }
+    ['username', 'email', 'is_superuser', 'roleId'].forEach((key) => {
+      if (data[key]) delete data[key];
+    });
+
     const updatedUser = await this.prisma.users.update({
-      where: { id: parseInt(id.toString()) },
+      where: { id },
       data: {
         ...data,
         updated_at: new Date(),
@@ -105,6 +144,21 @@ export class UsersService {
       message: 'Successfully updated user',
       status: 200,
     };
+  }
+
+  async getCommonConfigs() {
+    try {
+      const roles = await this.prisma.customAuthRole.findMany({
+        where: { deleted: null },
+        select: { id: true, name: true, description: true },
+      });
+      const rolesValue = Object.values(ROLES);
+      const permissions = Object.values(PERMISSION_SLUGS);
+      return { roles, rolesValue, permissions };
+    } catch (error) {
+      this.logger.error(error);
+      throw new InternalServerErrorException('Error retrieving common configs');
+    }
   }
 
   async signinUser(input: { email: string; username: string }) {
