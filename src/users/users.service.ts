@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -6,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ROLES } from 'src/roles/roles.constants';
+import { GetUsersQueryDto, UpdateUserDto } from './users.dto';
+import { Prisma } from '@prisma/client';
 
 type TypeRoles = {
   id: number;
@@ -17,6 +20,92 @@ type TypeRoles = {
 export class UsersService {
   private logger = new Logger(UsersService.name);
   constructor(private prisma: PrismaService) {}
+
+  async getUsers(query: GetUsersQueryDto) {
+    const { page, page_size, search } = query;
+    if (!page || !page_size)
+      throw new BadRequestException('page and page_size are required');
+    const skip = (page - 1) * page_size;
+
+    const where: Prisma.UsersWhereInput = search
+      ? {
+          OR: [
+            { first_name: { contains: search, mode: 'insensitive' } },
+            { last_name: { contains: search, mode: 'insensitive' } },
+            { username: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : {};
+
+    const [users, total] = await Promise.all([
+      this.prisma.users.findMany({
+        where,
+        skip,
+        take: parseInt(page_size.toString()),
+        include: {
+          roleAssignments: {
+            where: { deleted: null },
+            include: {
+              role: {
+                include: {
+                  rolePermissions: {
+                    where: { deleted: null },
+                    select: { id: true, slug: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: { id: 'desc' },
+      }),
+      this.prisma.users.count({ where }),
+    ]);
+
+    return {
+      data: users,
+      meta: {
+        page,
+        page_size,
+        total,
+        totalPages: Math.ceil(total / page_size),
+      },
+    };
+  }
+
+  async getUserById(id: number) {
+    const user = await this.prisma.users.findFirst({
+      where: { id: parseInt(id.toString()) },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      data: user,
+      message: 'Successfully retrieved user',
+      status: 200,
+    };
+  }
+
+  async updateUser(id: number, data: UpdateUserDto) {
+    await this.getUserById(id);
+    const updatedUser = await this.prisma.users.update({
+      where: { id: parseInt(id.toString()) },
+      data: {
+        ...data,
+        updated_at: new Date(),
+      },
+    });
+
+    return {
+      data: updatedUser,
+      message: 'Successfully updated user',
+      status: 200,
+    };
+  }
 
   async signinUser(input: { email: string; username: string }) {
     try {
