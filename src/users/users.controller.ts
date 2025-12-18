@@ -1,21 +1,106 @@
 import {
+  Body,
   Controller,
   ForbiddenException,
   Get,
+  InternalServerErrorException,
   Logger,
+  Param,
+  Put,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { SignUserDtoResponse } from './users.dto';
+
 import { Roles } from 'src/roles/roles.decorator';
+import {
+  GetUserDtoResponse,
+  GetUsersDtoResponse,
+  GetUsersQueryDto,
+  SignUserDtoResponse,
+  UpdateUserDto,
+} from './users.dto';
+import { PERMISSION_SLUGS } from 'src/roles/roles.constants';
 
 @ApiTags('Users Management')
 @Controller('api/v1/users')
 export class UsersController {
   private logger = new Logger(UsersController.name);
   constructor(private readonly usersService: UsersService) {}
+
+  @Get()
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_USER, PERMISSION_SLUGS.CAN_ACCESS_USERS_TAB)
+  @ApiOperation({
+    summary: 'Get users',
+    description: 'Get a list of users with pagination and ordering',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved users',
+    type: GetUsersDtoResponse,
+  })
+  async getUsers(@Query() query: GetUsersQueryDto): Promise<any> {
+    try {
+      return this.usersService.getUsers(query);
+    } catch (error) {
+      this.logger.error(error);
+      throw new InternalServerErrorException('Error retrieving users');
+    }
+  }
+
+  @Get(':id')
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_USER, PERMISSION_SLUGS.CAN_ACCESS_USERS_TAB)
+  @ApiOperation({
+    summary: 'Get user by id',
+    description: 'Get a single user by id',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved user',
+    type: GetUserDtoResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async getUserById(@Param('id') id: number): Promise<GetUserDtoResponse> {
+    try {
+      return this.usersService.getUserById(id);
+    } catch (error) {
+      this.logger.error(error);
+      throw new InternalServerErrorException('Error retrieving user');
+    }
+  }
+
+  @Put(':id')
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_USER)
+  @ApiOperation({
+    summary: 'Update user',
+    description: 'Update a user by id',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully updated user',
+    type: GetUserDtoResponse,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+  })
+  async updateUser(
+    @Req() request: any,
+    @Param('id') id: number,
+    @Body() data: UpdateUserDto,
+  ): Promise<GetUserDtoResponse> {
+    try {
+      return this.usersService.updateUser(id, data);
+    } catch (error) {
+      this.logger.error(error);
+      throw new InternalServerErrorException('Error updating user');
+    }
+  }
 
   @Get('signin')
   @Roles('')
