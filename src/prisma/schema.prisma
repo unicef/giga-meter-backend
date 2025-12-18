@@ -1,11 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["tracing"]
+  previewFeatures = ["tracing", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
 }
 
 model EFMigrationsHistory {
@@ -66,6 +67,11 @@ model dailycheckapp_school {
   windows_username    String?
   installed_path      String?
   wifi_connections    Json?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 model school {
@@ -74,7 +80,7 @@ model school {
   modified                 DateTime?                   @db.Timestamptz(6)
   name                     String?                     @db.VarChar
   timezone                 String?                     @db.VarChar
-  geopoint                 String?                     @db.VarChar
+  geopoint                 Unsupported("geography(Point, 4326)")?  // PostGIS point for school location
   gps_confidence           Float?
   altitude                 Int?
   address                  String?                     @db.VarChar
@@ -229,7 +235,11 @@ model measurements {
   windows_username   String?
   installed_path     String?
   wifi_connections   Json?
-
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -260,6 +270,11 @@ model measurements_failed {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
