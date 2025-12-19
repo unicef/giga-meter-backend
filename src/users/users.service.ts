@@ -152,8 +152,16 @@ export class UsersService {
         where: { deleted: null },
         select: { id: true, name: true, description: true },
       });
+      const rolesPermissions = await this.prisma.customAuthRole.findFirst({
+        where: { deleted: null, name: ROLES.ADMIN },
+        include: {
+          rolePermissions: {
+            where: { deleted: null },
+          },
+        },
+      });
       const rolesValue = Object.values(ROLES);
-      const permissions = Object.values(PERMISSION_SLUGS);
+      const permissions = rolesPermissions.rolePermissions;
       return { roles, rolesValue, permissions };
     } catch (error) {
       this.logger.error(error);
