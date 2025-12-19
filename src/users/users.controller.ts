@@ -49,6 +49,7 @@ export class UsersController {
       const userResponse = await this.usersService.signinUser({
         email: request.b2cUser.emails[0],
         username: request.b2cUser.emails[0],
+        name: request.b2cUser.name,
       });
       return response.status(200).json({
         data: userResponse,
@@ -161,6 +162,7 @@ export class UsersController {
       const loggedInUser = await this.usersService.signinUser({
         email: request.b2cUser.emails[0],
         username: request.b2cUser.emails[0],
+        name: request.b2cUser.name,
       });
       return this.usersService.updateUser(id, data, loggedInUser);
     } catch (error) {
