@@ -169,7 +169,7 @@ export class UsersService {
     }
   }
 
-  async signinUser(input: { email: string; username: string }) {
+  async signinUser(input: { email: string; username: string; name?: string }) {
     try {
       const user = await this.prisma.users.findFirst({
         include: {
@@ -197,6 +197,8 @@ export class UsersService {
           data: {
             email: input.email,
             username: input.email,
+            first_name: input.name,
+            last_name: input.name,
             created_at: new Date(),
             updated_at: new Date(),
             is_active: true,
