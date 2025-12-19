@@ -18,7 +18,7 @@ export class GetUsersQueryDto {
   @IsOptional()
   @IsInt()
   @Type(() => Number)
-  page_size = 20;
+  limit = 20;
 
   @ApiPropertyOptional()
   @IsOptional()

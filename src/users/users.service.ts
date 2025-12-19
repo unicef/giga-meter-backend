@@ -23,10 +23,10 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async getUsers(query: GetUsersQueryDto) {
-    const { page, page_size, search } = query;
-    if (!page || !page_size)
+    const { page, limit, search } = query;
+    if (!page || !limit)
       throw new BadRequestException('page and page_size are required');
-    const skip = (page - 1) * page_size;
+    const skip = (page - 1) * limit;
 
     const where: Prisma.UsersWhereInput = search
       ? {
@@ -43,7 +43,7 @@ export class UsersService {
       this.prisma.users.findMany({
         where,
         skip,
-        take: parseInt(page_size.toString()),
+        take: parseInt(limit.toString()),
         include: {
           roleAssignments: {
             where: { deleted: null },
@@ -68,9 +68,9 @@ export class UsersService {
       data: users,
       meta: {
         page,
-        page_size,
+        limit,
         total,
-        totalPages: Math.ceil(total / page_size),
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
