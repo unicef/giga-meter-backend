@@ -118,7 +118,7 @@ export class UpdateUserDto {
 
   @ApiProperty()
   @Type(() => Number)
-  roleId: number;
+  role_id: number;
 }
 
 export class SignUserDataDto {
