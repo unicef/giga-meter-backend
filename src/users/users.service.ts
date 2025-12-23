@@ -107,43 +107,54 @@ export class UsersService {
   }
 
   async updateUser(id: number, data: UpdateUserDto, loggedInUser: any) {
-    id = parseInt(id.toString());
-    const user = await this.getUserById(id);
-    if (data.role_id && user.data.roleAssignments[0].role_id != data.role_id) {
-      if (loggedInUser.userRole[PERMISSION_SLUGS.CAN_UPDATE_USER_ROLE]) {
-        await this.prisma.customAuthUserRoleRelationship.update({
-          where: {
-            id: user.data.roleAssignments[0].id,
-          },
-          data: {
-            role_id: data.role_id,
-            last_modified_by_id: loggedInUser.id,
-            last_modified_at: new Date(),
-          },
-        });
-      } else {
-        throw new ForbiddenException(
-          "You don't have permission to update this user role.",
-        );
+    try {
+      id = parseInt(id.toString());
+      const user = await this.getUserById(id);
+      if (
+        data.role_id &&
+        user.data.roleAssignments[0].role_id != data.role_id
+      ) {
+        if (loggedInUser.userRole[PERMISSION_SLUGS.CAN_UPDATE_USER_ROLE]) {
+          await this.prisma.customAuthUserRoleRelationship.update({
+            where: {
+              id: user.data.roleAssignments[0].id,
+            },
+            data: {
+              role_id: data.role_id,
+              last_modified_by_id: loggedInUser.id,
+              last_modified_at: new Date(),
+            },
+          });
+        } else {
+          throw new ForbiddenException(
+            "You don't have permission to update this user role.",
+          );
+        }
       }
+      ['username', 'email', 'is_superuser', 'role_id'].forEach((key) => {
+        if (data[key]) delete data[key];
+      });
+
+      const updatedUser = await this.prisma.users.update({
+        where: { id },
+        data: {
+          ...data,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        data: updatedUser,
+        message: 'Successfully updated user',
+        status: 200,
+      };
+    } catch (error) {
+      this.logger.error(error);
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error updating user');
     }
-    ['username', 'email', 'is_superuser', 'role_id'].forEach((key) => {
-      if (data[key]) delete data[key];
-    });
-
-    const updatedUser = await this.prisma.users.update({
-      where: { id },
-      data: {
-        ...data,
-        updated_at: new Date(),
-      },
-    });
-
-    return {
-      data: updatedUser,
-      message: 'Successfully updated user',
-      status: 200,
-    };
   }
 
   async getCommonConfigs() {
