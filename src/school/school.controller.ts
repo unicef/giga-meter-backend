@@ -33,6 +33,7 @@ import {
   DeactivateDeviceDto,
   DeactivateDeviceResponseDto,
   SchoolDto,
+  toggleIsActiveDeviceDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
@@ -122,6 +123,92 @@ export class SchoolController {
       timestamp: new Date().toISOString(),
       message: 'success',
     };
+  }
+
+  @Get('school-with-device')
+  @UseInterceptors(CacheInterCeptorOptional)
+  @ApiOperation({
+    summary:
+      'Returns the list of registered schools on the Giga Meter database',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the list of schools',
+    type: SchoolDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiQuery({
+    name: 'country_iso3_code',
+    description: 'The ISO3 code of a country, eg: IND',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'giga_id_school',
+    description:
+      'The GIGA id of a school, eg: 2abb47dd-3fca-44b1-b6c8-0ec0c863c236',
+    required: false,
+    type: 'string',
+  })
+  @ApiQuery({
+    name: 'size',
+    description: 'The number of schools to return, default: 10',
+    required: false,
+    type: 'number',
+  })
+  @ApiQuery({
+    name: 'page',
+    description:
+      'The number of pages to skip before starting to collect the result, eg: if page=2 and size=10, it will skip 20 (2*10) records, default: 0',
+    required: false,
+    type: 'number',
+  })
+  async getSchoolsAdmin(
+    @Query('page') page?: number,
+    @ValidateSize({ min: 1, max: 100 })
+    @Query('limit')
+    limit?: number,
+    @Query('giga_id_school') giga_id_school?: string,
+    @Query('country_iso3_code') country_iso3_code?: string,
+    @Countries() countries?: string[],
+  ): Promise<any> {
+    try {
+      return this.schoolService.getSchoolsAndDeviceCount(
+        page,
+        limit,
+        giga_id_school,
+        countries,
+      );
+    } catch (error) {
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Put('toggle-device-status')
+  @ApiOperation({
+    summary: 'Deactivate a device by setting is_active toggle',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns whether the device was successfully toggled',
+    type: DeactivateDeviceResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async toggleIsActiveDevice(
+    @Body() reqDto: toggleIsActiveDeviceDto,
+  ): Promise<ApiSuccessResponseDto<DeactivateDeviceResponseDto>> {
+    return this.schoolService.toggleIsActiveDevice(reqDto) as any;
   }
 
   @Get(':giga_id_school/connectivity')

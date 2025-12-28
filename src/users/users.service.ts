@@ -160,9 +160,17 @@ export class UsersService {
           },
         },
       });
+      const countries = (
+        await this.prisma.country.findMany({
+          select: { id: true, code: true, name: true },
+        })
+      ).map((country) => ({
+        ...country,
+        id: Number(country.id),
+      }));
       const rolesValue = Object.values(ROLES);
       const permissions = rolesPermissions.rolePermissions;
-      return { roles, rolesValue, permissions };
+      return { roles, rolesValue, permissions, countries };
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException('Error retrieving common configs');
