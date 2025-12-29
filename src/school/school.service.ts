@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, dailycheckapp_school as School } from '@prisma/client';
-import { SchoolDto, toggleIsActiveDeviceDto } from './school.dto';
+import {
+  RequestSchoolsAdminDto,
+  SchoolDto,
+  toggleIsActiveDeviceDto,
+} from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import {
   sanitizeHardwareId,
@@ -21,13 +25,9 @@ export class SchoolService {
 
   constructor(private prisma: PrismaService) {}
 
-  async getSchoolsAndDeviceCount(
-    page?: number,
-    limit?: number,
-    giga_id_school?: string,
-    countries?: string[],
-  ) {
+  async getSchoolsAndDeviceCount(bodyRequest: RequestSchoolsAdminDto) {
     try {
+      const { page, limit, giga_id_school, countries, search } = bodyRequest;
       const where = [Prisma.sql`school.deleted is null`];
       let lastQuery = Prisma.sql``;
       let schooldDailyPromise: Promise<any[]> = null;
@@ -46,9 +46,15 @@ export class SchoolService {
           where.push(
             Prisma.sql`school.country_code in (${Prisma.join(countries, ',')})`,
           );
+        if (search && search.trim())
+          where.push(Prisma.sql`school.name ILIKE ${'%' + search + '%'}`);
 
-        if (!page && !limit)
-          throw new BadRequestException('page and page_size are required');
+        if (
+          typeof page !== 'number' ||
+          typeof limit !== 'number' ||
+          limit > 100
+        )
+          throw new BadRequestException('page and limit are invalid.');
         skip = page > 1 ? (page - 1) * limit : 0;
         lastQuery = Prisma.sql`OFFSET ${skip} ROWS FETCH NEXT ${limit} ROWS ONLY`;
       }
