@@ -13,3 +13,27 @@ export const existSchool = async (
   });
   return school ? true : false;
 };
+
+export function serializeBigInt(value: any): any {
+  if (typeof value === 'bigint') {
+    return Number(value); // or value.toString()
+  }
+
+  if (Array.isArray(value)) {
+    const result = [];
+    for (let i = 0; i < value.length; i++) {
+      result.push(serializeBigInt(value[i]));
+    }
+    return result;
+  }
+
+  if (value !== null && typeof value === 'object') {
+    const obj: any = value;
+    for (const key in value) {
+      obj[key] = serializeBigInt(value[key]);
+    }
+    return obj;
+  }
+
+  return value;
+}
