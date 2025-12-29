@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -34,6 +35,7 @@ import {
   DeactivateDeviceResponseDto,
   SchoolDto,
   toggleIsActiveDeviceDto,
+  RequestSchoolsAdminDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
@@ -125,7 +127,7 @@ export class SchoolController {
     };
   }
 
-  @Get('school-with-device')
+  @Post('school-with-device')
   @UseInterceptors(CacheInterCeptorOptional)
   @ApiOperation({
     summary:
@@ -141,49 +143,15 @@ export class SchoolController {
     status: 401,
     description: 'Unauthorized; Invalid api key provided',
   })
-  @ApiQuery({
-    name: 'country_iso3_code',
-    description: 'The ISO3 code of a country, eg: IND',
-    required: false,
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'giga_id_school',
-    description:
-      'The GIGA id of a school, eg: 2abb47dd-3fca-44b1-b6c8-0ec0c863c236',
-    required: false,
-    type: 'string',
-  })
-  @ApiQuery({
-    name: 'size',
-    description: 'The number of schools to return, default: 10',
-    required: false,
-    type: 'number',
-  })
-  @ApiQuery({
-    name: 'page',
-    description:
-      'The number of pages to skip before starting to collect the result, eg: if page=2 and size=10, it will skip 20 (2*10) records, default: 0',
-    required: false,
-    type: 'number',
-  })
   async getSchoolsAdmin(
-    @Query('page') page?: number,
-    @ValidateSize({ min: 1, max: 100 })
-    @Query('limit')
-    limit?: number,
-    @Query('giga_id_school') giga_id_school?: string,
-    @Query('country_iso3_code') country_iso3_code?: string,
-    @Countries() countries?: string[],
+    @Body() bodyRequest: RequestSchoolsAdminDto,
   ): Promise<any> {
     try {
-      return this.schoolService.getSchoolsAndDeviceCount(
-        page,
-        limit,
-        giga_id_school,
-        countries,
-      );
+      return this.schoolService.getSchoolsAndDeviceCount(bodyRequest);
     } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

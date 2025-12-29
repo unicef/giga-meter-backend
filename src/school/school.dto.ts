@@ -139,3 +139,21 @@ export class CheckDeviceStatusDto {
   })
   exists: boolean;
 }
+
+export class RequestSchoolsAdminDto {
+  //search
+  @ApiProperty({ required: false })
+  search?: string;
+
+  @ApiProperty({ required: false })
+  page?: number;
+
+  @ApiProperty({ required: false })
+  limit?: number;
+
+  @ApiProperty({ required: false })
+  giga_id_school?: string;
+
+  @ApiProperty({ required: false, type: [String] })
+  countries?: string[];
+}
