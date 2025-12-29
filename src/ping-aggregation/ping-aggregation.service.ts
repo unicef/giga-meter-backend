@@ -31,13 +31,18 @@ export class PingAggregationService {
       const total = await this.prisma.connectivityPingChecksDailyAggr.count({
         where,
       });
-      const data = await this.prisma.connectivityPingChecksDailyAggr.findMany({
-        where,
-        orderBy: { timestamp_date: 'desc' },
-        ...(page && pageSize
-          ? { skip: (page - 1) * pageSize, take: parseInt(pageSize.toString()) }
-          : {}),
-      });
+      const data = (
+        await this.prisma.connectivityPingChecksDailyAggr.findMany({
+          where,
+          orderBy: { timestamp_date: 'desc' },
+          ...(page && pageSize
+            ? {
+                skip: (page - 1) * pageSize,
+                take: parseInt(pageSize.toString()),
+              }
+            : {}),
+        })
+      ).map((item) => ({ ...item, id: Number(item.id) }));
 
       return { meta: { page, pageSize, total }, data };
     } catch (error) {

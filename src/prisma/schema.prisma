@@ -364,6 +364,8 @@ model connectivity_ping_checks {
   deviceId       String    @map("device_id")
   latency        Float?
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  is_deleted     Boolean   @default(false)
 } 
 model CategoryConfig {
   id            Int      @id @default(autoincrement())
@@ -381,7 +383,7 @@ model CategoryConfig {
 }
 
 model ConnectivityPingChecksDailyAggr {
-  id                   Int      @id @default(autoincrement())
+  id                   BigInt    @id @default(autoincrement())
   timestamp_date       DateTime
   giga_id_school       String
   browser_id           String?

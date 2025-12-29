@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "connectivity_ping_checks_daily_aggr" (
-    "id" SERIAL NOT NULL,
+    "id" BIGSERIAL NOT NULL,
     "timestamp_date" TIMESTAMP(3) NOT NULL,
     "giga_id_school" TEXT NOT NULL,
     "browser_id" TEXT,
@@ -17,3 +17,6 @@ CREATE TABLE "connectivity_ping_checks_daily_aggr" (
 CREATE INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_timestam_idx" ON "connectivity_ping_checks_daily_aggr"("giga_id_school", "timestamp_date");
 CREATE INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" ON "connectivity_ping_checks_daily_aggr"("giga_id_school", "browser_id", "timestamp_date");
 ALTER INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" RENAME TO "connectivity_ping_checks_daily_aggr_giga_id_school_browser__idx";
+
+ALTER TABLE "connectivity_ping_checks" ADD COLUMN     "deleted_at" TIMESTAMPTZ(6),
+ADD COLUMN     "is_deleted" BOOLEAN NOT NULL DEFAULT false;
