@@ -36,10 +36,7 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import * as redisStore from 'cache-manager-redis-store';
-import { UsersController } from './users/users.controller';
-import { UsersService } from './users/users.service';
-import { RolesController } from './roles/roles.controller';
-import { RolesService } from './roles/roles.service';
+import { AdminMeterModule } from './admin-meter/admin-meter.module';
 
 @Module({
   imports: [
@@ -60,6 +57,7 @@ import { RolesService } from './roles/roles.service';
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
+    AdminMeterModule,
   ],
   controllers: [
     AppController,
@@ -73,8 +71,6 @@ import { RolesService } from './roles/roles.service';
     DataFixController,
     MetricsController,
     ConnectivityController,
-    UsersController,
-    RolesController,
   ],
   providers: [
     AppService,
@@ -101,8 +97,6 @@ import { RolesService } from './roles/roles.service';
       useClass: CategoryResponseInterceptor,
     },
     ConnectivityService,
-	UsersService,
-    RolesService,
   ],
 })
 export class AppModule {}

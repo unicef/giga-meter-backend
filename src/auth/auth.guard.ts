@@ -14,7 +14,7 @@ import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { CategoryConfigProvider } from '../common/category-config.provider';
-import { ROLES_KEY } from 'src/roles/roles.decorator';
+import { ROLES_KEY } from 'src/admin-meter/roles/roles.decorator';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()

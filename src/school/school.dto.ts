@@ -108,11 +108,6 @@ export class DeactivateDeviceDto {
   giga_id_school: string;
 }
 
-export class toggleIsActiveDeviceDto extends DeactivateDeviceDto {
-  @ApiProperty()
-  is_active: boolean;
-}
-
 export class DeactivateDeviceResponseDto {
   @ApiProperty()
   deactivated: boolean;
@@ -138,22 +133,4 @@ export class CheckDeviceStatusDto {
     description: 'Whether the device exists in the database',
   })
   exists: boolean;
-}
-
-export class RequestSchoolsAdminDto {
-  //search
-  @ApiProperty({ required: false })
-  search?: string;
-
-  @ApiProperty({ required: false })
-  page?: number;
-
-  @ApiProperty({ required: false })
-  limit?: number;
-
-  @ApiProperty({ required: false })
-  giga_id_school?: string;
-
-  @ApiProperty({ required: false, type: [String] })
-  countries?: string[];
 }

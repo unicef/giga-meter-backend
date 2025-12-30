@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -30,12 +29,10 @@ import {
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
-  CheckDeviceStatusDto,
   DeactivateDeviceDto,
-  DeactivateDeviceResponseDto,
   SchoolDto,
-  toggleIsActiveDeviceDto,
-  RequestSchoolsAdminDto,
+  DeactivateDeviceResponseDto,
+  CheckDeviceStatusDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
@@ -125,58 +122,6 @@ export class SchoolController {
       timestamp: new Date().toISOString(),
       message: 'success',
     };
-  }
-
-  @Post('school-with-device')
-  @UseInterceptors(CacheInterCeptorOptional)
-  @ApiOperation({
-    summary:
-      'Returns the list of registered schools on the Giga Meter database',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns the list of schools',
-    type: SchoolDto,
-    isArray: true,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized; Invalid api key provided',
-  })
-  async getSchoolsAdmin(
-    @Body() bodyRequest: RequestSchoolsAdminDto,
-  ): Promise<any> {
-    try {
-      return this.schoolService.getSchoolsAndDeviceCount(bodyRequest);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  @Put('toggle-device-status')
-  @ApiOperation({
-    summary: 'Deactivate a device by setting is_active toggle',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns whether the device was successfully toggled',
-    type: DeactivateDeviceResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad Request; Missing or invalid parameters',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized; Invalid api key provided',
-  })
-  async toggleIsActiveDevice(
-    @Body() reqDto: toggleIsActiveDeviceDto,
-  ): Promise<ApiSuccessResponseDto<DeactivateDeviceResponseDto>> {
-    return this.schoolService.toggleIsActiveDevice(reqDto) as any;
   }
 
   @Get(':giga_id_school/connectivity')

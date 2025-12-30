@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PERMISSION_SLUGS, ROLES } from 'src/roles/roles.constants';
+import { PERMISSION_SLUGS, ROLES } from 'src/admin-meter/roles/roles.constants';
 import { GetUsersQueryDto, UpdateUserDto } from './users.dto';
 import { Prisma } from '@prisma/client';
 

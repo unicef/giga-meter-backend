@@ -14,7 +14,7 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 
-import { Roles } from 'src/roles/roles.decorator';
+import { Roles } from 'src/admin-meter/roles/roles.decorator';
 import {
   GetUserDtoResponse,
   GetUsersDtoResponse,
@@ -22,7 +22,7 @@ import {
   SignUserDtoResponse,
   UpdateUserDto,
 } from './users.dto';
-import { PERMISSION_SLUGS } from 'src/roles/roles.constants';
+import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
 
 @ApiTags('Users Management')
 @Controller('api/v1/users')
