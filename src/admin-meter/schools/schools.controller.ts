@@ -76,6 +76,7 @@ export class SchoolsController {
   }
 
   @Put('toggle-school-status')
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_SCHOOL)
   @ApiOperation({
     summary: 'Deactivate a school by setting is_active toggle',
   })
