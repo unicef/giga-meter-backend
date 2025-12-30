@@ -13,6 +13,14 @@ export class toggleIsActiveDeviceDto extends DeactivateDeviceDto {
   is_active: boolean;
 }
 
+export class toggleIsActiveSchoolDto {
+  @ApiProperty()
+  giga_id_school: string;
+
+  @ApiProperty()
+  is_active: boolean;
+}
+
 export class DeactivateDeviceResponseDto {
   @ApiProperty()
   deactivated: boolean;

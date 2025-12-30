@@ -3,10 +3,15 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { RequestSchoolsAdminDto, toggleIsActiveDeviceDto } from './school.dto';
+import {
+  RequestSchoolsAdminDto,
+  toggleIsActiveDeviceDto,
+  toggleIsActiveSchoolDto,
+} from './school.dto';
 import { serializeBigInt } from 'src/utility/utility';
 
 @Injectable()
@@ -104,6 +109,54 @@ export class SchoolsService {
     });
 
     if (result.count > 0) {
+      return {
+        success: true,
+        data: result,
+        timestamp: new Date().toISOString(),
+        message: 'success',
+      };
+    } else {
+      return {
+        success: false,
+        data: {},
+        timestamp: new Date().toISOString(),
+        message: 'failed',
+      };
+    }
+  }
+
+  async toggleIsActiveSchool(reqDto: toggleIsActiveSchoolDto) {
+    // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
+    const { giga_id_school, is_active } = reqDto;
+
+    if (!giga_id_school || giga_id_school.trim().length === 0) {
+      throw new BadRequestException('giga_id_school is null/empty');
+    }
+    if (typeof is_active !== 'boolean') {
+      throw new BadRequestException('is_active is null/empty');
+    }
+    const school = await this.prisma.school.findFirst({
+      where: {
+        giga_id_school: giga_id_school?.trim(),
+      },
+    });
+    if (!school) throw new NotFoundException('school not found');
+
+    const result = await this.prisma.school.update({
+      where: {
+        id: school.id,
+      },
+      data: {
+        is_active: is_active,
+      },
+      select: {
+        giga_id_school: true,
+        name: true,
+        is_active: true,
+      },
+    });
+
+    if (result) {
       return {
         success: true,
         data: result,

@@ -12,9 +12,12 @@ import {
   DeactivateDeviceResponseDto,
   RequestSchoolsAdminDto,
   toggleIsActiveDeviceDto,
+  toggleIsActiveSchoolDto,
 } from './school.dto';
 import { SchoolsService } from './schools.service';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
+import { Roles } from '../roles/roles.decorator';
+import { PERMISSION_SLUGS } from '../roles/roles.constants';
 
 @ApiTags('Users Management')
 @Controller('api/v1/admin-meter-school')
@@ -22,6 +25,7 @@ export class SchoolsController {
   constructor(private readonly schoolService: SchoolsService) {}
 
   @Post('school-with-device')
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_SCHOOL)
   @ApiOperation({
     summary:
       'Returns the list of registered schools on the Giga Meter database',
@@ -49,7 +53,6 @@ export class SchoolsController {
     }
   }
 
-  @Put('toggle-device-status')
   @ApiOperation({
     summary: 'Deactivate a device by setting is_active toggle',
   })
@@ -70,5 +73,29 @@ export class SchoolsController {
     @Body() reqDto: toggleIsActiveDeviceDto,
   ): Promise<ApiSuccessResponseDto<DeactivateDeviceResponseDto>> {
     return this.schoolService.toggleIsActiveDevice(reqDto) as any;
+  }
+
+  @Put('toggle-school-status')
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_SCHOOL)
+  @ApiOperation({
+    summary: 'Deactivate a school by setting is_active toggle',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns whether the device was successfully toggled',
+    type: DeactivateDeviceResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async toggleIsActiveSchool(
+    @Body() reqDto: toggleIsActiveSchoolDto,
+  ): Promise<ApiSuccessResponseDto<DeactivateDeviceResponseDto>> {
+    return this.schoolService.toggleIsActiveSchool(reqDto) as any;
   }
 }
