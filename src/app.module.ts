@@ -37,6 +37,7 @@ import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import * as redisStore from 'cache-manager-redis-store';
 import { CmsModule, SchemaValidationService } from './cms';
+import { TranslateModule } from './translate';
 
 
 @Module({
@@ -58,7 +59,8 @@ import { CmsModule, SchemaValidationService } from './cms';
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
-    CmsModule
+    CmsModule,
+    TranslateModule,
   ],
   controllers: [
     AppController,
