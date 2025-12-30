@@ -99,6 +99,7 @@ model school {
   country_code             String?                     @db.VarChar
   deleted                  DateTime?                   @db.Timestamptz(6)
   last_school_static_id    Int?
+  is_active                Boolean?                    @default(true)
   latest_master_sync       master_sync_school_static?  @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
   country                  country?                    @relation(fields: [country_code], references: [code])
   master_sync_records      master_sync_school_static[] @relation("schoolToMasterSync")
