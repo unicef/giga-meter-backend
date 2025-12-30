@@ -27,7 +27,8 @@ export class SchoolService {
 
   async getSchoolsAndDeviceCount(bodyRequest: RequestSchoolsAdminDto) {
     try {
-      const { page, limit, giga_id_school, countries, search } = bodyRequest;
+      const { giga_id_school, countries, search } = bodyRequest;
+      let { page, limit } = bodyRequest;
       const where = [Prisma.sql`school.deleted is null`];
       let lastQuery = Prisma.sql``;
       let schooldDailyPromise: Promise<any[]> = null;
@@ -63,7 +64,7 @@ export class SchoolService {
       >`SELECT school.*,(select count(dailycheckapp_school.id)  FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
 
       if (data.length > 0 && schooldDailyPromise) {
-        total = 1;
+        total = page = limit = 1;
         data[0].school_devices = await schooldDailyPromise;
       } else
         total = (
@@ -107,7 +108,7 @@ export class SchoolService {
     const result = await this.prisma.dailycheckapp_school.updateMany({
       where: {
         device_hardware_id,
-        giga_id_school: giga_id_school?.toLowerCase().trim(),
+        giga_id_school: giga_id_school?.trim(),
       },
       data: {
         is_active: is_active,
