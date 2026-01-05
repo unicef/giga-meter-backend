@@ -38,48 +38,30 @@ export class GetUsersQueryDto {
 }
 
 export class UserDto {
-  @ApiProperty()
-  @IsInt()
-  id: number;
-
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   first_name: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   last_name: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   username: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsEmail()
   email: string;
 
-  @ApiProperty({ type: Date })
-  @IsDate()
-  @Type(() => Date)
-  last_login: Date;
-
-  @ApiProperty()
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsBoolean()
   is_active: boolean;
-
-  @ApiProperty()
-  @IsBoolean()
-  is_superuser: boolean;
-
-  @ApiProperty({ type: Date })
-  @IsDate()
-  @Type(() => Date)
-  created_at: Date;
-
-  @ApiProperty({ type: Date })
-  @IsDate()
-  @Type(() => Date)
-  updated_at: Date;
 }
 
 export class GetUsersDtoResponse extends CommonResponseDto {

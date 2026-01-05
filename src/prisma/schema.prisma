@@ -8,6 +8,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum SpeedTestProtocol {
+  NDT7
+  CLOUDFLARE
+}
+
 model EFMigrationsHistory {
   MigrationId    String @id(map: "PK___EFMigrationsHistory") @db.VarChar(150)
   ProductVersion String @db.VarChar(32)
@@ -116,6 +121,8 @@ model country {
   created_at                        DateTime                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   iso3_format                       String?                    @db.VarChar(32)
   latest_school_master_data_version Int?
+  speed_test_protocol               SpeedTestProtocol          @default(NDT7)
+  is_active                         Boolean?                   @default(true)
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
 }
