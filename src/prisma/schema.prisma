@@ -61,42 +61,47 @@ model dailycheckapp_school {
   is_blocked          Boolean   @default(false)
   notify              Boolean   @default(false)
   created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  device_hardware_id  String?
+  is_active           Boolean?
+  windows_username    String?
+  installed_path      String?
+  wifi_connections    Json?
 }
 
 model school {
-  id                         BigInt                     @id @default(autoincrement())
-  created                    DateTime?                  @db.Timestamptz(6)
-  modified                   DateTime?                  @db.Timestamptz(6)
-  name                       String?                    @db.VarChar
-  timezone                   String?                    @db.VarChar
-  geopoint                   String?                    @db.VarChar
-  gps_confidence             Float?
-  altitude                   Int?
-  address                    String?                    @db.VarChar
-  postal_code                String?                    @db.VarChar
-  email                      String?                    @db.VarChar
-  education_level            String?                    @db.VarChar
-  environment                String?                    @db.VarChar
-  school_type                String?                    @db.VarChar
-  country_id                 Int?
-  location_id                Int?
-  admin_2_name               String?                    @db.VarChar
-  admin_3_name               String?                    @db.VarChar
-  admin_4_name               String?                    @db.VarChar
-  external_id                String?                    @db.VarChar
-  admin_1_name               String?                    @db.VarChar
-  last_weekly_status_id      Int?
-  name_lower                 String?                    @db.VarChar
-  giga_id_school             String?                    @db.VarChar
-  education_level_regional   String?                    @db.VarChar
-  feature_flags              Json?
-  created_at                 DateTime?                  @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  country_code               String?                    @db.VarChar
-  deleted                    DateTime?                  @db.Timestamptz(6)
-  last_school_static_id      Int?
-  latest_master_sync         master_sync_school_static? @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
-  country                    country?                   @relation(fields: [country_code], references: [code])
-  master_sync_records        master_sync_school_static[] @relation("schoolToMasterSync")
+  id                       BigInt                      @id @default(autoincrement())
+  created                  DateTime?                   @db.Timestamptz(6)
+  modified                 DateTime?                   @db.Timestamptz(6)
+  name                     String?                     @db.VarChar
+  timezone                 String?                     @db.VarChar
+  geopoint                 String?                     @db.VarChar
+  gps_confidence           Float?
+  altitude                 Int?
+  address                  String?                     @db.VarChar
+  postal_code              String?                     @db.VarChar
+  email                    String?                     @db.VarChar
+  education_level          String?                     @db.VarChar
+  environment              String?                     @db.VarChar
+  school_type              String?                     @db.VarChar
+  country_id               Int?
+  location_id              Int?
+  admin_2_name             String?                     @db.VarChar
+  admin_3_name             String?                     @db.VarChar
+  admin_4_name             String?                     @db.VarChar
+  external_id              String?                     @db.VarChar
+  admin_1_name             String?                     @db.VarChar
+  last_weekly_status_id    Int?
+  name_lower               String?                     @db.VarChar
+  giga_id_school           String?                     @db.VarChar
+  education_level_regional String?                     @db.VarChar
+  feature_flags            Json?
+  created_at               DateTime?                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  country_code             String?                     @db.VarChar
+  deleted                  DateTime?                   @db.Timestamptz(6)
+  last_school_static_id    Int?
+  latest_master_sync       master_sync_school_static?  @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
+  country                  country?                    @relation(fields: [country_code], references: [code])
+  master_sync_records      master_sync_school_static[] @relation("schoolToMasterSync")
 
   @@index([country_code])
   @@index([deleted])
@@ -180,8 +185,8 @@ model master_sync_school_static {
   num_schools_per_building              Int?
   version                               Int?
   school_id                             BigInt?
-  school                                school?  @relation("schoolToMasterSync", fields: [school_id], references: [id])
-  schools                               school[] @relation("latestMasterSync")
+  school                                school?   @relation("schoolToMasterSync", fields: [school_id], references: [id])
+  schools                               school[]  @relation("latestMasterSync")
 
   @@index([school_id], map: "master_sync_school_static_school_id_00765da3")
   @@map("master_sync_school_static")
@@ -197,29 +202,34 @@ model giga_id_school_mapping_fix {
 }
 
 model measurements {
-  id              BigInt    @id(map: "PK_measurements") @default(autoincrement())
-  timestamp       DateTime? @db.Timestamptz(6)
-  uuid            String?
-  browser_id      String?
-  school_id       String
-  device_type     String?
-  notes           String?
-  client_info     Json?
-  server_info     Json?
-  annotation      String?
-  download        Float?
-  upload          Float?
-  latency         BigInt?
-  results         Json?
-  giga_id_school  String?
-  country_code    String?
-  ip_address      String?
-  app_version     String?
-  source          String    @default("MLab")
-  created_at      DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  data_downloaded BigInt?
-  data_uploaded   BigInt?
-  data_usage      BigInt?
+  id                 BigInt    @id(map: "PK_measurements") @default(autoincrement())
+  timestamp          DateTime? @db.Timestamptz(6)
+  uuid               String?
+  browser_id         String?
+  school_id          String
+  device_type        String?
+  notes              String?
+  client_info        Json?
+  server_info        Json?
+  annotation         String?
+  download           Float?
+  upload             Float?
+  latency            BigInt?
+  results            Json?
+  giga_id_school     String?
+  country_code       String?
+  ip_address         String?
+  app_version        String?
+  source             String    @default("MLab")
+  created_at         DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  data_downloaded    BigInt?
+  data_uploaded      BigInt?
+  data_usage         BigInt?
+  device_hardware_id String?
+  windows_username   String?
+  installed_path     String?
+  wifi_connections   Json?
+
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -338,16 +348,16 @@ model master_sync_intermediate {
 }
 
 model CategoryConfig {
-  id            Int      @id @default(autoincrement())
-  name          String   @unique
-  isDefault     Boolean?  @default(false)
-  allowedAPIs   Json[]
-  notAllowedAPIs Json[]
-  responseFilters Json?
+  id               Int      @id @default(autoincrement())
+  name             String   @unique
+  isDefault        Boolean? @default(false)
+  allowedAPIs      Json[]
+  notAllowedAPIs   Json[]
+  responseFilters  Json?
   allowedCountries String[]
-  swagger       Json
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  swagger          Json
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("category_config")
 }
@@ -359,24 +369,24 @@ model connectivity_ping_checks {
   errorMessage   String?   @map("error_message")
   giga_id_school String    @map("giga_id_school")
   app_local_uuid String    @unique
-  browserId       String?    @map("browser_id")
-  latency        Float?      @map("latency")
+  browserId      String?   @map("browser_id")
+  latency        Float?    @map("latency")
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-} 
+}
 
 model IpMetadata {
-  id        Int     @id @default(autoincrement())
-  ip        String 
-  hostname  String?
-  city      String?
-  region    String?
-  country   String?
-  loc       String?
-  org       String?
-  postal    String?
-  timezone  String?
-  asn       String?
-  source    String?
+  id       Int     @id @default(autoincrement())
+  ip       String
+  hostname String?
+  city     String?
+  region   String?
+  country  String?
+  loc      String?
+  org      String?
+  postal   String?
+  timezone String?
+  asn      String?
+  source   String?
 
   @@unique([ip, source])
 }
