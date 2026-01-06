@@ -37,10 +37,17 @@ export class CountriesService {
           where,
           skip,
           take,
+          include: { _count: { select: { schools: true } } },
           orderBy: { is_active: 'desc' },
         })
         .then((res) =>
-          resolve(res.map((el) => ({ ...el, id: el.id.toString() }))),
+          resolve(
+            res.map((el) => {
+              (el as any).school_count = el._count.schools;
+              delete el._count;
+              return { ...el, id: el.id.toString() };
+            }),
+          ),
         ),
     );
     const [data, total] = await Promise.all([
