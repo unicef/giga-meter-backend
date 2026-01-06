@@ -9,7 +9,7 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { PERMISSION_SLUGS, ROLES } from 'src/admin-meter/roles/roles.constants';
 import { GetUsersQueryDto, UpdateUserDto } from './users.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, SpeedTestProtocol } from '@prisma/client';
 
 type TypeRoles = {
   id: number;
@@ -180,8 +180,9 @@ export class UsersService {
         id: Number(country.id),
       }));
       const rolesValue = Object.values(ROLES);
+      const speedTestProtocols = Object.values(SpeedTestProtocol);
       const permissions = rolesPermissions.rolePermissions;
-      return { roles, rolesValue, permissions, countries };
+      return { roles, rolesValue, permissions, countries, speedTestProtocols };
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException('Error retrieving common configs');
