@@ -42,6 +42,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
 import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
+import { NearestSchoolModule } from './nearest-school/nearest-school.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
     AuthModule,
     GeolocationModule,
     IpMetadataModule,
+    NearestSchoolModule,
   ],
   controllers: [
     AppController,
