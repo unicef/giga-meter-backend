@@ -57,6 +57,12 @@ export class NearestSchoolResponseDto {
   country_code: string;
 
   @ApiProperty({
+    description: 'External ID of the school',
+    required: true,
+  })
+  external_id: string;
+
+  @ApiProperty({
     description: 'School latitude',
     required: true,
   })
