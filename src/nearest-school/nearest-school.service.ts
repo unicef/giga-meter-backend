@@ -29,6 +29,7 @@ export class NearestSchoolService {
           giga_id_school: string | null;
           address: string | null;
           country_code: string | null;
+          external_id: string | null;
           latitude: number;
           longitude: number;
           distance_meters: number;
@@ -43,6 +44,7 @@ export class NearestSchoolService {
           s.giga_id_school,
           s.address,
           s.country_code,
+          s.external_id,
           ST_Y(s.geopoint::geometry) AS latitude,
           ST_X(s.geopoint::geometry) AS longitude,
           ST_Distance(
@@ -75,6 +77,7 @@ export class NearestSchoolService {
         giga_id_school: school.giga_id_school || '',
         address: school.address || '',
         country_code: school.country_code || '',
+        external_id: school.external_id || '',
         latitude: school.latitude,
         longitude: school.longitude,
         distance_meters: Math.round(school.distance_meters * 100) / 100, // Round to 2 decimal places
