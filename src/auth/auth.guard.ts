@@ -72,9 +72,10 @@ export class AuthGuard implements CanActivate {
             decodedToken.email,
             requiredRoles,
           );
-          if (!hasPermission) {
+          if (!hasPermission.permitionSuccess) {
             throw new ForbiddenException('Insufficient permissions');
           }
+          request.user = hasPermission.userData;
         }
 
         return true;
@@ -132,8 +133,7 @@ export class AuthGuard implements CanActivate {
   private async validateUserRole(
     email: string,
     requiredRoles: string[],
-  ): Promise<boolean> {
-    if (requiredRoles.includes('')) return true;
+  ): Promise<{ permitionSuccess: boolean; userData: any }> {
     const user = await this.prisma.users.findFirst({
       where: { email },
       include: {
@@ -154,15 +154,22 @@ export class AuthGuard implements CanActivate {
         },
       },
     });
-
-    if (!user) return false;
+    if (requiredRoles.includes(''))
+      return { permitionSuccess: true, userData: user };
+    if (!user) return { permitionSuccess: false, userData: null };
     if (!user.is_active)
       throw new UnauthorizedException("We can't seem to find your account.");
+
     const userPermissions =
       user.roleAssignments?.[0]?.role?.rolePermissions?.map?.(
         (role) => role.slug,
       ) || [];
-    return requiredRoles.every((role) => userPermissions.includes(role));
+    return {
+      permitionSuccess: requiredRoles.every((role) =>
+        userPermissions.includes(role),
+      ),
+      userData: user,
+    };
   }
 
   private getSigningKey(header: any, callback: any) {
