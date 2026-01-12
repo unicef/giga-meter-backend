@@ -24,6 +24,15 @@ import { DynamicResponse, IdParam } from 'src/utility/decorators';
 @Controller('api/v1/connectivity')
 export class ConnectivityController {
   constructor(private readonly connectivityService: ConnectivityService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new connectivity check' })
+  async create(
+    @Body() createConnectivityDto: CreateConnectivityDto,
+  ): Promise<CreateConnectivityDto> {
+    return this.connectivityService.create(createConnectivityDto);
+  }
+
   @Post(':giga_id_school')
   @ApiOperation({ summary: 'Create multiple connectivity checks' })
   async createMany(
