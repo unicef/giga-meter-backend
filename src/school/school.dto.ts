@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { GeoLocationDto } from '../measurement/measurement.dto';
 import { SchoolMasterDto } from '../school-master/school-master.dto';
 
 export class SchoolDto {
@@ -37,6 +38,27 @@ export class SchoolDto {
 
   @ApiProperty()
   created_at: Date;
+  
+  @ApiProperty({
+    description: 'Geolocation data from device',
+    type: GeoLocationDto
+  })
+  geolocation?: GeoLocationDto;
+
+  @ApiProperty({
+    description: 'Distance between school location and detected location in meters'
+  })
+  detected_location_distance?: number;
+
+  @ApiProperty({
+    description: 'Accuracy of the geolocation in meters'
+  })
+  detected_location_accuracy?: number;
+
+  @ApiProperty({
+    description: 'Flag if distance > X & accuracy > Y'
+  })
+  detected_location_is_flagged?: boolean;
 
   @ApiProperty({ required: false })
   device_hardware_id?: string;

@@ -35,6 +35,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
+import { GeolocationModule } from './geolocation/geolocation.module';
 import * as redisStore from 'cache-manager-redis-store';
 
 
@@ -57,6 +58,7 @@ import * as redisStore from 'cache-manager-redis-store';
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
+    GeolocationModule,
   ],
   controllers: [
     AppController,
