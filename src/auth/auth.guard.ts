@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { Category, DEFAULT_CATEGORY } from '../common/category.config';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../common/public.decorator';
@@ -16,16 +22,15 @@ export class AuthGuard implements CanActivate {
   private readonly logger = new Logger(AuthGuard.name);
 
   constructor(
-    private readonly httpService: HttpService, 
+    private readonly httpService: HttpService,
     private readonly categoryConfigProvider: CategoryConfigProvider,
     private readonly deviceTokenService: DeviceTokenService,
     private readonly nonceService: NonceService,
     private readonly hmacSignatureService: HmacSignatureService,
-    private reflector: Reflector
-  ) { }
+    private reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // Check if the route is marked as public
     const request = context.switchToHttp().getRequest();
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),

@@ -31,7 +31,6 @@ describe('SchoolController', () => {
       getSchoolCoordinates: jest.fn(),
       calculateDistance: jest.fn(),
     };
-
     const mockCacheManager = {
       get: jest.fn(),
       set: jest.fn(),

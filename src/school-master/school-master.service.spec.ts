@@ -62,11 +62,68 @@ describe('SchoolMasterService', () => {
       expect(flags).toEqual(mockFeatureFlagsDto);
     });
 
-    it('should handle null/undefined', async () => {
+    it('should default pingService to true when not present in DB', async () => {
+      const modelWithoutPingService = {
+        ...mockSchoolMasterModel,
+        feature_flags: {
+          feature_flag: true,
+          feature_flag_2: false,
+        },
+      };
+      jest
+        .spyOn(prisma.school, 'findFirstOrThrow')
+        .mockResolvedValue(modelWithoutPingService);
+
+      const flags = await service.flagsByGigaId('gigaid1');
+      expect(flags.pingService).toBe(true);
+    });
+
+    it('should keep pingService as false when explicitly set to false in DB', async () => {
+      const modelWithPingServiceFalse = {
+        ...mockSchoolMasterModel,
+        feature_flags: {
+          feature_flag: true,
+          feature_flag_2: false,
+          pingService: false,
+        },
+      };
+      jest
+        .spyOn(prisma.school, 'findFirstOrThrow')
+        .mockResolvedValue(modelWithPingServiceFalse);
+
+      const flags = await service.flagsByGigaId('gigaid1');
+      expect(flags.pingService).toBe(false);
+    });
+
+    it('should keep pingService as true when already set to true in DB', async () => {
+      jest
+        .spyOn(prisma.school, 'findFirstOrThrow')
+        .mockResolvedValue(mockSchoolMasterModel);
+
+      const flags = await service.flagsByGigaId('gigaid1');
+      expect(flags.pingService).toBe(true);
+    });
+
+    it('should return default flags with pingService true when feature_flags is null', async () => {
+      const modelWithNullFlags = {
+        ...mockSchoolMasterModel,
+        feature_flags: null,
+      };
+      jest
+        .spyOn(prisma.school, 'findFirstOrThrow')
+        .mockResolvedValue(modelWithNullFlags);
+
+      const flags = await service.flagsByGigaId('gigaid1');
+      expect(flags).toBeDefined();
+      expect(flags.pingService).toBe(true);
+    });
+
+    it('should handle null school', async () => {
       jest.spyOn(prisma.school, 'findFirstOrThrow').mockResolvedValue(null);
 
       const flags = await service.flagsByGigaId('gigaid1');
-      expect(flags).toEqual(undefined);
+      expect(flags).toBeDefined();
+      expect(flags.pingService).toBe(true);
     });
 
     it('should handle database error', async () => {

@@ -67,6 +67,11 @@ model dailycheckapp_school {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  device_hardware_id          String?
+  is_active                   Boolean?
+  windows_username            String?
+  installed_path              String?
+  wifi_connections            Json?
 }
 
 model school {
@@ -233,6 +238,10 @@ model measurements {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  device_hardware_id          String?
+  windows_username            String?
+  installed_path              String?
+  wifi_connections            Json?
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
