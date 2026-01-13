@@ -75,7 +75,6 @@ async function bootstrap() {
   
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
-
   // Get the Category
   const categoryConfigProvider = app.get(CategoryConfigProvider);
   await categoryConfigProvider.initialize();
@@ -124,6 +123,25 @@ async function bootstrap() {
       });
     }
   }
+  if (process.env.NODE_ENV === 'development') {
+    app.enableCors({
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT'],
+      preflightContinue: false,
+    });
+  } else {
+    app.enableCors({
+      // origin: [
+      //   'capacitor-electron://-',
+      //   'https://meter.giga.global/',
+      //   'https://uni-ooi-giga-daily-check-service-api-f0b8brh5b3hch8dq.a03.azurefd.net/',
+      //   'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
+      // ],
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT'],
+      preflightContinue: false,
+    });
+  }
 
   const corsOptions = {
     origin: (origin, callback) => {
@@ -169,7 +187,7 @@ async function bootstrap() {
   app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
 
-const logger = new Logger('Bootstrap');
+  app.set('trust proxy', true);
   await app.listen(3000, () => {
     logger.log('Server started on port 3000');
     logger.log(`Environment: ${process.env.NODE_ENV || 'development'}`);

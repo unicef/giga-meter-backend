@@ -1,27 +1,21 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException, Logger } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Category, DEFAULT_CATEGORY } from '../common/category.config';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../common/public.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
-import { DeviceTokenService } from './device-token.service';
-import { NonceService } from './nonce.service';
-import { HmacSignatureService } from './hmac-signature.service';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+
 
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  private readonly logger = new Logger(AuthGuard.name);
 
   constructor(
-    private readonly httpService: HttpService, 
+    private readonly httpService: HttpService,
     private readonly categoryConfigProvider: CategoryConfigProvider,
-    private readonly deviceTokenService: DeviceTokenService,
-    private readonly nonceService: NonceService,
-    private readonly hmacSignatureService: HmacSignatureService,
-    private reflector: Reflector
+    private reflector: Reflector,
   ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -37,18 +31,7 @@ export class AuthGuard implements CanActivate {
     if (!useAuth || isPublic || request.category || isMetrics) {
       return true;
     }
-
-    // Extract token from Authorization header
-    const authHeader = request.headers.authorization;
-    if (!authHeader) {
-      throw new UnauthorizedException('Missing authorization token');
-    }
-
-    // Check if it's a Bearer token or device token
-    const parts = authHeader.split(' ');
-    if (parts.length !== 2) {
-      throw new UnauthorizedException('Invalid authorization header format');
-    }
+    const token = request.headers.authorization?.split(' ')[1];
 
     const [scheme, token] = parts;
     
@@ -131,9 +114,6 @@ export class AuthGuard implements CanActivate {
     }
   }
 
-  /**
-   * Normal flow: Validates API key and sets request context
-   */
   public async validateToken(token: string, request: any): Promise<boolean> {
     try {
       const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
@@ -175,7 +155,7 @@ export class AuthGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      this.logger.error(`Token validation failed: ${error.message}`);
+      console.error('Token validation failed:', error.message);
       return false;
     }
   }

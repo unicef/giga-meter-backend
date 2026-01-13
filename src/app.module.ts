@@ -30,6 +30,7 @@ import { AuthGuard } from './auth/auth.guard';
 import { CategoryConfigModule } from './category-config/category-config.module';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { AuthModule } from './auth/auth.module';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -37,12 +38,12 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
-import { CountryConfigModule } from './country-config/country-config.module';
 import * as redisStore from 'cache-manager-redis-store';
-import { DeviceTokenController } from './auth/device-token.controller';
-import { DeviceTokenService } from './auth/device-token.service';
-import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
-import { NearestSchoolModule } from './nearest-school/nearest-school.module';
+
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
 
 @Module({
   imports: [
@@ -60,12 +61,11 @@ import { NearestSchoolModule } from './nearest-school/nearest-school.module';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
-    CountryConfigModule,
     AuthModule,
-    GeolocationModule,
     IpMetadataModule,
-    NearestSchoolModule,
+    GeolocationModule,
   ],
   controllers: [
     AppController,
@@ -80,7 +80,7 @@ import { NearestSchoolModule } from './nearest-school/nearest-school.module';
     DataFixController,
     MetricsController,
     ConnectivityController,
-    DeviceTokenController,
+    PingAggregationController,
   ],
   providers: [
     AppService,
@@ -94,9 +94,9 @@ import { NearestSchoolModule } from './nearest-school/nearest-school.module';
     MeasurementServiceV2,
     AdminService,
     MetricsService,
-    ConnectivityService,
     CategoryConfigProvider,
-    DeviceTokenService,
+    PingAggregationService,
+    ConnectivityService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -109,6 +109,7 @@ import { NearestSchoolModule } from './nearest-school/nearest-school.module';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    SchedulerService,
   ],
 })
 export class AppModule {}

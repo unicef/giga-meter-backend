@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
+import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { AuthGuard } from '../auth/auth.guard';
 
@@ -10,8 +10,6 @@ interface AuthenticatedRequest extends Request {
 
 @Injectable()
 export class SwaggerAuthMiddleware implements NestMiddleware {
-  private readonly logger = new Logger(SwaggerAuthMiddleware.name);
-  
   constructor(private authGuard: AuthGuard) { }
 
   async use(req: AuthenticatedRequest, res: Response, next: NextFunction) {
@@ -43,7 +41,7 @@ export class SwaggerAuthMiddleware implements NestMiddleware {
 
       next();
     } catch (error) {
-      this.logger.warn(`Swagger authentication failed: ${error?.message || error}`);
+      console.warn('Error in Swagger page access:', error?.message || error);
       return res.status(401).send(`
        <!DOCTYPE html>
         <html>
