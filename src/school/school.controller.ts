@@ -35,10 +35,10 @@ import {
   SchoolDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
+import { ValidateSize } from '../common/validation.decorator';
 import { DynamicResponse } from 'src/utility/decorators';
 import { GetConnectivityRecordsDto } from 'src/connectivity/connectivity.dto';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
-import { ValidateSize } from '../common/validation.decorator';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { getRateLimitConfig } from 'src/config/rate-limit.config';
 import { CacheInterCeptorOptional } from 'src/config/cache.config';

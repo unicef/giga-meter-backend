@@ -123,7 +123,6 @@ model country {
   latest_school_master_data_version Int?
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
-  countryConfigs                    CountryConfig[]
 }
 
 model master_sync_school_static {
@@ -383,7 +382,7 @@ model connectivity_ping_checks {
   timestamp      DateTime? @db.Timestamptz(6)
   isConnected    Boolean?  @map("is_connected")
   errorMessage   String?   @map("error_message")
-  giga_id_school String
+  giga_id_school String    @map("giga_id_school")
   app_local_uuid String    @unique
   browserId      String?   @map("browser_id")
   latency        Float?    @map("latency")

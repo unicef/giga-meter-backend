@@ -33,85 +33,17 @@ export class AuthGuard implements CanActivate {
     }
     const token = request.headers.authorization?.split(' ')[1];
 
-    const [scheme, token] = parts;
-    
-    // Handle Bearer tokens (existing logic)
-    if (scheme.toLowerCase() === 'bearer') {
-      const response = await this.validateToken(token, request);
-      if (!response) {
-        throw new UnauthorizedException(
-          'Invalid bearer token or not authorized to access',
-        );
-      }
-      return true;
-    }
-    
-    // Handle Device tokens (new logic)
-    if (scheme.toLowerCase() === 'device') {
-      const isValid = await this.validateDeviceToken(token, request);
-      if (!isValid) {
-        throw new UnauthorizedException(
-          'Invalid device token or not authorized to access',
-        );
-      }
-      return true;
+    if (!token) {
+      throw new UnauthorizedException('Missing authorization token');
     }
 
-    throw new UnauthorizedException('Unsupported authorization scheme. Use Bearer or Device');
-  }
-
-  /**
-   * Validates device token and nonce, then sets request context
-   */
-  private async validateDeviceToken(token: string, request: any): Promise<boolean> {
-    try {
-      // First, validate the device token
-      const payload = await this.deviceTokenService.validateToken(token);
-      if (!payload) {
-        return false;
-      }
-
-      // Extract nonce from request headers
-      const nonce = request.headers['x-device-nonce'];
-      if (!nonce) {
-        this.logger.warn('Device token request missing required nonce header');
-        throw new UnauthorizedException('Missing x-device-nonce header for device token authentication');
-      }
-
-      // Validate nonce format
-      if (!this.nonceService.isValidNonceFormat(nonce)) {
-        this.logger.warn('Invalid nonce format provided');
-        throw new UnauthorizedException('Invalid nonce format');
-      }
-
-      // Validate and consume the nonce (prevents replay attacks)
-      const nonceValidation = await this.nonceService.validateAndConsumeNonce(nonce, payload.deviceId);
-      if (!nonceValidation.isValid) {
-        this.logger.warn(`Nonce validation failed: ${nonceValidation.reason}`);
-        throw new UnauthorizedException(`Nonce validation failed: ${nonceValidation.reason}`);
-      }
-
-      // Validate HMAC signature for request integrity
-      const hmacValidation = await this.hmacSignatureService.validateRequestIntegrity(request, token, nonce);
-      if (!hmacValidation.isValid) {
-        this.logger.warn(`HMAC signature validation failed: ${hmacValidation.reason}`);
-        throw new UnauthorizedException(`HMAC signature validation failed: ${hmacValidation.reason}`);
-      }
-
-      // Set device-specific context on request
-      request.deviceId = payload.deviceId;
-      request.nonce = nonce;
-      request.tokenType = 'device';
-      request.category = Category.GIGA_METER.toLowerCase();
-      request.has_write_access = true;
-      return true;
-    } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error; // Re-throw auth errors as-is
-      }
-      this.logger.error('Device token validation failed:', error.message);
-      return false;
+    const response = await this.validateToken(token, request);
+    if (!response) {
+      throw new UnauthorizedException(
+        'Invalid token or not authorized to access',
+      );
     }
+    return true;
   }
 
   public async validateToken(token: string, request: any): Promise<boolean> {
