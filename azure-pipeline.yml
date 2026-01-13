@@ -1,6 +1,6 @@
 trigger:
   - main
-  - development
+  - develop
   - staging
 
 name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
