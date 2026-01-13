@@ -82,7 +82,7 @@ stages:
     vmImage: 'ubuntu-22.04'
   jobs:
   - job: Development
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/development')
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
     steps: 
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: uni-connect-services'
