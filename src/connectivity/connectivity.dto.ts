@@ -17,19 +17,15 @@ export class BaseCreateConnectivityDto {
   errorMessage: string;
 
   @ApiProperty({
-    description: 'The giga id of the school',
-  })
-  giga_id_school: string;
-
-  @ApiProperty({
     description: 'Uuid of the connectivity check',
   })
   app_local_uuid: string;
 
   @ApiProperty({
-    description: 'Browser id of the connectivity check',
+    description: 'Device id of the connectivity check',
   })
-  browserId: string;
+  deviceId: string;
+
   @ApiProperty({
     description: 'Latency of the connectivity check',
   })
@@ -56,6 +52,11 @@ export class GetConnectivityDto extends BaseCreateConnectivityDto {
     description: 'The created at timestamp of the connectivity check',
   })
   created_at: Date;
+
+  @ApiProperty({
+    description: 'The giga id of the school',
+  })
+  giga_id_school: string;
 }
 
 export class GetConnectivityRecordsDto extends PaginationDto {

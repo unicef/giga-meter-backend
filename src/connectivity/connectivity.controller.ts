@@ -6,6 +6,7 @@ import {
   Param,
   UseGuards,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { ConnectivityService } from './connectivity.service';
 import {
@@ -23,25 +24,20 @@ import { DynamicResponse, IdParam } from 'src/utility/decorators';
 @Controller('api/v1/connectivity')
 export class ConnectivityController {
   constructor(private readonly connectivityService: ConnectivityService) {}
-
-  @Post()
-  @ApiOperation({ summary: 'Create a new connectivity check' })
-  async create(
-    @Body() createConnectivityDto: CreateConnectivityDto,
-  ): Promise<CreateConnectivityDto> {
-    return this.connectivityService.create(createConnectivityDto);
-  }
-
   @Post(':giga_id_school')
   @ApiOperation({ summary: 'Create multiple connectivity checks' })
   async createMany(
     @Body() createManyConnectivityDto: CreateManyConnectivityDto,
     @Param('giga_id_school') giga_id_school: string,
   ): Promise<CreateConnectivityDto[]> {
-    return this.connectivityService.createMany(
-      createManyConnectivityDto.records,
-      giga_id_school,
-    );
+    try {
+      return this.connectivityService.createMany(
+        createManyConnectivityDto.records,
+        giga_id_school,
+      );
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
   }
 
   @Get()

@@ -6,8 +6,7 @@ CREATE TABLE "connectivity_ping_checks" (
     "error_message" TEXT,
     "giga_id_school" TEXT NOT NULL,
     "app_local_uuid" TEXT NOT NULL,
-    "browser_id" TEXT,
-    "latency" DOUBLE PRECISION,
+    "device_id" TEXT NOT NULL,
     "created_at" TIMESTAMPTZ(6) DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text),
 
     CONSTRAINT "connectivity_ping_checks_pkey" PRIMARY KEY ("id")
