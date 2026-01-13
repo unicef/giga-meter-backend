@@ -11,6 +11,9 @@ import {
   CreateCategoryConfigDto,
   UpdateCategoryConfigDto,
 } from './category-config.dto';
+import { DeviceTokenService } from '../auth/device-token.service';
+import { HmacSignatureService } from '../auth/hmac-signature.service';
+import { NonceService } from '../auth/nonce.service';
 
 // Extended type to include allowedCountries field
 type MockCategoryConfig = {
@@ -79,8 +82,21 @@ describe('CategoryConfigController', () => {
       allowedCountries: [],
       allowedAPIs: [],
       notAllowedAPIs: [],
-      responseFilters: {}
+      responseFilters: {},
     }),
+  };
+
+  const mockDeviceTokenService = {
+    validateToken: jest.fn(),
+  };
+
+  const mockNonceService = {
+    isValidNonceFormat: jest.fn(),
+    validateAndConsumeNonce: jest.fn(),
+  };
+
+  const mockHmacSignatureService = {
+    validateRequestIntegrity: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -112,6 +128,9 @@ describe('CategoryConfigController', () => {
           provide: CategoryConfigProvider,
           useValue: mockCategoryConfigProvider,
         },
+        { provide: DeviceTokenService, useValue: mockDeviceTokenService },
+        { provide: NonceService, useValue: mockNonceService },
+        { provide: HmacSignatureService, useValue: mockHmacSignatureService },
       ],
       imports: [
         HttpModule,
