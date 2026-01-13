@@ -1,7 +1,15 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma } from '@prisma/client';
-import { GetRawPingsQueryDto } from './ping-aggregation.dto';
+import {
+  GetRawPingConnectivityDto,
+  GetRawPingsQueryDto,
+} from './ping-aggregation.dto';
 
 @Injectable()
 export class PingAggregationService {
@@ -117,6 +125,37 @@ export class PingAggregationService {
     } catch (error) {
       this.logger.error(error);
       throw error;
-    }
+}
+  }
+
+  async getRawPingConnectivity(query: GetRawPingConnectivityDto) {
+    try {
+      if (!query?.size) {
+        query.size = 100;
+      }
+      const { schoolId, from, to, size } = query;
+
+      const where: Prisma.connectivity_ping_checksWhereInput = {};
+      if (schoolId) where.giga_id_school = schoolId;
+
+      if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime()))
+        where.timestamp = {
+          ...(from && { gte: new Date(from) }),
+          ...(to && { lte: new Date(to) }),
+        };
+      else throw new BadRequestException('from and to both are required');
+
+      const data = await this.prisma.connectivity_ping_checks.findMany({
+        where,
+        orderBy: { timestamp: 'desc' },
+        take: size,
+      });
+
+      return { data };
+    } catch (error) {
+      this.logger.log(error);
+      if (error instanceof BadRequestException) throw error;
+
+      throw new HttpException('Internal server error', error.status);    }
   }
 }
