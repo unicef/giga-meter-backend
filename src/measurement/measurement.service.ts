@@ -403,7 +403,6 @@ export class MeasurementService {
 
   private toDto(
     measurement: Measurement,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
@@ -447,7 +446,6 @@ export class MeasurementService {
           ? clientInfo?.Country
           : measurement.country_code,
       app_version: measurement.app_version,
-      ndtVersion: measurement.ndt_version,
       source: measurement.source,
       created_at: measurement.created_at,
       geolocation: undefined,
@@ -583,7 +581,6 @@ export class MeasurementService {
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
-      ndt_version: measurement.ndtVersion,
       source: 'DailyCheckApp',
       detected_latitude: measurement.geolocation?.location?.lat ?? null,
       detected_longitude: measurement.geolocation?.location?.lng ?? null,
