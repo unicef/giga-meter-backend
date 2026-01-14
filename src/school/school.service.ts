@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
 import { SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   sanitizeHardwareId,
   isHardwareIdBlocked,
@@ -10,7 +11,7 @@ import {
 
 @Injectable()
 export class SchoolService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private readonly geolocationUtility: GeolocationUtility) {}
 
   async schools(
     skip?: number,
@@ -114,10 +115,34 @@ export class SchoolService {
   }
 
   async createSchool(schoolDto: SchoolDto): Promise<string> {
+      // Process geolocation data if available
+      if (schoolDto.geolocation && 
+        schoolDto.geolocation.location &&
+        schoolDto.geolocation.accuracy) {
+      try {
+        // Get the school coordinates based on giga_id_school
+        if (schoolDto.giga_id_school) {
+          // Use the common utility to calculate distance and set flags
+          const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
+            schoolDto.giga_id_school,
+            schoolDto.geolocation.location,
+            schoolDto.geolocation.accuracy
+          );
+          
+          // Store the results in the measurement DTO
+          schoolDto.detected_location_accuracy = geoResult.accuracy;
+          schoolDto.detected_location_distance = geoResult.distance;
+          schoolDto.detected_location_is_flagged = geoResult.isFlagged;
+        }
+      } catch (error) {
+        console.error('Error processing geolocation data:', error);
+      }
+    }
     const model = this.toModel(schoolDto);
     const school = await this.prisma.dailycheckapp_school.create({
       data: model,
     });
+    
     return school.user_id;
   }
 
@@ -412,6 +437,11 @@ export class SchoolService {
       created: school.created,
       ip_address: school.ip_address,
       country_code: school.country_code,
+      detected_latitude: school.geolocation?.location?.lat || null, 
+      detected_longitude: school.geolocation?.location?.lng || null, 
+      detected_location_accuracy: school.detected_location_accuracy || null,
+      detected_location_distance: school.detected_location_distance || null,
+      detected_location_is_flagged: school.detected_location_is_flagged || false,
       device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
       is_active: school.is_active,
       windows_username: school.windows_username,
