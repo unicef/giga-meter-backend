@@ -36,9 +36,14 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
+import { NearestSchoolModule } from './nearest-school/nearest-school.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
 
 @Module({
   imports: [
@@ -56,10 +61,12 @@ import { DeviceTokenService } from './auth/device-token.service';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
     GeolocationModule,
+    NearestSchoolModule,
   ],
   controllers: [
     AppController,
@@ -74,6 +81,7 @@ import { DeviceTokenService } from './auth/device-token.service';
     MetricsController,
     ConnectivityController,
     DeviceTokenController,
+    PingAggregationController,
   ],
   providers: [
     AppService,
@@ -88,6 +96,8 @@ import { DeviceTokenService } from './auth/device-token.service';
     MetricsService,
     CategoryConfigProvider,
     DeviceTokenService,
+    PingAggregationService,
+    ConnectivityService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -100,7 +110,7 @@ import { DeviceTokenService } from './auth/device-token.service';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
-    ConnectivityService,
+    SchedulerService,
   ],
 })
 export class AppModule {}
