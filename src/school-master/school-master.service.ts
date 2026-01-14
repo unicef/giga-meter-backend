@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
 import { plainToInstance } from 'class-transformer';
 import { school } from '@prisma/client';
+import { schoolMasterSelect } from './school-master.constant';
 
 @Injectable()
 export class SchoolMasterService {
@@ -12,13 +13,13 @@ export class SchoolMasterService {
     country_code: string,
     school_id: string,
   ): Promise<SchoolMasterDto[]> {
-    const schools = this.prisma.school.findMany({
+    const schools = await this.prisma.school.findMany({
       where: {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
       },
+      select: schoolMasterSelect
     });
-
     return (await schools).map(this.toDto);
   }
 
@@ -27,10 +28,24 @@ export class SchoolMasterService {
       where: {
         giga_id_school,
       },
+      select: schoolMasterSelect
     };
 
     const school = await this.prisma.school.findFirstOrThrow(query);
-    return plainToInstance(FeatureFlagDto, school?.feature_flags);
+    let flags = plainToInstance(FeatureFlagDto, school?.feature_flags);
+
+    // If flags is null/undefined, initialize with default pingService: true
+    if (!flags) {
+      flags = new FeatureFlagDto();
+      flags.pingService = true;
+    } else {
+      // Ensure pingService defaults to true unless explicitly set to false
+      if (flags.pingService !== false) {
+        flags.pingService = true;
+      }
+    }
+
+    return flags;
   }
 
   async setFlagsByGigaId(
@@ -39,6 +54,7 @@ export class SchoolMasterService {
   ): Promise<boolean> {
     const school = await this.prisma.school.findFirstOrThrow({
       where: { giga_id_school },
+      select: schoolMasterSelect
     });
     if (school) {
       const updatedSchool = this.updateFlags(school, flagDto);
