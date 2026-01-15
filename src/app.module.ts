@@ -38,7 +38,8 @@ import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
 import { NearestSchoolModule } from './nearest-school/nearest-school.module';
 import * as redisStore from 'cache-manager-redis-store';
-
+import { DeviceTokenController } from './auth/device-token.controller';
+import { DeviceTokenService } from './auth/device-token.service';
 import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -79,6 +80,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     DataFixController,
     MetricsController,
     ConnectivityController,
+    DeviceTokenController,
     PingAggregationController,
   ],
   providers: [
@@ -93,6 +95,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     AdminService,
     MetricsService,
     CategoryConfigProvider,
+    DeviceTokenService,
     PingAggregationService,
     ConnectivityService,
     {
