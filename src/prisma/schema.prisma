@@ -9,6 +9,11 @@ datasource db {
   extensions = [postgis]
 }
 
+enum SpeedTestProtocol {
+  NDT7
+  CLOUDFLARE
+}
+
 model EFMigrationsHistory {
   MigrationId    String @id(map: "PK___EFMigrationsHistory") @db.VarChar(150)
   ProductVersion String @db.VarChar(32)
@@ -105,6 +110,7 @@ model school {
   country_code             String?                     @db.VarChar
   deleted                  DateTime?                   @db.Timestamptz(6)
   last_school_static_id    Int?
+  is_active                Boolean?                    @default(true)
   latest_master_sync       master_sync_school_static?  @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
   country                  country?                    @relation(fields: [country_code], references: [code])
   master_sync_records      master_sync_school_static[] @relation("schoolToMasterSync")
@@ -121,6 +127,8 @@ model country {
   created_at                        DateTime                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   iso3_format                       String?                    @db.VarChar(32)
   latest_school_master_data_version Int?
+  speed_test_protocol               SpeedTestProtocol          @default(NDT7)
+  is_active                         Boolean?                   @default(true)
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
 }
@@ -422,4 +430,138 @@ model ConnectivityPingChecksDailyAggr {
   @@index([giga_id_school, timestamp_date])
   @@index([giga_id_school, browser_id, timestamp_date])
   @@map("connectivity_ping_checks_daily_aggr")
+}
+
+model Users {
+  id            Int       @id @default(autoincrement())
+  first_name    String?
+  last_name     String?
+  username      String     @unique
+  email         String     @unique
+  user_name     String?
+  last_login    DateTime?
+  is_active     Boolean    @default(true)
+  is_superuser  Boolean    @default(false)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  // Relationships
+  createdRoles          CustomAuthRole[]           @relation("RoleCreatedBy")
+  modifiedRoles         CustomAuthRole[]           @relation("RoleModifiedBy")
+
+  createdRolePermissions CustomAuthRolePermission[] @relation("RolePermCreatedBy")
+  modifiedRolePermissions CustomAuthRolePermission[] @relation("RolePermModifiedBy")
+
+  createdUserRoles      CustomAuthUserRoleRelationship[] @relation("UserRoleCreatedBy")
+  modifiedUserRoles     CustomAuthUserRoleRelationship[] @relation("UserRoleModifiedBy")
+
+  roleAssignments       CustomAuthUserRoleRelationship[] @relation("UserRoleAssignment")
+
+  modifiedFeatureFlags  FeatureFlag[]              @relation("FeatureFlagModifiedBy")
+  createdFeatureFlags   FeatureFlag[]              @relation("FeatureFlagCreatedBy")
+
+  @@map("users")
+}
+
+model CustomAuthRole {
+  id                    Int       @id @default(autoincrement())
+  deleted               DateTime? @db.Timestamptz
+  last_modified_at      DateTime  @db.Timestamptz
+  created               DateTime  @db.Timestamptz
+  name                  String    @db.VarChar(255)
+  description           String?   @db.VarChar(255)
+  category              String    @db.VarChar(50)
+
+  created_by_id         Int?
+  createdBy             Users?     @relation("RoleCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id   Int?
+  modifiedBy            Users?     @relation("RoleModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  // Role Permissions
+  rolePermissions       CustomAuthRolePermission[]
+
+  // User-Role Assignment
+  userRoleRelationships CustomAuthUserRoleRelationship[]
+
+  @@index([created_by_id])
+  @@index([last_modified_by_id])
+  @@index([deleted])
+  @@index([name])
+  @@index([name], map: "custom_auth_role_name_4ba7d950_like")
+
+  @@map("custom_auth_role")
+}
+
+
+model CustomAuthRolePermission {
+  id                  Int       @id @default(autoincrement())
+  deleted             DateTime? @db.Timestamptz
+  last_modified_at    DateTime  @db.Timestamptz
+  created             DateTime  @db.Timestamptz
+  slug                String    @db.VarChar(100)
+
+  created_by_id       Int?
+  createdBy           Users?     @relation("RolePermCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id Int?
+  modifiedBy          Users?     @relation("RolePermModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  role_id             Int
+  role                CustomAuthRole @relation(fields: [role_id], references: [id])
+
+  @@index([created_by_id])
+  @@index([deleted])
+  @@index([last_modified_by_id])
+  @@index([role_id])
+  @@index([slug])
+  @@index([slug], map: "custom_auth_rolepermission_slug_858572f8_like")
+
+  @@map("custom_auth_rolepermission")
+}
+
+
+model CustomAuthUserRoleRelationship {
+  id                   Int       @id @default(autoincrement())
+  deleted              DateTime? @db.Timestamptz
+  last_modified_at     DateTime  @db.Timestamptz
+  created              DateTime  @db.Timestamptz
+
+  created_by_id        Int?
+  createdBy            Users?     @relation("UserRoleCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id  Int?
+  modifiedBy           Users?     @relation("UserRoleModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  role_id              Int
+  role                 CustomAuthRole @relation(fields: [role_id], references: [id])
+
+  user_id              Int
+  user                 Users     @relation("UserRoleAssignment", fields: [user_id], references: [id])
+
+  @@index([created_by_id])
+  @@index([deleted])
+  @@index([last_modified_by_id])
+  @@index([role_id])
+  @@index([user_id])
+
+  @@map("custom_auth_userrolerelationship")
+}
+
+
+model FeatureFlag {
+  id                  Int      @id @default(autoincrement())
+  name                String   @unique @db.VarChar(100)
+  description         String?
+  is_active           Boolean  @default(false)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  last_modified_by_id Int?
+  created_by_id       Int?
+  
+  createdBy           Users? @relation("FeatureFlagCreatedBy", fields: [created_by_id], references: [id])
+  modifiedBy          Users?   @relation("FeatureFlagModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  @@index([last_modified_by_id])
+  @@map("feature_flags")
 }

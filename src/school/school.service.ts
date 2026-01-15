@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
 import { CheckDeviceAndSchoolStatusDto, SchoolDto } from './school.dto';
@@ -12,6 +12,7 @@ import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class SchoolService {
+  private logger = new Logger(SchoolService.name);
   constructor(
     private prisma: PrismaService,
     private readonly geolocationUtility: GeolocationUtility,
