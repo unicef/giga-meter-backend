@@ -7,7 +7,12 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiExcludeController,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import {
   DeactivateDeviceResponseDto,
   RequestSchoolsAdminDto,
@@ -20,6 +25,7 @@ import { Roles } from '../roles/roles.decorator';
 import { PERMISSION_SLUGS } from '../roles/roles.constants';
 
 @ApiTags('Users Management')
+@ApiExcludeController()
 @Controller('api/v1/admin-meter-school')
 export class SchoolsController {
   constructor(private readonly schoolService: SchoolsService) {}

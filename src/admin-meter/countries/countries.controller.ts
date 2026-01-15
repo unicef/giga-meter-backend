@@ -11,7 +11,11 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiExcludeController,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import {
   CountriesListingDto,
   CountryFieldToggleDto,
@@ -21,6 +25,7 @@ import { CountriesService } from './countries.service';
 import { Roles } from '../roles/roles.decorator';
 import { PERMISSION_SLUGS } from '../roles/roles.constants';
 
+@ApiExcludeController()
 @Controller('api/v1/admin-meter-country')
 export class CountriesController {
   private logger = new Logger(CountriesController.name);
