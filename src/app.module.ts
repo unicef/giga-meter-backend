@@ -44,6 +44,7 @@ import { PingAggregationController } from './ping-aggregation/ping-aggregation.c
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
+import { AdminMeterModule } from './admin-meter/admin-meter.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     IpMetadataModule,
     GeolocationModule,
     NearestSchoolModule,
+    AdminMeterModule,
   ],
   controllers: [
     AppController,
