@@ -15,12 +15,14 @@ import {
   ApiParam,
   ApiQuery,
   ApiBody,
+  ApiExcludeController,
 } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreateOrUpdateRoleDto } from './roles.dto';
 import { Roles } from './roles.decorator';
 import { PERMISSION_SLUGS } from './roles.constants';
 @ApiTags('Roles')
+@ApiExcludeController()
 @Controller('api/v1/roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}

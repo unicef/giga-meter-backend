@@ -11,7 +11,12 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiExcludeController,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 
 import { Roles } from 'src/admin-meter/roles/roles.decorator';
@@ -25,6 +30,7 @@ import {
 import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
 
 @ApiTags('Users Management')
+@ApiExcludeController()
 @Controller('api/v1/users')
 export class UsersController {
   private logger = new Logger(UsersController.name);
