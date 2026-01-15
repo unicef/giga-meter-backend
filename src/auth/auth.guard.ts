@@ -93,11 +93,6 @@ export class AuthGuard implements CanActivate {
       }
     }
 
-    // Bypass authentication for Prometheus metrics endpoint
-    if (request.url === '/metrics') {
-      return true;
-    }
-
     // Handle Bearer tokens (existing logic)
     if (scheme.toLowerCase() === 'bearer') {
       const response = await this.validateToken(token, request);
