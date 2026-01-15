@@ -4,12 +4,12 @@ import { NearestSchoolResponseDto } from './nearest-school.dto';
 
 @Injectable()
 export class NearestSchoolService {
-  private readonly MAX_DISTANCE_METERS = 1000; // 1km
+  private readonly MAX_DISTANCE_METERS = parseInt(process.env.NEAREST_SCHOOL_MAX_DISTANCE_METERS || '200', 10); 
 
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Finds the nearest school within 1km of the provided coordinates
+   * Finds the nearest school within MAX_DISTANCE_METERS of the provided coordinates
    * 
    * @param latitude Latitude of the search location
    * @param longitude Longitude of the search location
