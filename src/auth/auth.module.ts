@@ -14,7 +14,6 @@ import { PrismaService } from 'src/prisma/prisma.service';
     AuthGuard,
     CategoryConfigModule,
     PrismaService,
-
     DeviceTokenService,
     NonceService,
     HmacSignatureService,
