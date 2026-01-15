@@ -423,6 +423,10 @@ model Users {
   modifiedUserRoles     CustomAuthUserRoleRelationship[] @relation("UserRoleModifiedBy")
 
   roleAssignments       CustomAuthUserRoleRelationship[] @relation("UserRoleAssignment")
+
+  modifiedFeatureFlags  FeatureFlag[]              @relation("FeatureFlagModifiedBy")
+  createdFeatureFlags   FeatureFlag[]              @relation("FeatureFlagCreatedBy")
+
   @@map("users")
 }
 
@@ -509,4 +513,22 @@ model CustomAuthUserRoleRelationship {
   @@index([user_id])
 
   @@map("custom_auth_userrolerelationship")
+}
+
+
+model FeatureFlag {
+  id                  Int      @id @default(autoincrement())
+  name                String   @unique @db.VarChar(100)
+  description         String?
+  is_active           Boolean  @default(false)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  last_modified_by_id Int?
+  created_by_id       Int?
+  
+  createdBy           Users? @relation("FeatureFlagCreatedBy", fields: [created_by_id], references: [id])
+  modifiedBy          Users?   @relation("FeatureFlagModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  @@index([last_modified_by_id])
+  @@map("feature_flags")
 }
