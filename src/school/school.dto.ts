@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { GeoLocationDto } from '../measurement/measurement.dto';
 import { SchoolMasterDto } from '../school-master/school-master.dto';
+import { isObject, IsString } from 'class-validator';
 
 export class SchoolDto {
   @ApiProperty()
@@ -133,10 +134,30 @@ export class DeactivateDeviceDto {
 
 export class CheckDeviceAndSchoolStatusDto {
   @ApiProperty()
-  device_hardware_id?: string = null;
+  @IsString()
+  device_hardware_id?: string = '';
 
   @ApiProperty()
-  giga_id_school?: string = null;
+  @IsString()
+  external_id?: string = '';
+
+  @ApiProperty()
+  @IsString()
+  giga_id_school?: string = '';
+}
+
+export class CheckDeviceAndSchoolStatusResponseDto {
+  @ApiProperty()
+  isActive: boolean;
+
+  @ApiProperty()
+  message: string;
+
+  @ApiProperty()
+  school?: any = {};
+
+  @ApiProperty()
+  devices?: any[] = [{}];
 }
 
 export class DeactivateDeviceResponseDto {

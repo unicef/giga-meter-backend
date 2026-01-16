@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { dailycheckapp_school as School } from '@prisma/client';
+import { Prisma, dailycheckapp_school as School } from '@prisma/client';
 import { CheckDeviceAndSchoolStatusDto, SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
@@ -371,12 +371,12 @@ export class SchoolService {
   }
 
   async checkDeviceAndSchool(prams: CheckDeviceAndSchoolStatusDto) {
-    const { device_hardware_id, giga_id_school } = plainToInstance(
+    const { device_hardware_id, external_id, giga_id_school } = plainToInstance(
       CheckDeviceAndSchoolStatusDto,
       prams,
     );
 
-    if (isHardwareIdBlocked(device_hardware_id)) {
+    if (device_hardware_id && isHardwareIdBlocked(device_hardware_id)) {
       console.warn(
         `Blocked hardware ID provided to checkDeviceAndSchool: ${device_hardware_id}`,
       );
@@ -385,32 +385,54 @@ export class SchoolService {
         message: 'Device not found (blocked hardware ID)',
       };
     }
-    //will add the logic for check school status from school table is_active
-    if (giga_id_school == 'mock-giga-id-school-test')
+    const schoolWhere: Prisma.schoolWhereInput = { is_active: true };
+    if (external_id && external_id.trim())
+      schoolWhere.external_id = { equals: external_id, mode: 'insensitive' };
+    if (giga_id_school && giga_id_school.trim())
+      schoolWhere.giga_id_school = giga_id_school?.toLowerCase().trim();
+    if (!schoolWhere?.giga_id_school && !schoolWhere?.external_id)
       return {
         isActive: false,
-        message: 'school is unactive',
+        message: 'School not found',
       };
+    //will add the logic for check school status from school table is_active
+    const school = await this.prisma.school.findFirst({ where: schoolWhere });
+    if (!school) {
+      return {
+        isActive: false,
+        message: 'School not found',
+      };
+    }
+    const deviceWhere: Prisma.dailycheckapp_schoolWhereInput = {
+      giga_id_school: school.giga_id_school,
+    };
+    if (device_hardware_id) {
+      deviceWhere.device_hardware_id = device_hardware_id;
+      deviceWhere.OR = [{ is_active: null }, { is_active: true }];
+    }
 
-    const device = await this.prisma.dailycheckapp_school.findFirst({
-      where: {
-        device_hardware_id,
-        giga_id_school: giga_id_school?.toLowerCase().trim(),
-        OR: [{ is_active: null }, { is_active: true }],
-      },
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
-    if (!device) {
+    const devices = (
+      await this.prisma.dailycheckapp_school.findMany({
+        where: deviceWhere,
+        orderBy: {
+          created_at: 'desc',
+        },
+      })
+    ).map((el) => ({ ...el, id: el.id.toString() }));
+    if (!devices.length && deviceWhere.device_hardware_id) {
       return {
         isActive: false,
         message: 'Device not found',
       };
     }
+
+    school.id = school.id.toString() as any;
+
     return {
       isActive: true,
       message: 'Device is active',
+      school,
+      devices,
     };
   }
 
