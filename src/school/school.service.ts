@@ -386,11 +386,15 @@ export class SchoolService {
       };
     }
     const schoolWhere: Prisma.schoolWhereInput = { is_active: true };
-    if (external_id)
+    if (external_id && external_id.trim())
       schoolWhere.external_id = { equals: external_id, mode: 'insensitive' };
-    if (giga_id_school)
+    if (giga_id_school && giga_id_school.trim())
       schoolWhere.giga_id_school = giga_id_school?.toLowerCase().trim();
-
+    if (!schoolWhere?.giga_id_school && !schoolWhere?.external_id)
+      return {
+        isActive: false,
+        message: 'School not found',
+      };
     //will add the logic for check school status from school table is_active
     const school = await this.prisma.school.findFirst({ where: schoolWhere });
     if (!school) {
