@@ -411,18 +411,23 @@ export class SchoolService {
       deviceWhere.OR = [{ is_active: null }, { is_active: true }];
     }
 
-    const devices = await this.prisma.dailycheckapp_school.findMany({
-      where: deviceWhere,
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
+    const devices = (
+      await this.prisma.dailycheckapp_school.findMany({
+        where: deviceWhere,
+        orderBy: {
+          created_at: 'desc',
+        },
+      })
+    ).map((el) => ({ ...el, id: el.id.toString() }));
     if (!devices.length && deviceWhere.device_hardware_id) {
       return {
         isActive: false,
         message: 'Device not found',
       };
     }
+
+    school.id = school.id.toString() as any;
+
     return {
       isActive: true,
       message: 'Device is active',
