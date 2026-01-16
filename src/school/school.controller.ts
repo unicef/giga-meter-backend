@@ -34,6 +34,7 @@ import {
   CheckDeviceAndSchoolStatusDto,
   DeactivateDeviceResponseDto,
   CheckDeviceStatusDto,
+  CheckDeviceAndSchoolStatusResponseDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
@@ -380,7 +381,7 @@ export class SchoolController {
     status: 200,
     description:
       'Returns whether the device and school is active or has been deactivated',
-    type: CheckDeviceAndSchoolStatusDto,
+    type: CheckDeviceAndSchoolStatusResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -392,29 +393,12 @@ export class SchoolController {
   })
   async checkDeviceAndSchoolStatus(
     @Body() body: CheckDeviceAndSchoolStatusDto,
-  ): Promise<ApiSuccessResponseDto<CheckDeviceAndSchoolStatusDto>> {
-    if (
-      !body?.device_hardware_id ||
-      body?.device_hardware_id.trim().length === 0
-    ) {
-      throw new HttpException(
-        'device_hardware_id is null/empty',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
-    if (!body?.giga_id_school || body?.giga_id_school.trim().length === 0) {
-      throw new HttpException(
-        'giga_id_school is null/empty',
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
+  ): Promise<ApiSuccessResponseDto<CheckDeviceAndSchoolStatusResponseDto>> {
     const result = await this.schoolService.checkDeviceAndSchool(body);
 
     return {
       success: result.isActive,
-      data: result as CheckDeviceAndSchoolStatusDto,
+      data: result,
       timestamp: new Date().toISOString(),
       message: result.message,
     };
