@@ -131,6 +131,7 @@ model country {
   is_active                         Boolean?                   @default(true)
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
+  countryConfigs                    CountryConfig[]
 }
 
 model master_sync_school_static {
@@ -543,4 +544,22 @@ model CustomAuthUserRoleRelationship {
   @@index([user_id])
 
   @@map("custom_auth_userrolerelationship")
+}
+
+model CountryConfig {
+  id                  Int                   @id @default(autoincrement())
+  countryCode         String                @unique @map("country_code")
+  measurementProvider MeasurementProvider   @default(mlab) @map("measurement_provider")
+  options             Json?                 @map("options")
+  createdAt           DateTime              @default(now()) @map("created_at")
+  updatedAt           DateTime              @updatedAt @map("updated_at")
+
+  country             country               @relation(fields: [countryCode], references: [code], onDelete: Cascade)
+
+  @@map("country_config")
+}
+
+enum MeasurementProvider {
+  mlab
+  cloudflare
 }
