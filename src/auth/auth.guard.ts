@@ -33,15 +33,13 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    const isMetrics = request.url === '/metrics';
+    const useAuth = process.env.USE_AUTH === 'true';
 
-    if (isPublic) {
+    if (!useAuth || isPublic || request.category || isMetrics) {
       return true;
     }
-
-    const useAuth = process.env.USE_AUTH === 'true';
     const authHeader = request.headers.authorization;
-    if (!useAuth) return true;
-
     // Check if it's a Bearer token or device token
     const parts: string[] = authHeader.split(' ');
     if (parts.length !== 2) {
@@ -49,7 +47,6 @@ export class AuthGuard implements CanActivate {
     }
 
     const [scheme, token] = parts;
-
     // Handle Bearer tokens (existing logic)
     if (scheme.toLowerCase() === 'bearer') {
       if (request.headers?.tokentype === 'b2c') {
@@ -81,12 +78,6 @@ export class AuthGuard implements CanActivate {
         return true;
       }
     }
-
-    // Bypass authentication for Prometheus metrics endpoint
-    if (request.url === '/metrics') {
-      return true;
-    }
-    // const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
       throw new UnauthorizedException('Missing authorization token');

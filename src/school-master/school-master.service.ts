@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
 import { plainToInstance } from 'class-transformer';
 import { school } from '@prisma/client';
+import { schoolMasterSelect } from './school-master.constant';
 
 @Injectable()
 export class SchoolMasterService {
@@ -12,14 +13,14 @@ export class SchoolMasterService {
     country_code: string,
     school_id: string,
   ): Promise<SchoolMasterDto[]> {
-    const schools = this.prisma.school.findMany({
+    const schools = await this.prisma.school.findMany({
       where: {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
         is_active: true,
       },
+      select: schoolMasterSelect
     });
-
     return (await schools).map(this.toDto);
   }
 
@@ -28,6 +29,7 @@ export class SchoolMasterService {
       where: {
         giga_id_school,
       },
+      select: schoolMasterSelect
     };
 
     const school = await this.prisma.school.findFirstOrThrow(query);
@@ -53,6 +55,7 @@ export class SchoolMasterService {
   ): Promise<boolean> {
     const school = await this.prisma.school.findFirstOrThrow({
       where: { giga_id_school },
+      select: schoolMasterSelect
     });
     if (school) {
       const updatedSchool = this.updateFlags(school, flagDto);
