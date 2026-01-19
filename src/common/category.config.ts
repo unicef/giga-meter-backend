@@ -42,6 +42,9 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
       { url: '/api/v1/dailycheckapp_schools', methods: ['GET'] },
       { url: '/api/v1/dailycheckapp_countries', methods: ['GET'] },
       { url: '/api/v1/measurements', methods: ['GET'] },
+      { url: '/api/v1/public/get-registered-schools', methods: ['GET'] },
+      { url: '/api/v1/public/get-registered-measurements', methods: ['GET'] },
+      { url: '/api/v1/public/get-registered-countries', methods: ['GET'] },
     ],
     notAllowedAPIs: [],
     responseFilters: {
