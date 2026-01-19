@@ -10,8 +10,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { CountriesController } from './countries/countries.controller';
 import { CountriesService } from './countries/countries.service';
-import { FeatureFlagController } from './feature-flag/feature-flag.controller';
-import { FeatureFlagService } from './feature-flag/feature-flag.service';
 
 @Module({
   controllers: [
@@ -19,7 +17,6 @@ import { FeatureFlagService } from './feature-flag/feature-flag.service';
     RolesController,
     SchoolsController,
     CountriesController,
-    FeatureFlagController,
   ],
   providers: [
     {
@@ -31,7 +28,6 @@ import { FeatureFlagService } from './feature-flag/feature-flag.service';
     SchoolsService,
     RolesService,
     CountriesService,
-    FeatureFlagService,
   ],
 })
 export class AdminMeterModule {}
