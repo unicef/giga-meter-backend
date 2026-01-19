@@ -14,7 +14,9 @@ import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
+import { MeasurementV2Controller } from './measurement/measurement.v2.controller';
 import { MeasurementService } from './measurement/measurement.service';
+import { MeasurementServiceV2 } from './measurement/measurement.service.v2';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
@@ -37,6 +39,7 @@ import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
 import { NearestSchoolModule } from './nearest-school/nearest-school.module';
+import { CountryConfigModule } from './country-config/country-config.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
@@ -64,6 +67,7 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     }),
     ScheduleModule.forRoot(),
     CategoryConfigModule,
+    CountryConfigModule,
     AuthModule,
     IpMetadataModule,
     GeolocationModule,
@@ -78,6 +82,7 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     SchoolMasterController,
     CountryController,
     MeasurementController,
+    MeasurementV2Controller,
     AdminController,
     DataFixController,
     MetricsController,
@@ -94,6 +99,7 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     SchoolMasterService,
     CountryService,
     MeasurementService,
+    MeasurementServiceV2,
     AdminService,
     MetricsService,
     CategoryConfigProvider,
