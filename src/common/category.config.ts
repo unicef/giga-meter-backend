@@ -47,7 +47,15 @@ export const DEFAULT_CATEGORY_CONFIG: CategoryConfigType[] = [
     responseFilters: {
       // Global exclusions for all endpoints in this category
       exclude: ['ip_address', 'school_id'],
-      endpoints: {}
+      endpoints: {
+        // Allow school_id in country_code_school_id endpoint
+        '/api/v1/schools/country_code_school_id/*': {
+          exclude: ['ip_address'] // Only exclude ip_address, not school_id
+        },
+        '/api/v1/schools/country_code_school_id/:country_code/:school_id': {
+          exclude: ['ip_address'] // Only exclude ip_address, not school_id
+        }
+      }
     },
     allowedCountries: [],
     swagger: {
