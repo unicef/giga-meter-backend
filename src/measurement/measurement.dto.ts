@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsArray,
   IsNumber,
   IsObject,
   IsOptional,
@@ -113,6 +114,33 @@ export class CloudflareAccessInformationDto {
   asn?: Record<string, any> | string;
 }
 
+export class CloudflareServerInfoDto {
+  @ApiProperty({ required: false, description: 'City where the server is located' })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiProperty({ required: false, description: 'Site identifier (IATA code)' })
+  @IsOptional()
+  @IsString()
+  site?: string;
+
+  @ApiProperty({ required: false, description: 'Country code (CCA2)' })
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @ApiProperty({ required: false, description: 'Server label (typically city name)' })
+  @IsOptional()
+  @IsString()
+  label?: string;
+
+  @ApiProperty({ required: false, description: 'Metro identifier (IATA code)' })
+  @IsOptional()
+  @IsString()
+  metro?: string;
+}
+
 export class CloudflareMeasurementDto {
   @ApiProperty({ description: 'Unique identifier for the measurement run' })
   @IsUUID()
@@ -219,6 +247,16 @@ export class CloudflareMeasurementDto {
   @IsOptional()
   @IsString()
   countryCode?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Server information for the measurement',
+    type: () => CloudflareServerInfoDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CloudflareServerInfoDto)
+  serverInfo?: CloudflareServerInfoDto;
 }
 
 export class GeoLocationDto {

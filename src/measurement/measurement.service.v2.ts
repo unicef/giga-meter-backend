@@ -46,6 +46,10 @@ export class MeasurementServiceV2 {
       ? (measurementDto.accessInformation as unknown as Prisma.JsonObject)
       : undefined;
 
+    const serverInfo = measurementDto.serverInfo
+      ? (measurementDto.serverInfo as unknown as Prisma.JsonObject)
+      : undefined;
+
     const results = measurementDto.results
       ? (measurementDto.results as unknown as Prisma.JsonValue)
       : undefined;
@@ -61,6 +65,7 @@ export class MeasurementServiceV2 {
       device_type: measurementDto.deviceType ?? null,
       notes: measurementDto.notes ?? null,
       client_info: clientInfo,
+      server_info: serverInfo,
       download: downloadValue,
       upload: uploadValue,
       latency: latencyValue,
