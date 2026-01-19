@@ -1,11 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["tracing"]
+  previewFeatures = ["tracing", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
 }
 
 model EFMigrationsHistory {
@@ -48,29 +49,29 @@ model dailycheckapp_flagged_school {
 }
 
 model dailycheckapp_school {
-  id                           BigInt    @id @default(autoincrement())
-  user_id                      String?
-  giga_id_school               String?
-  mac_address                  String?
-  os                           String?
-  app_version                  String?
-  created                      String?
-  network_information          String?   @db.VarChar
-  ip_address                   String?
-  country_code                 String?
-  is_blocked                   Boolean   @default(false)
-  notify                       Boolean   @default(false)
-  created_at                   DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  detected_latitude            Float?
-  detected_location_accuracy   Float?
-  detected_location_distance   Float?
-  detected_location_is_flagged Boolean?  @default(false)
-  detected_longitude           Float?
-  device_hardware_id           String?
-  is_active                    Boolean?
-  installed_path               String?
-  wifi_connections             Json?
-  windows_username             String?
+  id                  BigInt    @id @default(autoincrement())
+  user_id             String?
+  giga_id_school      String?
+  mac_address         String?
+  os                  String?
+  app_version         String?
+  created             String?
+  network_information String?   @db.VarChar
+  ip_address          String?
+  country_code        String?
+  is_blocked          Boolean   @default(false)
+  notify              Boolean   @default(false)
+  created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  device_hardware_id  String?
+  is_active           Boolean?
+  windows_username    String?
+  installed_path      String?
+  wifi_connections    Json?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 model school {
@@ -79,7 +80,7 @@ model school {
   modified                 DateTime?                   @db.Timestamptz(6)
   name                     String?                     @db.VarChar
   timezone                 String?                     @db.VarChar
-  geopoint                 Unsupported("geography")?
+  geopoint                 Unsupported("geography(Point, 4326)")?  // PostGIS point for school location
   gps_confidence           Float?
   altitude                 Int?
   address                  String?                     @db.VarChar
@@ -207,74 +208,73 @@ model giga_id_school_mapping_fix {
 }
 
 model measurements {
-  id                           BigInt    @id(map: "PK_measurements") @default(autoincrement())
-  timestamp                    DateTime? @db.Timestamptz(6)
-  uuid                         String?
-  browser_id                   String?
-  school_id                    String
-  device_type                  String?
-  notes                        String?
-  client_info                  Json?
-  server_info                  Json?
-  annotation                   String?
-  download                     Float?
-  upload                       Float?
-  latency                      BigInt?
-  results                      Json?
-  giga_id_school               String?
-  country_code                 String?
-  ip_address                   String?
-  app_version                  String?
-  source                       String    @default("MLab")
-  created_at                   DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  data_downloaded              BigInt?
-  data_uploaded                BigInt?
-  data_usage                   BigInt?
-  detected_latitude            Float?
-  detected_location_accuracy   Float?
-  detected_location_distance   Float?
-  detected_location_is_flagged Boolean?  @default(false)
-  detected_longitude           Float?
-  device_hardware_id           String?
-  installed_path               String?
-  wifi_connections             Json?
-  windows_username             String?
-
+  id                 BigInt    @id(map: "PK_measurements") @default(autoincrement())
+  timestamp          DateTime? @db.Timestamptz(6)
+  uuid               String?
+  browser_id         String?
+  school_id          String
+  device_type        String?
+  notes              String?
+  client_info        Json?
+  server_info        Json?
+  annotation         String?
+  download           Float?
+  upload             Float?
+  latency            BigInt?
+  results            Json?
+  giga_id_school     String?
+  country_code       String?
+  ip_address         String?
+  app_version        String?
+  source             String    @default("MLab")
+  created_at         DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  data_downloaded    BigInt?
+  data_uploaded      BigInt?
+  data_usage         BigInt?
+  device_hardware_id String?
+  windows_username   String?
+  installed_path     String?
+  wifi_connections   Json?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
 }
 
 model measurements_failed {
-  id                           BigInt    @id(map: "PK_measurements_failed") @default(autoincrement())
-  timestamp                    DateTime? @db.Timestamptz(6)
-  uuid                         String?
-  browser_id                   String?
-  school_id                    String
-  device_type                  String?
-  notes                        String?
-  client_info                  Json?
-  server_info                  Json?
-  annotation                   String?
-  download                     Float?
-  upload                       Float?
-  latency                      BigInt?
-  results                      Json?
-  giga_id_school               String?
-  country_code                 String?
-  ip_address                   String?
-  app_version                  String?
-  source                       String    @default("DailyCheckApp")
-  reason                       String
-  created_at                   DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  data_downloaded              BigInt?
-  data_uploaded                BigInt?
-  data_usage                   BigInt?
-  detected_latitude            Float?
-  detected_location_accuracy   Float?
-  detected_location_distance   Float?
-  detected_location_is_flagged Boolean?  @default(false)
-  detected_longitude           Float?
+  id              BigInt    @id(map: "PK_measurements_failed") @default(autoincrement())
+  timestamp       DateTime? @db.Timestamptz(6)
+  uuid            String?
+  browser_id      String?
+  school_id       String
+  device_type     String?
+  notes           String?
+  client_info     Json?
+  server_info     Json?
+  annotation      String?
+  download        Float?
+  upload          Float?
+  latency         BigInt?
+  results         Json?
+  giga_id_school  String?
+  country_code    String?
+  ip_address      String?
+  app_version     String?
+  source          String    @default("DailyCheckApp")
+  reason          String
+  created_at      DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  data_downloaded BigInt?
+  data_uploaded   BigInt?
+  data_usage      BigInt?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

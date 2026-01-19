@@ -35,10 +35,10 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
+import { GeolocationModule } from './geolocation/geolocation.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { CmsModule, SchemaValidationService } from './cms';
 import { TranslateModule } from './translate';
-
 
 @Module({
   imports: [
@@ -61,6 +61,7 @@ import { TranslateModule } from './translate';
     IpMetadataModule,
     CmsModule,
     TranslateModule,
+    GeolocationModule,
   ],
   controllers: [
     AppController,
@@ -100,7 +101,7 @@ import { TranslateModule } from './translate';
       useClass: CategoryResponseInterceptor,
     },
     ConnectivityService,
-    SchemaValidationService
+    SchemaValidationService,
   ],
 })
 export class AppModule {}
