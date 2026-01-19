@@ -526,3 +526,37 @@ model CustomAuthUserRoleRelationship {
 
   @@map("custom_auth_userrolerelationship")
 }
+
+model CmsContent {
+  id           Int       @id @default(autoincrement())
+  status       String    @unique @db.VarChar(20)
+  contentJson  Json      @map("content_json")
+  publishedAt  DateTime? @map("published_at")
+  lastModified DateTime  @default(now()) @map("last_modified")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  @@index([status])
+  @@map("cms_content")
+}
+
+model CmsMedia {
+  id               String    @id @db.VarChar(50)
+  name             String    @db.VarChar(255)
+  altText          String?   @map("alt_text")
+  fileType         String    @map("file_type") @db.VarChar(100)
+  fileSize         Int       @map("file_size")
+  filePath         String    @map("file_path")
+  url              String?
+  width            Int?
+  height           Int?
+  duration         Int?
+  uploadedAt       DateTime  @default(now()) @map("uploaded_at")
+  used_in_sections String[]
+  deletedAt        DateTime? @map("deleted_at")
+
+  @@index([name])
+  @@index([fileType])
+  @@index([uploadedAt])
+  @@index([deletedAt])
+  @@map("cms_media")
+}

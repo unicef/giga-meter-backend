@@ -38,6 +38,8 @@ import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { CmsModule, SchemaValidationService } from './cms';
+import { TranslateModule } from './translate';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
+    CmsModule,
+    TranslateModule,
     GeolocationModule,
     AdminMeterModule,
   ],
@@ -99,6 +103,7 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
       useClass: CategoryResponseInterceptor,
     },
     ConnectivityService,
+    SchemaValidationService,
   ],
 })
 export class AppModule {}
