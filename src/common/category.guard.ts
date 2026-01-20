@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   CanActivate,
   ExecutionContext,
@@ -8,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { CATEGORY_KEY } from './category.decorator';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { CategoryConfigProvider } from './category-config.provider';
+import { IS_ADMIN_KEY } from './admin.decorator';
 
 @Injectable()
 export class CategoryGuard implements CanActivate {
@@ -24,8 +26,13 @@ export class CategoryGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    
+    const isAdmin = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    if (isPublic || isMetrics) {
+    if (isPublic || isMetrics || isAdmin) {
       return true;
     }
     

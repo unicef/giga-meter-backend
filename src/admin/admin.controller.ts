@@ -4,6 +4,8 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  InternalServerErrorException,
+  Param,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -130,4 +132,18 @@ export class AdminController {
 
     return await this.adminService.notifySchools(schoolIds);
   }
+
+  @Put('assign-role/:id')
+  async assignRoleToUser(
+    @Param('id') id: number,
+    @Body('roleId') roleId: number,
+  ): Promise<any> {
+    try {
+      return this.adminService.assignRoleToUser(id, roleId);
+    } catch (error) {
+      throw new InternalServerErrorException('Error assigning role to user');
+    }
+  }
+
+
 }

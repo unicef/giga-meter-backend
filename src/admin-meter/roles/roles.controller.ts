@@ -21,9 +21,11 @@ import { RolesService } from './roles.service';
 import { CreateOrUpdateRoleDto } from './roles.dto';
 import { Roles } from './roles.decorator';
 import { PERMISSION_SLUGS } from './roles.constants';
+import { AdminAccess } from 'src/common/admin.decorator';
 @ApiTags('Roles')
 @ApiExcludeController()
 @Controller('api/v1/roles')
+@AdminAccess()
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
