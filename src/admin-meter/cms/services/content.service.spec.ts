@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContentService } from './content.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { SchemaValidationService } from './schema-validation.service';
 import { ContentStatus } from '../dto/content.dto';
 import { NotFoundException } from '@nestjs/common';

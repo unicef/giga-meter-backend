@@ -33,15 +33,17 @@ import {
   MediaResponseDto,
   UploadFileResponseDto,
 } from '../dto/media.dto';
-import { Public } from 'src/common/public.decorator';
+import { AdminLoggedInUser } from 'src/common/common.decorator';
+import { Users } from '@prisma/client';
 
-@Public()
 @ApiTags('CMS - Media Management')
 @Controller('api/v1/cms/media')
 export class MediaController {
   private readonly logger = new Logger(MediaController.name);
 
-  constructor(private readonly mediaService: MediaService) {}
+  constructor(
+    private readonly mediaService: MediaService,
+  ) { }
 
   @Get()
   @ApiOperation({
@@ -95,6 +97,7 @@ export class MediaController {
     description: 'Invalid file or file size exceeds limit',
   })
   async uploadFile(
+    @AdminLoggedInUser() user: Users,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -110,7 +113,7 @@ export class MediaController {
       `Uploading file: ${file.originalname} (${file.mimetype})`,
     );
 
-    const uploadedFile = await this.mediaService.uploadFile(file, body.name);
+    const uploadedFile = await this.mediaService.uploadFile(file, body.name, user?.id);
 
     return {
       success: true,
@@ -135,10 +138,12 @@ export class MediaController {
     description: 'File not found',
   })
   async updateFileMetadata(
+    @AdminLoggedInUser() user: Users,
     @Body() updateDto: UpdateFileMetadataDto,
   ): Promise<MediaResponseDto> {
     this.logger.log(`Updating metadata for file: ${updateDto.id}`);
-    return this.mediaService.updateFileMetadata(updateDto);
+
+    return this.mediaService.updateFileMetadata(updateDto, user?.id);
   }
 
   @Delete()

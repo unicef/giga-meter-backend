@@ -1,5 +1,5 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import {
   ContentStatus,
   SaveContentDto,
@@ -10,14 +10,14 @@ import {
 export class ContentService {
   private readonly logger = new Logger(ContentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Get content by status (draft or published)
    */
   async getContent(status?: ContentStatus): Promise<ContentResponseDto> {
     const contentStatus = status || ContentStatus.DRAFT;
-    
+
     const content = await this.prisma.cmsContent.findUnique({
       where: { status: contentStatus },
     });
@@ -38,6 +38,7 @@ export class ContentService {
   async saveContent(
     saveContentDto: SaveContentDto,
     status: ContentStatus,
+    userId?: number,
   ): Promise<ContentResponseDto> {
     try {
       this.logger.log(`Saving content with status: ${status}`);
@@ -56,11 +57,13 @@ export class ContentService {
         update: {
           contentJson,
           lastModified: new Date(),
+          ...(userId && { updatedById: userId }),
           ...(isPublishing && { publishedAt: new Date() }),
         },
         create: {
           status,
           contentJson,
+          ...(userId && { createdById: userId }),
           ...(isPublishing && { publishedAt: new Date() }),
         },
       });

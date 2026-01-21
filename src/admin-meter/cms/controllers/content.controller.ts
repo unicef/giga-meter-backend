@@ -22,15 +22,17 @@ import {
   ContentResponseDto,
   ContentStatus,
 } from '../dto/content.dto';
-import { Public } from 'src/common/public.decorator';
+import { AdminLoggedInUser } from 'src/common/common.decorator';
+import { Users } from '@prisma/client';
 
 @ApiTags('CMS - Content Management')
-@Public()
 @Controller('api/v1/cms/content')
 export class ContentController {
   private readonly logger = new Logger(ContentController.name);
 
-  constructor(private readonly contentService: ContentService) {}
+  constructor(
+    private readonly contentService: ContentService,
+  ) { }
   @Get()
   @ApiOperation({
     summary: 'Get content',
@@ -83,11 +85,12 @@ export class ContentController {
     description: 'Invalid content structure or validation failed',
   })
   async saveContent(
+    @AdminLoggedInUser() user: Users,
     @Query() query: SaveContentQueryDto,
     @Body() saveContentDto: SaveContentDto,
   ): Promise<ContentResponseDto> {
     this.logger.log(`Saving content with status: ${query.status}`);
 
-    return this.contentService.saveContent(saveContentDto, query.status);
+    return this.contentService.saveContent(saveContentDto, query.status, user?.id);
   }
 }

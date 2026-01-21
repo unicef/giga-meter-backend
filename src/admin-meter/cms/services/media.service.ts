@@ -4,7 +4,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { StorageService } from './storage.service';
 import * as sharp from 'sharp';
 import * as fs from 'fs/promises';
@@ -19,14 +19,14 @@ import {
 export class MediaService {
   private readonly logger = new Logger(MediaService.name);
   private readonly mediaJsonPath: string;
-  
+
   // File size limits per type
   private readonly maxFileSizes = {
     image: 10 * 1024 * 1024, // 10MB for images
     video: 100 * 1024 * 1024, // 100MB for videos
     document: 20 * 1024 * 1024, // 20MB for documents
   };
-  
+
   // Allowed MIME types
   private readonly allowedMimeTypes = [
     // Images
@@ -88,9 +88,9 @@ export class MediaService {
   async getMediaLibrary(): Promise<MediaLibraryResponseDto> {
     try {
       const media = await this.prisma.cmsMedia.findMany({
-        where: { 
+        where: {
           deletedAt: {
-            
+
           }
         },
         orderBy: { uploadedAt: 'desc' },
@@ -113,7 +113,7 @@ export class MediaService {
   /**
    * Upload file (image, video, or document)
    */
-  async uploadFile(file: Express.Multer.File, name?: string): Promise<MediaResponseDto> {
+  async uploadFile(file: Express.Multer.File, name?: string, userId?: number): Promise<MediaResponseDto> {
     try {
       // Validate file
       this.validateFile(file);
@@ -160,6 +160,7 @@ export class MediaService {
           width: metadata.width,
           height: metadata.height,
           duration: metadata.duration,
+          ...(userId && { createdById: userId }),
         },
       });
 
@@ -180,6 +181,7 @@ export class MediaService {
    */
   async updateFileMetadata(
     dto: UpdateFileMetadataDto,
+    userId?: number,
   ): Promise<MediaResponseDto> {
     try {
       const media = await this.prisma.cmsMedia.findUnique({
@@ -195,6 +197,7 @@ export class MediaService {
         data: {
           ...(dto.name && { name: dto.name }),
           ...(dto.altText !== undefined && { altText: dto.altText }),
+          ...(userId && { updatedById: userId }),
         },
       });
 
@@ -352,7 +355,7 @@ export class MediaService {
       this.logger.warn(
         `Failed to optimize image: ${error.message}. Using original.`,
       );
-      
+
       // Return original with basic metadata
       try {
         const metadata = await sharp(file.buffer).metadata();

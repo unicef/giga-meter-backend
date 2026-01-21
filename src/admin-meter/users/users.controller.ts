@@ -34,7 +34,7 @@ import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
 @Controller('api/v1/users')
 export class UsersController {
   private logger = new Logger(UsersController.name);
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get('signin')
   @Roles('')

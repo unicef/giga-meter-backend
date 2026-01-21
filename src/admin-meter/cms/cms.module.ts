@@ -5,7 +5,7 @@ import { ContentService } from './services/content.service';
 import { MediaService } from './services/media.service';
 import { StorageService } from './services/storage.service';
 import { SchemaValidationService } from './services/schema-validation.service';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
   imports: [PrismaModule],
@@ -18,4 +18,4 @@ import { PrismaModule } from '../prisma/prisma.module';
   ],
   exports: [ContentService, MediaService],
 })
-export class CmsModule {}
+export class CmsModule { }
