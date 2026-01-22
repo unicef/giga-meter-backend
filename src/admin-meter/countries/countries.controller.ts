@@ -24,9 +24,11 @@ import {
 import { CountriesService } from './countries.service';
 import { Roles } from '../roles/roles.decorator';
 import { PERMISSION_SLUGS } from '../roles/roles.constants';
+import { AdminAccess } from 'src/common/admin.decorator';
 
 @ApiExcludeController()
 @Controller('api/v1/admin-meter-country')
+@AdminAccess()
 export class CountriesController {
   private logger = new Logger(CountriesController.name);
   constructor(private readonly countriesService: CountriesService) {}

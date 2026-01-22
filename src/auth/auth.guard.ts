@@ -3,11 +3,8 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-  ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
-import * as jwksRsa from 'jwks-rsa';
 import { Category, DEFAULT_CATEGORY } from '../common/category.config';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../common/public.decorator';
@@ -18,8 +15,8 @@ import { DeviceTokenService } from './device-token.service';
 import { NonceService } from './nonce.service';
 import { HmacSignatureService } from './hmac-signature.service';
 import { CategoryConfigProvider } from '../common/category-config.provider';
-import { ROLES_KEY } from 'src/admin-meter/roles/roles.decorator';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { IS_ADMIN_KEY } from 'src/common/admin.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -41,10 +38,14 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    const isAdmin = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     const isMetrics = request.url === '/metrics';
     const useAuth = process.env.USE_AUTH === 'true';
 
-    if (!useAuth || isPublic || request.category || isMetrics) {
+    if (!useAuth || isPublic || request.category || isMetrics || isAdmin) {
       return true;
     }
     // Extract token from Authorization header
@@ -61,47 +62,8 @@ export class AuthGuard implements CanActivate {
 
     const [scheme, token] = parts;
 
-    // Handle Bearer tokens (existing logic)
-    if (scheme.toLowerCase() === 'bearer') {
-      if (request.headers?.tokentype === 'b2c') {
-        const decodedToken: any = await this.validateB2cToken(token);
-        if (!decodedToken) {
-          throw new UnauthorizedException(
-            'Invalid bearer token or not authorized to access for b2c',
-          );
-        }
-        request.category = Category.ADMIN;
-        request.b2cUser = decodedToken;
-
-        const requiredRoles = this.reflector.getAllAndOverride<string[]>(
-          ROLES_KEY,
-          [context.getHandler(), context.getClass()],
-        );
-
-        if (requiredRoles) {
-          const hasPermission = await this.validateUserRole(
-            decodedToken.email,
-            requiredRoles,
-          );
-          if (!hasPermission.permitionSuccess) {
-            throw new ForbiddenException('Insufficient permissions');
-          }
-          request.user = hasPermission.userData;
-        }
-
-        return true;
-      }
-    }
-
-    // Handle Bearer tokens (existing logic)
-    if (scheme.toLowerCase() === 'bearer') {
-      const response = await this.validateToken(token, request);
-      if (!response) {
-        throw new UnauthorizedException(
-          'Invalid bearer token or not authorized to access',
-        );
-      }
-      return true;
+    if (scheme.toLowerCase() !== 'bearer' || !token) {
+      throw new UnauthorizedException('Missing authorization token');
     }
 
     // Handle Device tokens (new logic)
@@ -192,88 +154,6 @@ export class AuthGuard implements CanActivate {
       return false;
     }
   }
-
-  /**
-   * Normal flow: Validates API key and sets request context
-   */
-  private jwksClient = jwksRsa({
-    cache: true,
-    cacheMaxEntries: 5,
-    timeout: 60000,
-    cacheMaxAge: 3600000,
-    jwksUri: process.env.B2C_JWKS_URI,
-  });
-
-  private async validateB2cToken(token: string) {
-    return new Promise((resolve) => {
-      jwt.verify(
-        token,
-        this.getSigningKey.bind(this),
-        {
-          algorithms: ['RS256'],
-          audience: process.env.B2C_CLIENT_ID, // your client ID
-          issuer: process.env.B2C_ISSUER_URL,
-          clockTolerance: 30, // seconds
-        },
-        (err, decoded) => {
-          if (err) {
-            console.error('B2C token validation error:', err);
-            resolve(null);
-          } else resolve(decoded);
-        },
-      );
-    });
-  }
-
-  private async validateUserRole(
-    email: string,
-    requiredRoles: string[],
-  ): Promise<{ permitionSuccess: boolean; userData: any }> {
-    const user = await this.prisma.users.findFirst({
-      where: { email },
-      include: {
-        roleAssignments: {
-          where: { deleted: null },
-          orderBy: { id: 'desc' },
-          include: {
-            role: {
-              include: {
-                rolePermissions: {
-                  where: {
-                    deleted: null,
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-    if (requiredRoles.includes(''))
-      return { permitionSuccess: true, userData: user };
-    if (!user) return { permitionSuccess: false, userData: null };
-    if (!user.is_active)
-      throw new UnauthorizedException("We can't seem to find your account.");
-
-    const userPermissions =
-      user.roleAssignments?.[0]?.role?.rolePermissions?.map?.(
-        (role) => role.slug,
-      ) || [];
-    return {
-      permitionSuccess: requiredRoles.every((role) =>
-        userPermissions.includes(role),
-      ),
-      userData: user,
-    };
-  }
-
-  private getSigningKey(header: any, callback: any) {
-    this.jwksClient.getSigningKey(header.kid, (err, key) => {
-      if (err) return callback(err, null);
-      callback(null, key.getPublicKey());
-    });
-  }
-
   public async validateToken(token: string, request: any): Promise<boolean> {
     try {
       const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
