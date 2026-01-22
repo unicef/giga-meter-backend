@@ -6,10 +6,10 @@ import { UsersService } from './users/users.service';
 import { SchoolsService } from './schools/schools.service';
 import { RolesService } from './roles/roles.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from 'src/auth/auth.guard';
 import { CountriesController } from './countries/countries.controller';
 import { CountriesService } from './countries/countries.service';
+import { AdminAuthGuard } from './admin-auth/admin-auth.guard';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   controllers: [
@@ -21,7 +21,7 @@ import { CountriesService } from './countries/countries.service';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: AuthGuard,
+      useClass: AdminAuthGuard,
     },
     PrismaService,
     UsersService,

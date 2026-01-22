@@ -29,4 +29,5 @@ export const schoolMasterSelect = {
     country_code: true,
     deleted: true,
     last_school_static_id: true,
+    is_active: true,
   };

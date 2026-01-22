@@ -28,10 +28,12 @@ import {
   UpdateUserDto,
 } from './users.dto';
 import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
+import { AdminAccess } from 'src/common/admin.decorator';
 
 @ApiTags('Users Management')
 @ApiExcludeController()
 @Controller('api/v1/users')
+@AdminAccess()
 export class UsersController {
   private logger = new Logger(UsersController.name);
   constructor(private readonly usersService: UsersService) {}
