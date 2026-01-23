@@ -64,6 +64,8 @@ export class SchoolsController {
     }
   }
 
+  @Put('toggle-device-status')
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_SCHOOL)
   @ApiOperation({
     summary: 'Deactivate a device by setting is_active toggle',
   })
@@ -109,4 +111,8 @@ export class SchoolsController {
   ): Promise<ApiSuccessResponseDto<DeactivateDeviceResponseDto>> {
     return this.schoolService.toggleIsActiveSchool(reqDto) as any;
   }
+
+
+  
+
 }
