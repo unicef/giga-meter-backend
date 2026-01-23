@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiExcludeController,
@@ -23,10 +24,14 @@ import { SchoolsService } from './schools.service';
 import { ApiSuccessResponseDto } from 'src/common/common.dto';
 import { Roles } from '../roles/roles.decorator';
 import { PERMISSION_SLUGS } from '../roles/roles.constants';
+import { AdminAccess } from 'src/common/admin.decorator';
+import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 
 @ApiTags('Users Management')
 @ApiExcludeController()
+@UseGuards(AdminAuthGuard)
 @Controller('api/v1/admin-meter-school')
+@AdminAccess()
 export class SchoolsController {
   constructor(private readonly schoolService: SchoolsService) {}
 
