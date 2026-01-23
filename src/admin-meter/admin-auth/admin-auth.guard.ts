@@ -10,7 +10,6 @@ import * as jwt from 'jsonwebtoken';
 import * as jwksRsa from 'jwks-rsa';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ROLES_KEY } from '../roles/roles.decorator';
-import { IS_ADMIN_KEY } from 'src/common/admin.decorator';
 
 @Injectable()
 export class AdminAuthGuard implements CanActivate {
@@ -21,15 +20,6 @@ export class AdminAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    const isAdmin = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-
-    if (!isAdmin) {
-      return true;
-    }
-
     const authHeader = request.headers.authorization;
     // Check if it's a Bearer token or device token
     const parts: string[] = authHeader.split(' ');

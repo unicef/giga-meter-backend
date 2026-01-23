@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -22,8 +23,10 @@ import { CreateOrUpdateRoleDto } from './roles.dto';
 import { Roles } from './roles.decorator';
 import { PERMISSION_SLUGS } from './roles.constants';
 import { AdminAccess } from 'src/common/admin.decorator';
+import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 @ApiTags('Roles')
 @ApiExcludeController()
+@UseGuards(AdminAuthGuard)
 @Controller('api/v1/roles')
 @AdminAccess()
 export class RolesController {
