@@ -13,6 +13,7 @@ import {
   toggleIsActiveSchoolDto,
 } from './school.dto';
 import { serializeBigInt } from 'src/utility/utility';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class SchoolsService {
@@ -87,7 +88,10 @@ export class SchoolsService {
   }
   async toggleIsActiveDevice(reqDto: toggleIsActiveDeviceDto) {
     // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
-    const { device_hardware_id, giga_id_school, is_active } = reqDto;
+    const { device_hardware_id, giga_id_school, is_active } = plainToInstance(
+      toggleIsActiveDeviceDto,
+      reqDto,
+    );
     if (!device_hardware_id || device_hardware_id.trim().length === 0) {
       throw new BadRequestException('device_hardware_id is null/empty');
     }
