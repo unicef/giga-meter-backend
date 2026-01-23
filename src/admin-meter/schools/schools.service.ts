@@ -33,6 +33,16 @@ export class SchoolsService {
       if (giga_id_school && giga_id_school.trim()) {
         where.push(Prisma.sql`school.giga_id_school = ${giga_id_school}`);
         schooldDailyPromise = this.prisma.dailycheckapp_school.findMany({
+          select: {
+            id: true,
+            country_code: true,
+            created_at: true,
+            mac_address: true,
+            device_hardware_id: true,
+            is_active: true,
+            giga_id_school: true,
+            app_version: true,
+          },
           where: {
             giga_id_school: giga_id_school,
           },
@@ -56,7 +66,8 @@ export class SchoolsService {
       }
       const data = await this.prisma.$queryRaw<
         any[]
-      >`SELECT school.*,(select count(dailycheckapp_school.id)  FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
+      >`SELECT school.id,school.name,school.giga_id_school,
+      school.country_code,school.is_active,school.education_level,(select count(dailycheckapp_school.id)  FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
 
       if (data.length > 0 && schooldDailyPromise) {
         total = page = limit = 1;
