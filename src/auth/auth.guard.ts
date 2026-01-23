@@ -62,8 +62,19 @@ export class AuthGuard implements CanActivate {
 
     const [scheme, token] = parts;
 
-    if (scheme.toLowerCase() !== 'bearer' || !token) {
+    if (!token) {
       throw new UnauthorizedException('Missing authorization token');
+    }
+
+    // Handle Bearer tokens (existing logic)
+    if (scheme.toLowerCase() === 'bearer') {
+      const response = await this.validateToken(token, request);
+      if (!response) {
+        throw new UnauthorizedException(
+          'Invalid bearer token or not authorized to access',
+        );
+      }
+      return true;
     }
 
     // Handle Device tokens (new logic)

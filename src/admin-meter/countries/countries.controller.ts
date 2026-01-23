@@ -10,6 +10,7 @@ import {
   ParseIntPipe,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiExcludeController,
@@ -25,8 +26,10 @@ import { CountriesService } from './countries.service';
 import { Roles } from '../roles/roles.decorator';
 import { PERMISSION_SLUGS } from '../roles/roles.constants';
 import { AdminAccess } from 'src/common/admin.decorator';
+import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 
 @ApiExcludeController()
+@UseGuards(AdminAuthGuard)
 @Controller('api/v1/admin-meter-country')
 @AdminAccess()
 export class CountriesController {

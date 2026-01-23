@@ -10,6 +10,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiExcludeController,
@@ -29,9 +30,11 @@ import {
 } from './users.dto';
 import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
 import { AdminAccess } from 'src/common/admin.decorator';
+import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 
 @ApiTags('Users Management')
 @ApiExcludeController()
+@UseGuards(AdminAuthGuard)
 @Controller('api/v1/users')
 @AdminAccess()
 export class UsersController {
