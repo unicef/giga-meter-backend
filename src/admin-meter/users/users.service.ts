@@ -269,6 +269,7 @@ export class UsersService {
       throw error;
     }
   }
+
   private formatRoles(adminRole: TypeRoles, userRole: TypeRoles) {
     const tempReformedRoles: { [key: string]: boolean } = {};
     for (const element of adminRole.rolePermissions) {
