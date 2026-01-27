@@ -195,6 +195,16 @@ export class UsersService {
         include: {
           roleAssignments: {
             where: { deleted: null },
+            include: {
+              role: {
+                include: {
+                  rolePermissions: {
+                    where: { deleted: null },
+                    select: { id: true, slug: true },
+                  },
+                },
+              },
+            },
           },
         },
         where: {
@@ -212,6 +222,9 @@ export class UsersService {
           },
         },
       });
+      const userRole = defaultRoles.filter(
+        (role) => role.name === ROLES.READ_ONLY,
+      )[0];
       if (!user) {
         const newUser = await this.prisma.users.create({
           data: {
@@ -225,9 +238,6 @@ export class UsersService {
             is_superuser: false,
           },
         });
-        const userRole = defaultRoles.filter(
-          (role) => role.name === ROLES.READ_ONLY,
-        )[0];
         //insert new readonly relationship
         await this.prisma.customAuthUserRoleRelationship.create({
           data: {
@@ -241,29 +251,23 @@ export class UsersService {
           defaultRoles.filter((el) => el.name == ROLES.ADMIN)[0],
           userRole,
         );
-        return { ...newUser, userRole: prittyRoles };
+        return { ...newUser, role_name: userRole.name, userRole: prittyRoles };
       }
       if (!user.is_active) {
         throw new ForbiddenException(`We can't seem to find your account.`);
       }
-      const userRole = await this.prisma.customAuthRole.findFirst({
-        where: { id: user?.roleAssignments[0]?.role_id },
-        select: {
-          id: true,
-          name: true,
-          rolePermissions: {
-            select: { id: true, slug: true },
-            where: { deleted: null },
-          },
-        },
-      });
+
+      if (!user.roleAssignments.length) {
+        user.roleAssignments.push({ role: userRole } as any);
+      }
       const prittyRoles = this.formatRoles(
         defaultRoles.filter((el) => el.name == ROLES.ADMIN)[0],
-        userRole,
+        user.roleAssignments[0].role,
       );
+      const role_name = user.roleAssignments[0].role.name;
 
       delete user.roleAssignments;
-      return { ...user, userRole: prittyRoles };
+      return { ...user, role_name, userRole: prittyRoles };
     } catch (error) {
       this.logger.error(error);
       throw error;
