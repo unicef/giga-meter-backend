@@ -11,7 +11,7 @@ import {
 
 @Injectable()
 export class SchoolService {
-  constructor(private prisma: PrismaService, private readonly geolocationUtility: GeolocationUtility) {}
+  constructor(private prisma: PrismaService, private readonly geolocationUtility: GeolocationUtility) { }
 
   async schools(
     skip?: number,
@@ -115,10 +115,10 @@ export class SchoolService {
   }
 
   async createSchool(schoolDto: SchoolDto): Promise<string> {
-      // Process geolocation data if available
-      if (schoolDto.geolocation && 
-        schoolDto.geolocation.location &&
-        schoolDto.geolocation.accuracy) {
+    // Process geolocation data if available
+    if (schoolDto.geolocation &&
+      schoolDto.geolocation.location &&
+      schoolDto.geolocation.accuracy) {
       try {
         // Get the school coordinates based on giga_id_school
         if (schoolDto.giga_id_school) {
@@ -128,7 +128,7 @@ export class SchoolService {
             schoolDto.geolocation.location,
             schoolDto.geolocation.accuracy
           );
-          
+
           // Store the results in the measurement DTO
           schoolDto.detected_location_accuracy = geoResult.accuracy;
           schoolDto.detected_location_distance = geoResult.distance;
@@ -142,7 +142,7 @@ export class SchoolService {
     const school = await this.prisma.dailycheckapp_school.create({
       data: model,
     });
-    
+
     return school.user_id;
   }
 
@@ -437,11 +437,11 @@ export class SchoolService {
       created: school.created,
       ip_address: school.ip_address,
       country_code: school.country_code,
-      detected_latitude: school.geolocation?.location?.lat || null, 
-      detected_longitude: school.geolocation?.location?.lng || null, 
+      detected_latitude: school.geolocation?.location?.lat || null,
+      detected_longitude: school.geolocation?.location?.lng || null,
       detected_location_accuracy: school.detected_location_accuracy || null,
       detected_location_distance: school.detected_location_distance || null,
-      detected_location_is_flagged: school.detected_location_is_flagged || false,
+      detected_location_is_flagged: school.detected_location_is_flagged || null,
       device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
       is_active: school.is_active,
       windows_username: school.windows_username,
