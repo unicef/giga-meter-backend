@@ -80,6 +80,14 @@ export class TranslateService {
     from: string,
     to: string[],
   ): Promise<AzureTranslateResponse[]> {
+    // Use dev API endpoint for local development
+    const isDevEnvironment = process.env.NODE_ENV !== 'production';
+
+    if (isDevEnvironment) {
+      return this.callDevTranslator(texts, to);
+    }
+
+    // Original Azure Translator implementation
     const url = `${this.endpoint}/translate`;
     const headers = this.buildHeaders();
     const params = this.buildParams(from, to);
@@ -96,6 +104,56 @@ export class TranslateService {
     );
 
     return response.data;
+  }
+
+  private async callDevTranslator(
+    texts: { text: string }[],
+    targetLanguages: string[],
+  ): Promise<AzureTranslateResponse[]> {
+    const devBaseUrl = 'https://uni-ooi-giga-maps-backend-dev.azurewebsites.net/api/accounts/translate/text';
+
+    this.logger.debug(
+      `Using dev API: Translating ${texts.length} text(s) to ${targetLanguages.join(', ')}`,
+    );
+
+    // The dev API only supports one language at a time, so we need to make multiple requests
+    const allTranslations: AzureTranslateResponse[] = texts.map(() => ({
+      translations: [],
+    }));
+
+    for (const targetLang of targetLanguages) {
+      const url = `${devBaseUrl}/${targetLang}/`;
+
+      try {
+        const response = await firstValueFrom(
+          this.httpService.put<AzureTranslateResponse[]>(url, texts, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }),
+        );
+
+        // Merge translations for this language into the result
+        response.data.forEach((item, index) => {
+          allTranslations[index].translations.push(...item.translations);
+        });
+      } catch (error) {
+        this.logger.warn(
+          `Failed to translate to ${targetLang} using dev API. Using original English text as fallback.`,
+          error?.response?.data || error,
+        );
+
+        // Fallback: Use original English text when translation fails
+        texts.forEach((textItem, index) => {
+          allTranslations[index].translations.push({
+            text: textItem.text,
+            to: targetLang,
+          });
+        });
+      }
+    }
+
+    return allTranslations;
   }
 
   private buildHeaders(): Record<string, string> {

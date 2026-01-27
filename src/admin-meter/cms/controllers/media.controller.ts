@@ -35,9 +35,11 @@ import {
 } from '../dto/media.dto';
 import { AdminLoggedInUser } from 'src/common/common.decorator';
 import { Users } from '@prisma/client';
+import { AdminAccess } from 'src/common/admin.decorator';
 
 @ApiTags('CMS - Media Management')
 @Controller('api/v1/cms/media')
+@AdminAccess()
 export class MediaController {
   private readonly logger = new Logger(MediaController.name);
 

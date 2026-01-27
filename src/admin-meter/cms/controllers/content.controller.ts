@@ -24,9 +24,11 @@ import {
 } from '../dto/content.dto';
 import { AdminLoggedInUser } from 'src/common/common.decorator';
 import { Users } from '@prisma/client';
+import { AdminAccess } from 'src/common/admin.decorator';
 
 @ApiTags('CMS - Content Management')
 @Controller('api/v1/cms/content')
+@AdminAccess()
 export class ContentController {
   private readonly logger = new Logger(ContentController.name);
 
