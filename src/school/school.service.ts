@@ -16,7 +16,7 @@ export class SchoolService {
   constructor(
     private prisma: PrismaService,
     private readonly geolocationUtility: GeolocationUtility,
-  ) {}
+  ) { }
 
   async schools(
     skip?: number,
@@ -516,7 +516,7 @@ export class SchoolService {
       detected_location_accuracy: school.detected_location_accuracy || null,
       detected_location_distance: school.detected_location_distance || null,
       detected_location_is_flagged:
-        school.detected_location_is_flagged || false,
+        school.detected_location_is_flagged || null,
       device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
       is_active: school.is_active,
       windows_username: school.windows_username,
