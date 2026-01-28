@@ -40,7 +40,7 @@ export class PublicController {
     private readonly publicService: PublicService,
   ) {}
 
-  @Get('get-registered-schools')
+  @Get('schools')
   @Throttle(getRateLimitConfig('schools'))
   @UseInterceptors(CacheInterCeptorOptional)
   @ApiOperation({
@@ -110,7 +110,7 @@ export class PublicController {
     };
   }
 
-  @Get('')
+  @Get('countries')
   @UseInterceptors(CacheInterCeptorOptional)
   @UseGuards(AuthGuard)
   @Throttle(getRateLimitConfig('countries'))
@@ -165,7 +165,7 @@ export class PublicController {
     };
   }
 
-  @Get('get-registered-measurements')
+  @Get('measurements')
   @Throttle(getRateLimitConfig('measurements'))
   @UseGuards(AuthGuard)
   @UseInterceptors(CacheInterCeptorOptional)
