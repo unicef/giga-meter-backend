@@ -24,52 +24,54 @@ async function bootstrap() {
 
   // Apply Helmet security headers middleware
   // Configure security headers to protect against common web vulnerabilities
-  app.use(
-    helmet({
-      // Content Security Policy - Prevents XSS and code injection attacks
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"], // Only allow resources from same origin by default
-          scriptSrc: [
-            "'self'",
-            "'unsafe-inline'", // Required for Swagger UI
-            'https://unpkg.com', // Allow Swagger UI scripts
-          ],
-          styleSrc: [
-            "'self'",
-            "'unsafe-inline'", // Required for Swagger UI
-            'https://unpkg.com',
-            'https://fonts.googleapis.com', // Allow Google Fonts
-          ],
-          imgSrc: [
-            "'self'",
-            'data:', // Allow data URLs for images
-            'https:', // Allow HTTPS images
-          ],
-          objectSrc: ["'none'"], // Disable object, embed, and applet elements
-          upgradeInsecureRequests: [], // Upgrade HTTP to HTTPS automatically
-        },
+  app.use(helmet({
+    // Content Security Policy - Prevents XSS and code injection attacks
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"], // Only allow resources from same origin by default
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'", // Required for Swagger UI
+          "https://unpkg.com", // Allow Swagger UI scripts
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'", // Required for Swagger UI
+          "https://unpkg.com",
+          "https://fonts.googleapis.com" // Allow Google Fonts
+        ],
+        imgSrc: [
+          "'self'",
+          "data:", // Allow data URLs for images
+          "https:" // Allow HTTPS images
+        ],
+        objectSrc: ["'none'"], // Disable object, embed, and applet elements
+        upgradeInsecureRequests: [], // Upgrade HTTP to HTTPS automatically
+        // Frame Ancestors - Controls which origins can embed this application in an iframe
+        frameAncestors: process.env.ALLOWED_HOSTS?.split('|') ?? ["'self'"],
       },
-      // Frame Guard - Prevents clickjacking attacks
-      frameguard: { action: 'deny' },
-      // Referrer Policy - Controls referrer information sent with requests
-      referrerPolicy: { policy: 'same-origin' },
-      // Cross-Origin Embedder Policy - Enables cross-origin isolation
-      crossOriginEmbedderPolicy: true,
-      // HTTP Strict Transport Security - Forces HTTPS connections
-      hsts: {
-        maxAge: 31536000, // 1 year in seconds
-        includeSubDomains: true, // Apply to all subdomains
-        preload: true, // Include in browser preload lists
-      },
-      // Hide X-Powered-By header to reduce information disclosure
-      hidePoweredBy: true,
-      // X-Content-Type-Options - Prevents MIME type sniffing
-      noSniff: true,
-      // X-XSS-Protection - Enables XSS filtering in older browsers
-      xssFilter: true,
-    }),
-  );
+    },
+    // Frame Guard - Disabled to allow iframe embedding (controlled by CSP frameAncestors)
+    frameguard: false,
+    // Referrer Policy - Controls referrer information sent with requests
+    referrerPolicy: { policy: 'same-origin' },
+    // Cross-Origin Embedder Policy - Enables cross-origin isolation
+    crossOriginEmbedderPolicy: true,
+    // HTTP Strict Transport Security - Forces HTTPS connections
+    hsts: {
+      maxAge: 31536000, // 1 year in seconds
+      includeSubDomains: true, // Apply to all subdomains
+      preload: true // Include in browser preload lists
+    },
+    // Hide X-Powered-By header to reduce information disclosure
+    hidePoweredBy: true,
+    // X-Content-Type-Options - Prevents MIME type sniffing
+    noSniff: true,
+    // X-XSS-Protection - Enables XSS filtering in older browsers
+    xssFilter: true,
+  }));
+
+  app.useStaticAssets(join(__dirname, '..', 'public'));
 
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
@@ -81,7 +83,7 @@ async function bootstrap() {
   const authGuard = app.get(AuthGuard);
   const swaggerMiddleware = new SwaggerAuthMiddleware(authGuard);
 
-  const categoryPaths = categories.map((path) => `/api/${path}`);
+  const categoryPaths = categories.map(path => `/api/${path}`);
   app.use(categoryPaths, swaggerMiddleware.use.bind(swaggerMiddleware));
 
   // Configure basic Swagger options
@@ -89,7 +91,7 @@ async function bootstrap() {
     .setTitle('Giga Meter API')
     .setDescription(
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
-        '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',
+      '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',
     )
     .setVersion('1.0')
     .setLicense(
@@ -104,7 +106,7 @@ async function bootstrap() {
     })
     .addServer(
       process.env.GIGA_METER_BE_HOST ||
-        'https://uni-ooi-giga-meter-backend.azurewebsites.net',
+      'https://uni-ooi-giga-meter-backend.azurewebsites.net',
     )
     .build();
 
