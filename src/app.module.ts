@@ -39,6 +39,8 @@ import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
 import { NearestSchoolModule } from './nearest-school/nearest-school.module';
+import { PublicController } from './public/public.controller';
+import { PublicService } from './public/public.service';
 import { CountryConfigModule } from './country-config/country-config.module';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
@@ -89,6 +91,7 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     ConnectivityController,
     DeviceTokenController,
     PingAggregationController,
+    PublicController,
   ],
   providers: [
     AppService,
@@ -119,6 +122,8 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
       useClass: CategoryResponseInterceptor,
     },
     SchedulerService,
+    ConnectivityService,
+    PublicService,
   ],
 })
 export class AppModule {}
