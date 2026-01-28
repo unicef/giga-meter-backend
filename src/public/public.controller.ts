@@ -34,6 +34,8 @@ import { PublicCountryDto, PublicMeasurementDto } from './public.dto';
 @ApiTags('Public')
 @Controller('api/v1/public')
 @UseGuards(ThrottlerGuard)
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 export class PublicController {
   constructor(
     private readonly schoolService: SchoolService,
@@ -112,9 +114,6 @@ export class PublicController {
 
   @Get('countries')
   @UseInterceptors(CacheInterCeptorOptional)
-  @UseGuards(AuthGuard)
-  @Throttle(getRateLimitConfig('countries'))
-  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Returns the list of registered countries on the Giga Meter database',
@@ -167,9 +166,7 @@ export class PublicController {
 
   @Get('measurements')
   @Throttle(getRateLimitConfig('measurements'))
-  @UseGuards(AuthGuard)
   @UseInterceptors(CacheInterCeptorOptional)
-  @ApiBearerAuth()
   @ApiOperation({
     summary:
       'Returns the list of registered measurements on the Giga Meter database',
