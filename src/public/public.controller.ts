@@ -114,6 +114,7 @@ export class PublicController {
 
   @Get('countries')
   @UseInterceptors(CacheInterCeptorOptional)
+  @Throttle(getRateLimitConfig('countries'))
   @ApiOperation({
     summary:
       'Returns the list of registered countries on the Giga Meter database',
