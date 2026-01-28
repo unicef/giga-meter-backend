@@ -13,6 +13,7 @@ import {
   toggleIsActiveSchoolDto,
 } from './school.dto';
 import { serializeBigInt } from 'src/utility/utility';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class SchoolsService {
@@ -32,6 +33,16 @@ export class SchoolsService {
       if (giga_id_school && giga_id_school.trim()) {
         where.push(Prisma.sql`school.giga_id_school = ${giga_id_school}`);
         schooldDailyPromise = this.prisma.dailycheckapp_school.findMany({
+          select: {
+            id: true,
+            country_code: true,
+            created_at: true,
+            mac_address: true,
+            device_hardware_id: true,
+            is_active: true,
+            giga_id_school: true,
+            app_version: true,
+          },
           where: {
             giga_id_school: giga_id_school,
           },
@@ -55,7 +66,8 @@ export class SchoolsService {
       }
       const data = await this.prisma.$queryRaw<
         any[]
-      >`SELECT school.*,(select count(dailycheckapp_school.id)  FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
+      >`SELECT school.id,school.name,school.giga_id_school,
+      school.country_code,school.is_active,school.education_level,(select count(dailycheckapp_school.id)  FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
 
       if (data.length > 0 && schooldDailyPromise) {
         total = page = limit = 1;
@@ -87,7 +99,10 @@ export class SchoolsService {
   }
   async toggleIsActiveDevice(reqDto: toggleIsActiveDeviceDto) {
     // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
-    const { device_hardware_id, giga_id_school, is_active } = reqDto;
+    const { device_hardware_id, giga_id_school, is_active } = plainToInstance(
+      toggleIsActiveDeviceDto,
+      reqDto,
+    );
     if (!device_hardware_id || device_hardware_id.trim().length === 0) {
       throw new BadRequestException('device_hardware_id is null/empty');
     }
