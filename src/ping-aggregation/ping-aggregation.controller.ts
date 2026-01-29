@@ -8,6 +8,7 @@ import {
   Query,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
@@ -26,6 +27,7 @@ import { ValidateSize } from 'src/common/validation.decorator';
 
 @ApiTags('Ping Aggregation')
 @Controller('api/v1/ping-aggregation')
+@ApiBearerAuth()
 export class PingAggregationController {
   private readonly logger = new Logger(PingAggregationController.name);
   constructor(
