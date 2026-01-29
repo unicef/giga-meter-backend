@@ -125,7 +125,7 @@ export class PingAggregationService {
     } catch (error) {
       this.logger.error(error);
       throw error;
-}
+    }
   }
 
   async getRawPingConnectivity(query: GetRawPingConnectivityDto) {
@@ -156,6 +156,7 @@ export class PingAggregationService {
       this.logger.log(error);
       if (error instanceof BadRequestException) throw error;
 
-      throw new HttpException('Internal server error', error.status);    }
+      throw new HttpException('Internal server error', error.status);
+    }
   }
 }
