@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PingAggregationService } from 'src/ping-aggregation/ping-aggregation.service';
+import redisClient from 'src/utils/redis.client';
 
 @Injectable()
 export class SchedulerService {
@@ -13,6 +14,32 @@ export class SchedulerService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async aggregateDailyPingData() {
     try {
+      const now = new Date();
+      const startOfDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        0,
+      );
+      const millisecondsElapsed = now.getTime() - startOfDay.getTime();
+      await new Promise((resolve) =>
+        setTimeout(resolve, millisecondsElapsed * 1000),
+      );
+      const lockKey = 'scheduler-lock';
+      const acquired = await redisClient.set(
+        lockKey,
+        'locked',
+        'PX',
+        10000,
+        'NX',
+      );
+      if (acquired !== 'OK') {
+        this.logger.log('Another pod is already running this task. Skipping.');
+        return;
+      }
       this.logger.log(`Starting Scheduler daily aggregation`);
       await this.pingAggregationService.aggregateDailyPingData();
     } catch (error) {
