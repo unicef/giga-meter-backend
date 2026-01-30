@@ -11,7 +11,7 @@ export class SchedulerService {
     private readonly pingAggregationService: PingAggregationService,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async aggregateDailyPingData() {
     try {
       const now = new Date();
