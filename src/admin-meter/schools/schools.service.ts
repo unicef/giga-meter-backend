@@ -66,7 +66,7 @@ export class SchoolsService {
       }
       const data = await this.prisma.$queryRaw<
         any[]
-      >`SELECT school.id,school.name,school.giga_id_school,
+      >`SELECT school.id,school.name,school.giga_id_school,school.feature_flags,
       school.country_code,school.is_active,school.education_level,(select count(dailycheckapp_school.id)  FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
 
       if (data.length > 0 && schooldDailyPromise) {
