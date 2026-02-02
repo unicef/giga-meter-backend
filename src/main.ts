@@ -14,8 +14,12 @@ import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(require('express').json({ limit: '2mb' }));
+  app.use(require('express').urlencoded({ limit: '2mb', extended: true }));
+
   app.useStaticAssets(join(__dirname, '..', 'public'));
-  
+
   // Serve .storage directory for local file uploads (development only)
   if (process.env.NODE_ENV === 'development') {
     app.useStaticAssets(join(__dirname, '..', '.storage'), {
@@ -39,7 +43,7 @@ async function bootstrap() {
     .setTitle('Giga Meter API')
     .setDescription(
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
-        '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',
+      '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',
     )
     .setVersion('1.0')
     .setLicense(
@@ -54,7 +58,7 @@ async function bootstrap() {
     })
     .addServer(
       process.env.GIGA_METER_BE_HOST ||
-        'https://uni-ooi-giga-meter-backend.azurewebsites.net',
+      'https://uni-ooi-giga-meter-backend.azurewebsites.net',
     )
     .build();
 
