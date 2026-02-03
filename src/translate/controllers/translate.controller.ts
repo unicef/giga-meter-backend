@@ -15,13 +15,17 @@ import {
 import { TranslateService } from '../services/translate.service';
 import { TranslateRequestDto, TranslateResponseDto } from '../dto/translate.dto';
 import { Public } from '../../common/public.decorator';
+import { ApiExcludeController } from '@nestjs/swagger';
+import { AdminAccess } from 'src/common/admin.decorator';
 
 @ApiTags('Translation')
 @Controller('api/v1/translate')
+@ApiExcludeController()
+@AdminAccess()
 export class TranslateController {
   private readonly logger = new Logger(TranslateController.name);
 
-  constructor(private readonly translateService: TranslateService) {}
+  constructor(private readonly translateService: TranslateService) { }
 
   @Post()
   @Public()

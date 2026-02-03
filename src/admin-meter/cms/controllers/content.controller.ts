@@ -25,9 +25,11 @@ import {
 import { AdminLoggedInUser } from 'src/common/common.decorator';
 import { Users } from '@prisma/client';
 import { AdminAccess } from 'src/common/admin.decorator';
+import { ApiExcludeController } from '@nestjs/swagger';
 
 @ApiTags('CMS - Content Management')
 @Controller('api/v1/cms/content')
+@ApiExcludeController()
 @AdminAccess()
 export class ContentController {
   private readonly logger = new Logger(ContentController.name);

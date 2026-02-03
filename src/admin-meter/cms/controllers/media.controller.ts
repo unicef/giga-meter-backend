@@ -36,9 +36,11 @@ import {
 import { AdminLoggedInUser } from 'src/common/common.decorator';
 import { Users } from '@prisma/client';
 import { AdminAccess } from 'src/common/admin.decorator';
+import { ApiExcludeController } from '@nestjs/swagger';
 
 @ApiTags('CMS - Media Management')
 @Controller('api/v1/cms/media')
+@ApiExcludeController()
 @AdminAccess()
 export class MediaController {
   private readonly logger = new Logger(MediaController.name);
