@@ -9,7 +9,6 @@ export * from './controllers/media.controller';
 export * from './services/content.service';
 export * from './services/media.service';
 export * from './services/storage.service';
-export * from './services/schema-validation.service';
 
 // DTOs
 export * from './dto/content.dto';
