@@ -73,7 +73,12 @@ async function bootstrap() {
 
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
-  app.useStaticAssets(join(__dirname, '..', 'public'));
+  // Serve .storage directory for local file uploads (development only)
+  if (process.env.NODE_ENV === 'development') {
+    app.useStaticAssets(join(__dirname, '..', '.storage'), {
+      prefix: '/storage/',
+    });
+  }
 
   // Get the Category
   const categoryConfigProvider = app.get(CategoryConfigProvider);
