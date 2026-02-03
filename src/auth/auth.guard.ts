@@ -49,6 +49,10 @@ export class AuthGuard implements CanActivate {
       return true;
     }
     const authHeader = request.headers.authorization;
+
+    if (!authHeader) {
+      throw new UnauthorizedException('Missing authorization token');
+    }
     // Check if it's a Bearer token or device token
     const parts: string[] = authHeader.split(' ');
     if (parts.length !== 2) {
@@ -56,6 +60,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const [scheme, token] = parts;
+
     if (!token) {
       throw new UnauthorizedException('Missing authorization token');
     }
