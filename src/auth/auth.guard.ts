@@ -29,7 +29,7 @@ export class AuthGuard implements CanActivate {
     private readonly hmacSignatureService: HmacSignatureService,
     private reflector: Reflector,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if the route is marked as public
@@ -48,12 +48,7 @@ export class AuthGuard implements CanActivate {
     if (!useAuth || isPublic || request.category || isMetrics || isAdmin) {
       return true;
     }
-    // Extract token from Authorization header
     const authHeader = request.headers.authorization;
-    if (!authHeader) {
-      throw new UnauthorizedException('Missing authorization token');
-    }
-
     // Check if it's a Bearer token or device token
     const parts: string[] = authHeader.split(' ');
     if (parts.length !== 2) {
@@ -61,7 +56,6 @@ export class AuthGuard implements CanActivate {
     }
 
     const [scheme, token] = parts;
-
     if (!token) {
       throw new UnauthorizedException('Missing authorization token');
     }

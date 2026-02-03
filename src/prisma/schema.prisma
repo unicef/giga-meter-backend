@@ -458,6 +458,12 @@ model Users {
 
   roleAssignments       CustomAuthUserRoleRelationship[] @relation("UserRoleAssignment")
 
+  createdCmsContent     CmsContent[]               @relation("CmsContentCreatedBy")
+  updatedCmsContent     CmsContent[]               @relation("CmsContentUpdatedBy")
+
+  createdCmsMedia       CmsMedia[]                 @relation("CmsMediaCreatedBy")
+  updatedCmsMedia       CmsMedia[]                 @relation("CmsMediaUpdatedBy")
+
   @@map("users")
 }
 
@@ -562,4 +568,54 @@ model CountryConfig {
 enum MeasurementProvider {
   mlab
   cloudflare
+}
+
+model CmsContent {
+  id           Int       @id @default(autoincrement())
+  status       String    @unique @db.VarChar(20)
+  contentJson  Json      @map("content_json")
+  publishedAt  DateTime? @map("published_at")
+  lastModified DateTime  @default(now()) @map("last_modified")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  
+  createdById  Int?      @map("created_by_id")
+  createdBy    Users?    @relation("CmsContentCreatedBy", fields: [createdById], references: [id])
+  
+  updatedById  Int?      @map("updated_by_id")
+  updatedBy    Users?    @relation("CmsContentUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([status])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("cms_content")
+}
+
+model CmsMedia {
+  id               String    @id @db.VarChar(50)
+  name             String    @db.VarChar(255)
+  altText          String?   @map("alt_text")
+  fileType         String    @map("file_type") @db.VarChar(100)
+  fileSize         Int       @map("file_size")
+  filePath         String    @map("file_path")
+  url              String?
+  width            Int?
+  height           Int?
+  duration         Int?
+  uploadedAt       DateTime  @default(now()) @map("uploaded_at")
+  used_in_sections String[]
+  deletedAt        DateTime? @map("deleted_at")
+  
+  createdById      Int?      @map("created_by_id")
+  createdBy        Users?    @relation("CmsMediaCreatedBy", fields: [createdById], references: [id])
+  
+  updatedById      Int?      @map("updated_by_id")
+  updatedBy        Users?    @relation("CmsMediaUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([name])
+  @@index([fileType])
+  @@index([uploadedAt])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("cms_media")
 }

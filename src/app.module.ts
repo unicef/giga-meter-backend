@@ -50,6 +50,7 @@ import { PingAggregationService } from './ping-aggregation/ping-aggregation.serv
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { TranslateModule } from './translate';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     GeolocationModule,
     NearestSchoolModule,
     AdminMeterModule,
+    TranslateModule,
   ],
   controllers: [
     AppController,
@@ -126,4 +128,4 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     PublicService,
   ],
 })
-export class AppModule {}
+export class AppModule { }
