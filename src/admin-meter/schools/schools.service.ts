@@ -8,6 +8,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
+  FeatureFlagSchoolDto,
   RequestSchoolsAdminDto,
   toggleIsActiveDeviceDto,
   toggleIsActiveSchoolDto,
@@ -185,6 +186,66 @@ export class SchoolsService {
         timestamp: new Date().toISOString(),
         message: 'failed',
       };
+    }
+  }
+  async updateFeatureBySchool(reqDto: FeatureFlagSchoolDto) {
+    try {
+      const { giga_id_school, feature_flags } = plainToInstance(
+        FeatureFlagSchoolDto,
+        reqDto,
+      );
+
+      if (!giga_id_school || giga_id_school.trim().length === 0) {
+        throw new BadRequestException('giga_id_school is null/empty');
+      }
+      const select = {
+        id: true,
+        giga_id_school: true,
+        feature_flags: true,
+      };
+
+      const school = await this.prisma.school.findFirst({
+        select,
+        where: {
+          giga_id_school: giga_id_school.trim(),
+        },
+      });
+
+      if (!school) {
+        throw new NotFoundException('School not found');
+      }
+
+      const updatedSchool = await this.prisma.school.update({
+        select,
+        where: {
+          id: school.id,
+        },
+
+        data: {
+          feature_flags: feature_flags as any,
+        },
+      });
+
+      return {
+        success: true,
+        data: {
+          giga_id_school: updatedSchool.giga_id_school,
+          feature_flags: updatedSchool.feature_flags,
+        },
+        timestamp: new Date().toISOString(),
+        message: 'Feature flags updated successfully',
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      this.logger.error(error);
+      throw new InternalServerErrorException(
+        'An error occurred while updating feature flags',
+      );
     }
   }
 }
