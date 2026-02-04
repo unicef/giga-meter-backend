@@ -4,6 +4,8 @@ import {
   Controller,
   HttpException,
   HttpStatus,
+  Logger,
+  NotFoundException,
   Post,
   Put,
   UseGuards,
@@ -16,6 +18,8 @@ import {
 } from '@nestjs/swagger';
 import {
   DeactivateDeviceResponseDto,
+  FeatureFlagResponseDto,
+  FeatureFlagSchoolDto,
   RequestSchoolsAdminDto,
   toggleIsActiveDeviceDto,
   toggleIsActiveSchoolDto,
@@ -33,6 +37,8 @@ import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 @Controller('api/v1/admin-meter-school')
 @AdminAccess()
 export class SchoolsController {
+  private logger = new Logger(SchoolsController.name);
+
   constructor(private readonly schoolService: SchoolsService) {}
 
   @Post('school-with-device')
@@ -112,7 +118,38 @@ export class SchoolsController {
     return this.schoolService.toggleIsActiveSchool(reqDto) as any;
   }
 
-
-  
-
+  @Put('update-features')
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_SCHOOL)
+  @ApiOperation({
+    summary: 'user feature update',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns whether the feature is was successfully updated',
+    type: DeactivateDeviceResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async updateFeatureBySchool(
+    @Body() reqDto: FeatureFlagSchoolDto,
+  ): Promise<ApiSuccessResponseDto<FeatureFlagResponseDto>> {
+    try {
+      return this.schoolService.updateFeatureBySchool(reqDto) as any;
+    } catch (error) {
+      this.logger.error(error);
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new HttpException(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
 }
