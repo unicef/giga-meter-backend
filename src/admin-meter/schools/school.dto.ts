@@ -21,6 +21,25 @@ export class toggleIsActiveSchoolDto {
   is_active: boolean;
 }
 
+export class FeatureFlagSchoolDto {
+  @ApiProperty()
+  giga_id_school: string;
+
+  @ApiProperty({
+    description: 'Key-value pairs for feature flags',
+    example: { feature_name: true },
+  })
+  feature_flags: Record<string, boolean>;
+}
+
+export class FeatureFlagResponseDto {
+  @ApiProperty({
+    description: 'Key-value pairs for feature flags',
+    example: { feature_name: true },
+  })
+  data: FeatureFlagSchoolDto;
+}
+
 export class DeactivateDeviceResponseDto {
   @ApiProperty()
   deactivated: boolean;
