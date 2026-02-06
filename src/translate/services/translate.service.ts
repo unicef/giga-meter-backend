@@ -20,6 +20,8 @@ export class TranslateService {
   private readonly apiKey: string;
   private readonly region: string;
   private readonly apiVersion = '3.0';
+  private readonly useDevTranslator: boolean;
+  private readonly gigaMapsBackendUrl: string;
 
   constructor(private readonly httpService: HttpService) {
     this.endpoint =
@@ -27,10 +29,20 @@ export class TranslateService {
       'https://api.cognitive.microsofttranslator.com';
     this.apiKey = process.env.AZURE_TRANSLATOR_KEY || '';
     this.region = process.env.AZURE_TRANSLATOR_REGION || '';
+    this.useDevTranslator = process.env.USE_DEV_TRANSLATOR === 'true';
+    this.gigaMapsBackendUrl =
+      process.env.GIGA_MAPS_BACKEND_URL ||
+      'https://uni-ooi-giga-maps-backend-dev.azurewebsites.net';
 
-    if (!this.apiKey) {
+    if (!this.apiKey && !this.useDevTranslator) {
       this.logger.warn(
         'AZURE_TRANSLATOR_KEY is not set. Translation service will not work.',
+      );
+    }
+
+    if (this.useDevTranslator) {
+      this.logger.log(
+        `Dev translator mode enabled. Using: ${this.gigaMapsBackendUrl}`,
       );
     }
   }
@@ -67,9 +79,9 @@ export class TranslateService {
   }
 
   private validateConfiguration(): void {
-    if (!this.apiKey) {
+    if (!this.apiKey && !this.useDevTranslator) {
       throw new HttpException(
-        'Translation service is not configured. Missing AZURE_TRANSLATOR_KEY.',
+        'Translation service is not configured. Missing AZURE_TRANSLATOR_KEY or USE_DEV_TRANSLATOR.',
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
@@ -80,10 +92,8 @@ export class TranslateService {
     from: string,
     to: string[],
   ): Promise<AzureTranslateResponse[]> {
-    // Use dev API endpoint for local development
-    const isDevEnvironment = process.env.NODE_ENV !== 'production';
-
-    if (isDevEnvironment) {
+    // Use dev API endpoint if configured
+    if (this.useDevTranslator || !this.apiKey) {
       return this.callDevTranslator(texts, to);
     }
 
@@ -110,7 +120,7 @@ export class TranslateService {
     texts: { text: string }[],
     targetLanguages: string[],
   ): Promise<AzureTranslateResponse[]> {
-    const devBaseUrl = 'https://uni-ooi-giga-maps-backend-dev.azurewebsites.net/api/accounts/translate/text';
+    const devBaseUrl = `${this.gigaMapsBackendUrl}/api/accounts/translate/text`;
 
     this.logger.debug(
       `Using dev API: Translating ${texts.length} text(s) to ${targetLanguages.join(', ')}`,
