@@ -20,7 +20,7 @@ import { plainToInstance } from 'class-transformer';
 export class SchoolsService {
   private logger = new Logger(SchoolsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
   async getSchoolsAndDeviceCount(bodyRequest: RequestSchoolsAdminDto) {
     try {
       const { giga_id_school, countries, search } = bodyRequest;
@@ -43,6 +43,10 @@ export class SchoolsService {
             is_active: true,
             giga_id_school: true,
             app_version: true,
+          },
+          distinct: ['device_hardware_id'],
+          orderBy: {
+            id: 'desc',
           },
           where: {
             giga_id_school: giga_id_school,
@@ -68,11 +72,13 @@ export class SchoolsService {
       const data = await this.prisma.$queryRaw<
         any[]
       >`SELECT school.id,school.name,school.giga_id_school,school.feature_flags,
-      school.country_code,school.is_active,school.education_level,(select count(dailycheckapp_school.id)  FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
+      school.country_code,school.is_active,school.education_level,
+      (select count(DISTINCT dailycheckapp_school.device_hardware_id) FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count 
+      from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
 
       if (data.length > 0 && schooldDailyPromise) {
         total = page = limit = 1;
-        data[0].school_devices = await schooldDailyPromise;
+        data[0].school_devices = (await schooldDailyPromise).map((item) => ({ ...item, is_active: item.is_active ?? true }));
       } else
         total = (
           await this.prisma.$queryRaw<
