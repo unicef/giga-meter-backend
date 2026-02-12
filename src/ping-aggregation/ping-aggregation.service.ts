@@ -14,7 +14,7 @@ import {
 @Injectable()
 export class PingAggregationService {
   private readonly logger = new Logger(PingAggregationService.name);
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
   async getRawPings(query: GetRawPingsQueryDto) {
     try {
       const { schoolId, from, to, page, pageSize } = query;
@@ -65,63 +65,77 @@ export class PingAggregationService {
         `Starting aggregation for ${start.toISOString()} and end ${end.toISOString()}`,
       );
 
-      const data = await this.prisma.$queryRaw<
-        any[]
-      >`SELECT giga_id_school, browser_id as device_id, 
+      let offset = 0;
+      const limit = 500;
+      let totalDevicesProcessed = 0;
+      let data: any[] = [];
+
+      do {
+        data = await this.prisma.$queryRaw<any[]>`SELECT giga_id_school, browser_id as device_id, 
       SUM( CASE WHEN is_connected = TRUE THEN 1 ELSE 0 END ) AS isConnectedTrueSum,
        count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg 
-       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} GROUP BY giga_id_school, browser_id order by giga_id_school asc`;
+       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} 
+       GROUP BY giga_id_school, browser_id order by giga_id_school asc LIMIT ${limit} OFFSET ${offset}`;
 
-      // To ensure idempotency, we check for and delete any existing aggregated data
-      // for the target date and the specific school/device combinations before inserting
-      // the new aggregations. This prevents duplicate records if the job is run multiple times.
-      const existingData =
-        await this.prisma.connectivityPingChecksDailyAggr.findMany({
-          where: {
+        if (data.length === 0) break;
+
+        // To ensure idempotency, we check for and delete any existing aggregated data
+        // for the target date and the specific school/device combinations before inserting
+        // the new aggregations. This prevents duplicate records if the job is run multiple times.
+        const existingData =
+          await this.prisma.connectivityPingChecksDailyAggr.findMany({
+            where: {
+              timestamp_date: start,
+              giga_id_school: {
+                in: data.map((item) => item.giga_id_school),
+              },
+              browser_id: {
+                in: data.map((item) => item.device_id),
+              },
+            },
+            select: {
+              id: true,
+            },
+          });
+        if (existingData.length > 0) {
+          await this.prisma.connectivityPingChecksDailyAggr.deleteMany({
+            where: {
+              id: {
+                in: existingData.map((item) => item.id),
+              },
+            },
+          });
+        }
+        const insertData: any[] = [];
+        for (const record of data) {
+          const is_connected_true = Number(record.isconnectedtruesum) || 0;
+          const is_connected_all = Number(record.isconnectedallsum) || 1;
+          const uptime = (is_connected_true / is_connected_all) * 100 || 0.0;
+          insertData.push({
             timestamp_date: start,
-            giga_id_school: {
-              in: data.map((item) => item.giga_id_school),
-            },
-            browser_id: {
-              in: data.map((item) => item.device_id),
-            },
-          },
-          select: {
-            id: true,
-          },
-        });
-      if (existingData.length > 0) {
-        await this.prisma.connectivityPingChecksDailyAggr.deleteMany({
-          where: {
-            id: {
-              in: existingData.map((item) => item.id),
-            },
-          },
-        });
-      }
-      const insertData: any[] = [];
-      for (const record of data) {
-        const is_connected_true = Number(record.isconnectedtruesum) || 0;
-        const is_connected_all = Number(record.isconnectedallsum) || 1;
-        const uptime = (is_connected_true / is_connected_all) * 100 || 0.0;
-        insertData.push({
-          timestamp_date: start,
-          giga_id_school: record.giga_id_school,
-          browser_id: record.device_id || null,
-          is_connected_true,
-          is_connected_all,
-          uptime,
-          unloaded_latency_avg: record.latencyavg || 0.0,
-        });
-      }
-      if (insertData.length > 0) {
-        await this.prisma.connectivityPingChecksDailyAggr.createMany({
-          data: insertData,
-          skipDuplicates: true,
-        });
-      }
+            giga_id_school: record.giga_id_school,
+            browser_id: record.device_id || null,
+            is_connected_true,
+            is_connected_all,
+            uptime,
+            unloaded_latency_avg: record.latencyavg || 0.0,
+          });
+        }
+        if (insertData.length > 0) {
+          await this.prisma.connectivityPingChecksDailyAggr.createMany({
+            data: insertData,
+            skipDuplicates: true,
+          });
+        }
 
-      this.logger.log(`Aggregation complete for ${data.length} devices.`);
+        totalDevicesProcessed += data.length;
+        offset += limit;
+      } while (data.length === limit);
+
+      this.logger.log(
+        `Aggregation complete for ${totalDevicesProcessed} devices.`,
+      );
+      return totalDevicesProcessed
     } catch (error) {
       this.logger.error(error);
       throw error;
