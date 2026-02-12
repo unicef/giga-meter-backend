@@ -32,7 +32,7 @@ export class PingAggregationController {
   private readonly logger = new Logger(PingAggregationController.name);
   constructor(
     private readonly pingAggregationService: PingAggregationService,
-  ) {}
+  ) { }
 
   @Get('sync')
   @ApiOperation({
@@ -60,8 +60,8 @@ export class PingAggregationController {
   async aggregateDailyPingData(@Query() query: SyncQueryDto) {
     try {
       const date = getDateFromString(query?.syncDate);
-      await this.pingAggregationService.aggregateDailyPingData(date);
-      return { success: true };
+      const totalDevicesProcessed = await this.pingAggregationService.aggregateDailyPingData(date);
+      return { success: true, totalDevicesProcessed };
     } catch (error) {
       this.logger.error(error);
       throw new HttpException(error, HttpStatus.BAD_REQUEST);

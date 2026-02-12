@@ -9,7 +9,7 @@ export class SchedulerService {
 
   constructor(
     private readonly pingAggregationService: PingAggregationService,
-  ) {}
+  ) { }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async aggregateDailyPingData() {
@@ -33,7 +33,7 @@ export class SchedulerService {
         lockKey,
         'locked',
         'PX',
-        10000,
+        60000,
         'NX',
       );
       if (acquired !== 'OK') {
