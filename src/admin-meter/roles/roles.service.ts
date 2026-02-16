@@ -141,9 +141,10 @@ export class RolesService {
       });
       const rolePermissionsStatus =
         await this.prisma.customAuthRolePermission.updateMany({
-          where: { role_id: role.id },
+          where: { id: { in: role.rolePermissions.map((permission) => permission.id) } },
           data: { deleted: now },
         });
+
       return { roleStatus, rolePermissionsStatus };
     } catch (error) {
       this.logger.error(error);
