@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateOrUpdateRoleDto } from './roles.dto';
 
@@ -6,7 +6,7 @@ import { CreateOrUpdateRoleDto } from './roles.dto';
 export class RolesService {
   private logger = new Logger(RolesService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(dto: CreateOrUpdateRoleDto) {
     try {
@@ -131,19 +131,26 @@ export class RolesService {
       const now = new Date();
       const role = await this.findOne(roleId);
       if (role.deleted) throw new NotFoundException('Role not found');
+      const roleAssigned = await this.prisma.customAuthUserRoleRelationship.count({
+        where: { role_id: role.id },
+      });
+      if (roleAssigned) throw new NotFoundException(`Role is assigned to ${roleAssigned} users`);
       const roleStatus = await this.prisma.customAuthRole.update({
-        where: { id: roleId },
+        where: { id: role.id },
         data: { deleted: now },
       });
       const rolePermissionsStatus =
         await this.prisma.customAuthRolePermission.updateMany({
-          where: { role_id: roleId },
+          where: { role_id: role.id },
           data: { deleted: now },
         });
       return { roleStatus, rolePermissionsStatus };
     } catch (error) {
       this.logger.error(error);
-      throw error;
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to delete role');
     }
   }
 }
