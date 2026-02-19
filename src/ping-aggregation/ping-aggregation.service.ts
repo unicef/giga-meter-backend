@@ -10,11 +10,12 @@ import {
   GetRawPingConnectivityDto,
   GetRawPingsQueryDto,
 } from './ping-aggregation.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class PingAggregationService {
   private readonly logger = new Logger(PingAggregationService.name);
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
   async getRawPings(query: GetRawPingsQueryDto) {
     try {
       const { schoolId, from, to, page, pageSize } = query;
@@ -50,15 +51,18 @@ export class PingAggregationService {
     try {
       const base = targetDateObj || new Date();
       if (!targetDateObj) {
-        base.setUTCDate(base.getUTCDate() - 1);
+        base.setUTCDate(base.getUTCDate()); //use base.getUTCDate()-1 for previous day
       }
       const utcYear = base.getUTCFullYear();
       const utcMonth = base.getUTCMonth();
       const utcDate = base.getUTCDate();
 
-      const start = new Date(Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0));
+      const start = new Date(Date.UTC(utcYear, utcMonth, utcDate, 8, 0, 0, 0));
+      const insertStart = new Date(
+        Date.UTC(utcYear, utcMonth, utcDate, 0, 0, 0, 0),
+      );
       const end = new Date(
-        Date.UTC(utcYear, utcMonth, utcDate, 23, 59, 59, 999),
+        Date.UTC(utcYear, utcMonth, utcDate, 19, 59, 59, 999),
       );
 
       this.logger.log(
@@ -71,7 +75,9 @@ export class PingAggregationService {
       let data: any[] = [];
 
       do {
-        data = await this.prisma.$queryRaw<any[]>`SELECT giga_id_school, browser_id as device_id, 
+        data = await this.prisma.$queryRaw<
+          any[]
+        >`SELECT giga_id_school, browser_id as device_id, 
       SUM( CASE WHEN is_connected = TRUE THEN 1 ELSE 0 END ) AS isConnectedTrueSum,
        count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg 
        FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} 
@@ -85,7 +91,7 @@ export class PingAggregationService {
         const existingData =
           await this.prisma.connectivityPingChecksDailyAggr.findMany({
             where: {
-              timestamp_date: start,
+              timestamp_date: insertStart,
               giga_id_school: {
                 in: data.map((item) => item.giga_id_school),
               },
@@ -112,7 +118,7 @@ export class PingAggregationService {
           const is_connected_all = Number(record.isconnectedallsum) || 1;
           const uptime = (is_connected_true / is_connected_all) * 100 || 0.0;
           insertData.push({
-            timestamp_date: start,
+            timestamp_date: insertStart,
             giga_id_school: record.giga_id_school,
             browser_id: record.device_id || null,
             is_connected_true,
@@ -135,7 +141,7 @@ export class PingAggregationService {
       this.logger.log(
         `Aggregation complete for ${totalDevicesProcessed} devices.`,
       );
-      return totalDevicesProcessed
+      return totalDevicesProcessed;
     } catch (error) {
       this.logger.error(error);
       throw error;
@@ -147,25 +153,36 @@ export class PingAggregationService {
       if (!query?.size) {
         query.size = 100;
       }
-      const { schoolId, from, to, size } = query;
+      const { schoolId, from, to, size, page } = plainToInstance(
+        GetRawPingConnectivityDto,
+        query,
+      );
 
       const where: Prisma.connectivity_ping_checksWhereInput = {};
       if (schoolId) where.giga_id_school = schoolId;
 
-      if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime()))
+      if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime())) {
+        const fromDate = new Date(from);
+        const toDate = new Date(to);
+        fromDate.setUTCHours(0, 0, 0, 0);
+        toDate.setUTCHours(23, 59, 59, 999);
         where.timestamp = {
-          ...(from && { gte: new Date(from) }),
-          ...(to && { lte: new Date(to) }),
+          ...(from && { gte: fromDate }),
+          ...(to && { lte: toDate }),
         };
-      else throw new BadRequestException('from and to both are required');
+      } else throw new BadRequestException('from and to both are required');
 
+      const total = await this.prisma.connectivity_ping_checks.count({
+        where,
+      });
       const data = await this.prisma.connectivity_ping_checks.findMany({
         where,
         orderBy: { timestamp: 'desc' },
         take: size,
+        skip: (page - 1) * size,
       });
 
-      return { data };
+      return { meta: { page, pageSize: size, total }, data };
     } catch (error) {
       this.logger.log(error);
       if (error instanceof BadRequestException) throw error;
