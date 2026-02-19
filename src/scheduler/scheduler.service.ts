@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PingAggregationService } from 'src/ping-aggregation/ping-aggregation.service';
 import redisClient from 'src/utils/redis.client';
 
@@ -9,9 +9,9 @@ export class SchedulerService {
 
   constructor(
     private readonly pingAggregationService: PingAggregationService,
-  ) { }
+  ) {}
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron('0 59 8,14,21,23 * * *')
   async aggregateDailyPingData() {
     try {
       const now = new Date();

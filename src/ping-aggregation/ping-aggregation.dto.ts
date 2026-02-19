@@ -124,6 +124,17 @@ export class GetRawPingConnectivityDto {
   @IsInt()
   @Type(() => Number)
   size: number = 100;
+
+  @ApiProperty({
+    description: 'record size number',
+    required: true,
+    default: 1,
+    minimum: 1,
+    maximum: 10000,
+  })
+  @IsInt()
+  @Type(() => Number)
+  page: number = 1;
 }
 
 export class GetRawPingConnectivityResponseDto {
