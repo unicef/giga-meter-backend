@@ -11,7 +11,7 @@ export class SchedulerService {
     private readonly pingAggregationService: PingAggregationService,
   ) {}
 
-  @Cron('0 59 8,14,21,23 * * *')
+  @Cron('0 0 9,15,21,23 * * *')
   async aggregateDailyPingData() {
     try {
       const now = new Date();

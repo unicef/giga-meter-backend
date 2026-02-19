@@ -93,10 +93,10 @@ export class PingAggregationService {
             where: {
               timestamp_date: insertStart,
               giga_id_school: {
-                in: data.map((item) => item.giga_id_school),
+                in: [...new Set(data.map((item) => item.giga_id_school))],
               },
               browser_id: {
-                in: data.map((item) => item.device_id),
+                in: [...new Set(data.map((item) => item.device_id))],
               },
             },
             select: {
