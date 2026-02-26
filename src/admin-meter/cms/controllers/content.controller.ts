@@ -26,6 +26,8 @@ import { AdminLoggedInUser } from 'src/common/common.decorator';
 import { Users } from '@prisma/client';
 import { AdminAccess } from 'src/common/admin.decorator';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { Roles } from 'src/admin-meter/roles/roles.decorator';
+import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
 
 @ApiTags('CMS - Content Management')
 @Controller('api/v1/cms/content')
@@ -67,6 +69,7 @@ export class ContentController {
   }
 
   @Post()
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_CMS)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Save/Update content',
