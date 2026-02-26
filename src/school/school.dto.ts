@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { GeoLocationDto } from '../measurement/measurement.dto';
 import { SchoolMasterDto } from '../school-master/school-master.dto';
+import { isObject, IsString } from 'class-validator';
 
 export class SchoolDto {
   @ApiProperty()
@@ -38,25 +39,26 @@ export class SchoolDto {
 
   @ApiProperty()
   created_at: Date;
-  
+
   @ApiProperty({
     description: 'Geolocation data from device',
-    type: GeoLocationDto
+    type: GeoLocationDto,
   })
   geolocation?: GeoLocationDto;
 
   @ApiProperty({
-    description: 'Distance between school location and detected location in meters'
+    description:
+      'Distance between school location and detected location in meters',
   })
   detected_location_distance?: number;
 
   @ApiProperty({
-    description: 'Accuracy of the geolocation in meters'
+    description: 'Accuracy of the geolocation in meters',
   })
   detected_location_accuracy?: number;
 
   @ApiProperty({
-    description: 'Flag if distance > X & accuracy > Y'
+    description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
 
@@ -128,6 +130,34 @@ export class DeactivateDeviceDto {
 
   @ApiProperty()
   giga_id_school: string;
+}
+
+export class CheckDeviceAndSchoolStatusDto {
+  @ApiProperty()
+  @IsString()
+  device_hardware_id?: string = '';
+
+  @ApiProperty()
+  @IsString()
+  external_id?: string = '';
+
+  @ApiProperty()
+  @IsString()
+  giga_id_school?: string = '';
+}
+
+export class CheckDeviceAndSchoolStatusResponseDto {
+  @ApiProperty()
+  isActive: boolean;
+
+  @ApiProperty()
+  message: string;
+
+  @ApiProperty()
+  school?: any = {};
+
+  @ApiProperty()
+  devices?: any[] = [{}];
 }
 
 export class DeactivateDeviceResponseDto {

@@ -14,7 +14,9 @@ import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
+import { MeasurementV2Controller } from './measurement/measurement.v2.controller';
 import { MeasurementService } from './measurement/measurement.service';
+import { MeasurementServiceV2 } from './measurement/measurement.service.v2';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
@@ -36,8 +38,19 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
+import { NearestSchoolModule } from './nearest-school/nearest-school.module';
+import { PublicController } from './public/public.controller';
+import { PublicService } from './public/public.service';
+import { CountryConfigModule } from './country-config/country-config.module';
 import * as redisStore from 'cache-manager-redis-store';
+import { DeviceTokenController } from './auth/device-token.controller';
+import { DeviceTokenService } from './auth/device-token.service';
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { TranslateModule } from './translate';
 
 @Module({
   imports: [
@@ -55,11 +68,15 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
+    CountryConfigModule,
     AuthModule,
     IpMetadataModule,
     GeolocationModule,
+    NearestSchoolModule,
     AdminMeterModule,
+    TranslateModule,
   ],
   controllers: [
     AppController,
@@ -69,10 +86,14 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     SchoolMasterController,
     CountryController,
     MeasurementController,
+    MeasurementV2Controller,
     AdminController,
     DataFixController,
     MetricsController,
     ConnectivityController,
+    DeviceTokenController,
+    PingAggregationController,
+    PublicController,
   ],
   providers: [
     AppService,
@@ -83,9 +104,13 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
     SchoolMasterService,
     CountryService,
     MeasurementService,
+    MeasurementServiceV2,
     AdminService,
     MetricsService,
     CategoryConfigProvider,
+    DeviceTokenService,
+    PingAggregationService,
+    ConnectivityService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -98,7 +123,9 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    SchedulerService,
     ConnectivityService,
+    PublicService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

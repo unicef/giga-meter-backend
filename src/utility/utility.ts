@@ -14,6 +14,14 @@ export const existSchool = async (
   return school ? true : false;
 };
 
+export const getDateFromString = (dateString: string) => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date;
+};
+
 export function serializeBigInt(value: any): any {
   if (typeof value === 'bigint') {
     return Number(value); // or value.toString()

@@ -31,8 +31,10 @@ import {
   CheckExistingInstallationDto,
   DeactivateDeviceDto,
   SchoolDto,
+  CheckDeviceAndSchoolStatusDto,
   DeactivateDeviceResponseDto,
   CheckDeviceStatusDto,
+  CheckDeviceAndSchoolStatusResponseDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
@@ -365,6 +367,37 @@ export class SchoolController {
 
     return {
       success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: result.message,
+    };
+  }
+
+  @Post('check-device-school-status')
+  @ApiOperation({
+    summary: 'Check if a device and school has been deactivated',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns whether the device and school is active or has been deactivated',
+    type: CheckDeviceAndSchoolStatusResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async checkDeviceAndSchoolStatus(
+    @Body() body: CheckDeviceAndSchoolStatusDto,
+  ): Promise<ApiSuccessResponseDto<CheckDeviceAndSchoolStatusResponseDto>> {
+    const result = await this.schoolService.checkDeviceAndSchool(body);
+
+    return {
+      success: result.isActive,
       data: result,
       timestamp: new Date().toISOString(),
       message: result.message,

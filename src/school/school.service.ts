@@ -1,22 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { dailycheckapp_school as School } from '@prisma/client';
-import { SchoolDto } from './school.dto';
+import { Prisma, dailycheckapp_school as School } from '@prisma/client';
+import { CheckDeviceAndSchoolStatusDto, SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   sanitizeHardwareId,
   isHardwareIdBlocked,
 } from '../common/hardware-id.utils';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class SchoolService {
-  private logger = new Logger(SchoolService.name);
-
-  constructor(
-    private prisma: PrismaService,
-    private readonly geolocationUtility: GeolocationUtility,
-  ) {}
+  constructor(private prisma: PrismaService, private readonly geolocationUtility: GeolocationUtility) { }
 
   async schools(
     skip?: number,
@@ -121,21 +117,18 @@ export class SchoolService {
 
   async createSchool(schoolDto: SchoolDto): Promise<string> {
     // Process geolocation data if available
-    if (
-      schoolDto.geolocation &&
+    if (schoolDto.geolocation &&
       schoolDto.geolocation.location &&
-      schoolDto.geolocation.accuracy
-    ) {
+      schoolDto.geolocation.accuracy) {
       try {
         // Get the school coordinates based on giga_id_school
         if (schoolDto.giga_id_school) {
           // Use the common utility to calculate distance and set flags
-          const geoResult =
-            await this.geolocationUtility.calculateDistanceAndSetFlag(
-              schoolDto.giga_id_school,
-              schoolDto.geolocation.location,
-              schoolDto.geolocation.accuracy,
-            );
+          const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
+            schoolDto.giga_id_school,
+            schoolDto.geolocation.location,
+            schoolDto.geolocation.accuracy
+          );
 
           // Store the results in the measurement DTO
           schoolDto.detected_location_accuracy = geoResult.accuracy;
@@ -370,6 +363,72 @@ export class SchoolService {
     };
   }
 
+  async checkDeviceAndSchool(prams: CheckDeviceAndSchoolStatusDto) {
+    const { device_hardware_id, external_id, giga_id_school } = plainToInstance(
+      CheckDeviceAndSchoolStatusDto,
+      prams,
+    );
+
+    if (device_hardware_id && isHardwareIdBlocked(device_hardware_id)) {
+      console.warn(
+        `Blocked hardware ID provided to checkDeviceAndSchool: ${device_hardware_id}`,
+      );
+      return {
+        isActive: false,
+        message: 'Device not found (blocked hardware ID)',
+      };
+    }
+    const schoolWhere: Prisma.schoolWhereInput = { is_active: true };
+    if (external_id && external_id.trim())
+      schoolWhere.external_id = { equals: external_id, mode: 'insensitive' };
+    if (giga_id_school && giga_id_school.trim())
+      schoolWhere.giga_id_school = giga_id_school?.toLowerCase().trim();
+    if (!schoolWhere?.giga_id_school && !schoolWhere?.external_id)
+      return {
+        isActive: false,
+        message: 'School not found',
+      };
+    //will add the logic for check school status from school table is_active
+    const school = await this.prisma.school.findFirst({ where: schoolWhere });
+    if (!school) {
+      return {
+        isActive: false,
+        message: 'School not found',
+      };
+    }
+    const deviceWhere: Prisma.dailycheckapp_schoolWhereInput = {
+      giga_id_school: school.giga_id_school,
+    };
+    if (device_hardware_id) {
+      deviceWhere.device_hardware_id = device_hardware_id;
+      deviceWhere.OR = [{ is_active: null }, { is_active: true }];
+    }
+
+    const devices = (
+      await this.prisma.dailycheckapp_school.findMany({
+        where: deviceWhere,
+        orderBy: {
+          created_at: 'desc',
+        },
+      })
+    ).map((el) => ({ ...el, id: el.id.toString() }));
+    if (!devices.length && deviceWhere.device_hardware_id) {
+      return {
+        isActive: false,
+        message: 'Device not found',
+      };
+    }
+
+    school.id = school.id.toString() as any;
+
+    return {
+      isActive: true,
+      message: 'Device is active',
+      school,
+      devices,
+    };
+  }
+
   async deactivateDevice(
     device_hardware_id: string,
     giga_id_school: string,
@@ -449,8 +508,7 @@ export class SchoolService {
       detected_longitude: school.geolocation?.location?.lng || null,
       detected_location_accuracy: school.detected_location_accuracy || null,
       detected_location_distance: school.detected_location_distance || null,
-      detected_location_is_flagged:
-        school.detected_location_is_flagged || false,
+      detected_location_is_flagged: school.detected_location_is_flagged || null,
       device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
       is_active: school.is_active,
       windows_username: school.windows_username,

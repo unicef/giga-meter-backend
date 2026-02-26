@@ -8,8 +8,10 @@ import { RolesService } from './roles/roles.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CountriesController } from './countries/countries.controller';
 import { CountriesService } from './countries/countries.service';
+import { CmsModule } from './cms/cms.module';
 
 @Module({
+  imports: [CmsModule],
   controllers: [
     UsersController,
     RolesController,
@@ -24,4 +26,4 @@ import { CountriesService } from './countries/countries.service';
     CountriesService,
   ],
 })
-export class AdminMeterModule {}
+export class AdminMeterModule { }
