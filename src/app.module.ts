@@ -36,6 +36,8 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
+import { PublicController } from './public/public.controller';
+import { PublicService } from './public/public.service';
 import * as redisStore from 'cache-manager-redis-store';
 
 import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
@@ -78,6 +80,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     MetricsController,
     ConnectivityController,
     PingAggregationController,
+    PublicController,
   ],
   providers: [
     AppService,
@@ -106,6 +109,8 @@ import { SchedulerService } from './scheduler/scheduler.service';
       useClass: CategoryResponseInterceptor,
     },
     SchedulerService,
+    ConnectivityService,
+    PublicService,
   ],
 })
 export class AppModule {}

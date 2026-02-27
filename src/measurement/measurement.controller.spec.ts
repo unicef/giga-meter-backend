@@ -244,4 +244,36 @@ describe('MeasurementController', () => {
       ).rejects.toThrow('Database error');
     });
   });
+
+  describe('CreateMultipleMeasurement', () => {
+    it('should create multiple measurements', async () => {
+      jest
+        .spyOn(service, 'createMultipleMeasurement')
+        .mockResolvedValue(['', '', '']);
+
+      const response = await controller.createMultipleMeasurement(
+        mockAddMeasurementDto,
+      );
+      expect(response.message).toBe('success');
+    });
+    it('should handle error in creating multiple measurements', async () => {
+      jest
+        .spyOn(service, 'createMultipleMeasurement')
+        .mockResolvedValue([
+          service.SCHOOL_DOESNT_EXIST_ERR,
+          service.WRONG_COUNTRY_CODE_ERR,
+        ]);
+      await expect(
+        controller.createMultipleMeasurement([
+          mockAddMeasurementDto[0],
+          mockAddMeasurementDto[1],
+        ]),
+      ).rejects.toThrow(
+        'Failed to add measurements with error for each records : ' +
+          service.SCHOOL_DOESNT_EXIST_ERR +
+          ',' +
+          service.WRONG_COUNTRY_CODE_ERR,
+      );
+    });
+  });
 });
