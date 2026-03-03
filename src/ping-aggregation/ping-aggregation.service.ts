@@ -11,6 +11,7 @@ import {
   GetRawPingsQueryDto,
 } from './ping-aggregation.dto';
 import { plainToInstance } from 'class-transformer';
+import redisClient from 'src/utils/redis.client';
 
 @Injectable()
 export class PingAggregationService {
@@ -19,6 +20,13 @@ export class PingAggregationService {
   async getRawPings(query: GetRawPingsQueryDto) {
     try {
       const { schoolId, from, to, page, pageSize } = query;
+      const aggregationSchedulerLastRunTime =
+        (await redisClient.get('aggregation_scheduler_last_run_time')) ||
+        'not_found';
+      const aggregationSchedulerStatus =
+        (await redisClient.get('aggregation_scheduler_status')) === 'on_going'
+          ? 'on_going'
+          : 'completed';
 
       const where: Prisma.ConnectivityPingChecksDailyAggrWhereInput = {};
       if (schoolId) where.giga_id_school = schoolId;
@@ -40,7 +48,16 @@ export class PingAggregationService {
           : {}),
       });
 
-      return { meta: { page, pageSize, total }, data };
+      return {
+        meta: {
+          page,
+          pageSize,
+          total,
+          aggregationSchedulerStatus,
+          aggregationSchedulerLastRunTime,
+        },
+        data,
+      };
     } catch (error) {
       this.logger.error(error);
       throw error;
@@ -49,6 +66,11 @@ export class PingAggregationService {
 
   async aggregateDailyPingData(targetDateObj?: Date | undefined) {
     try {
+      await redisClient.set('aggregation_scheduler_status', 'on_going');
+      await redisClient.set(
+        'aggregation_scheduler_last_run_time',
+        new Date().toISOString(),
+      );
       const base = targetDateObj || new Date();
       if (!targetDateObj) {
         base.setUTCDate(base.getUTCDate()); //use base.getUTCDate()-1 for previous day
@@ -141,10 +163,13 @@ export class PingAggregationService {
       this.logger.log(
         `Aggregation complete for ${totalDevicesProcessed} devices.`,
       );
+
       return totalDevicesProcessed;
     } catch (error) {
       this.logger.error(error);
       throw error;
+    } finally {
+      await redisClient.set('aggregation_scheduler_status', 'completed');
     }
   }
 
