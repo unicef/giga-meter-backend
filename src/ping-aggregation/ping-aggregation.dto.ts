@@ -79,6 +79,10 @@ class MetaDto {
   pageSize: number;
   @ApiProperty()
   total: number;
+  @ApiPropertyOptional()
+  aggregationSchedulerStatus?: string;
+  @ApiPropertyOptional()
+  aggregationSchedulerLastRunTime?: string;
 }
 
 export class GetRawPingsResponseDto {
