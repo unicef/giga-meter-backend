@@ -37,6 +37,8 @@ import { AdminLoggedInUser } from 'src/common/common.decorator';
 import { Users } from '@prisma/client';
 import { AdminAccess } from 'src/common/admin.decorator';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
+import { Roles } from 'src/admin-meter/roles/roles.decorator';
 
 @ApiTags('CMS - Media Management')
 @Controller('api/v1/cms/media')
@@ -59,6 +61,7 @@ export class MediaController {
     description: 'Media library retrieved successfully',
     type: MediaLibraryResponseDto,
   })
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_MEDIA_LIB)
   async getMediaLibrary(): Promise<MediaLibraryResponseDto> {
     this.logger.log('Getting media library');
     return this.mediaService.getMediaLibrary();
@@ -100,6 +103,7 @@ export class MediaController {
     status: 400,
     description: 'Invalid file or file size exceeds limit',
   })
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_MEDIA_LIB, PERMISSION_SLUGS.CAN_ADD_MEDIA_LIB)
   async uploadFile(
     @AdminLoggedInUser() user: Users,
     @UploadedFile(
@@ -141,6 +145,7 @@ export class MediaController {
     status: 404,
     description: 'File not found',
   })
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_MEDIA_LIB, PERMISSION_SLUGS.CAN_ADD_MEDIA_LIB)
   async updateFileMetadata(
     @AdminLoggedInUser() user: Users,
     @Body() updateDto: UpdateFileMetadataDto,
@@ -175,6 +180,7 @@ export class MediaController {
     status: 404,
     description: 'File not found',
   })
+  @Roles(PERMISSION_SLUGS.CAN_DELETE_MEDIA_LIB)
   async deleteFile(@Query() query: DeleteFileQueryDto): Promise<void> {
     this.logger.log(`Deleting file: ${query.id}`);
     await this.mediaService.deleteFile(query.id);
