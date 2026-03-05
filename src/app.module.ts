@@ -36,6 +36,8 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
+import { PublicController } from './public/public.controller';
+import { PublicService } from './public/public.service';
 import * as redisStore from 'cache-manager-redis-store';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
@@ -75,6 +77,7 @@ import { TranslateModule } from './translate';
     DataFixController,
     MetricsController,
     ConnectivityController,
+    PublicController,
   ],
   providers: [
     AppService,
@@ -101,6 +104,7 @@ import { TranslateModule } from './translate';
       useClass: CategoryResponseInterceptor,
     },
     ConnectivityService,
+    PublicService,
   ],
 })
 export class AppModule { }
