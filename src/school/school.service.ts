@@ -364,11 +364,9 @@ export class SchoolService {
   }
 
   async checkDeviceAndSchool(prams: CheckDeviceAndSchoolStatusDto) {
-    const { device_hardware_id, external_id, giga_id_school } = plainToInstance(
-      CheckDeviceAndSchoolStatusDto,
-      prams,
-    );
-
+    prams = plainToInstance(CheckDeviceAndSchoolStatusDto, prams);
+    prams.device_hardware_id = sanitizeHardwareId(prams.device_hardware_id);
+    const { device_hardware_id, external_id, giga_id_school } = prams;
     if (device_hardware_id && isHardwareIdBlocked(device_hardware_id)) {
       console.warn(
         `Blocked hardware ID provided to checkDeviceAndSchool: ${device_hardware_id}`,
