@@ -15,6 +15,7 @@ import {
 } from './school.dto';
 import { serializeBigInt } from 'src/utility/utility';
 import { plainToInstance } from 'class-transformer';
+import { isHardwareIdBlocked } from 'src/common/hardware-id.utils';
 
 @Injectable()
 export class SchoolsService {
@@ -110,10 +111,13 @@ export class SchoolsService {
       toggleIsActiveDeviceDto,
       reqDto,
     );
+    // If the hardware ID is blocked/generic, don't perform deactivation
+    if (isHardwareIdBlocked(device_hardware_id)) {
+       throw new BadRequestException('device_hardware_id is blocked/generic');
+    }
     if (!device_hardware_id || device_hardware_id.trim().length === 0) {
       throw new BadRequestException('device_hardware_id is null/empty');
     }
-
     if (!giga_id_school || giga_id_school.trim().length === 0) {
       throw new BadRequestException('giga_id_school is null/empty');
     }
