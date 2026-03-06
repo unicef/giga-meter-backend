@@ -367,15 +367,6 @@ export class SchoolService {
     prams = plainToInstance(CheckDeviceAndSchoolStatusDto, prams);
     prams.device_hardware_id = sanitizeHardwareId(prams.device_hardware_id);
     const { device_hardware_id, external_id, giga_id_school } = prams;
-    if (device_hardware_id && isHardwareIdBlocked(device_hardware_id)) {
-      console.warn(
-        `Blocked hardware ID provided to checkDeviceAndSchool: ${device_hardware_id}`,
-      );
-      return {
-        isActive: false,
-        message: 'Device not found (blocked hardware ID)',
-      };
-    }
     const schoolWhere: Prisma.schoolWhereInput = { is_active: true };
     if (external_id && external_id.trim())
       schoolWhere.external_id = { equals: external_id, mode: 'insensitive' };
