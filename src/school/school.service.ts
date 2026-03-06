@@ -12,7 +12,10 @@ import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class SchoolService {
-  constructor(private prisma: PrismaService, private readonly geolocationUtility: GeolocationUtility) { }
+  constructor(
+    private prisma: PrismaService,
+    private readonly geolocationUtility: GeolocationUtility,
+  ) {}
 
   async schools(
     skip?: number,
@@ -117,18 +120,21 @@ export class SchoolService {
 
   async createSchool(schoolDto: SchoolDto): Promise<string> {
     // Process geolocation data if available
-    if (schoolDto.geolocation &&
+    if (
+      schoolDto.geolocation &&
       schoolDto.geolocation.location &&
-      schoolDto.geolocation.accuracy) {
+      schoolDto.geolocation.accuracy
+    ) {
       try {
         // Get the school coordinates based on giga_id_school
         if (schoolDto.giga_id_school) {
           // Use the common utility to calculate distance and set flags
-          const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
-            schoolDto.giga_id_school,
-            schoolDto.geolocation.location,
-            schoolDto.geolocation.accuracy
-          );
+          const geoResult =
+            await this.geolocationUtility.calculateDistanceAndSetFlag(
+              schoolDto.giga_id_school,
+              schoolDto.geolocation.location,
+              schoolDto.geolocation.accuracy,
+            );
 
           // Store the results in the measurement DTO
           schoolDto.detected_location_accuracy = geoResult.accuracy;
@@ -396,6 +402,17 @@ export class SchoolService {
     const devices = (
       await this.prisma.dailycheckapp_school.findMany({
         where: deviceWhere,
+        select: {
+          id: true,
+          country_code: true,
+          created_at: true,
+          mac_address: true,
+          device_hardware_id: true,
+          is_active: true,
+          giga_id_school: true,
+          app_version: true,
+        },
+        distinct: ['device_hardware_id'],
         orderBy: {
           created_at: 'desc',
         },
