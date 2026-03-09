@@ -5,12 +5,14 @@ import {
   SaveContentDto,
   ContentResponseDto,
 } from '../dto/content.dto';
+import redisClient from 'src/utils/redis.client';
+import { CMS_DATA_CACHE_KEY } from 'src/config/cache.config';
 
 @Injectable()
 export class ContentService {
   private readonly logger = new Logger(ContentService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Get content by status (draft or published)
@@ -30,6 +32,40 @@ export class ContentService {
     }
 
     return this.mapToContentResponse(content);
+  }
+
+  async getCachedPublishedContent(): Promise<ContentResponseDto> {
+    try {
+      const cachedData = await redisClient.get(CMS_DATA_CACHE_KEY);
+      if (cachedData) {
+        this.logger.log('Returning CMS content from cache');
+        return JSON.parse(cachedData);
+      }
+
+      const content = await this.getContent(ContentStatus.PUBLISHED);
+
+      if (content && content.contentJson) {
+        await redisClient.set(CMS_DATA_CACHE_KEY, JSON.stringify(content));
+        this.logger.log('Stored CMS content in cache');
+      }
+
+      return content;
+    } catch (error) {
+      this.logger.error(`Error in getCachedPublishedContent: ${error.message}`);
+      // Fallback to database if cache fails
+      return this.getContent(ContentStatus.PUBLISHED);
+    }
+  }
+
+  async clearCache(): Promise<{ message: string }> {
+    try {
+      await redisClient.del(CMS_DATA_CACHE_KEY);
+      this.logger.log('CMS cache cleared manually');
+      return { message: 'Cache cleared successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to clear CMS cache: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
@@ -68,12 +104,15 @@ export class ContentService {
         },
       });
 
-      // If publishing, remove draft data
+      // If publishing, remove draft data and invalidate cache
       if (isPublishing) {
         await this.prisma.cmsContent.deleteMany({
           where: { status: ContentStatus.DRAFT },
         });
-        this.logger.log('Removed draft content after publishing');
+        await redisClient.del(CMS_DATA_CACHE_KEY);
+        this.logger.log(
+          'Removed draft content and invalidated cache after publishing',
+        );
       }
 
       this.logger.log(`Content saved successfully. Status: ${status}`);
