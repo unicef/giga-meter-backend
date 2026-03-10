@@ -39,7 +39,7 @@ import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 @AdminAccess()
 export class UsersController {
   private logger = new Logger(UsersController.name);
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   @Get('signin')
   @Roles('')
