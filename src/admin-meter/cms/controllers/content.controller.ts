@@ -8,12 +8,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiQuery,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ContentService } from '../services/content.service';
 import {
   GetContentQueryDto,
@@ -36,14 +31,11 @@ import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
 export class ContentController {
   private readonly logger = new Logger(ContentController.name);
 
-  constructor(
-    private readonly contentService: ContentService,
-  ) { }
+  constructor(private readonly contentService: ContentService) {}
   @Get()
   @ApiOperation({
     summary: 'Get content',
-    description:
-      'Retrieve content by status (draft/published).',
+    description: 'Retrieve content by status (draft/published).',
   })
   @ApiQuery({
     name: 'status',
@@ -59,13 +51,23 @@ export class ContentController {
   async getContent(
     @Query() query: GetContentQueryDto,
   ): Promise<ContentResponseDto> {
-    this.logger.log(
-      `Getting content - Status: ${query.status || 'draft'}`,
-    );
+    this.logger.log(`Getting content - Status: ${query.status || 'draft'}`);
 
-    return this.contentService.getContent(
-      query.status
-    );
+    return this.contentService.getContent(query.status);
+  }
+
+  @Get('cached-published-content')
+  @ApiOperation({
+    summary: 'Get content',
+    description: 'Retrieve content by status (published).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Content retrieved successfully',
+    type: ContentResponseDto,
+  })
+  async getCachedPublishedContent(): Promise<ContentResponseDto> {
+    return this.contentService.getCachedPublishedContent();
   }
 
   @Post()
@@ -98,6 +100,10 @@ export class ContentController {
   ): Promise<ContentResponseDto> {
     this.logger.log(`Saving content with status: ${query.status}`);
 
-    return this.contentService.saveContent(saveContentDto, query.status, user?.id);
+    return this.contentService.saveContent(
+      saveContentDto,
+      query.status,
+      user?.id,
+    );
   }
 }

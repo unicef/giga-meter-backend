@@ -10,6 +10,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { PERMISSION_SLUGS, ROLES } from 'src/admin-meter/roles/roles.constants';
 import { GetUsersQueryDto, UpdateUserDto } from './users.dto';
 import { Prisma, SpeedTestProtocol } from '@prisma/client';
+import {
+  CACHE_INVALIDATE_KEYS,
+  CMS_DATA_CACHE_KEY,
+} from 'src/config/cache.config';
+import redisClient from 'src/utils/redis.client';
 
 type TypeRoles = {
   id: number;
@@ -179,10 +184,18 @@ export class UsersService {
         ...country,
         id: Number(country.id),
       }));
+      const cacheInvalidateKeys = CACHE_INVALIDATE_KEYS;
       const rolesValue = Object.values(ROLES);
       const speedTestProtocols = Object.values(SpeedTestProtocol);
       const permissions = rolesPermissions.rolePermissions;
-      return { roles, rolesValue, permissions, countries, speedTestProtocols };
+      return {
+        roles,
+        rolesValue,
+        permissions,
+        countries,
+        speedTestProtocols,
+        cacheInvalidateKeys,
+      };
     } catch (error) {
       this.logger.error(error);
       throw new InternalServerErrorException('Error retrieving common configs');
@@ -282,5 +295,22 @@ export class UsersService {
       );
     }
     return tempReformedRoles;
+  }
+
+  async clearCache(key?: string): Promise<{ message: string }> {
+    try {
+      if (key === 'all') {
+        await redisClient.del(CMS_DATA_CACHE_KEY);
+      } else if (key) {
+        await redisClient.del(key);
+      } else {
+        await redisClient.del(CMS_DATA_CACHE_KEY);
+      }
+      this.logger.log(`Cache cleared manually for key: ${key || 'default'}`);
+      return { message: 'Cache cleared successfully' };
+    } catch (error) {
+      this.logger.error(`Failed to clear cache: ${error.message}`);
+      throw error;
+    }
   }
 }
