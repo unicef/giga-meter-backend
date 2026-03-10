@@ -57,26 +57,6 @@ export class ContentService {
     }
   }
 
-  async clearCache(key?: string): Promise<{ message: string }> {
-    try {
-      if (key === 'all') {
-        await redisClient.del(CMS_DATA_CACHE_KEY);
-        // Clear other keys here if necessary
-      } else if (key) {
-        await redisClient.del(key);
-      } else {
-        await redisClient.del(CMS_DATA_CACHE_KEY);
-      }
-      this.logger.log(
-        `CMS cache cleared manually for key: ${key || 'default'}`,
-      );
-      return { message: 'Cache cleared successfully' };
-    } catch (error) {
-      this.logger.error(`Failed to clear CMS cache: ${error.message}`);
-      throw error;
-    }
-  }
-
   /**
    * Save or update content
    */
