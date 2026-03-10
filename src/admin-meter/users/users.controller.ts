@@ -11,6 +11,9 @@ import {
   Req,
   Res,
   UseGuards,
+  Post,
+  HttpStatus,
+  HttpCode,
 } from '@nestjs/common';
 import {
   ApiExcludeController,
@@ -39,7 +42,7 @@ import { AdminAuthGuard } from '../admin-auth/admin-auth.guard';
 @AdminAccess()
 export class UsersController {
   private logger = new Logger(UsersController.name);
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
   @Get('signin')
   @Roles('')
@@ -103,6 +106,23 @@ export class UsersController {
       this.logger.error(error);
       throw new InternalServerErrorException('Error during user signin');
     }
+  }
+
+  @Post('cache-published')
+  @Roles('')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Clea cache',
+    description: 'Manually remove specific key content from Redis cache.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cache cleared successfully',
+  })
+  async clearCachePost(
+    @Body() body: { key: string },
+  ): Promise<{ message: string }> {
+    return this.usersService.clearCache(body.key);
   }
 
   @Get()
