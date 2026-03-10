@@ -57,17 +57,6 @@ export class ContentService {
     }
   }
 
-  async clearCache(): Promise<{ message: string }> {
-    try {
-      await redisClient.del(CMS_DATA_CACHE_KEY);
-      this.logger.log('CMS cache cleared manually');
-      return { message: 'Cache cleared successfully' };
-    } catch (error) {
-      this.logger.error(`Failed to clear CMS cache: ${error.message}`);
-      throw error;
-    }
-  }
-
   /**
    * Save or update content
    */
