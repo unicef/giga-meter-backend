@@ -4,6 +4,7 @@ import {
   Post,
   Query,
   Body,
+  Delete,
   Logger,
   HttpCode,
   HttpStatus,
@@ -66,6 +67,35 @@ export class ContentController {
     return this.contentService.getContent(
       query.status
     );
+  }
+
+  @Get('cached-published-content')
+  @ApiOperation({
+    summary: 'Get content',
+    description: 'Retrieve content by status (published).',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Content retrieved successfully',
+    type: ContentResponseDto,
+  })
+  async getCachedPublishedContent(): Promise<ContentResponseDto> {  
+    return this.contentService.getCachedPublishedContent();
+  }
+
+  @Delete('cache-published')
+  @Roles(PERMISSION_SLUGS.CAN_UPDATE_CMS)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Clear CMS cache',
+    description: 'Manually remove the published CMS content from Redis cache.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cache cleared successfully',
+  })
+  async clearCache(): Promise<{ message: string }> {
+    return this.contentService.clearCache();
   }
 
   @Post()
