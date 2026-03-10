@@ -41,6 +41,7 @@ import { PublicService } from './public/public.service';
 import * as redisStore from 'cache-manager-redis-store';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
+import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { TranslateModule } from './translate';
     GeolocationModule,
     AdminMeterModule,
     TranslateModule,
+    FeatureFlagModule,
   ],
   controllers: [
     AppController,

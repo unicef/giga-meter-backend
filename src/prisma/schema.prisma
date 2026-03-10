@@ -584,3 +584,44 @@ model CmsMedia {
   @@index([updatedById])
   @@map("cms_media")
 }
+
+enum FeatureFlagType {
+  BOOLEAN
+  PERCENTAGE
+}
+
+enum FeatureFlagScope {
+  COUNTRY
+  SCHOOL
+}
+
+model FeatureFlag {
+  id          String          @id @default(uuid()) @db.Uuid
+  key         String          @unique @db.VarChar(255)
+  name        String          @db.VarChar(255)
+  description String?         @db.Text
+  flag_type   FeatureFlagType
+  enabled     Boolean         @default(false)
+  percentage  Int?
+  created_at  DateTime        @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  updated_at  DateTime        @updatedAt @db.Timestamptz(6)
+
+  overrides FeatureFlagOverride[]
+
+  @@map("feature_flag")
+}
+
+model FeatureFlagOverride {
+  id              String           @id @default(uuid()) @db.Uuid
+  feature_flag_id String           @db.Uuid
+  scope           FeatureFlagScope
+  scope_id        String           @db.VarChar(255)
+  enabled         Boolean          @default(false)
+  created_at      DateTime         @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  updated_at      DateTime         @updatedAt @db.Timestamptz(6)
+
+  feature_flag FeatureFlag @relation(fields: [feature_flag_id], references: [id], onDelete: Cascade)
+
+  @@unique([feature_flag_id, scope, scope_id])
+  @@map("feature_flag_override")
+}

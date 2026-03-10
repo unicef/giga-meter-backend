@@ -81,7 +81,7 @@ async function bootstrap() {
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
       origin: '*',
-      methods: ['GET', 'POST', 'PUT', 'DELETE'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
       preflightContinue: false,
     });
   } else {
