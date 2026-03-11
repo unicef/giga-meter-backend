@@ -25,15 +25,18 @@ export class SchoolsService {
   async getSchoolsAndDeviceCount(bodyRequest: RequestSchoolsAdminDto) {
     try {
       const { giga_id_school, countries, search } = bodyRequest;
-      let { page, limit } = bodyRequest;
+      // Normalize page and limit to safe integers
+      const page = Math.floor(bodyRequest.page || 1);
+      const limit = Math.floor(bodyRequest.limit || 10);
       const where = [Prisma.sql`school.deleted is null`];
       let lastQuery = Prisma.sql``;
       let schooldDailyPromise: Promise<any[]> = null;
       let skip = 0;
-      let total = 1;
+      let total = 0;
 
       if (giga_id_school && giga_id_school.trim()) {
-        where.push(Prisma.sql`school.giga_id_school = ${giga_id_school}`);
+        const trimmedGigaId = giga_id_school.trim();
+        where.push(Prisma.sql`school.giga_id_school = ${trimmedGigaId}`);
         schooldDailyPromise = this.prisma.dailycheckapp_school.findMany({
           select: {
             id: true,
@@ -50,55 +53,74 @@ export class SchoolsService {
             id: 'desc',
           },
           where: {
-            giga_id_school: giga_id_school,
+            giga_id_school: trimmedGigaId,
           },
         });
       } else {
-        if (countries && countries.length > 0)
+        if (countries && countries.length > 0) {
           where.push(
             Prisma.sql`school.country_code in (${Prisma.join(countries, ',')})`,
           );
-        if (search && search.trim())
-          where.push(Prisma.sql`school.name ILIKE ${'%' + search + '%'}`);
+        }
+        if (search && search.trim()) {
+          where.push(
+            Prisma.sql`school.name ILIKE ${'%' + search.trim() + '%'}`,
+          );
+        }
 
-        if (
-          typeof page !== 'number' ||
-          typeof limit !== 'number' ||
-          limit > 100
-        )
+        if (page <= 0 || limit <= 0 || limit > 100)
           throw new BadRequestException('page and limit are invalid.');
-        skip = page > 1 ? (page - 1) * limit : 0;
-        lastQuery = Prisma.sql`OFFSET ${skip} ROWS FETCH NEXT ${limit} ROWS ONLY`;
+        skip = (page - 1) * limit;
+        lastQuery = Prisma.sql`LIMIT ${limit} OFFSET ${skip}`;
       }
-      const data = await this.prisma.$queryRaw<
-        any[]
-      >`SELECT school.id,school.name,school.giga_id_school,school.feature_flags,
-      school.country_code,school.is_active,school.education_level,
-      (select count(DISTINCT dailycheckapp_school.device_hardware_id) FROM dailycheckapp_school where dailycheckapp_school.giga_id_school = school.giga_id_school) as device_count 
-      from school where ${Prisma.join(where, ' AND ')} ${lastQuery}`;
+      const data = await this.prisma.$queryRaw<any[]>`
+        SELECT 
+          school.id,
+          school.name,
+          school.giga_id_school,
+          school.feature_flags,
+          school.country_code,
+          school.is_active,
+          school.education_level,
+          (
+            SELECT COUNT(DISTINCT ds.device_hardware_id)::int 
+            FROM dailycheckapp_school ds 
+            WHERE ds.giga_id_school = school.giga_id_school
+          ) as device_count 
+        FROM school 
+        WHERE ${Prisma.join(where, ' AND ')} 
+        ORDER BY school.name ASC NULLS LAST, school.id ASC
+        ${lastQuery}
+      `;
 
       if (data.length > 0 && schooldDailyPromise) {
-        total = page = limit = 1;
+        total = 1;
         data[0].school_devices = (await schooldDailyPromise).map((item) => ({ ...item, is_active: item.is_active ?? true }));
-      } else
-        total = (
-          await this.prisma.$queryRaw<
-            any[]
-          >`SELECT count(school.id)::int as total from school where ${Prisma.join(where, ' AND ')}`
-        )[0].total;
+      } else {
+        const countData = await this.prisma.$queryRaw<any[]>`
+          SELECT count(school.id)::int as total 
+          FROM school 
+          WHERE ${Prisma.join(where, ' AND ')}
+        `;
+        total = countData[0]?.total || 0;
+      }
+
+      const finalPage = schooldDailyPromise ? 1 : page;
+      const finalLimit = schooldDailyPromise ? 1 : limit;
 
       return {
         success: true,
         data: serializeBigInt(data),
         timestamp: new Date().toISOString(),
         meta: {
-          page,
-          limit,
+          page: finalPage,
+          limit: finalLimit,
           total,
-          totalPages: Math.ceil(total / limit),
+          totalPages: Math.ceil(total / finalLimit),
         },
       };
     } catch (error) {
+      if (error instanceof BadRequestException) throw error;
       this.logger.error(error);
       throw new InternalServerErrorException(
         'An error occurred while retrieving schools and device count',
