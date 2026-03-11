@@ -77,6 +77,8 @@ model dailycheckapp_school {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  @@index([giga_id_school])
+  @@index([giga_id_school, device_hardware_id])
 }
 
 model school {
