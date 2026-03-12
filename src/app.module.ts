@@ -51,6 +51,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
+import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { TranslateModule } from './translate';
     NearestSchoolModule,
     AdminMeterModule,
     TranslateModule,
+    FeatureFlagModule,
   ],
   controllers: [
     AppController,
