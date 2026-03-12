@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -19,47 +20,60 @@ export class AdminAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
-    // Check if it's a Bearer token or device token
-    const parts: string[] = authHeader.split(' ');
-    if (parts.length !== 2) {
-      throw new UnauthorizedException('Invalid authorization header format');
-    }
-
-    const [scheme, token] = parts;
-    if (scheme.toLowerCase() !== 'bearer' || !token) {
-      throw new UnauthorizedException('Missing authorization token');
-    }
-
-    // Handle Bearer tokens (existing logic)
-    const decodedToken: any = await this.validateB2cToken(token);
-    if (!decodedToken) {
-      throw new UnauthorizedException(
-        'Invalid bearer token or not authorized to access for b2c',
-      );
-    }
-    request.b2cUser = decodedToken;
-
-    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
-      ROLES_KEY,
-      [context.getHandler(), context.getClass()],
-    );
-
-    if (requiredRoles) {
-      const hasPermission = await this.validateUserRole(
-        decodedToken.email,
-        requiredRoles,
-      );
-      if (!hasPermission.permitionSuccess) {
-        throw new ForbiddenException('Insufficient permissions');
+    try {
+      const request = context.switchToHttp().getRequest();
+      const authHeader = request.headers.authorization;
+      // Check if it's a Bearer token or device token
+      const parts: string[] = authHeader.split(' ');
+      if (parts.length !== 2) {
+        throw new UnauthorizedException('Invalid authorization header format');
       }
-      request.user = hasPermission.userData;
-    } else {
-      throw new ForbiddenException('No roles found.');
-    }
 
-    return true;
+      const [scheme, token] = parts;
+      if (scheme.toLowerCase() !== 'bearer' || !token) {
+        throw new UnauthorizedException('Missing authorization token');
+      }
+
+      // Handle Bearer tokens (existing logic)
+      const decodedToken: any = await this.validateB2cToken(token);
+      if (!decodedToken) {
+        throw new UnauthorizedException(
+          'Invalid bearer token or not authorized to access for b2c',
+        );
+      }
+      request.b2cUser = decodedToken;
+
+      const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+        ROLES_KEY,
+        [context.getHandler(), context.getClass()],
+      );
+
+      if (requiredRoles) {
+        const hasPermission = await this.validateUserRole(
+          decodedToken.emails[0],
+          requiredRoles,
+        );
+        if (!hasPermission.permitionSuccess) {
+          throw new ForbiddenException('Insufficient permissions');
+        }
+        request.user = hasPermission.userData;
+      } else {
+        throw new ForbiddenException('No roles found.');
+      }
+
+      return true;
+    } catch (error) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      console.error(error);
+      throw new InternalServerErrorException(
+        'Error during admin authentication',
+      );
+    }
   }
 
   private jwksClient = jwksRsa({
