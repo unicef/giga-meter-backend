@@ -26,7 +26,7 @@ export class PingAggregationService {
       const aggregationSchedulerStatus =
         (await redisClient.get('aggregation_scheduler_status')) === 'on_going'
           ? 'on_going'
-          : 'on_going'; //completed
+          : 'completed';
 
       const where: Prisma.ConnectivityPingChecksDailyAggrWhereInput = {};
       if (schoolId) where.giga_id_school = schoolId;
