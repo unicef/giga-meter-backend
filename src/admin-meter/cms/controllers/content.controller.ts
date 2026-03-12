@@ -75,11 +75,8 @@ export class ContentController {
   }
 
   @Post()
-<<<<<<< HEAD
-=======
   @Roles(PERMISSION_SLUGS.CAN_UPDATE_CMS)
   @UseGuards(AdminAuthGuard)
->>>>>>> 1d64117 (adding roles in content controller)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Save/Update content',
