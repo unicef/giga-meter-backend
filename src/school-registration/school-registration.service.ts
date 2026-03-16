@@ -265,7 +265,7 @@ export class SchoolRegistrationService {
 
     if (existingRegistration) {
       throw new ConflictException(
-        `school_id '${schoolId}' already exists in school registration table`,
+        `school_id '${schoolId}' already.`,
       );
     }
   }

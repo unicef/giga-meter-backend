@@ -25,16 +25,18 @@ export class CreateSchoolRegistrationDto {
 
   @ApiProperty()
   @Type(() => Number)
-  @IsNumber()
   @Min(-90)
   @Max(90)
+  @IsNumber()
+  @IsNotEmpty()
   latitude: number;
 
   @ApiProperty()
   @Type(() => Number)
-  @IsNumber()
   @Min(-180)
   @Max(180)
+  @IsNumber()
+  @IsNotEmpty()
   longitude: number;
 
   @ApiProperty()

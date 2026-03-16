@@ -4,6 +4,7 @@ import {
   HttpCode,
   Post,
   Put,
+  UseFilters,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -15,10 +16,12 @@ import {
   RejectSchoolRegistrationDto,
   SchoolRegistrationResponseDto,
 } from './school-registration.dto';
+import { SchoolRegistrationExceptionFilter } from './school-registration.filter';
 import { SchoolRegistrationService } from './school-registration.service';
 
 @ApiTags('School Registrations')
 @Controller('api/v1/school-registrations')
+@UseFilters(SchoolRegistrationExceptionFilter)
 export class SchoolRegistrationController {
   constructor(
     private readonly schoolRegistrationService: SchoolRegistrationService,
