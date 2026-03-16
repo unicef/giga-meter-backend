@@ -103,6 +103,7 @@ model school {
   feature_flags            Json?
   created_at               DateTime?                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   country_code             String?                     @db.VarChar
+  not_verified             Boolean?
   deleted                  DateTime?                   @db.Timestamptz(6)
   last_school_static_id    Int?
   latest_master_sync       master_sync_school_static?  @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
@@ -112,6 +113,33 @@ model school {
   @@index([country_code])
   @@index([deleted])
   @@index([last_school_static_id])
+}
+
+model school_new_registration {
+  id                        BigInt    @id @default(autoincrement())
+  school_id                 String    @db.VarChar(256)
+  school_name               String    @db.VarChar(256)
+  latitude                  Float
+  longitude                 Float
+  address_line1             String    @db.VarChar(256)
+  address_line2             String?   @db.VarChar(256)
+  city                      String    @db.VarChar(128)
+  state                     String    @db.VarChar(128)
+  postal_code               String    @db.VarChar(64)
+  contact_name              String    @db.VarChar(256)
+  contact_email             String    @db.VarChar(256)
+  giga_id_school            String    @db.VarChar(256)
+  verification_status       String?   @db.VarChar(64)
+  verification_requested_at DateTime? @db.Timestamptz(6)
+  verification_error        String?
+  created                   DateTime? @db.Timestamptz(6)
+  modified                  DateTime? @db.Timestamptz(6)
+  created_at                DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted                   DateTime? @db.Timestamptz(6)
+
+  @@index([giga_id_school])
+  @@index([deleted])
+  @@index([giga_id_school, deleted])
 }
 
 model country {

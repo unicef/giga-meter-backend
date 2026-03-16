@@ -23,13 +23,13 @@ import {
 import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import {
-  AddRecordResponseDto,
   ApiSuccessResponseDto,
 } from '../common/common.dto';
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
   CheckDeviceStatusDto,
+  CreateSchoolResponseDto,
   DeactivateDeviceDto,
   DeactivateDeviceResponseDto,
   SchoolDto,
@@ -415,7 +415,7 @@ export class SchoolController {
   @ApiResponse({
     status: 201,
     description: 'Returns Id of school created',
-    type: String,
+    type: CreateSchoolResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -423,12 +423,12 @@ export class SchoolController {
   })
   async createSchool(
     @Body() schoolDto: SchoolDto,
-  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
-    const schoolId = await this.schoolService.createSchool(schoolDto);
+  ): Promise<ApiSuccessResponseDto<CreateSchoolResponseDto>> {
+    const school = await this.schoolService.createSchool(schoolDto);
 
     return {
       success: true,
-      data: { user_id: schoolId },
+      data: school,
       timestamp: new Date().toISOString(),
       message: 'success',
     };
