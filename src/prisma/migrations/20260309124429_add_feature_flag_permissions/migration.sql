@@ -4,5 +4,4 @@ INSERT INTO public.custom_auth_rolepermission
 VALUES
 ( NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'can_view_feature_flag', NULL, NULL, 1),
 ( NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'can_create_feature_flag', NULL, NULL, 1),
-( NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'can_update_feature_flag', NULL, NULL, 1),
-( NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'can_view_feature_flag', NULL, NULL, 2);
+( NULL, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'can_update_feature_flag', NULL, NULL, 1);
