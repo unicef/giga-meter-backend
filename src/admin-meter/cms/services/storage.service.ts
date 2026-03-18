@@ -31,6 +31,15 @@ export class StorageService implements IStorageService {
         this.containerClient =
           blobServiceClient.getContainerClient(containerName);
 
+        try {
+          for await (const blob of this.containerClient.listBlobsFlat()) {
+          console.log(blob.name);
+          }
+        } catch (error) {
+          this.logger.warn(
+            `Failed to list blobs in Azure container: ${error.message}. This may indicate a permissions issue.`,
+          );
+        }
         // Create container if it doesn't exist
         // await this.containerClient.createIfNotExists({
         //   access: 'blob', // Public access for blobs
