@@ -14,6 +14,7 @@ import {
   Logger,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -37,6 +38,9 @@ import { AdminLoggedInUser } from 'src/common/common.decorator';
 import { Users } from '@prisma/client';
 import { AdminAccess } from 'src/common/admin.decorator';
 import { ApiExcludeController } from '@nestjs/swagger';
+import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
+import { Roles } from 'src/admin-meter/roles/roles.decorator';
+import { AdminAuthGuard } from 'src/admin-meter/admin-auth/admin-auth.guard';
 
 @ApiTags('CMS - Media Management')
 @Controller('api/v1/cms/media')
@@ -45,9 +49,7 @@ import { ApiExcludeController } from '@nestjs/swagger';
 export class MediaController {
   private readonly logger = new Logger(MediaController.name);
 
-  constructor(
-    private readonly mediaService: MediaService,
-  ) { }
+  constructor(private readonly mediaService: MediaService) {}
 
   @Get()
   @ApiOperation({
@@ -59,6 +61,8 @@ export class MediaController {
     description: 'Media library retrieved successfully',
     type: MediaLibraryResponseDto,
   })
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_MEDIA_LIB)
+  @UseGuards(AdminAuthGuard)
   async getMediaLibrary(): Promise<MediaLibraryResponseDto> {
     this.logger.log('Getting media library');
     return this.mediaService.getMediaLibrary();
@@ -84,7 +88,8 @@ export class MediaController {
         },
         name: {
           type: 'string',
-          description: 'Custom name for the file (optional, defaults to original filename)',
+          description:
+            'Custom name for the file (optional, defaults to original filename)',
           example: 'Giga Meter logo',
         },
       },
@@ -100,6 +105,8 @@ export class MediaController {
     status: 400,
     description: 'Invalid file or file size exceeds limit',
   })
+  @Roles(PERMISSION_SLUGS.CAN_ADD_MEDIA_LIB)
+  @UseGuards(AdminAuthGuard)
   async uploadFile(
     @AdminLoggedInUser() user: Users,
     @UploadedFile(
@@ -113,11 +120,13 @@ export class MediaController {
     file: Express.Multer.File,
     @Body() body: UploadFileDto,
   ): Promise<UploadFileResponseDto> {
-    this.logger.log(
-      `Uploading file: ${file.originalname} (${file.mimetype})`,
-    );
+    this.logger.log(`Uploading file: ${file.originalname} (${file.mimetype})`);
 
-    const uploadedFile = await this.mediaService.uploadFile(file, body.name, user?.id);
+    const uploadedFile = await this.mediaService.uploadFile(
+      file,
+      body.name,
+      user?.id,
+    );
 
     return {
       success: true,
@@ -141,6 +150,11 @@ export class MediaController {
     status: 404,
     description: 'File not found',
   })
+  @Roles(
+    PERMISSION_SLUGS.CAN_UPDATE_MEDIA_LIB,
+    PERMISSION_SLUGS.CAN_ADD_MEDIA_LIB,
+  )
+  @UseGuards(AdminAuthGuard)
   async updateFileMetadata(
     @AdminLoggedInUser() user: Users,
     @Body() updateDto: UpdateFileMetadataDto,
@@ -154,8 +168,7 @@ export class MediaController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete file',
-    description:
-      'Delete a file. Returns error if file is used in any section.',
+    description: 'Delete a file. Returns error if file is used in any section.',
   })
   @ApiQuery({
     name: 'id',
@@ -175,6 +188,8 @@ export class MediaController {
     status: 404,
     description: 'File not found',
   })
+  @Roles(PERMISSION_SLUGS.CAN_DELETE_MEDIA_LIB)
+  @UseGuards(AdminAuthGuard)
   async deleteFile(@Query() query: DeleteFileQueryDto): Promise<void> {
     this.logger.log(`Deleting file: ${query.id}`);
     await this.mediaService.deleteFile(query.id);

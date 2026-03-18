@@ -7,6 +7,7 @@ import {
   Logger,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ContentService } from '../services/content.service';
@@ -23,6 +24,7 @@ import { AdminAccess } from 'src/common/admin.decorator';
 import { ApiExcludeController } from '@nestjs/swagger';
 import { Roles } from 'src/admin-meter/roles/roles.decorator';
 import { PERMISSION_SLUGS } from 'src/admin-meter/roles/roles.constants';
+import { AdminAuthGuard } from 'src/admin-meter/admin-auth/admin-auth.guard';
 
 @ApiTags('CMS - Content Management')
 @Controller('api/v1/cms/content')
@@ -33,6 +35,8 @@ export class ContentController {
 
   constructor(private readonly contentService: ContentService) {}
   @Get()
+  @UseGuards(AdminAuthGuard)
+  @Roles(PERMISSION_SLUGS.CAN_VIEW_CMS)
   @ApiOperation({
     summary: 'Get content',
     description: 'Retrieve content by status (draft/published).',
@@ -72,6 +76,7 @@ export class ContentController {
 
   @Post()
   @Roles(PERMISSION_SLUGS.CAN_UPDATE_CMS)
+  @UseGuards(AdminAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Save/Update content',
