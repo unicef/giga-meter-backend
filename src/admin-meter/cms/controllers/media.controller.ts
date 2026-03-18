@@ -165,7 +165,7 @@ export class MediaController {
   }
 
   @Delete()
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete file',
     description: 'Delete a file. Returns error if file is used in any section.',
@@ -177,7 +177,7 @@ export class MediaController {
     description: 'File ID to delete',
   })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'File deleted successfully',
   })
   @ApiResponse({
@@ -190,8 +190,8 @@ export class MediaController {
   })
   @Roles(PERMISSION_SLUGS.CAN_DELETE_MEDIA_LIB)
   @UseGuards(AdminAuthGuard)
-  async deleteFile(@Query() query: DeleteFileQueryDto): Promise<void> {
+  async deleteFile(@Query() query: DeleteFileQueryDto): Promise<{ success: boolean; message: string }> {
     this.logger.log(`Deleting file: ${query.id}`);
-    await this.mediaService.deleteFile(query.id);
+    return await this.mediaService.deleteFile(query.id);
   }
 }

@@ -90,8 +90,8 @@ export class MediaService {
       const media = await this.prisma.cmsMedia.findMany({
         where: {
           deletedAt: {
-
-          }
+            equals: null,
+          },
         },
         orderBy: { uploadedAt: 'desc' },
       });
@@ -216,7 +216,7 @@ export class MediaService {
   /**
    * Delete file
    */
-  async deleteFile(id: string): Promise<void> {
+  async deleteFile(id: string): Promise<{ success: boolean; message: string }> {
     try {
       const media = await this.prisma.cmsMedia.findUnique({
         where: { id },
@@ -226,8 +226,18 @@ export class MediaService {
         throw new NotFoundException(`File with ID ${id} not found`);
       }
 
-      // Delete file from storage
-      await this.storageService.deleteFile(media.filePath);
+      try {
+        // Delete file from storage
+        await this.storageService.deleteFile(media.filePath);
+      } catch (storageError) {
+        if (storageError instanceof NotFoundException) {
+          this.logger.warn(`File not found in storage, but exists in database: ${media.filePath}. Proceeding to delete from database.`);
+        } else {
+          // If storage is unable to delete it for another reason, we give an error in API
+          this.logger.error(`Unable to delete file from storage: ${storageError.message}`);
+          throw new BadRequestException(`Unable to delete file. Please try again later.`);
+        }
+      }
 
       // Soft delete in database
       await this.prisma.cmsMedia.update({
@@ -239,8 +249,10 @@ export class MediaService {
 
       this.logger.log(`Deleted file: ${id}`);
 
-      // Update media.json
+      // Update media.json immediately after DB sync
       await this.updateMediaJson();
+
+      return { success: true, message: 'File deleted successfully' };
     } catch (error) {
       this.logger.error(`Failed to delete file: ${error.message}`);
       throw error;
