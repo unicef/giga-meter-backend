@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -143,10 +143,17 @@ export class StorageService implements IStorageService {
   private async deleteFromAzure(filePath: string): Promise<void> {
     try {
       const blockBlobClient = this.containerClient!.getBlockBlobClient(filePath);
-      await blockBlobClient.deleteIfExists();
+      const response = await blockBlobClient.deleteIfExists();
+      if (!response.succeeded) {
+        throw new NotFoundException(`File not found in Azure storage: ${filePath}`);
+      }
       this.logger.log(`File deleted from Azure: ${filePath}`);
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(`Failed to delete from Azure: ${error.message}`);
+      throw error;
     }
   }
 
@@ -156,8 +163,11 @@ export class StorageService implements IStorageService {
       await fs.unlink(fullPath);
       this.logger.log(`File deleted locally: ${fullPath}`);
     } catch (error) {
-      if (error.code !== 'ENOENT') {
+      if (error.code === 'ENOENT') {
+        throw new NotFoundException(`File not found in local storage: ${filePath}`);
+      } else {
         this.logger.error(`Failed to delete local file: ${error.message}`);
+        throw error;
       }
     }
   }
