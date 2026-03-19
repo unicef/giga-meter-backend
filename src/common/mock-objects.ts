@@ -104,6 +104,11 @@ export const mockSchoolDto: SchoolDto[] = [
     country_code: 'string',
     is_blocked: false,
     created_at: new Date('2024-04-12T04:13:37.300Z'),
+    device_hardware_id: null,
+    is_active: null,
+    windows_username: null,
+    installed_path: null,
+    wifi_connections: undefined,
   },
   {
     id: '2',
@@ -118,6 +123,11 @@ export const mockSchoolDto: SchoolDto[] = [
     country_code: 'string',
     is_blocked: true,
     created_at: new Date('2024-04-12T04:14:03.650Z'),
+    device_hardware_id: null,
+    is_active: null,
+    windows_username: null,
+    installed_path: null,
+    wifi_connections: undefined,
   },
 ];
 
@@ -136,6 +146,16 @@ export const mockSchoolModel = [
     is_blocked: false,
     notify: true,
     created_at: new Date('2024-04-12T04:13:37.300Z'),
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
+    device_hardware_id: null,
+    is_active: null,
+    windows_username: null,
+    installed_path: null,
+    wifi_connections: null,
   },
   {
     id: toBigInt(2),
@@ -151,12 +171,23 @@ export const mockSchoolModel = [
     is_blocked: true,
     notify: false,
     created_at: new Date('2024-04-12T04:14:03.650Z'),
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
+    device_hardware_id: null,
+    is_active: null,
+    windows_username: null,
+    installed_path: null,
+    wifi_connections: null,
   },
 ];
 
 export const mockFeatureFlagsDto = {
   feature_flag: true,
   feature_flag_2: false,
+  pingService: true,
 };
 
 export const mockSchoolMasterModel = {
@@ -256,6 +287,7 @@ export const mockFlaggedSchoolModel = [
   },
 ];
 
+
 export const mockMeasurementDto = (showAllMeasurement: boolean) => {
   const items = [
     {
@@ -293,6 +325,10 @@ export const mockMeasurementDto = (showAllMeasurement: boolean) => {
       app_version: null,
       source: 'MLab',
       created_at: null,
+      geolocation: undefined,
+      detected_location_distance: null,
+      detected_location_accuracy: null,
+      detected_location_is_flagged: false,
     },
     {
       id: '2',
@@ -329,6 +365,10 @@ export const mockMeasurementDto = (showAllMeasurement: boolean) => {
       app_version: '1.0.0',
       source: 'DailyCheckApp',
       created_at: null,
+      geolocation: undefined,
+      detected_location_distance: null,
+      detected_location_accuracy: null,
+      detected_location_is_flagged: false,
     },
     {
       id: '3',
@@ -362,6 +402,10 @@ export const mockMeasurementDto = (showAllMeasurement: boolean) => {
       app_version: '1.0.0',
       source: 'DailyCheckApp',
       created_at: null,
+      geolocation: undefined,
+      detected_location_distance: null,
+      detected_location_accuracy: null,
+      detected_location_is_flagged: false,
     },
   ];
   return items.map((item) => {
@@ -565,6 +609,15 @@ export const mockMeasurementModel = [
     app_version: null,
     source: 'MLab',
     created_at: null,
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
+    device_hardware_id: null,
+    windows_username: null,
+    installed_path: null,
+    wifi_connections: null,
   },
   {
     id: toBigInt(2),
@@ -590,6 +643,15 @@ export const mockMeasurementModel = [
     app_version: '1.0.0',
     source: 'DailyCheckApp',
     created_at: null,
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
+    device_hardware_id: null,
+    windows_username: null,
+    installed_path: null,
+    wifi_connections: null,
   },
   {
     id: toBigInt(3),
@@ -615,6 +677,15 @@ export const mockMeasurementModel = [
     app_version: '1.0.0',
     source: 'DailyCheckApp',
     created_at: null,
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
+    device_hardware_id: null,
+    windows_username: null,
+    installed_path: null,
+    wifi_connections: null,
   },
 ];
 
@@ -644,6 +715,11 @@ export const mockMeasurementFailedModel = [
     source: 'MLab',
     created_at: null,
     reason: 'PCDC school does not exist',
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
   },
   {
     id: toBigInt(2),
@@ -670,6 +746,11 @@ export const mockMeasurementFailedModel = [
     source: 'DailyCheckApp',
     created_at: null,
     reason: 'Wrong country code',
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
   },
   {
     id: toBigInt(3),
@@ -696,6 +777,11 @@ export const mockMeasurementFailedModel = [
     source: 'DailyCheckApp',
     created_at: null,
     reason: 'Wrong country code',
+    detected_latitude: null,
+    detected_longitude: null,
+    detected_location_accuracy: null,
+    detected_location_distance: null,
+    detected_location_is_flagged: false,
   },
 ];
 
@@ -769,6 +855,6 @@ export const mockCategoryConfigProvider = {
     allowedCountries: [],
     allowedAPIs: [],
     notAllowedAPIs: [],
-    responseFilters: {}
+    responseFilters: {},
   }),
 };

@@ -8,6 +8,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   mockAddMeasurementDto,
   mockCategoryConfigProvider,
@@ -25,6 +26,13 @@ describe('MeasurementController', () => {
       // Add any required PrismaService methods used in tests
     };
 
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
+    };
+
     const mockCacheManager = {
       get: jest.fn(),
       set: jest.fn(),
@@ -37,6 +45,7 @@ describe('MeasurementController', () => {
       providers: [
         MeasurementService,
         { provide: PrismaService, useValue: mockPrismaService },
+        { provide: GeolocationUtility, useValue: mockGeolocationUtility },
         {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager,
@@ -233,6 +242,38 @@ describe('MeasurementController', () => {
       await expect(
         controller.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('CreateMultipleMeasurement', () => {
+    it('should create multiple measurements', async () => {
+      jest
+        .spyOn(service, 'createMultipleMeasurement')
+        .mockResolvedValue(['', '', '']);
+
+      const response = await controller.createMultipleMeasurement(
+        mockAddMeasurementDto,
+      );
+      expect(response.message).toBe('success');
+    });
+    it('should handle error in creating multiple measurements', async () => {
+      jest
+        .spyOn(service, 'createMultipleMeasurement')
+        .mockResolvedValue([
+          service.SCHOOL_DOESNT_EXIST_ERR,
+          service.WRONG_COUNTRY_CODE_ERR,
+        ]);
+      await expect(
+        controller.createMultipleMeasurement([
+          mockAddMeasurementDto[0],
+          mockAddMeasurementDto[1],
+        ]),
+      ).rejects.toThrow(
+        'Failed to add measurements with error for each records : ' +
+          service.SCHOOL_DOESNT_EXIST_ERR +
+          ',' +
+          service.WRONG_COUNTRY_CODE_ERR,
+      );
     });
   });
 });
