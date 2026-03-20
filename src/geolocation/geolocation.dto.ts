@@ -1,11 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 
 export class GeocodeQueryDto {
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @ValidateIf((value) => value.latitude == null || value.longitude == null)
   @IsString()
   @IsNotEmpty()
-  address: string;
+  address?: string;
+
+  @ApiProperty({ required: false })
+  @ValidateIf((value) => !value.address)
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude?: number;
+
+  @ApiProperty({ required: false })
+  @ValidateIf((value) => !value.address)
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude?: number;
 
   @ApiProperty({ required: false })
   @IsOptional()

@@ -58,25 +58,24 @@ Column order:
 3. `school_name`
 4. `latitude`
 5. `longitude`
-6. `address_line1`
-7. `address_line2`
-8. `city`
-9. `state`
-10. `postal_code`
-11. `contact_name`
-12. `contact_email`
-13. `giga_id_school`
-14. `verification_status`
-15. `verification_requested_at`
-16. `verification_error`
-17. `created`
-18. `modified`
-19. `created_at`
-20. `deleted`
+6. `address`
+7. `education_level`
+8. `contact_name`
+9. `contact_email`
+10. `giga_id_school`
+11. `verification_status`
+12. `verification_requested_at`
+13. `verification_error`
+14. `created`
+15. `modified`
+16. `created_at`
+17. `deleted`
 
 ### Field Semantics
 
 - `school_id`: external school identifier supplied by frontend, later expected to match `school.external_id`
+- `address`: flexible JSON object storing frontend address fragments, for example `{ "address": "", "state": "Delhi", "city": "Delhi", "postalCode": "" }`
+- `education_level`: frontend-provided education level string
 - `giga_id_school`: backend-generated UUID for the registration lifecycle
 - `verification_status`: tracking field for dispatch/callback/cleanup state
 - `verification_requested_at`: timestamp of outbound call to `giga_sync`
@@ -110,11 +109,13 @@ Request payload:
   "school_name": "Sample School",
   "latitude": 12.9716,
   "longitude": 77.5946,
-  "address_line1": "Address line 1",
-  "address_line2": "Address line 2",
-  "city": "Bengaluru",
-  "state": "Karnataka",
-  "postal_code": "560001",
+  "address": {
+    "address": "Address line 1",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "postalCode": "560001"
+  },
+  "education_level": "Primary",
   "contact_name": "John Doe",
   "contact_email": "john@example.org"
 }
@@ -131,7 +132,8 @@ Validation:
 - `contact_email` must be a valid email
 - `latitude` must be between `-90` and `90`
 - `longitude` must be between `-180` and `180`
-- `address_line2` is optional
+- `address` must be a JSON object
+- `education_level` must be a non-empty string
 
 Database validation:
 
@@ -189,11 +191,13 @@ Outbound payload shape:
   "school_name": "Sample School",
   "latitude": 12.9716,
   "longitude": 77.5946,
-  "address_line1": "Address line 1",
-  "address_line2": "Address line 2",
-  "city": "Bengaluru",
-  "state": "Karnataka",
-  "postal_code": "560001",
+  "address": {
+    "address": "Address line 1",
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "postalCode": "560001"
+  },
+  "education_level": "Primary",
   "contact_name": "John Doe",
   "contact_email": "john@example.org",
   "giga_id_school": "generated-uuid",
@@ -311,7 +315,8 @@ Access:
 
 Request query:
 
-- `address` required
+- either `address`
+- or both `latitude` and `longitude`
 - `components` optional
 - `bounds` optional
 - `region` optional
@@ -323,6 +328,72 @@ Behavior:
 - use existing `GOOGLE_GEOLOCATION_API_KEY`
 - return Google response body as-is
 - forward upstream error status/body when available
+
+Supported usage patterns:
+
+- forward geocoding by address
+- reverse geocoding by latitude and longitude
+
+Forward geocoding example:
+
+```http
+GET /api/v1/geolocation/geocode?address=Connaught%20Place%20Delhi
+```
+
+Reverse geocoding example:
+
+```http
+GET /api/v1/geolocation/geocode?latitude=28.6139&longitude=77.2090
+```
+
+Reverse geocoding response note:
+
+- this endpoint is still a raw Google proxy
+- consumers should read address data from `results[0].formatted_address` and `results[0].address_components`
+
+Additional endpoint:
+
+- `GET /api/v1/geolocation/geocode/flexible`
+
+Behavior:
+
+- internally uses the same Google geocode proxy flow
+- returns a normalized flexible JSON object for frontend use
+- supports both:
+  - `address`
+  - `latitude` + `longitude`
+- base response keys:
+  - `address`
+  - `state`
+  - `city`
+  - `postalCode`
+- optional extra keys can be populated when Google provides them, for example:
+  - `country`
+  - `subLocality`
+
+Example flexible response:
+
+```json
+{
+  "address": "Delhi, India",
+  "state": "Delhi",
+  "city": "Delhi",
+  "postalCode": "110001",
+  "country": "India"
+}
+```
+
+Flexible reverse geocoding example:
+
+```http
+GET /api/v1/geolocation/geocode/flexible?latitude=28.6139&longitude=77.2090
+```
+
+Flexible forward geocoding example:
+
+```http
+GET /api/v1/geolocation/geocode/flexible?address=Connaught%20Place%20Delhi
+```
 
 Reference:
 
@@ -464,6 +535,7 @@ Recommended metrics:
 
 - valid registration creates row and dispatches verification
 - frontend payload containing `giga_id_school` is rejected
+- frontend payload with non-object `address` is rejected
 - duplicate `school_id` found in `school` is rejected
 - duplicate `school_id` found in active `school_new_registration` is rejected
 - `giga_sync` failure stores local row and updates status to failure

@@ -121,11 +121,8 @@ model school_new_registration {
   school_name               String    @db.VarChar(256)
   latitude                  Float
   longitude                 Float
-  address_line1             String    @db.VarChar(256)
-  address_line2             String?   @db.VarChar(256)
-  city                      String    @db.VarChar(128)
-  state                     String    @db.VarChar(128)
-  postal_code               String    @db.VarChar(64)
+  address                   Json
+  education_level           String    @db.VarChar(128)
   contact_name              String    @db.VarChar(256)
   contact_email             String    @db.VarChar(256)
   giga_id_school            String    @db.VarChar(256)

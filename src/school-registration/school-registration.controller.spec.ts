@@ -14,11 +14,13 @@ describe('SchoolRegistrationController', () => {
     school_name: 'Alpha School',
     latitude: 12.34,
     longitude: 56.78,
-    address_line1: 'Address 1',
-    address_line2: 'Address 2',
-    city: 'Pune',
-    state: 'Maharashtra',
-    postal_code: '411001',
+    address: {
+      address: 'Address 1',
+      city: 'Pune',
+      state: 'Maharashtra',
+      postalCode: '411001',
+    },
+    education_level: 'Primary',
     contact_name: 'Jane Doe',
     contact_email: 'jane@example.com',
   };
@@ -137,6 +139,21 @@ describe('SchoolRegistrationController', () => {
         {
           ...validPayload,
           school_name: '',
+        },
+        {
+          type: 'body',
+          metatype: CreateSchoolRegistrationDto,
+        },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('should reject non-object address payload', async () => {
+    await expect(
+      validationPipe.transform(
+        {
+          ...validPayload,
+          address: 'Delhi',
         },
         {
           type: 'body',

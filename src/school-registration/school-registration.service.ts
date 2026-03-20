@@ -31,11 +31,8 @@ export class SchoolRegistrationService {
       school_name: registrationDto.school_name,
       latitude: registrationDto.latitude,
       longitude: registrationDto.longitude,
-      address_line1: registrationDto.address_line1,
-      address_line2: registrationDto.address_line2 ?? null,
-      city: registrationDto.city,
-      state: registrationDto.state,
-      postal_code: registrationDto.postal_code,
+      address: registrationDto.address,
+      education_level: registrationDto.education_level,
       contact_name: registrationDto.contact_name,
       contact_email: registrationDto.contact_email,
       giga_id_school: gigaId,
@@ -110,12 +107,10 @@ export class SchoolRegistrationService {
 
     if (!latestRegistration) {
       return {
-        id: '',
         giga_id_school: gigaId,
         verification_status: rejectionDto.is_deleted
           ? 'REJECTED'
           : 'PENDING',
-        deleted: false,
       };
     }
 
@@ -196,11 +191,8 @@ export class SchoolRegistrationService {
       school_name: registration.school_name,
       latitude: registration.latitude,
       longitude: registration.longitude,
-      address_line1: registration.address_line1,
-      address_line2: registration.address_line2 ?? undefined,
-      city: registration.city,
-      state: registration.state,
-      postal_code: registration.postal_code,
+      address: registration.address,
+      education_level: registration.education_level,
       contact_name: registration.contact_name,
       contact_email: registration.contact_email,
       giga_id_school: registration.giga_id_school,
@@ -265,17 +257,15 @@ export class SchoolRegistrationService {
 
     if (existingRegistration) {
       throw new ConflictException(
-        `school_id '${schoolId}' already.`,
+        `school_id '${schoolId}' already exists.`,
       );
     }
   }
 
   private toResponseDto(registration: any): SchoolRegistrationResponseDto {
     return {
-      id: registration.id.toString(),
       giga_id_school: registration.giga_id_school,
       verification_status: registration.verification_status ?? 'PENDING',
-      deleted: registration.deleted != null,
     };
   }
 }

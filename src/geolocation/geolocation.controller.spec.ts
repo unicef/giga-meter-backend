@@ -51,6 +51,32 @@ describe('GeolocationController', () => {
     });
   });
 
+  it('should proxy reverse geocode requests with latitude and longitude', async () => {
+    process.env.GOOGLE_GEOLOCATION_API_KEY = 'google-key';
+    const getSpy = jest.spyOn(httpService, 'get').mockReturnValue(
+      of({
+        data: {
+          results: [],
+          status: 'OK',
+        },
+      }) as any,
+    );
+
+    await controller.geocode({
+      latitude: 28.6139,
+      longitude: 77.209,
+    });
+
+    expect(getSpy).toHaveBeenCalledWith(
+      'https://maps.googleapis.com/maps/api/geocode/json',
+      expect.objectContaining({
+        params: expect.objectContaining({
+          latlng: '28.6139,77.209',
+        }),
+      }),
+    );
+  });
+
   it('should fail when api key is missing', async () => {
     await expect(
       controller.geocode({
@@ -75,5 +101,91 @@ describe('GeolocationController', () => {
         address: '1600 Amphitheatre Parkway, Mountain View, CA',
       }),
     ).rejects.toThrow(HttpException);
+  });
+
+  it('should return flexible geocode response', async () => {
+    process.env.GOOGLE_GEOLOCATION_API_KEY = 'google-key';
+    jest.spyOn(httpService, 'get').mockReturnValue(
+      of({
+        data: {
+          results: [
+            {
+              formatted_address: 'Delhi, India',
+              address_components: [
+                {
+                  long_name: 'Delhi',
+                  types: ['locality'],
+                },
+                {
+                  long_name: 'Delhi',
+                  types: ['administrative_area_level_1'],
+                },
+                {
+                  long_name: '110001',
+                  types: ['postal_code'],
+                },
+                {
+                  long_name: 'India',
+                  types: ['country'],
+                },
+              ],
+            },
+          ],
+        },
+      }) as any,
+    );
+
+    const result = await controller.geocodeFlexible({
+      address: 'Delhi, India',
+    });
+
+    expect(result).toEqual({
+      address: 'Delhi, India',
+      state: 'Delhi',
+      city: 'Delhi',
+      postalCode: '110001',
+      country: 'India',
+    });
+  });
+
+  it('should return flexible geocode response for latitude and longitude', async () => {
+    process.env.GOOGLE_GEOLOCATION_API_KEY = 'google-key';
+    jest.spyOn(httpService, 'get').mockReturnValue(
+      of({
+        data: {
+          results: [
+            {
+              formatted_address: 'Connaught Place, New Delhi, Delhi 110001, India',
+              address_components: [
+                {
+                  long_name: 'New Delhi',
+                  types: ['locality'],
+                },
+                {
+                  long_name: 'Delhi',
+                  types: ['administrative_area_level_1'],
+                },
+                {
+                  long_name: '110001',
+                  types: ['postal_code'],
+                },
+              ],
+            },
+          ],
+        },
+      }) as any,
+    );
+
+    const result = await controller.geocodeFlexible({
+      latitude: 28.6315,
+      longitude: 77.2167,
+    });
+
+    expect(result).toEqual({
+      address: 'Connaught Place, New Delhi, Delhi 110001, India',
+      state: 'Delhi',
+      city: 'New Delhi',
+      postalCode: '110001',
+    });
   });
 });

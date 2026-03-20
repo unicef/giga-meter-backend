@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -40,29 +41,14 @@ export class CreateSchoolRegistrationDto {
   longitude: number;
 
   @ApiProperty()
+  @IsObject()
+  @IsNotEmpty()
+  address: Record<string, any>;
+
   @IsString()
   @IsNotEmpty()
-  address_line1: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  address_line2?: string;
-
   @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  city: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  state: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  postal_code: string;
+  education_level: string;
 
   @ApiProperty()
   @IsString()
@@ -80,11 +66,8 @@ export class SchoolRegistrationVerificationPayloadDto {
   school_name: string;
   latitude: number;
   longitude: number;
-  address_line1: string;
-  address_line2?: string;
-  city: string;
-  state: string;
-  postal_code: string;
+  address: Record<string, any>;
+  education_level: string;
   contact_name: string;
   contact_email: string;
   giga_id_school: string;
@@ -94,16 +77,10 @@ export class SchoolRegistrationVerificationPayloadDto {
 
 export class SchoolRegistrationResponseDto {
   @ApiProperty()
-  id: string;
-
-  @ApiProperty()
   giga_id_school: string;
 
   @ApiProperty()
   verification_status: string;
-
-  @ApiProperty()
-  deleted: boolean;
 }
 
 export class RejectSchoolRegistrationDto {

@@ -19,11 +19,13 @@ describe('SchoolRegistrationService', () => {
     school_name: 'Alpha School',
     latitude: 12.34,
     longitude: 56.78,
-    address_line1: 'Address 1',
-    address_line2: 'Address 2',
-    city: 'Pune',
-    state: 'Maharashtra',
-    postal_code: '411001',
+    address: {
+      address: 'Address 1',
+      city: 'Pune',
+      state: 'Maharashtra',
+      postalCode: '411001',
+    },
+    education_level: 'Primary',
     contact_name: 'Jane Doe',
     contact_email: 'jane@example.com',
   };
@@ -34,11 +36,8 @@ describe('SchoolRegistrationService', () => {
     school_name: createDto.school_name,
     latitude: createDto.latitude,
     longitude: createDto.longitude,
-    address_line1: createDto.address_line1,
-    address_line2: createDto.address_line2,
-    city: createDto.city,
-    state: createDto.state,
-    postal_code: createDto.postal_code,
+    address: createDto.address,
+    education_level: createDto.education_level,
     contact_name: createDto.contact_name,
     contact_email: createDto.contact_email,
     giga_id_school: generatedGigaId,
@@ -162,7 +161,7 @@ describe('SchoolRegistrationService', () => {
     );
   });
 
-  it('should reject when school_id already exists in school registration table', async () => {
+  it('should reject when school_id already exists', async () => {
     jest.spyOn(prisma.school, 'findFirst').mockResolvedValueOnce(null);
     jest
       .spyOn(prisma.school_new_registration, 'findFirst')
@@ -171,7 +170,7 @@ describe('SchoolRegistrationService', () => {
       } as any);
 
     await expect(service.createRegistration(createDto)).rejects.toThrow(
-      "school_id 'SCH-1' already exists in school registration table",
+      "school_id 'SCH-1' already exists",
     );
   });
 
