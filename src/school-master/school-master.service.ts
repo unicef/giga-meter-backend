@@ -17,6 +17,7 @@ export class SchoolMasterService {
       where: {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
+        deleted: null,
       },
       select: schoolMasterSelect
     });
