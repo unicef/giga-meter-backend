@@ -403,6 +403,7 @@ export class MeasurementService {
 
   private toDto(
     measurement: Measurement,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);

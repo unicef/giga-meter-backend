@@ -7,7 +7,7 @@ import { schoolMasterSelect } from './school-master.constant';
 
 @Injectable()
 export class SchoolMasterService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async checkSchool(
     country_code: string,
@@ -18,6 +18,7 @@ export class SchoolMasterService {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
         is_active: true,
+        deleted: null,
       },
       select: schoolMasterSelect
     });
