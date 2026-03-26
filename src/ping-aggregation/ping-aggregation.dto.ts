@@ -3,9 +3,9 @@ import { Type } from 'class-transformer';
 import { IsDateString, IsInt, IsNumber, IsString } from 'class-validator';
 
 export class GetRawPingsQueryDto {
-  @ApiProperty({ description: 'School ID', required: false })
+  @ApiProperty({ description: 'Giga School ID(not external)', required: false })
   @IsString()
-  schoolId: string;
+  gigaSchoolId: string;
 
   @ApiProperty({
     description: 'Start date of the range',
@@ -93,9 +93,12 @@ export class GetRawPingsResponseDto {
 }
 
 export class GetRawPingConnectivityDto {
-  @ApiProperty({ description: 'School ID', required: false })
+  @ApiProperty({
+    description: 'Giga School ID (not external)',
+    required: false,
+  })
   @IsString()
-  schoolId: string;
+  gigaSchoolId: string;
 
   @ApiProperty({
     description: 'Start date of the range',
