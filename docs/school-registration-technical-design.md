@@ -123,7 +123,7 @@ Request payload:
 
 Important rule:
 
-- `giga_id_school` must not be accepted from frontend
+- `giga_id_school`
 - backend generates it during registration creation
 
 Validation:
@@ -159,8 +159,6 @@ Success response:
   "data": {
     "id": "1",
     "giga_id_school": "generated-uuid",
-    "verification_status": "DISPATCHED",
-    "deleted": false
   },
   "timestamp": "2026-03-16T12:00:00.000Z",
   "message": "success"
@@ -287,7 +285,6 @@ For a given `giga_id_school`:
 
 - `GET /api/v1/dailycheckapp_schools`
 - `GET /api/v1/dailycheckapp_schools/:giga_id_school`
-- `GET /api/v1/dailycheckapp_schools/checkExistingInstallation/:device_hardware_id`
 - `POST /api/v1/dailycheckapp_schools`
 
 Response change:

@@ -233,7 +233,6 @@ export class SchoolService {
         source: 'dailycheckapp_school',
         schoolInfo: schoolInfo,
         is_active: school.is_active,
-        is_verified: await this.resolveIsVerified(school.giga_id_school),
       };
     }
 
