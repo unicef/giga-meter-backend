@@ -6,7 +6,7 @@ import { school } from '@prisma/client';
 
 @Injectable()
 export class SchoolMasterService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async checkSchool(
     country_code: string,
@@ -16,6 +16,7 @@ export class SchoolMasterService {
       where: {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
+        deleted: null,
       },
     });
 
