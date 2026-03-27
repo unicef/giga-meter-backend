@@ -25,6 +25,11 @@ export class CreateSchoolRegistrationDto {
   school_name: string;
 
   @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  country_iso3_code: string;
+
+  @ApiProperty()
   @Type(() => Number)
   @Min(-90)
   @Max(90)
@@ -64,6 +69,7 @@ export class SchoolRegistrationVerificationPayloadDto {
   registration_id: string;
   school_id: string;
   school_name: string;
+  country_iso3_code: string;
   latitude: number;
   longitude: number;
   address: Record<string, any>;

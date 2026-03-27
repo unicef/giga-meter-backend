@@ -17,6 +17,7 @@ describe('SchoolRegistrationService', () => {
   const createDto = {
     school_id: 'SCH-1',
     school_name: 'Alpha School',
+    country_iso3_code: 'IND',
     latitude: 12.34,
     longitude: 56.78,
     address: {
@@ -34,6 +35,7 @@ describe('SchoolRegistrationService', () => {
     id: BigInt(1),
     school_id: createDto.school_id,
     school_name: createDto.school_name,
+    country_iso3_code: createDto.country_iso3_code,
     latitude: createDto.latitude,
     longitude: createDto.longitude,
     address: createDto.address,

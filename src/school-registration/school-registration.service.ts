@@ -29,6 +29,7 @@ export class SchoolRegistrationService {
     const registrationData = {
       school_id: normalizedSchoolId,
       school_name: registrationDto.school_name,
+      country_iso3_code: registrationDto.country_iso3_code,
       latitude: registrationDto.latitude,
       longitude: registrationDto.longitude,
       address: registrationDto.address,
@@ -189,6 +190,7 @@ export class SchoolRegistrationService {
       registration_id: registration.id.toString(),
       school_id: registration.school_id,
       school_name: registration.school_name,
+      country_iso3_code: registration.country_iso3_code,
       latitude: registration.latitude,
       longitude: registration.longitude,
       address: registration.address,

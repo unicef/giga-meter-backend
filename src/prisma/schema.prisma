@@ -119,6 +119,7 @@ model school_new_registration {
   id                        BigInt    @id @default(autoincrement())
   school_id                 String    @db.VarChar(256)
   school_name               String    @db.VarChar(256)
+  country_iso3_code         String    @db.VarChar(3)
   latitude                  Float
   longitude                 Float
   address                   Json

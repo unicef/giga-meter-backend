@@ -56,24 +56,26 @@ Column order:
 1. `id`
 2. `school_id`
 3. `school_name`
-4. `latitude`
-5. `longitude`
-6. `address`
-7. `education_level`
-8. `contact_name`
-9. `contact_email`
-10. `giga_id_school`
-11. `verification_status`
-12. `verification_requested_at`
-13. `verification_error`
-14. `created`
-15. `modified`
-16. `created_at`
-17. `deleted`
+4. `country_iso3_code`
+5. `latitude`
+6. `longitude`
+7. `address`
+8. `education_level`
+9. `contact_name`
+10. `contact_email`
+11. `giga_id_school`
+12. `verification_status`
+13. `verification_requested_at`
+14. `verification_error`
+15. `created`
+16. `modified`
+17. `created_at`
+18. `deleted`
 
 ### Field Semantics
 
 - `school_id`: external school identifier supplied by frontend, later expected to match `school.external_id`
+- `country_iso3_code`: 3-letter ISO country code
 - `address`: flexible JSON object storing frontend address fragments, for example `{ "address": "", "state": "Delhi", "city": "Delhi", "postalCode": "" }`
 - `education_level`: frontend-provided education level string
 - `giga_id_school`: backend-generated UUID for the registration lifecycle
@@ -107,6 +109,7 @@ Request payload:
 {
   "school_id": "SCH-001",
   "school_name": "Sample School",
+  "country_iso3_code": "IND",
   "latitude": 12.9716,
   "longitude": 77.5946,
   "address": {
@@ -129,6 +132,7 @@ Important rule:
 Validation:
 
 - all required text fields must be non-empty
+- `country_iso3_code` must be a valid 3-letter string
 - `contact_email` must be a valid email
 - `latitude` must be between `-90` and `90`
 - `longitude` must be between `-180` and `180`
@@ -187,6 +191,7 @@ Outbound payload shape:
   "registration_id": "1",
   "school_id": "SCH-001",
   "school_name": "Sample School",
+  "country_iso3_code": "IND",
   "latitude": 12.9716,
   "longitude": 77.5946,
   "address": {

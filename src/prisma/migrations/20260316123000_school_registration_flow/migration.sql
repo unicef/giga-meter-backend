@@ -5,6 +5,7 @@ CREATE TABLE "school_new_registration" (
     "id" BIGSERIAL NOT NULL,
     "school_id" VARCHAR(256) NOT NULL,
     "school_name" VARCHAR(256) NOT NULL,
+    "country_iso3_code" VARCHAR(3) NOT NULL,
     "latitude" DOUBLE PRECISION NOT NULL,
     "longitude" DOUBLE PRECISION NOT NULL,
     "address" JSONB NOT NULL,
