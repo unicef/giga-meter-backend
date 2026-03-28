@@ -31,7 +31,13 @@ export class CategoryGuard implements CanActivate {
     if (isPublic) {
       return true;
     }
-    
+
+    // If auth is disabled, allow all requests
+    const useAuth = process.env.USE_AUTH === 'true';
+    if (!useAuth) {
+      return true;
+    }
+
     // Extract category from request
     const category = await this.extractCategory(request);
     
