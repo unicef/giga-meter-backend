@@ -70,10 +70,10 @@ export class PingAggregationController {
 
   @Get('records')
   @ApiOperation({
-    summary: 'Returns the raw ping data for a school',
+    summary: 'Returns the aggregated ping data for a school',
   })
   @ApiOkResponse({
-    description: 'Returns the raw ping data for a school',
+    description: 'Returns the aggregated ping data for a school',
     type: GetRawPingsResponseDto,
   })
   @ApiResponse({
