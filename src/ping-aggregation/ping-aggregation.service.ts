@@ -19,7 +19,7 @@ export class PingAggregationService {
   constructor(private prisma: PrismaService) {}
   async getRawPings(query: GetRawPingsQueryDto) {
     try {
-      const { gigaSchoolId, from, to, page, pageSize } = query;
+      const { giga_id_school, from, to, page, pageSize } = query;
       const aggregationSchedulerLastRunTime =
         (await redisClient.get('aggregation_scheduler_last_run_time')) ||
         'not_found';
@@ -29,7 +29,7 @@ export class PingAggregationService {
           : 'completed';
 
       const where: Prisma.ConnectivityPingChecksDailyAggrWhereInput = {};
-      if (gigaSchoolId) where.giga_id_school = gigaSchoolId;
+      if (giga_id_school) where.giga_id_school = giga_id_school;
 
       if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime()))
         where.timestamp_date = {
@@ -178,13 +178,13 @@ export class PingAggregationService {
       if (!query?.size) {
         query.size = 100;
       }
-      const { gigaSchoolId, from, to, size, page } = plainToInstance(
+      const { giga_id_school, from, to, size, page } = plainToInstance(
         GetRawPingConnectivityDto,
         query,
       );
 
       const where: Prisma.connectivity_ping_checksWhereInput = {};
-      if (gigaSchoolId) where.giga_id_school = gigaSchoolId;
+      if (giga_id_school) where.giga_id_school = giga_id_school;
 
       if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime())) {
         const fromDate = new Date(from);
