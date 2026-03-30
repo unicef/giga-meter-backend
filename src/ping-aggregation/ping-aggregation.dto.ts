@@ -1,11 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsNumber, IsString } from 'class-validator';
+import { IsDateString, IsInt, IsString } from 'class-validator';
 
 export class GetRawPingsQueryDto {
-  @ApiProperty({ description: 'Giga School ID(not external)', required: false })
+  @ApiProperty({
+    description:
+      'The GIGA ID of a school, eg: hfi3h5e5-2cc0-365c-8424-db9d0b6d02af',
+    required: false,
+  })
   @IsString()
-  gigaSchoolId: string;
+  giga_id_school: string;
 
   @ApiProperty({
     description: 'Start date of the range',
@@ -94,11 +98,12 @@ export class GetRawPingsResponseDto {
 
 export class GetRawPingConnectivityDto {
   @ApiProperty({
-    description: 'Giga School ID (not external)',
+    description:
+      'The GIGA ID of a school, eg: hfi3h5e5-2cc0-365c-8424-db9d0b6d02af',
     required: false,
   })
   @IsString()
-  gigaSchoolId: string;
+  giga_id_school: string;
 
   @ApiProperty({
     description: 'Start date of the range',
