@@ -245,6 +245,7 @@ export const mockSchoolMasterDto: SchoolMasterDto[] = [
     admin_3_name: '',
     admin_4_name: '',
     giga_id_school: 'gigaid1',
+    is_verified: true,
   },
 ];
 

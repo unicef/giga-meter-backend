@@ -99,6 +99,7 @@ export class SchoolMasterService {
       admin_3_name: school.admin_3_name,
       admin_4_name: school.admin_4_name,
       giga_id_school: school.giga_id_school,
+      is_verified: school.not_verified !== true,
     };
   }
 
@@ -135,6 +136,7 @@ export class SchoolMasterService {
       admin_3_name: null,
       admin_4_name: null,
       giga_id_school: registration.giga_id_school,
+      is_verified: false,
     };
   }
 

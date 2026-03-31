@@ -77,7 +77,7 @@ describe('SchoolMasterService', () => {
         {
           id: 12,
           school_id: '11',
-          code: null,
+          code: '',
           name: 'registration-school',
           country_id: null,
           country: 'IN',
@@ -92,6 +92,7 @@ describe('SchoolMasterService', () => {
           admin_3_name: null,
           admin_4_name: null,
           giga_id_school: 'registration-giga-id',
+          is_verified: false,
         },
       ]);
     });
