@@ -239,12 +239,15 @@ export class UsersService {
         (role) => role.name === ROLES.READ_ONLY,
       )[0];
       if (!user) {
+        const namesParts= input.name?.split?.(' ')||[];
+        const [firstName, lastName] = || ['', ''];
+
         const newUser = await this.prisma.users.create({
           data: {
             email: input.email,
             username: input.email,
-            first_name: input.name,
-            last_name: input.name,
+            first_name: firstName,
+            last_name: lastName || null,
             created_at: new Date(),
             updated_at: new Date(),
             is_active: true,
