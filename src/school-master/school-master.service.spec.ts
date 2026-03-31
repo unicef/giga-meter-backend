@@ -37,8 +37,63 @@ describe('SchoolMasterService', () => {
 
     it('should handle false response', async () => {
       jest.spyOn(prisma.school, 'findMany').mockResolvedValue([]);
+      jest
+        .spyOn(prisma.school_new_registration, 'findFirst')
+        .mockResolvedValue(null);
 
       expect(await service.checkSchool('IN', '11')).toEqual([]);
+    });
+
+    it('should map school registration to school dto when school is not found', async () => {
+      jest.spyOn(prisma.school, 'findMany').mockResolvedValue([]);
+      jest
+        .spyOn(prisma.school_new_registration, 'findFirst')
+        .mockResolvedValue({
+          id: BigInt(12),
+          school_id: '11',
+          school_name: 'registration-school',
+          latitude: 12.9,
+          longitude: 77.5,
+          address: {
+            address: 'Delhi address',
+            state: 'Delhi',
+            city: 'New Delhi',
+            postalCode: '110001',
+          },
+          education_level: 'Primary',
+          contact_name: 'Jane',
+          contact_email: 'jane@example.com',
+          giga_id_school: 'registration-giga-id',
+          verification_status: 'DISPATCHED',
+          verification_requested_at: null,
+          verification_error: null,
+          created: new Date('2026-03-31T00:00:00.000Z'),
+          modified: new Date('2026-03-31T00:00:00.000Z'),
+          created_at: new Date('2026-03-31T00:00:00.000Z'),
+          deleted: null,
+        } as any);
+
+      await expect(service.checkSchool('IN', '11')).resolves.toEqual([
+        {
+          id: 12,
+          school_id: '11',
+          code: null,
+          name: 'registration-school',
+          country_id: null,
+          country: 'IN',
+          location_id: null,
+          address: 'Delhi address',
+          email: 'jane@example.com',
+          postal_code: '110001',
+          education_level: 'Primary',
+          environment: null,
+          admin_1_name: 'Delhi',
+          admin_2_name: 'New Delhi',
+          admin_3_name: null,
+          admin_4_name: null,
+          giga_id_school: 'registration-giga-id',
+        },
+      ]);
     });
 
     it('should handle database error', async () => {
