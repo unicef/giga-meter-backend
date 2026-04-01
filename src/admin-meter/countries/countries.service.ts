@@ -17,10 +17,8 @@ export class CountriesService {
   constructor(private prisma: PrismaService) {}
 
   async getAllCountries(params: CountriesListingDto) {
-    const { limit, page, search, country_id,is_active,speed_test_protocol } = plainToInstance(
-      CountriesListingDto,
-      params,
-    );
+    const { limit, page, search, country_id, is_active, speed_test_protocol } =
+      plainToInstance(CountriesListingDto, params);
     const skip = (page - 1) * limit;
     const take = limit;
     const where: Prisma.countryWhereInput = {};
@@ -32,7 +30,7 @@ export class CountriesService {
       ];
     }
 
-    if (is_active) {
+    if (typeof is_active === 'boolean') {
       where.is_active = is_active;
     }
 
@@ -77,13 +75,16 @@ export class CountriesService {
   async toggleCountryFlags(prams: CountryFieldToggleDto) {
     const body = plainToInstance(CountryFieldToggleDto, prams);
     try {
+      if (!body.ids?.length) {
+        throw new BadRequestException('Country IDs are required');
+      }
       const country = await this.prisma.country.findMany({
         select: { id: true },
-        where: { id: { in: [1, 2] } },
+        where: { id: { in: body.ids } },
       });
 
-      if (!country.le) {
-        throw new NotFoundException(`Country with ID ${body.ids.join(', ')} not found`);
+      if (!country.length || country.length !== body.ids.length) {
+        throw new NotFoundException(`Country with ID'S not found`);
       }
 
       if (
@@ -92,9 +93,10 @@ export class CountriesService {
       ) {
         throw new BadRequestException('Invalid speed test protocol');
       }
-      const ids = body.ids.map((id) => Number(id));
+      const countryIds = country.map((el) => el.id);
+      delete body.ids;
       const updatedCountry = await this.prisma.country.updateMany({
-        where: { id: { in: ids } },
+        where: { id: { in: countryIds } },
         data: {
           ...body,
         },

@@ -35,8 +35,8 @@ export class CountriesListingDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @Type(() => Boolean)
-  is_active?: boolean;
+  @Type(() => Object)
+  is_active?: boolean | null;
 }
 
 export class CountryFieldToggleDto {

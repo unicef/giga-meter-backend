@@ -239,8 +239,11 @@ export class UsersService {
         (role) => role.name === ROLES.READ_ONLY,
       )[0];
       if (!user) {
-        const namesParts= input.name?.split?.(' ')||[];
-        const [firstName, lastName] = || ['', ''];
+        const namesParts = input.name?.split?.(' ') || [];
+        const [firstName, lastName] =
+          namesParts.length > 1
+            ? [namesParts[0], namesParts.slice(1).join(' ')]
+            : [namesParts?.[0] || '', null];
 
         const newUser = await this.prisma.users.create({
           data: {
