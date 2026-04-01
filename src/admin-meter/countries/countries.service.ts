@@ -56,7 +56,7 @@ export class CountriesService {
             res.map((el) => {
               (el as any).school_count = el._count.schools;
               delete el._count;
-              return { ...el, id: el.id.toString() };
+              return { ...el, id: Number(el.id) };
             }),
           ),
         ),
