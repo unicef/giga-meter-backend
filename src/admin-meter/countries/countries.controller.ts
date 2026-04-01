@@ -8,6 +8,7 @@ import {
   NotFoundException,
   Param,
   ParseIntPipe,
+  Post,
   Put,
   Query,
   UseGuards,
@@ -36,7 +37,7 @@ export class CountriesController {
   private logger = new Logger(CountriesController.name);
   constructor(private readonly countriesService: CountriesService) {}
 
-  @Get('')
+  @Post()
   @Roles(PERMISSION_SLUGS.CAN_VIEW_COUNTRY)
   @ApiOperation({
     summary:
@@ -49,7 +50,7 @@ export class CountriesController {
     isArray: true,
   })
   async getAllCountries(
-    @Query() queryParams: CountriesListingDto,
+    @Body() queryParams: CountriesListingDto,
   ): Promise<any> {
     try {
       return this.countriesService.getAllCountries(queryParams);
@@ -59,10 +60,10 @@ export class CountriesController {
     }
   }
 
-  @Put('toggle-country-flags/:id')
+  @Put('toggle-country-flags')
   @Roles(PERMISSION_SLUGS.CAN_UPDATE_COUNTRY)
   @ApiOperation({
-    summary: 'Update country by id',
+    summary: 'Update country by ids',
   })
   @ApiResponse({
     status: 200,
@@ -70,11 +71,10 @@ export class CountriesController {
     type: Object,
   })
   async toggleCountryFlags(
-    @Param('id', ParseIntPipe) id: number,
     @Body() body: CountryFieldToggleDto,
   ): Promise<CountryToggleStatusDtoResponse> {
     try {
-      return this.countriesService.toggleCountryFlags(id, body);
+      return this.countriesService.toggleCountryFlags(body);
     } catch (error) {
       this.logger.error(error);
       if (
