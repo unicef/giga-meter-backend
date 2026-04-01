@@ -186,7 +186,7 @@ export class SchoolsService {
   async toggleIsActiveSchool(reqDto: toggleIsActiveSchoolDto) {
     // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
     const { is_active, giga_ids_school, giga_id_school } = reqDto;
-    let gigaIds = [...(giga_id_school || []), ...(giga_ids_school || [])];
+    let gigaIds = giga_id_school ? [giga_id_school] : giga_ids_school || [];
     if (!gigaIds || gigaIds.length === 0) {
       throw new BadRequestException('giga_id_school is null/empty');
     }
@@ -211,7 +211,7 @@ export class SchoolsService {
       },
       data: {
         is_active: is_active,
-      }
+      },
     });
 
     if (result) {
