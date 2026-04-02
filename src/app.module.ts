@@ -43,6 +43,7 @@ import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
 import { CountryConfigModule } from './country-config/country-config.module';
 import { SchoolRegistrationController } from './school-registration/school-registration.controller';
+import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
 import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
@@ -131,6 +132,7 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     SchedulerService,
     ConnectivityService,
     PublicService,
+    SchoolRegistrationGuard,
     SchoolRegistrationService,
   ],
 })

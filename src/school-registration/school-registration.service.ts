@@ -93,29 +93,11 @@ export class SchoolRegistrationService {
         });
 
       return this.toResponseDto(updatedRegistration);
+    } else {
+      throw new ConflictException(
+        `No active registration found for giga_id_school '${gigaId}' to reject.`,
+      );
     }
-
-    const latestRegistration =
-      activeRegistration ??
-      (await this.prisma.school_new_registration.findFirst({
-        where: {
-          giga_id_school: gigaId,
-        },
-        orderBy: {
-          created_at: 'desc',
-        },
-      }));
-
-    if (!latestRegistration) {
-      return {
-        giga_id_school: gigaId,
-        verification_status: rejectionDto.is_deleted
-          ? 'REJECTED'
-          : 'PENDING',
-      };
-    }
-
-    return this.toResponseDto(latestRegistration);
   }
 
   private async dispatchVerification(registration: any): Promise<void> {

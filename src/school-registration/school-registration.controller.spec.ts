@@ -12,6 +12,7 @@ describe('SchoolRegistrationController', () => {
   const validPayload = {
     school_id: 'SCH-1',
     school_name: 'Alpha School',
+    country_iso3_code: 'IND',
     latitude: 12.34,
     longitude: 56.78,
     address: {
@@ -52,10 +53,8 @@ describe('SchoolRegistrationController', () => {
 
   it('should create a registration', async () => {
     jest.spyOn(service, 'createRegistration').mockResolvedValue({
-      id: '1',
       giga_id_school: 'b8e7d315-08f9-4665-9173-0d465744e4fe',
       verification_status: 'DISPATCHED',
-      deleted: false,
     });
 
     const dto = (await validationPipe.transform(validPayload, {
@@ -66,10 +65,8 @@ describe('SchoolRegistrationController', () => {
     const response = await controller.createRegistration(dto);
 
     expect(response.data).toEqual({
-      id: '1',
       giga_id_school: 'b8e7d315-08f9-4665-9173-0d465744e4fe',
       verification_status: 'DISPATCHED',
-      deleted: false,
     });
   });
 

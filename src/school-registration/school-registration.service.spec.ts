@@ -107,10 +107,8 @@ describe('SchoolRegistrationService', () => {
     const result = await service.createRegistration(createDto);
 
     expect(result).toEqual({
-      id: '1',
       giga_id_school: generatedGigaId,
       verification_status: 'DISPATCHED',
-      deleted: false,
     });
   });
 
@@ -146,10 +144,8 @@ describe('SchoolRegistrationService', () => {
     const result = await service.createRegistration(createDto);
 
     expect(result).toEqual({
-      id: '1',
       giga_id_school: generatedGigaId,
       verification_status: 'FAILED_TO_DISPATCH',
-      deleted: false,
     });
   });
 
@@ -172,7 +168,7 @@ describe('SchoolRegistrationService', () => {
       } as any);
 
     await expect(service.createRegistration(createDto)).rejects.toThrow(
-      "school_id 'SCH-1' already exists",
+      "school_id 'SCH-1' already exists.",
     );
   });
 
@@ -194,10 +190,8 @@ describe('SchoolRegistrationService', () => {
     });
 
     expect(result).toEqual({
-      id: '1',
       giga_id_school: generatedGigaId,
       verification_status: 'REJECTED',
-      deleted: true,
     });
   });
 
@@ -212,10 +206,8 @@ describe('SchoolRegistrationService', () => {
     });
 
     expect(result).toEqual({
-      id: '1',
       giga_id_school: generatedGigaId,
       verification_status: 'PENDING',
-      deleted: false,
     });
   });
 
@@ -235,10 +227,8 @@ describe('SchoolRegistrationService', () => {
     });
 
     expect(result).toEqual({
-      id: '1',
       giga_id_school: generatedGigaId,
       verification_status: 'REJECTED',
-      deleted: true,
     });
   });
 });
