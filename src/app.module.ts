@@ -39,6 +39,7 @@ import { GeolocationModule } from './geolocation/geolocation.module';
 import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
 import { SchoolRegistrationController } from './school-registration/school-registration.controller';
+import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
 import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
 
@@ -105,7 +106,8 @@ import * as redisStore from 'cache-manager-redis-store';
     },
     ConnectivityService,
     PublicService,
+    SchoolRegistrationGuard,
     SchoolRegistrationService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

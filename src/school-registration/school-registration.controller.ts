@@ -5,6 +5,7 @@ import {
   Post,
   Put,
   UseFilters,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import {
   SchoolRegistrationResponseDto,
 } from './school-registration.dto';
 import { SchoolRegistrationExceptionFilter } from './school-registration.filter';
+import { SchoolRegistrationGuard } from './school-registration.guard';
 import { SchoolRegistrationService } from './school-registration.service';
 
 @ApiTags('School Registrations')
@@ -25,7 +27,7 @@ import { SchoolRegistrationService } from './school-registration.service';
 export class SchoolRegistrationController {
   constructor(
     private readonly schoolRegistrationService: SchoolRegistrationService,
-  ) {}
+  ) { }
 
   @Public()
   @Post()
@@ -56,8 +58,10 @@ export class SchoolRegistrationController {
     };
   }
 
+  @Public()
   @Put('rejection')
   @HttpCode(200)
+  @UseGuards(SchoolRegistrationGuard)
   @UsePipes(
     new ValidationPipe({
       whitelist: true,
