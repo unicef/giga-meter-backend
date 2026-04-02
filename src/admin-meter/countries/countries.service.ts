@@ -17,16 +17,27 @@ export class CountriesService {
   constructor(private prisma: PrismaService) {}
 
   async getAllCountries(params: CountriesListingDto) {
-    const { limit, page, search, country_id } = plainToInstance(
-      CountriesListingDto,
-      params,
-    );
+    const { limit, page, search, country_id, is_active, speed_test_protocol } =
+      plainToInstance(CountriesListingDto, params);
     const skip = (page - 1) * limit;
     const take = limit;
     const where: Prisma.countryWhereInput = {};
     if (search && search.trim()) {
-      where.name = { contains: search.trim(), mode: 'insensitive' };
+      where.OR = [
+        { name: { contains: search.trim(), mode: 'insensitive' } },
+        { code: { contains: search.trim(), mode: 'insensitive' } },
+        { iso3_format: { contains: search.trim(), mode: 'insensitive' } },
+      ];
     }
+
+    if (typeof is_active === 'boolean') {
+      where.is_active = is_active;
+    }
+
+    if (speed_test_protocol) {
+      where.speed_test_protocol = speed_test_protocol;
+    }
+
     if (country_id) {
       where.id = country_id;
     }
@@ -38,14 +49,14 @@ export class CountriesService {
           skip,
           take,
           include: { _count: { select: { schools: true } } },
-          orderBy: { is_active: 'desc' },
+          orderBy: { name: 'asc' },
         })
         .then((res) =>
           resolve(
             res.map((el) => {
               (el as any).school_count = el._count.schools;
               delete el._count;
-              return { ...el, id: el.id.toString() };
+              return { ...el, id: Number(el.id) };
             }),
           ),
         ),
@@ -61,13 +72,19 @@ export class CountriesService {
     };
   }
 
-  async toggleCountryFlags(id: number, prams: CountryFieldToggleDto) {
+  async toggleCountryFlags(prams: CountryFieldToggleDto) {
     const body = plainToInstance(CountryFieldToggleDto, prams);
     try {
-      const country = await this.prisma.country.findUnique({ where: { id } });
+      if (!body.ids?.length) {
+        throw new BadRequestException('Country IDs are required');
+      }
+      const country = await this.prisma.country.findMany({
+        select: { id: true },
+        where: { id: { in: body.ids } },
+      });
 
-      if (!country) {
-        throw new NotFoundException(`Country with ID ${id} not found`);
+      if (!country.length || country.length !== body.ids.length) {
+        throw new NotFoundException(`Country with ID'S not found`);
       }
 
       if (
@@ -76,24 +93,27 @@ export class CountriesService {
       ) {
         throw new BadRequestException('Invalid speed test protocol');
       }
-
-      const updatedCountry = await this.prisma.country.update({
-        where: { id },
+      const countryIds = country.map((el) => el.id);
+      delete body.ids;
+      const updatedCountry = await this.prisma.country.updateMany({
+        where: { id: { in: countryIds } },
         data: {
           ...body,
         },
       });
-      if (updatedCountry) {
-        updatedCountry.id = updatedCountry.id.toString() as any;
+      if (updatedCountry.count) {
         return {
           data: updatedCountry,
           message: 'Country flags updated successfully',
           status: 200,
         };
-      } else throw new InternalServerErrorException('Something went wrong');
+      } else throw new NotFoundException('Not able to update');
     } catch (error) {
       this.logger.error(error);
-      throw error;
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Something went wrong');
     }
   }
 }

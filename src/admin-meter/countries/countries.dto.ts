@@ -27,9 +27,24 @@ export class CountriesListingDto {
   @IsInt()
   @Type(() => Number)
   country_id = 0;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsEnum(SpeedTestProtocol)
+  speed_test_protocol?: SpeedTestProtocol;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Type(() => Object)
+  is_active?: boolean | null;
 }
 
 export class CountryFieldToggleDto {
+  @ApiProperty()
+  @IsInt()
+  @Type(() => Array<number>)
+  ids: number[];
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsEnum(SpeedTestProtocol)
