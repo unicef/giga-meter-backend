@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, dailycheckapp_school as School } from '@prisma/client';
-import { CheckDeviceAndSchoolStatusDto, SchoolDto } from './school.dto';
+import { CheckDeviceAndSchoolStatusDto, CreateSchoolResponseDto, SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
@@ -15,7 +15,7 @@ export class SchoolService {
   constructor(
     private prisma: PrismaService,
     private readonly geolocationUtility: GeolocationUtility,
-  ) {}
+  ) { }
 
   async schools(
     skip?: number,
@@ -49,13 +49,14 @@ export class SchoolService {
       filter.country_code = { in: [dbCountry.code] };
     }
 
-    const schools = this.prisma.dailycheckapp_school.findMany({
+    const schools = await this.prisma.dailycheckapp_school.findMany({
       skip,
       take,
       where: filter,
       orderBy: { created: 'desc' },
     });
-    return (await schools).map(this.toDto);
+
+    return Promise.all(schools.map((school) => this.toDto(school)));
   }
 
   async schoolsByGigaId(
@@ -73,8 +74,8 @@ export class SchoolService {
       delete query.where.country_code;
     }
 
-    const schools = this.prisma.dailycheckapp_school.findMany(query);
-    return (await schools).map(this.toDto);
+    const schools = await this.prisma.dailycheckapp_school.findMany(query);
+    return Promise.all(schools.map((school) => this.toDto(school)));
   }
 
   async schoolsById(
@@ -92,15 +93,15 @@ export class SchoolService {
       delete query.where.country_code;
     }
 
-    const schools = this.prisma.dailycheckapp_school.findMany(query);
-    return (await schools).map(this.toDto);
+    const schools = await this.prisma.dailycheckapp_school.findMany(query);
+    return Promise.all(schools.map((school) => this.toDto(school)));
   }
 
   async schoolsByCountryId(country_code: string): Promise<SchoolDto[]> {
-    const schools = this.prisma.dailycheckapp_school.findMany({
+    const schools = await this.prisma.dailycheckapp_school.findMany({
       where: { country_code },
     });
-    return (await schools).map(this.toDto);
+    return Promise.all(schools.map((school) => this.toDto(school)));
   }
 
   async checkNotify(user_id: string): Promise<boolean> {
@@ -118,7 +119,7 @@ export class SchoolService {
     return false;
   }
 
-  async createSchool(schoolDto: SchoolDto): Promise<string> {
+  async createSchool(schoolDto: SchoolDto): Promise<CreateSchoolResponseDto> {
     // Process geolocation data if available
     if (
       schoolDto.geolocation &&
@@ -150,7 +151,10 @@ export class SchoolService {
       data: model,
     });
 
-    return school.user_id;
+    return {
+      user_id: school.user_id,
+      is_verified: await this.resolveIsVerified(school.giga_id_school),
+    };
   }
 
   async checkExistingInstallation(device_hardware_id: string): Promise<{
@@ -166,6 +170,7 @@ export class SchoolService {
     source?: string;
     schoolInfo?: any;
     is_active?: boolean;
+    is_verified?: boolean;
   }> {
     // If the hardware ID is blocked/generic, treat as no installation found
     if (isHardwareIdBlocked(device_hardware_id)) {
@@ -305,6 +310,9 @@ export class SchoolService {
           source: 'measurements',
           schoolInfo: schoolInfo,
           is_active: schoolByBrowserId.is_active,
+          is_verified: await this.resolveIsVerified(
+            schoolByBrowserId.giga_id_school,
+          ),
         };
       }
     }
@@ -476,7 +484,45 @@ export class SchoolService {
     };
   }
 
-  private toDto(school: School): SchoolDto {
+  async resolveIsVerified(giga_id_school?: string | null): Promise<boolean> {
+    const normalizedGigaId = giga_id_school?.toLowerCase().trim();
+
+    if (!normalizedGigaId) {
+      return false;
+    }
+
+    const school = await this.prisma.school.findFirst({
+      where: {
+        giga_id_school: normalizedGigaId,
+        deleted: null,
+      },
+      select: {
+        not_verified: true,
+      },
+    });
+
+    if (school) {
+      return school.not_verified !== true;
+    }
+
+    const registration = await this.prisma.school_new_registration.findFirst({
+      where: {
+        giga_id_school: normalizedGigaId,
+        deleted: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (registration) {
+      return false;
+    }
+
+    return false;
+  }
+
+  private async toDto(school: School): Promise<SchoolDto> {
     return {
       id: school.id.toString(),
       user_id: school.user_id,
@@ -497,6 +543,7 @@ export class SchoolService {
       wifi_connections: school.wifi_connections
         ? JSON.parse(JSON.stringify(school.wifi_connections))
         : undefined,
+      is_verified: await this.resolveIsVerified(school.giga_id_school),
     };
   }
 

@@ -42,6 +42,8 @@ import { NearestSchoolModule } from './nearest-school/nearest-school.module';
 import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
 import { CountryConfigModule } from './country-config/country-config.module';
+import { SchoolRegistrationController } from './school-registration/school-registration.controller';
+import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
@@ -96,6 +98,7 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     DeviceTokenController,
     PingAggregationController,
     PublicController,
+    SchoolRegistrationController,
   ],
   providers: [
     AppService,
@@ -128,6 +131,7 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     SchedulerService,
     ConnectivityService,
     PublicService,
+    SchoolRegistrationService,
   ],
 })
 export class AppModule { }

@@ -5,6 +5,7 @@ import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   mockCountryModel,
   mockSchoolDto,
+  mockSchoolMasterModel,
   mockSchoolModel,
 } from '../common/mock-objects';
 
@@ -33,6 +34,11 @@ describe('SchoolService', () => {
 
     service = module.get<SchoolService>(SchoolService);
     prisma = module.get<PrismaService>(PrismaService);
+
+    jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(null);
+    jest
+      .spyOn(prisma.school_new_registration, 'findFirst')
+      .mockResolvedValue(null);
   });
 
   it('should be defined', () => {
@@ -203,7 +209,10 @@ describe('SchoolService', () => {
         .mockResolvedValue(mockSchoolModel[0]);
 
       const countryId = await service.createSchool(mockSchoolDto[0]);
-      expect(countryId).toEqual(mockSchoolDto[0].user_id);
+      expect(countryId).toEqual({
+        user_id: mockSchoolDto[0].user_id,
+        is_verified: false,
+      });
     });
 
     it('should handle database error', async () => {
@@ -214,6 +223,72 @@ describe('SchoolService', () => {
       await expect(service.createSchool(mockSchoolDto[0])).rejects.toThrow(
         'Database error',
       );
+    });
+  });
+
+  describe('ResolveIsVerified', () => {
+    it('should return true when school exists and not_verified is false', async () => {
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({
+        ...mockSchoolMasterModel,
+        not_verified: false,
+      });
+
+      await expect(service.resolveIsVerified('gigaid1')).resolves.toBe(true);
+    });
+
+    it('should return true when school exists and not_verified is null', async () => {
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({
+        ...mockSchoolMasterModel,
+        not_verified: null,
+      });
+
+      await expect(service.resolveIsVerified('gigaid1')).resolves.toBe(true);
+    });
+
+    it('should return false when school exists and not_verified is true', async () => {
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({
+        ...mockSchoolMasterModel,
+        not_verified: true,
+      });
+
+      await expect(service.resolveIsVerified('gigaid1')).resolves.toBe(false);
+    });
+
+    it('should return false when only an active registration exists', async () => {
+      jest
+        .spyOn(prisma.school_new_registration, 'findFirst')
+        .mockResolvedValue({
+          id: BigInt(10),
+        } as any);
+
+      await expect(service.resolveIsVerified('gigaid1')).resolves.toBe(false);
+    });
+
+    it('should return false when no school or registration exists', async () => {
+      await expect(service.resolveIsVerified('gigaid1')).resolves.toBe(false);
+    });
+  });
+
+  describe('CheckExistingInstallation', () => {
+    it('should include is_verified in existing installation response', async () => {
+      jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue({
+        ...mockSchoolModel[0],
+        device_hardware_id: 'device-1',
+      } as any);
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({
+        ...mockSchoolMasterModel,
+        external_id: 'school-ext-1',
+        not_verified: false,
+      } as any);
+
+      const result = await service.checkExistingInstallation('device-1');
+
+      expect(result).toMatchObject({
+        exists: true,
+        user_id: mockSchoolModel[0].user_id,
+        giga_id_school: mockSchoolModel[0].giga_id_school,
+        is_verified: true,
+      });
     });
   });
 });

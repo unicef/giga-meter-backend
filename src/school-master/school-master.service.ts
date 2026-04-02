@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
 import { plainToInstance } from 'class-transformer';
-import { school } from '@prisma/client';
+import { school, school_new_registration } from '@prisma/client';
 import { schoolMasterSelect } from './school-master.constant';
 
 @Injectable()
@@ -22,7 +22,20 @@ export class SchoolMasterService {
       },
       select: schoolMasterSelect
     });
-    return (await schools).map(this.toDto);
+    if (schools.length > 0) {
+      return schools.map(this.toDto);
+    }
+
+    const schoolRegistration = await this.prisma.school_new_registration.findFirst({
+      where: {
+        school_id: { equals: school_id, mode: 'insensitive' },
+        deleted: null,
+      },
+    });
+
+    return schoolRegistration
+      ? [this.toRegistrationDto(schoolRegistration, country_code)]
+      : [];
   }
 
   async flagsByGigaId(giga_id_school: string): Promise<FeatureFlagDto> {
@@ -89,6 +102,45 @@ export class SchoolMasterService {
       admin_4_name: school.admin_4_name,
       giga_id_school: school.giga_id_school,
       is_active: school?.is_active,
+      is_verified: school.not_verified !== true,
+    };
+  }
+
+  private toRegistrationDto(
+    registration: school_new_registration,
+    country_code: string,
+  ): SchoolMasterDto {
+    const addressObject =
+      registration.address && typeof registration.address === 'object'
+        ? (JSON.parse(JSON.stringify(registration.address)) as Record<string, any>)
+        : {};
+
+    return {
+      id: parseInt(registration.id.toString()),
+      school_id: registration.school_id,
+      code: '',
+      name: registration.school_name,
+      country_id: null,
+      country: country_code,
+      location_id: null,
+      address:
+        typeof addressObject.address === 'string' ? addressObject.address : null,
+      email: registration.contact_email,
+      postal_code:
+        typeof addressObject.postalCode === 'string'
+          ? addressObject.postalCode
+          : null,
+      education_level: registration.education_level,
+      environment: null,
+      admin_1_name:
+        typeof addressObject.state === 'string' ? addressObject.state : null,
+      admin_2_name:
+        typeof addressObject.city === 'string' ? addressObject.city : null,
+      admin_3_name: null,
+      admin_4_name: null,
+      giga_id_school: registration.giga_id_school,
+      is_verified: false,
+      is_active: true,
     };
   }
 
