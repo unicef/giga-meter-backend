@@ -1,11 +1,12 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["tracing"]
+  previewFeatures = ["tracing", "postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [postgis]
 }
 
 model EFMigrationsHistory {
@@ -66,6 +67,11 @@ model dailycheckapp_school {
   windows_username    String?
   installed_path      String?
   wifi_connections    Json?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 model school {
@@ -74,7 +80,7 @@ model school {
   modified                 DateTime?                   @db.Timestamptz(6)
   name                     String?                     @db.VarChar
   timezone                 String?                     @db.VarChar
-  geopoint                 String?                     @db.VarChar
+  geopoint                 Unsupported("geography(Point, 4326)")?  // PostGIS point for school location
   gps_confidence           Float?
   altitude                 Int?
   address                  String?                     @db.VarChar
@@ -229,7 +235,11 @@ model measurements {
   windows_username   String?
   installed_path     String?
   wifi_connections   Json?
-
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -260,6 +270,11 @@ model measurements_failed {
   data_downloaded BigInt?
   data_uploaded   BigInt?
   data_usage      BigInt?
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -372,6 +387,8 @@ model connectivity_ping_checks {
   browserId      String?   @map("browser_id")
   latency        Float?    @map("latency")
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  is_deleted     Boolean   @default(false)
 }
 
 model IpMetadata {
@@ -389,4 +406,20 @@ model IpMetadata {
   source   String?
 
   @@unique([ip, source])
+}
+
+model ConnectivityPingChecksDailyAggr {
+  id                   Int      @id @default(autoincrement())
+  timestamp_date       DateTime
+  giga_id_school       String
+  browser_id           String?
+  is_connected_true    Int
+  is_connected_all     Int
+  uptime               Float
+  unloaded_latency_avg Float?
+  created_at           DateTime @default(now())
+
+  @@index([giga_id_school, timestamp_date])
+  @@index([giga_id_school, browser_id, timestamp_date])
+  @@map("connectivity_ping_checks_daily_aggr")
 }

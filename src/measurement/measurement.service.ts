@@ -14,13 +14,14 @@ import {
   ServerInfoDto,
 } from './measurement.dto';
 import { plainToInstance } from 'class-transformer';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
 
 @Injectable()
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private geolocationUtility: GeolocationUtility) {}
 
   async measurements(
     skip?: number,
@@ -200,13 +201,103 @@ export class MeasurementService {
       }
 
       default: {
+        // Process geolocation data if available
+        if (measurementDto.geolocation && 
+            measurementDto.geolocation.location &&
+            measurementDto.geolocation.accuracy) {
+          try {
+            // Get the school coordinates based on giga_id_school
+            if (measurementDto.giga_id_school) {
+              // Use the common utility to calculate distance and set flags
+              const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
+                measurementDto.giga_id_school,
+                measurementDto.geolocation.location,
+                measurementDto.geolocation.accuracy
+              );
+              
+              // Store the results in the measurement DTO
+              measurementDto.detected_location_accuracy = geoResult.accuracy;
+              measurementDto.detected_location_distance = geoResult.distance;
+              measurementDto.detected_location_is_flagged = geoResult.isFlagged;
+            }
+          } catch (error) {
+            console.error('Error processing geolocation data:', error);
+          }
+        }
+
         const model = this.toModel(measurementDto);
         await this.prisma.measurements.create({
           data: model,
         });
+        
         return '';
       }
     }
+  }
+
+  async createMultipleMeasurement(
+    multipleMeasurementDto: AddMeasurementDto[],
+  ): Promise<any[]> {
+    const allResponse: any[] = [];
+    for (const measurementDto of multipleMeasurementDto) {
+      if (measurementDto.Results && measurementDto.app_version) {
+        try {
+          // Validate app_version format
+          const versionParts = measurementDto.app_version.toString().split('.');
+          if (
+            versionParts.length !== 3 ||
+            versionParts.some((part) => !/^\d+$/.test(part))
+          ) {
+            console.warn(
+              `Invalid version format: ${measurementDto.app_version}`,
+            );
+            return;
+          }
+
+          const [major, minor, patch] = versionParts.map(Number);
+          const isVersionAbove109 =
+            major > 1 ||
+            (major === 1 && minor > 0) ||
+            (major === 1 && minor === 0 && patch >= 9);
+
+          if (isVersionAbove109) {
+            const results = measurementDto.Results;
+            const dataDownloaded =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo
+                ?.BytesAcked;
+            const dataUploaded =
+              results['NDTResult.C2S']?.LastServerMeasurement?.TCPInfo
+                ?.BytesReceived;
+            // Use strict null check (==) to handle both null and undefined
+            // Use nullish coalescing (??) instead of OR (||) to only replace null/undefined with 0
+            // This ensures we don't accidentally convert falsy values like 0 to 0
+            const dataUsage =
+              dataDownloaded == null && dataUploaded == null
+                ? null // If both are null/undefined, return null
+                : (dataDownloaded ?? 0) + (dataUploaded ?? 0); // Otherwise sum them, replacing null/undefined with 0
+            measurementDto.DataDownloaded = dataDownloaded;
+            measurementDto.DataUploaded = dataUploaded;
+            measurementDto.DataUsage = dataUsage;
+            const minRTT =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo?.MinRTT;
+            if (typeof minRTT === 'number' && !isNaN(minRTT)) {
+              measurementDto.Latency = Number((minRTT / 1000).toFixed(0));
+            } else {
+              console.warn('Invalid or missing MinRTT value');
+            }
+          }
+        } catch (error) {
+          console.error('Error processing measurement:', error);
+        }
+      }
+      const response = await this.createMeasurement(measurementDto);
+
+      if (response.length) {
+        allResponse.push(response);
+      }
+    }
+
+    return allResponse;
   }
 
   private async processMeasurement(
@@ -306,6 +397,7 @@ export class MeasurementService {
 
   private toDto(
     measurement: Measurement,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
@@ -351,6 +443,10 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      geolocation: undefined,
+      detected_location_distance: measurement.detected_location_distance,
+      detected_location_accuracy: measurement.detected_location_accuracy,
+      detected_location_is_flagged: measurement.detected_location_is_flagged,
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections
@@ -481,6 +577,11 @@ export class MeasurementService {
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
+      detected_latitude: measurement.geolocation?.location?.lat ?? null, 
+      detected_longitude: measurement.geolocation?.location?.lng ?? null, 
+      detected_location_accuracy: measurement.detected_location_accuracy ?? null,
+      detected_location_distance: measurement.detected_location_distance ?? null,
+      detected_location_is_flagged: measurement.detected_location_is_flagged ?? null,
       device_hardware_id: sanitizeHardwareId(measurement.device_hardware_id),
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
@@ -509,6 +610,14 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
       reason,
+      detected_latitude: measurement.geolocation?.location?.lat || null,
+      detected_longitude: measurement.geolocation?.location?.lng || null,
+      detected_location_accuracy:
+        measurement.detected_location_accuracy || null,
+      detected_location_distance:
+        measurement.detected_location_distance || null,
+      detected_location_is_flagged:
+        measurement.detected_location_is_flagged || false,
     };
   }
 }
