@@ -243,14 +243,14 @@ export class UsersService {
         const [firstName, lastName] =
           namesParts.length > 1
             ? [namesParts[0], namesParts.slice(1).join(' ')]
-            : [namesParts?.[0] || '', null];
+            : [namesParts?.[0] || '', ''];
 
         const newUser = await this.prisma.users.create({
           data: {
             email: input.email,
             username: input.email,
             first_name: firstName,
-            last_name: lastName || null,
+            last_name: lastName || '',
             created_at: new Date(),
             updated_at: new Date(),
             is_active: true,
