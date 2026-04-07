@@ -24,7 +24,7 @@ stages:
       displayName: Unit Tests
       condition: or(
           eq(variables['Build.Reason'], 'PullRequest'),
-          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+          eq(variables['Build.SourceBranch'], 'refs/heads/staging')
         )
       continueOnError: false
       inputs:
@@ -37,7 +37,7 @@ stages:
       displayName: Sonar Scan
       condition: or(
           eq(variables['Build.Reason'], 'PullRequest'),
-          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+          eq(variables['Build.SourceBranch'], 'refs/heads/staging')
         )
       inputs:
         targetType: 'inline'
