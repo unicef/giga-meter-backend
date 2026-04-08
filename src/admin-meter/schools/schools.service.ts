@@ -68,7 +68,8 @@ export class SchoolsService {
           where.push(
             Prisma.sql`(school.name ILIKE ${searchTerm} 
             OR school.giga_id_school ILIKE ${searchTerm} 
-            OR school.country_code ILIKE ${searchTerm})`,
+            OR school.country_code ILIKE ${searchTerm})
+            OR school.education_level ILIKE ${searchTerm}`,
           );
         }
         if (status !== null && status !== undefined) {
@@ -89,6 +90,13 @@ export class SchoolsService {
           school.country_code,
           school.is_active,
           school.education_level,
+          school.school_type,
+          school.address,
+          school.postal_code,
+          school.admin_1_name,
+          school.admin_2_name,
+          school.admin_3_name,
+          school.admin_4_name,
           (
             SELECT COUNT(DISTINCT ds.device_hardware_id)::int 
             FROM dailycheckapp_school ds 
