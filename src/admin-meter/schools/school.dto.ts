@@ -22,6 +22,9 @@ export class toggleIsActiveSchoolDto {
 
   @ApiProperty()
   is_active: boolean;
+
+  @ApiProperty({ required: false, type: [String] })
+  country_codes?: string[] = [];
 }
 
 export class FeatureFlagSchoolDto {

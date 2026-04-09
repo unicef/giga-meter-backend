@@ -193,10 +193,17 @@ export class SchoolsService {
 
   async toggleIsActiveSchool(reqDto: toggleIsActiveSchoolDto) {
     // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
-    const { is_active, giga_ids_school, giga_id_school } = reqDto;
+    const { is_active, giga_ids_school, giga_id_school, country_codes } =
+      reqDto;
     let gigaIds = giga_id_school ? [giga_id_school] : giga_ids_school || [];
-    if (!gigaIds || gigaIds.length === 0) {
-      throw new BadRequestException('giga_id_school is null/empty');
+
+    if (
+      (!gigaIds || gigaIds.length === 0) &&
+      (!country_codes || country_codes.length === 0)
+    ) {
+      throw new BadRequestException(
+        'giga_id_school or country_codes is null/empty',
+      );
     }
 
     if (typeof is_active !== 'boolean') {
@@ -205,7 +212,8 @@ export class SchoolsService {
     gigaIds = gigaIds.map((gigaId) => gigaId.trim());
     const school = await this.prisma.school.findMany({
       where: {
-        giga_id_school: { in: gigaIds },
+        ...(gigaIds.length && { giga_id_school: { in: gigaIds } }),
+        ...(country_codes?.length && { country_code: { in: country_codes } }),
       },
     });
     if (!school.length)
