@@ -32,7 +32,7 @@ export class IpMetadataService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `https://ipinfo.io/lite/${ip}?token=${ipInfoToken}`,
+          `https://api.ipinfo.io/lite/${ip}?token=${ipInfoToken}`,
         ),
       );
       const { data } = response;

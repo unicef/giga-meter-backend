@@ -106,7 +106,7 @@ describe('IpMetadataService', () => {
     });
 
     expect(httpService.get).toHaveBeenCalledWith(
-      `https://ipinfo.io/lite/1.2.3.4?token=${process.env.IPINFO_TOKEN}`,
+      `https://api.ipinfo.io/lite/1.2.3.4?token=${process.env.IPINFO_TOKEN}`,
     );
     expect(prismaMock.ipMetadata.create).toHaveBeenCalledWith({
       data: expectedCreateData,
@@ -158,7 +158,7 @@ describe('IpMetadataService', () => {
 
     // first call: primary URL (Lite)
     expect((httpService.get as jest.Mock).mock.calls[0][0]).toBe(
-      `https://ipinfo.io/lite/9.10.11.12?token=${process.env.IPINFO_TOKEN}`,
+      `https://api.ipinfo.io/lite/9.10.11.12?token=${process.env.IPINFO_TOKEN}`,
     );
     // second call: fallback URL
     expect((httpService.get as jest.Mock).mock.calls[1][0]).toBe(
