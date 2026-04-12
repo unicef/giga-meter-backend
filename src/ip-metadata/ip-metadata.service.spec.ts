@@ -67,37 +67,35 @@ describe('IpMetadataService', () => {
     expect(result).toEqual(existing);
   });
 
-  it('should fetch from primary API (using response.data.asn.asn) and store in DB', async () => {
+  it('should fetch from IPInfo Lite API and store in DB', async () => {
     prismaMock.ipMetadata.findUnique.mockResolvedValue(null);
 
     const apiResponse = {
       data: {
         ip: '1.2.3.4',
-        city: 'City',
-        region: 'Region',
-        country: 'CO',
-        loc: '0,0',
-        org: 'Org Name',
-        postal: '12345',
-        timezone: 'Zone/Here',
-        asn: { asn: 'AS99999' },
+        asn: 'AS99999',
+        as_name: 'Test ISP Inc.',
+        as_domain: 'testisp.com',
+        country_code: 'CO',
+        country: 'Colombia',
+        continent_code: 'SA',
+        continent: 'South America',
       },
     };
     (httpService.get as jest.Mock).mockReturnValue(of(apiResponse));
 
-    // this is exactly what the service will pass into prisma.create
     const expectedCreateData = {
       ip: '1.2.3.4',
-      city: 'City',
-      region: 'Region',
+      city: '',
+      region: '',
       country: 'CO',
-      loc: '0,0',
-      org: 'Org Name',
-      postal: '12345',
-      timezone: 'Zone/Here',
+      loc: '',
+      org: 'Test ISP Inc.',
+      postal: '',
+      timezone: '',
       asn: 'AS99999',
       source: 'ipinfo',
-      hostname: undefined,
+      hostname: '',
     };
     prismaMock.ipMetadata.create.mockResolvedValue({ ...expectedCreateData });
 
@@ -108,62 +106,12 @@ describe('IpMetadataService', () => {
     });
 
     expect(httpService.get).toHaveBeenCalledWith(
-      `https://ipinfo.io/1.2.3.4/json?token=${process.env.IPINFO_TOKEN}`,
-    );
-    console.log('expectedCreateData', expectedCreateData);
-    expect(prismaMock.ipMetadata.create).toHaveBeenCalledWith({
-      data: expectedCreateData,
-    });
-    delete expectedCreateData.source; // remove source for comparison
-    expect(result).toEqual(expectedCreateData);
-  });
-
-  it('should fetch from primary API and parse ASN from org if asn.asn is missing', async () => {
-    prismaMock.ipMetadata.findUnique.mockResolvedValue(null);
-
-    const apiResponse = {
-      data: {
-        ip: '5.6.7.8',
-        city: 'Other City',
-        region: 'Other Region',
-        country: 'OR',
-        loc: '1,2',
-        org: 'AS123TEST Organization',
-        postal: '54321',
-        timezone: 'Other/Zone',
-        // no asn property
-      },
-    };
-    (httpService.get as jest.Mock).mockReturnValue(of(apiResponse));
-
-    const expectedCreateData = {
-      ip: '5.6.7.8',
-      city: 'Other City',
-      region: 'Other Region',
-      country: 'OR',
-      loc: '1,2',
-      org: 'AS123TEST Organization',
-      postal: '54321',
-      timezone: 'Other/Zone',
-      asn: 'AS123',
-      hostname: undefined,
-      source: 'ipinfo',
-    };
-    prismaMock.ipMetadata.create.mockResolvedValue({ ...expectedCreateData });
-
-    const result = await service.getIpInfo('5.6.7.8');
-
-    expect(prismaMock.ipMetadata.findUnique).toHaveBeenCalledWith({
-      where: { ip_source: { ip: '5.6.7.8', source: 'ipinfo' } },
-    });
-    expect(httpService.get).toHaveBeenCalledWith(
-      `https://ipinfo.io/5.6.7.8/json?token=${process.env.IPINFO_TOKEN}`,
+      `https://api.ipinfo.io/lite/1.2.3.4?token=${process.env.IPINFO_TOKEN}`,
     );
     expect(prismaMock.ipMetadata.create).toHaveBeenCalledWith({
       data: expectedCreateData,
     });
-    expect(result.asn).toBe('AS123');
-    delete expectedCreateData.source; // remove source for comparison
+    delete expectedCreateData.source;
     expect(result).toEqual(expectedCreateData);
   });
 
@@ -208,9 +156,9 @@ describe('IpMetadataService', () => {
 
     const result = await service.getIpInfo('9.10.11.12');
 
-    // first call: primary URL
+    // first call: primary URL (Lite)
     expect((httpService.get as jest.Mock).mock.calls[0][0]).toBe(
-      `https://ipinfo.io/9.10.11.12/json?token=${process.env.IPINFO_TOKEN}`,
+      `https://api.ipinfo.io/lite/9.10.11.12?token=${process.env.IPINFO_TOKEN}`,
     );
     // second call: fallback URL
     expect((httpService.get as jest.Mock).mock.calls[1][0]).toBe(

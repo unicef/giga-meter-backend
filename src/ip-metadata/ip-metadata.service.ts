@@ -32,27 +32,24 @@ export class IpMetadataService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `https://ipinfo.io/${ip}/json?token=${ipInfoToken}`,
+          `https://api.ipinfo.io/lite/${ip}?token=${ipInfoToken}`,
         ),
       );
       const { data } = response;
-      const { asn, org } = data;
-
-      let asnValue = '';
-      if (asn && typeof asn === 'object' && typeof asn.asn === 'string') {
-        asnValue = asn.asn;
-      } else if (typeof asn === 'string') {
-        asnValue = asn;
-      } else if (typeof org === 'string') {
-        const match = org.match(/AS\d+/);
-        asnValue = match ? match[0] : '';
-      }
 
       return {
-        ...data,
-        asn: asnValue,
+        ip: data.ip ?? '',
+        asn: data.asn ?? '',
+        org: data.as_name ?? '',
+        country: data.country_code ?? '',
+        city: '',
+        region: '',
+        loc: '',
+        postal: '',
+        timezone: '',
+        hostname: '',
         source: 'ipinfo',
-        new: true, // Indicating this is a new record
+        new: true,
       };
     } catch (error) {
       console.error('IPInfo API failed, attempting fallback...');
