@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IS_OPTIONAL,
   IsBoolean,
   IsEmail,
   IsNotEmpty,
@@ -57,11 +58,11 @@ export class CreateSchoolRegistrationDto {
 
   @ApiProperty()
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   contact_name: string;
 
   @ApiProperty()
-  @IsEmail()
+  @IsOptional()
   contact_email: string;
 }
 
