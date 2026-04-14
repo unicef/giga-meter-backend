@@ -48,8 +48,10 @@ export class CountriesService {
           where,
           skip,
           take,
-          include: { _count: { select: { schools: true } } },
-          orderBy: { name: 'asc' },
+          include: {
+            _count: { select: { schools: { where: { deleted: null } } } },
+          },
+          orderBy: { is_active: 'desc' },
         })
         .then((res) =>
           resolve(
