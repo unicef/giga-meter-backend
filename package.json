@@ -6,7 +6,8 @@
   "private": "false",
   "license": "AGPL-3.0-only",
   "prisma": {
-    "schema": "src/prisma/schema.prisma"
+    "schema": "src/prisma/schema.prisma",
+    "seed": "ts-node -r tsconfig-paths/register src/prisma/seed.ts"
   },
   "scripts": {
     "build": "nest build",
@@ -16,6 +17,8 @@
     "start:debug": "nest start --debug",
     "studio": "npx prisma studio",
     "migrate:deploy": "npx prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:migrate:seed": "npx prisma migrate deploy && prisma db seed",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
