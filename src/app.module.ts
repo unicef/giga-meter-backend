@@ -55,9 +55,13 @@ import { SchedulerService } from './scheduler/scheduler.service';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
 import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
+import { SentryModule } from '@sentry/nestjs/setup';
+import { SentryGlobalFilter } from "@sentry/nestjs/setup";
+import { APP_FILTER } from "@nestjs/core";
 
 @Module({
   imports: [
+    SentryModule.forRoot(),
     HttpModule,
     ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
     CacheModule.register({
@@ -102,6 +106,10 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     SchoolRegistrationController,
   ],
   providers: [
+    {
+    provide: APP_FILTER,
+    useClass: SentryGlobalFilter,
+    },
     AppService,
     PrismaService,
     MessagesService,
