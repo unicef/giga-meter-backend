@@ -415,9 +415,6 @@ model measurements {
   giga_id_health               String?
   entity_type                  entity_type?  @relation(fields: [entity_type_id], references: [id])
   registration                 registration? @relation(fields: [registration_id], references: [id])
-  /// DB-enforced check constraint (added via SQL migration):
-  /// measurements_giga_id_not_both_null
-  /// Requires at least one of giga_id_school or giga_id_health to be non-null.
 
   @@index([giga_id_school])
   @@index([country_code])
