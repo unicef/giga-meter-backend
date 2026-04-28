@@ -89,6 +89,7 @@ model entity_type {
   country_whitelist_entries country_entity_type_whitelist[]
   measurements              measurements[]
   connectivity_ping_checks  connectivity_ping_checks[]
+  code                      String                           @unique @db.VarChar
 }
 
 model health {
