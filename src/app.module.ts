@@ -15,6 +15,8 @@ import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
 import { MeasurementService } from './measurement/measurement.service';
+import { MeasurementSandboxController } from './measurement/sandbox/sandbox.controller';
+import { MeasurementSandboxService } from './measurement/sandbox/sandbox.service';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
@@ -66,6 +68,7 @@ import * as redisStore from 'cache-manager-redis-store';
     SchoolMasterController,
     CountryController,
     MeasurementController,
+    MeasurementSandboxController,
     AdminController,
     DataFixController,
     MetricsController,
@@ -80,6 +83,7 @@ import * as redisStore from 'cache-manager-redis-store';
     SchoolMasterService,
     CountryService,
     MeasurementService,
+    MeasurementSandboxService,
     AdminService,
     MetricsService,
     CategoryConfigProvider,
