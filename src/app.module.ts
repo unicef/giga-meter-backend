@@ -43,6 +43,10 @@ import { SchoolRegistrationGuard } from './school-registration/school-registrati
 import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
 
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
 
 @Module({
   imports: [
@@ -60,6 +64,7 @@ import * as redisStore from 'cache-manager-redis-store';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
@@ -77,6 +82,7 @@ import * as redisStore from 'cache-manager-redis-store';
     DataFixController,
     MetricsController,
     ConnectivityController,
+    PingAggregationController,
     PublicController,
     SchoolRegistrationController,
   ],
@@ -92,6 +98,8 @@ import * as redisStore from 'cache-manager-redis-store';
     AdminService,
     MetricsService,
     CategoryConfigProvider,
+    PingAggregationService,
+    ConnectivityService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -104,6 +112,7 @@ import * as redisStore from 'cache-manager-redis-store';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    SchedulerService,
     ConnectivityService,
     PublicService,
     SchoolRegistrationGuard,
