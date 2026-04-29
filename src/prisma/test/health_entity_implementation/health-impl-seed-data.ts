@@ -4,16 +4,24 @@ export async function ensurePrismaScriptFixtures(
   prisma: PrismaClient,
 ): Promise<void> {
   // Ensure required entity types exist for V1 flows.
+  const schoolEntityTypeCreateData: { name: string; code: string } = {
+    name: 'school',
+    code: 'SCH',
+  };
   const schoolEntityType = await prisma.entity_type.upsert({
     where: { name: 'school' },
-    update: { code: 'SCH' },
-    create: { name: 'school', code: 'SCH' },
+    update: {},
+    create: schoolEntityTypeCreateData,
   });
 
+  const healthEntityTypeCreateData: { name: string; code: string } = {
+    name: 'health',
+    code: 'HLTH',
+  };
   const healthEntityType = await prisma.entity_type.upsert({
     where: { name: 'health' },
-    update: { code: 'HLTH' },
-    create: { name: 'health', code: 'HLTH' },
+    update: {},
+    create: healthEntityTypeCreateData,
   });
 
   // Insert country row for Spain
