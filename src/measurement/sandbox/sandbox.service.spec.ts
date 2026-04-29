@@ -11,11 +11,13 @@ describe('MeasurementSandboxService', () => {
     service = moduleRef.get(MeasurementSandboxService);
   });
 
-  // The committed fixture is deterministic (see seed.ts), so we can assert
-  // exact counts without making the test brittle to ordering changes.
-  const TOTAL = 100;
-  const TOTAL_HEALTH = 12 + 10 + 8 + 10 + 8 + 10; // 58
-  const TOTAL_SCHOOL = 8 + 10 + 7 + 5 + 7 + 5; //   42
+  // The committed fixture is deterministic (see seed.ts): 1500 health
+  // centers (UZB/ZAF/SLE, 500 each) × 7 daily measurements = 10,500
+  // rows, all entity_type = "health". No school rows exist in the
+  // current sandbox dataset.
+  const TOTAL = 10_500;
+  const TOTAL_HEALTH = 10_500;
+  const TOTAL_SCHOOL = 0;
 
   it('returns the default page (10 most recent) when no filters are passed', () => {
     const rows = service.measurementsV2Sandbox({
@@ -53,7 +55,7 @@ describe('MeasurementSandboxService', () => {
   it('filters by entity_type=health and never returns school rows', () => {
     const rows = service.measurementsV2Sandbox({
       skip: 0,
-      take: 1000,
+      take: TOTAL,
       orderBy: '-timestamp',
       entity_type: 'health',
     });
@@ -66,7 +68,7 @@ describe('MeasurementSandboxService', () => {
     }
   });
 
-  it('filters by entity_type=school and never returns health rows', () => {
+  it('filters by entity_type=school and returns no rows (current dataset is health-only)', () => {
     const rows = service.measurementsV2Sandbox({
       skip: 0,
       take: 1000,
@@ -74,17 +76,15 @@ describe('MeasurementSandboxService', () => {
       entity_type: 'school',
     });
     expect(rows).toHaveLength(TOTAL_SCHOOL);
-    for (const r of rows) {
-      expect(r.entity_type).toBe('school');
-      expect(r.giga_id_school).toBeTruthy();
-      expect(r.giga_id_health).toBeNull();
-    }
+    // The discriminator still works correctly — there are simply no
+    // school rows in the fixture today. Re-enable the per-row asserts
+    // here if school data is added back to the seed.
   });
 
   it('returns the union when entity_type is omitted', () => {
     const rows = service.measurementsV2Sandbox({
       skip: 0,
-      take: 1000,
+      take: TOTAL,
       orderBy: '-timestamp',
     });
     expect(rows).toHaveLength(TOTAL);
@@ -93,12 +93,12 @@ describe('MeasurementSandboxService', () => {
   it('maps country_iso3_code (ISO3) to the stored ISO2 country_code', () => {
     const rows = service.measurementsV2Sandbox({
       skip: 0,
-      take: 1000,
+      take: TOTAL,
       orderBy: '-timestamp',
-      country_iso3_code: 'KEN',
+      country_iso3_code: 'UZB',
     });
     expect(rows.length).toBeGreaterThan(0);
-    for (const r of rows) expect(r.country_code).toBe('KE');
+    for (const r of rows) expect(r.country_code).toBe('UZ');
   });
 
   it('returns empty when given an unknown ISO3 (mirrors prod miss)', () => {
@@ -111,22 +111,23 @@ describe('MeasurementSandboxService', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('exact-match filters on giga_id_health', () => {
+  it('exact-match filters on giga_id_health (7 daily rows per center)', () => {
     const all = service.measurementsV2Sandbox({
       skip: 0,
-      take: 1000,
+      take: TOTAL,
       orderBy: '-timestamp',
       entity_type: 'health',
     });
     const target = all[0].giga_id_health!;
     const rows = service.measurementsV2Sandbox({
       skip: 0,
-      take: 1000,
+      take: TOTAL,
       orderBy: '-timestamp',
       giga_id_health: target,
     });
-    expect(rows).toHaveLength(1);
-    expect(rows[0].giga_id_health).toBe(target);
+    // The seed emits one measurement per center per day for a 7-day window.
+    expect(rows).toHaveLength(7);
+    for (const r of rows) expect(r.giga_id_health).toBe(target);
   });
 
   it('timestamp gt filter excludes rows at or before the cutoff', () => {
@@ -183,17 +184,18 @@ describe('MeasurementSandboxService', () => {
     const cutoff = new Date('2026-02-01T00:00:00Z');
     const rows = service.measurementsV2Sandbox({
       skip: 0,
-      take: 1000,
+      take: TOTAL,
       orderBy: '-timestamp',
       entity_type: 'health',
-      country_iso3_code: 'BRA',
+      country_iso3_code: 'UZB',
       filter_by: 'timestamp',
       filter_condition: 'gte',
       filter_value: cutoff,
     });
+    expect(rows.length).toBeGreaterThan(0);
     for (const r of rows) {
       expect(r.entity_type).toBe('health');
-      expect(r.country_code).toBe('BR');
+      expect(r.country_code).toBe('UZ');
       expect(new Date(r.timestamp as Date).getTime()).toBeGreaterThanOrEqual(
         cutoff.getTime(),
       );
