@@ -123,6 +123,35 @@ model country {
   latest_school_master_data_version Int?
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
+  country_protocol_config           CountryProtocolConfig?
+}
+
+/// Per-country defaults for measurement protocol (school may override).
+model CountryProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  country_code            String   @unique @db.VarChar
+  measurement_provider    String   @db.VarChar(32)
+  between_tests_delay_sec Int      @default(0)
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  country country @relation(fields: [country_code], references: [code])
+
+  @@index([country_code])
+  @@map("country_protocol_config")
+}
+
+/// Per-school overrides for protocol (nullable fields inherit from country / default).
+model SchoolProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  giga_id_school          String   @unique @db.VarChar
+  measurement_provider    String?  @db.VarChar(32)
+  between_tests_delay_sec Int?
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([giga_id_school])
+  @@map("school_protocol_config")
 }
 
 model master_sync_school_static {
