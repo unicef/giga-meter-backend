@@ -214,26 +214,31 @@ export class SchoolsService {
       where: {
         ...(gigaIds.length && { giga_id_school: { in: gigaIds } }),
         ...(country_codes?.length && { country_code: { in: country_codes } }),
-      },
-    });
-    if (!school.length)
-      throw new NotFoundException(
-        `school${gigaIds.length > 1 ? 's' : ''} not found`,
-      );
-
-    const result = await this.prisma.school.updateMany({
-      where: {
-        id: { in: school.map((s) => s.id) },
-      },
-      data: {
-        is_active: is_active,
+        is_active: { not: is_active },
       },
     });
 
-    if (result) {
+    const CHUNK_SIZE = 10000;
+    const results = [];
+
+    for (let i = 0; i < school.length; i += CHUNK_SIZE) {
+      const chunk = school.slice(i, i + CHUNK_SIZE);
+      const result = await this.prisma.school.updateMany({
+        where: {
+          id: { in: chunk.map((s) => s.id) },
+        },
+        data: {
+          is_active: is_active,
+        },
+      });
+      results.push(result);
+    }
+    const totalUpdated = results.reduce((acc, curr) => acc + curr.count, 0);
+
+    if (totalUpdated > 0 || results.length == 0) {
       return {
         success: true,
-        data: result,
+        data: { count: totalUpdated },
         timestamp: new Date().toISOString(),
         message: 'success',
       };
