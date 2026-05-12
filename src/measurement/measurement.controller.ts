@@ -32,6 +32,12 @@ import {
   MeasurementFailedDto,
   MeasurementV2Dto,
 } from './measurement.dto';
+import { CloudflareMeasurementDto } from './cloudflare-measurement.dto';
+import { mapCloudflareMeasurementToAddDto } from './cloudflare-measurement.mapper';
+import {
+  isImplementedMeasurementUploadProtocol,
+  isReservedMeasurementUploadProtocol,
+} from './measurement-upload-protocol';
 import {
   Countries,
   CountriesIso3,
@@ -539,6 +545,70 @@ export class MeasurementController {
         HttpStatus.BAD_REQUEST,
       );
     }
+    return {
+      success: true,
+      data: { user_id: uuidv4() },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+
+  @Post(':protocol')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'protocol',
+    description: 'Measurement provider protocol. Phase 1 supports cloudflare only.',
+    example: 'cloudflare',
+  })
+  @ApiOperation({
+    summary: 'Register a provider-specific measurement in the Giga Meter database',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Returns Id of measurement created',
+    type: ApiSuccessResponseDto<AddRecordResponseDto>,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Unsupported or not-yet-implemented protocol',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async createMeasurementByProtocol(
+    @Param('protocol') protocol: string,
+    @Body() body: CloudflareMeasurementDto,
+  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
+    if (
+      !isImplementedMeasurementUploadProtocol(protocol) &&
+      !isReservedMeasurementUploadProtocol(protocol)
+    ) {
+      throw new HttpException(
+        `Unsupported measurement protocol: ${protocol}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    if (!isImplementedMeasurementUploadProtocol(protocol)) {
+      throw new HttpException(
+        `Measurement protocol not implemented: ${protocol}`,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const measurementDto = mapCloudflareMeasurementToAddDto(body);
+    const response =
+      await this.measurementService.createMeasurement(measurementDto);
+
+    if (response.length) {
+      throw new HttpException(
+        'Failed to add measurement with error: ' + response,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
     return {
       success: true,
       data: { user_id: uuidv4() },

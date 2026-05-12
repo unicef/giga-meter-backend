@@ -16,6 +16,8 @@ import {
   mockMeasurementFailedDto,
   mockMeasurementV2Dto,
 } from '../common/mock-objects';
+import { exampleCloudflareMeasurementDto } from './cloudflare-measurement.fixture';
+import { HttpException } from '@nestjs/common';
 
 describe('MeasurementController', () => {
   let controller: MeasurementController;
@@ -242,6 +244,38 @@ describe('MeasurementController', () => {
       await expect(
         controller.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('CreateMeasurementByProtocol', () => {
+    it('should create a cloudflare measurement', async () => {
+      jest.spyOn(service, 'createMeasurement').mockResolvedValue('');
+
+      const response = await controller.createMeasurementByProtocol(
+        'cloudflare',
+        exampleCloudflareMeasurementDto,
+      );
+
+      expect(service.createMeasurement).toHaveBeenCalled();
+      expect(response.data.user_id).toBeDefined();
+    });
+
+    it('should reject unsupported protocols', async () => {
+      await expect(
+        controller.createMeasurementByProtocol(
+          'invalid',
+          exampleCloudflareMeasurementDto,
+        ),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('should reject reserved but unimplemented protocols', async () => {
+      await expect(
+        controller.createMeasurementByProtocol(
+          'mlab',
+          exampleCloudflareMeasurementDto,
+        ),
+      ).rejects.toThrow(HttpException);
     });
   });
 
