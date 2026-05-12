@@ -1,19 +1,42 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  Param,
+  Put,
   Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthGuard } from '../auth/auth.guard';
 import { ApiSuccessResponseDto } from '../common/common.dto';
 import { getRateLimitConfig } from '../config/rate-limit.config';
 import { ProtocolConfigService } from './protocol-config.service';
 import { ResolvedProtocolConfigDto } from './protocol-config.dto';
+import {
+  CountryProtocolConfigRecordDto,
+  SchoolProtocolConfigRecordDto,
+} from './protocol-config-record.dto';
 import { ProtocolConfigResolveQueryDto } from './protocol-config-resolve-query.dto';
+import { UpsertCountryProtocolConfigDto } from './protocol-config-upsert-country.dto';
+import { UpsertSchoolProtocolConfigDto } from './protocol-config-upsert-school.dto';
+
+const validationPipe = new ValidationPipe({
+  transform: true,
+  whitelist: true,
+  forbidNonWhitelisted: false,
+});
 
 @ApiTags('ProtocolConfig')
 @Controller('api/v1/protocol-config')
@@ -34,13 +57,7 @@ export class ProtocolConfigController {
     description: 'Resolved protocol configuration',
     type: ResolvedProtocolConfigDto,
   })
-  @UsePipes(
-    new ValidationPipe({
-      transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: false,
-    }),
-  )
+  @UsePipes(validationPipe)
   async resolve(
     @Query() query: ProtocolConfigResolveQueryDto,
   ): Promise<ApiSuccessResponseDto<ResolvedProtocolConfigDto>> {
@@ -55,6 +72,116 @@ export class ProtocolConfigController {
         betweenTestsDelaySec: data.betweenTestsDelaySec,
         configSource: data.configSource,
       },
+      timestamp: new Date().toISOString(),
+      message: '',
+    };
+  }
+
+  @Put('country/:countryCode')
+  @Throttle(getRateLimitConfig('countries'))
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create or update country protocol configuration' })
+  @ApiParam({
+    name: 'countryCode',
+    description: 'Country code matching country.code',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Persisted country protocol configuration',
+    type: CountryProtocolConfigRecordDto,
+  })
+  @UsePipes(validationPipe)
+  async upsertCountry(
+    @Param('countryCode') countryCode: string,
+    @Body() body: UpsertCountryProtocolConfigDto,
+  ): Promise<ApiSuccessResponseDto<CountryProtocolConfigRecordDto>> {
+    const data = await this.protocolConfigService.upsertCountry(countryCode, body);
+    return {
+      success: true,
+      data,
+      timestamp: new Date().toISOString(),
+      message: '',
+    };
+  }
+
+  @Delete('country/:countryCode')
+  @HttpCode(200)
+  @Throttle(getRateLimitConfig('countries'))
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete country protocol configuration' })
+  @ApiParam({
+    name: 'countryCode',
+    description: 'Country code matching country.code',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({ status: 200, description: 'Country protocol configuration deleted' })
+  async deleteCountry(
+    @Param('countryCode') countryCode: string,
+  ): Promise<ApiSuccessResponseDto<null>> {
+    await this.protocolConfigService.deleteCountry(countryCode);
+    return {
+      success: true,
+      data: null,
+      timestamp: new Date().toISOString(),
+      message: '',
+    };
+  }
+
+  @Put('school/:gigaIdSchool')
+  @Throttle(getRateLimitConfig('countries'))
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create or update school protocol configuration' })
+  @ApiParam({
+    name: 'gigaIdSchool',
+    description: 'Giga school identifier',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Persisted school protocol configuration',
+    type: SchoolProtocolConfigRecordDto,
+  })
+  @UsePipes(validationPipe)
+  async upsertSchool(
+    @Param('gigaIdSchool') gigaIdSchool: string,
+    @Body() body: UpsertSchoolProtocolConfigDto,
+  ): Promise<ApiSuccessResponseDto<SchoolProtocolConfigRecordDto>> {
+    const data = await this.protocolConfigService.upsertSchool(gigaIdSchool, body);
+    return {
+      success: true,
+      data,
+      timestamp: new Date().toISOString(),
+      message: '',
+    };
+  }
+
+  @Delete('school/:gigaIdSchool')
+  @HttpCode(200)
+  @Throttle(getRateLimitConfig('countries'))
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete school protocol configuration' })
+  @ApiParam({
+    name: 'gigaIdSchool',
+    description: 'Giga school identifier',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({ status: 200, description: 'School protocol configuration deleted' })
+  async deleteSchool(
+    @Param('gigaIdSchool') gigaIdSchool: string,
+  ): Promise<ApiSuccessResponseDto<null>> {
+    await this.protocolConfigService.deleteSchool(gigaIdSchool);
+    return {
+      success: true,
+      data: null,
       timestamp: new Date().toISOString(),
       message: '',
     };
