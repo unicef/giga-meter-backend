@@ -30,6 +30,11 @@ import { SchoolDto } from 'src/school/school.dto';
 import { PublicService } from './public.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { PublicCountryDto, PublicMeasurementDto } from './public.dto';
+import {
+  validateMeasurementListFilterBy,
+  validateMeasurementListOrderBy,
+  validateMeasurementListProtocol,
+} from '../measurement/measurement-query-validation';
 
 @ApiTags('Public')
 @Controller('api/v1/public')
@@ -237,6 +242,12 @@ export class PublicController {
     required: false,
     type: 'number',
   })
+  @ApiQuery({
+    name: 'protocol',
+    description: 'Filter measurements by persisted protocol (mlab or cloudflare)',
+    required: false,
+    type: 'string',
+  })
   async getMeasurements(
     @Query('page') page?: number,
     @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
@@ -246,6 +257,7 @@ export class PublicController {
     @Query('filterBy') filterBy?: string,
     @Query('filterCondition') filterCondition?: string,
     @Query('filterValue') filterValue?: Date,
+    @Query('protocol') protocol?: string,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
     @IsSuperUser() isSuperUser?: boolean,
@@ -259,6 +271,7 @@ export class PublicController {
       filterValue,
       write_access,
       countries_iso3,
+      protocol,
     );
 
     const measurements = await this.publicService.measurements(
@@ -273,6 +286,7 @@ export class PublicController {
       write_access,
       countries,
       isSuperUser,
+      protocol,
     );
 
     return {
@@ -292,22 +306,11 @@ function validatePublicGetMeasurementsParams(
   filterValue?: Date,
   write_access?: boolean,
   countries_iso3?: string[],
+  protocol?: string,
 ) {
-  if (
-    orderBy &&
-    !(orderBy?.includes('timestamp') || orderBy?.includes('created_at'))
-  ) {
-    throw new HttpException(
-      'Invalid orderBy value provided, accepted values are: timestamp, -timestamp, created_at, -created_at',
-      HttpStatus.BAD_REQUEST,
-    );
-  }
-  if (filterBy && filterBy != 'timestamp' && filterBy != 'created_at') {
-    throw new HttpException(
-      'Invalid filterBy value provided',
-      HttpStatus.BAD_REQUEST,
-    );
-  }
+  validateMeasurementListOrderBy(orderBy);
+  validateMeasurementListFilterBy(filterBy);
+  validateMeasurementListProtocol(protocol);
   if (filterBy && !filterCondition) {
     throw new HttpException(
       'Please provide a valid filterCondition with filterBy column ${filterBy}',

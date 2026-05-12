@@ -256,7 +256,12 @@ describe('MeasurementController', () => {
         exampleCloudflareMeasurementDto,
       );
 
-      expect(service.createMeasurement).toHaveBeenCalled();
+      expect(service.createMeasurement).toHaveBeenCalledWith(
+        expect.objectContaining({
+          UUID: exampleCloudflareMeasurementDto.uuid,
+        }),
+        'cloudflare',
+      );
       expect(response.data.user_id).toBeDefined();
     });
 

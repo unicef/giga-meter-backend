@@ -39,6 +39,11 @@ import {
   isReservedMeasurementUploadProtocol,
 } from './measurement-upload-protocol';
 import {
+  validateMeasurementListFilterBy,
+  validateMeasurementListOrderBy,
+  validateMeasurementListProtocol,
+} from './measurement-query-validation';
+import {
   Countries,
   CountriesIso3,
   IsSuperUser,
@@ -130,6 +135,13 @@ export class MeasurementController {
     required: false,
     type: 'number',
   })
+  @ApiQuery({
+    name: 'protocol',
+    description:
+      'Filter measurements by persisted protocol (mlab or cloudflare)',
+    required: false,
+    type: 'string',
+  })
   async getMeasurements(
     @Query('page') page?: number,
     @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
@@ -139,6 +151,7 @@ export class MeasurementController {
     @Query('filterBy') filterBy?: string,
     @Query('filterCondition') filterCondition?: string,
     @Query('filterValue') filterValue?: Date,
+    @Query('protocol') protocol?: string,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
     @IsSuperUser() isSuperUser?: boolean,
@@ -152,6 +165,7 @@ export class MeasurementController {
       filterValue,
       write_access,
       countries_iso3,
+      protocol,
     );
 
     const measurements = await this.measurementService.measurements(
@@ -166,6 +180,7 @@ export class MeasurementController {
       write_access,
       countries,
       isSuperUser,
+      protocol,
     );
 
     return {
@@ -247,6 +262,13 @@ export class MeasurementController {
     required: false,
     type: 'number',
   })
+  @ApiQuery({
+    name: 'protocol',
+    description:
+      'Filter measurements by persisted protocol (mlab or cloudflare)',
+    required: false,
+    type: 'string',
+  })
   async getMeasurementsV2(
     @Query('page') page?: number,
     @ValidateSize({ min: 1, max: 1000 })
@@ -258,6 +280,7 @@ export class MeasurementController {
     @Query('filterBy') filterBy?: string,
     @Query('filterCondition') filterCondition?: string,
     @Query('filterValue') filterValue?: Date,
+    @Query('protocol') protocol?: string,
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
     @CountriesIso3() countries_iso3?: string[],
@@ -270,6 +293,7 @@ export class MeasurementController {
       filterValue,
       write_access,
       countries_iso3,
+      protocol,
     );
 
     return await this.measurementService.measurementsV2(
@@ -283,6 +307,7 @@ export class MeasurementController {
       filterValue ?? null,
       write_access,
       countries,
+      protocol,
     );
   }
 
@@ -558,11 +583,13 @@ export class MeasurementController {
   @ApiBearerAuth()
   @ApiParam({
     name: 'protocol',
-    description: 'Measurement provider protocol. Phase 1 supports cloudflare only.',
+    description:
+      'Measurement provider protocol. Phase 1 supports cloudflare only.',
     example: 'cloudflare',
   })
   @ApiOperation({
-    summary: 'Register a provider-specific measurement in the Giga Meter database',
+    summary:
+      'Register a provider-specific measurement in the Giga Meter database',
   })
   @ApiResponse({
     status: 201,
@@ -599,8 +626,10 @@ export class MeasurementController {
     }
 
     const measurementDto = mapCloudflareMeasurementToAddDto(body);
-    const response =
-      await this.measurementService.createMeasurement(measurementDto);
+    const response = await this.measurementService.createMeasurement(
+      measurementDto,
+      protocol,
+    );
 
     if (response.length) {
       throw new HttpException(
@@ -626,22 +655,11 @@ function validateGetMeasurementsParams(
   filterValue?: Date,
   write_access?: boolean,
   countries_iso3?: string[],
+  protocol?: string,
 ) {
-  if (
-    orderBy &&
-    !(orderBy?.includes('timestamp') || orderBy?.includes('created_at'))
-  ) {
-    throw new HttpException(
-      'Invalid orderBy value provided, accepted values are: timestamp, -timestamp, created_at, -created_at',
-      HttpStatus.BAD_REQUEST,
-    );
-  }
-  if (filterBy && filterBy != 'timestamp' && filterBy != 'created_at') {
-    throw new HttpException(
-      'Invalid filterBy value provided',
-      HttpStatus.BAD_REQUEST,
-    );
-  }
+  validateMeasurementListOrderBy(orderBy);
+  validateMeasurementListFilterBy(filterBy);
+  validateMeasurementListProtocol(protocol);
   if (filterBy && !filterCondition) {
     throw new HttpException(
       'Please provide a valid filterCondition with filterBy column ${filterBy}',

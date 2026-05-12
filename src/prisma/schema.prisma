@@ -269,9 +269,18 @@ model measurements {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  protocol                    String    @default("mlab") @db.VarChar(32)
+  download_latency            Float?
+  upload_latency              Float?
+  download_jitter             Float?
+  upload_jitter               Float?
+  jitter                      Float?
+  packet_loss                 Float?
+  network_quality_score       Float?
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
+  @@index([protocol])
 }
 
 model measurements_failed {
