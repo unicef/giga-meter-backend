@@ -1,6 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PingAggregationService } from './ping-aggregation.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import redisClient from 'src/utils/redis.client';
+
+jest.mock('src/utils/redis.client', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    set: jest.fn(),
+  },
+}));
 
 describe('PingAggregationService', () => {
   let service: PingAggregationService;
@@ -29,6 +38,8 @@ describe('PingAggregationService', () => {
 
     service = module.get<PingAggregationService>(PingAggregationService);
     prisma = module.get<PrismaService>(PrismaService);
+    (redisClient.get as jest.Mock).mockResolvedValue(null);
+    (redisClient.set as jest.Mock).mockResolvedValue('OK');
   });
 
   afterEach(() => {
@@ -41,7 +52,7 @@ describe('PingAggregationService', () => {
 
   describe('getRawPings', () => {
     it('should throw an error if from and to are not provided', async () => {
-      const query = { schoolId: 'school-1', page: 1, pageSize: 10 };
+      const query = { giga_id_school: 'school-1', page: 1, pageSize: 10 };
       await expect(service.getRawPings(query as any)).rejects.toThrow(
         'from and to both are required',
       );
@@ -49,7 +60,7 @@ describe('PingAggregationService', () => {
 
     it('should return paginated raw pings', async () => {
       const query = {
-        schoolId: 'school-1',
+        giga_id_school: 'school-1',
         from: '2025-01-01',
         to: '2025-01-31',
         page: 1,
@@ -70,7 +81,7 @@ describe('PingAggregationService', () => {
       expect(prisma.connectivityPingChecksDailyAggr.count).toHaveBeenCalledWith(
         {
           where: {
-            giga_id_school: query.schoolId,
+            giga_id_school: query.giga_id_school,
             timestamp_date: {
               gte: new Date(query.from),
               lte: new Date(query.to),
@@ -82,7 +93,7 @@ describe('PingAggregationService', () => {
         prisma.connectivityPingChecksDailyAggr.findMany,
       ).toHaveBeenCalledWith({
         where: {
-          giga_id_school: query.schoolId,
+          giga_id_school: query.giga_id_school,
           timestamp_date: {
             gte: new Date(query.from),
             lte: new Date(query.to),
@@ -94,14 +105,20 @@ describe('PingAggregationService', () => {
       });
 
       expect(result).toEqual({
-        meta: { page: query.page, pageSize: query.pageSize, total },
+        meta: {
+          page: query.page,
+          pageSize: query.pageSize,
+          total,
+          aggregationSchedulerStatus: 'completed',
+          aggregationSchedulerLastRunTime: 'not_found',
+        },
         data: mockData,
       });
     });
 
     it('should return raw pings without pagination', async () => {
       const query = {
-        schoolId: 'school-1',
+        giga_id_school: 'school-1',
         from: '2025-01-01',
         to: '2025-01-31',
       };
@@ -123,7 +140,7 @@ describe('PingAggregationService', () => {
       expect(prisma.connectivityPingChecksDailyAggr.count).toHaveBeenCalledWith(
         {
           where: {
-            giga_id_school: query.schoolId,
+            giga_id_school: query.giga_id_school,
             timestamp_date: {
               gte: new Date(query.from),
               lte: new Date(query.to),
@@ -135,7 +152,7 @@ describe('PingAggregationService', () => {
         prisma.connectivityPingChecksDailyAggr.findMany,
       ).toHaveBeenCalledWith({
         where: {
-          giga_id_school: query.schoolId,
+          giga_id_school: query.giga_id_school,
           timestamp_date: {
             gte: new Date(query.from),
             lte: new Date(query.to),
@@ -145,14 +162,20 @@ describe('PingAggregationService', () => {
       });
 
       expect(result).toEqual({
-        meta: { page: undefined, pageSize: undefined, total },
+        meta: {
+          page: undefined,
+          pageSize: undefined,
+          total,
+          aggregationSchedulerStatus: 'completed',
+          aggregationSchedulerLastRunTime: 'not_found',
+        },
         data: mockData,
       });
     });
 
     it('should handle errors', async () => {
       const query = {
-        schoolId: 'school-1',
+        giga_id_school: 'school-1',
         page: 1,
         pageSize: 10,
         from: '2025-01-01',
