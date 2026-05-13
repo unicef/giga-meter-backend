@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MeasurementService } from './measurement.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   mockAddMeasurementDto,
   mockCountryModel,
@@ -18,8 +19,22 @@ describe('MeasurementService', () => {
   let prisma: PrismaService;
 
   beforeEach(async () => {
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MeasurementService, PrismaService],
+      providers: [
+        MeasurementService, 
+        PrismaService,
+        {
+          provide: GeolocationUtility,
+          useValue: mockGeolocationUtility,
+        },
+      ],
     }).compile();
 
     service = module.get<MeasurementService>(MeasurementService);
@@ -418,6 +433,24 @@ describe('MeasurementService', () => {
       await expect(
         service.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
+    });
+  });
+  describe('createMultipleMeasurement', () => {
+    it('should create multiple measurements', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const response = await service.createMultipleMeasurement([
+        { ...mockAddMeasurementDto[0], Results: {}, app_version: '1.0.9' },
+      ]);
+      expect(response.length).toBe(0);
     });
   });
 });

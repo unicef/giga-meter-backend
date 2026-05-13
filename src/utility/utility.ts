@@ -13,3 +13,11 @@ export const existSchool = async (
   });
   return school ? true : false;
 };
+
+export const getDateFromString = (dateString: string) => {
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date;
+};
