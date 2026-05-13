@@ -2,6 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulerService } from './scheduler.service';
 import { PingAggregationService } from 'src/ping-aggregation/ping-aggregation.service';
 import { Logger } from '@nestjs/common';
+import redisClient from 'src/utils/redis.client';
+
+jest.mock('src/utils/redis.client', () => ({
+  __esModule: true,
+  default: {
+    set: jest.fn(),
+    get: jest.fn(),
+  },
+}));
 
 describe('SchedulerService', () => {
   let service: SchedulerService;
@@ -24,8 +33,14 @@ describe('SchedulerService', () => {
     pingAggregationService = module.get<PingAggregationService>(
       PingAggregationService,
     );
+    (redisClient.set as jest.Mock).mockResolvedValue('OK');
+    jest.spyOn(global, 'setTimeout').mockImplementation((cb: any) => cb());
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {});
     jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it('should be defined', () => {
