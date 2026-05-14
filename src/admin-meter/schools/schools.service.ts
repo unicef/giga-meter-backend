@@ -69,7 +69,8 @@ export class SchoolsService {
             Prisma.sql`(school.name ILIKE ${searchTerm} 
             OR school.giga_id_school ILIKE ${searchTerm} 
             OR school.country_code ILIKE ${searchTerm})
-            OR school.education_level ILIKE ${searchTerm}`,
+            OR school.education_level ILIKE ${searchTerm}
+            OR school.external_id ILIKE ${searchTerm}`,
           );
         }
         if (status !== null && status !== undefined) {
@@ -85,6 +86,7 @@ export class SchoolsService {
         SELECT 
           school.id,
           school.name,
+          school.external_id,
           school.giga_id_school,
           school.feature_flags,
           school.country_code,
