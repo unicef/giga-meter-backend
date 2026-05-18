@@ -164,6 +164,35 @@ model country {
   healths                           health[]
   master_sync_intermediate_health   master_sync_intermediate_health[]
   whitelist_entries                 country_entity_type_whitelist[]
+  country_protocol_config           CountryProtocolConfig?
+}
+
+/// Per-country defaults for measurement protocol (school may override).
+model CountryProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  country_code            String   @unique @db.VarChar
+  measurement_provider    String   @db.VarChar(32)
+  between_tests_delay_sec Int      @default(0)
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  country country @relation(fields: [country_code], references: [code])
+
+  @@index([country_code])
+  @@map("country_protocol_config")
+}
+
+/// Per-school overrides for protocol (nullable fields inherit from country / default).
+model SchoolProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  giga_id_school          String   @unique @db.VarChar
+  measurement_provider    String?  @db.VarChar(32)
+  between_tests_delay_sec Int?
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([giga_id_school])
+  @@map("school_protocol_config")
 }
 
 model master_sync_school_static {
@@ -284,6 +313,14 @@ model measurements {
   entity_type_id               Int?
   registration_id              BigInt?
   giga_id_health               String?
+  protocol                     String   @default("mlab") @db.VarChar(32)
+  download_latency             Float?
+  upload_latency               Float?
+  download_jitter              Float?
+  upload_jitter                Float?
+  jitter                       Float?
+  packet_loss                  Float?
+  network_quality_score        Float?
   entity_type                  entity_type?  @relation(fields: [entity_type_id], references: [id])
   registration                 registration? @relation(fields: [registration_id], references: [id])
   @@index([giga_id_school])
@@ -292,6 +329,7 @@ model measurements {
   @@index([entity_type_id])
   @@index([registration_id])
   @@index([giga_id_health])
+  @@index([protocol])
 }
 
 model measurements_failed {
