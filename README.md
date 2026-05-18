@@ -268,6 +268,11 @@ Contribution Guidelines</h2>
 
 Thank you for considering contributing to Giga Meter Backend! We value your input and aim to make the contribution process as accessible and transparent as possible. Whether you're interested in reporting bugs, discussing code, submitting fixes, proposing features, becoming a maintainer, or engaging with the GigaMeter community, we welcome your involvement.
 
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — development setup and PR workflow
+- [docs/](./docs/) — current system state (maintained in place)
+- [prs/](./prs/) — per-PR history (`{number}-{slug}.md`) with context and technical decisions
+- [.agent/CONTEXT_RULES.md](./.agent/CONTEXT_RULES.md) — instructions for AI agents
+
 [Click here for detailed Contribution Guidelines](#)
 
 <h2><a id="license" class="anchor" aria-hidden="true" href="#license"><svg class="octicon octicon-link" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"></svg></a>
