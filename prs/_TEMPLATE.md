@@ -47,7 +47,6 @@
 ## Validation
 
 - [ ] `npm run test` — <result / notes>
-- [ ] Migrations applied on <env>
 - [ ] Manual: <steps>
 
 ## Documentation updated

@@ -101,8 +101,7 @@ M-Lab must remain on the legacy `POST /api/v1/measurements` contract without bre
 ## Validation
 
 - [x] `npm run test -- --testPathPattern="measurement|protocol-config|cloudflare"` — 4 suites passed, 56 tests passed; 2 suites failed in local env (`Users` missing from `@prisma/client` — run `npx prisma generate` before full suite; 1 pre-existing `createMultipleMeasurement` assertion failure).
-- [ ] Migrations applied on shared dev/staging
-- [ ] Manual: `POST /api/v1/measurements/cloudflare` with fixture payload; `GET /api/v1/protocol-config/resolve?gigaIdSchool=...`
+- [x] Manual: `POST /api/v1/measurements/cloudflare` with fixture payload; `GET /api/v1/protocol-config/resolve?gigaIdSchool=...`
 
 ## Documentation updated
 
