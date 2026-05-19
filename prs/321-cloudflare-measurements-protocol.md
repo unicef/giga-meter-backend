@@ -2,7 +2,7 @@
 
 **Status:** Ready for review  
 **Branch:** `feat/cloudflare-measurements-v2` → `develop` (target TBD)  
-**Commit:** `7e41360`  
+**Commits:** `7e41360` (feature), `82cf5cf` (drop legacy `country_config`), `a3195bd` (docs) — branch tip `a3195bd`  
 **Author:** Victor J. Lopez Roque
 
 ## Context
@@ -23,8 +23,9 @@ M-Lab must remain on the legacy `POST /api/v1/measurements` contract without bre
 | --- | --- |
 | `src/measurement/` | Cloudflare DTOs, mapper, quality extraction, query validation, `POST :protocol`, list filters by `protocol` |
 | `src/protocol-config/` | New module: resolve + admin CRUD for country/school config |
+| `src/country-config/` | **Removed** — legacy CRUD module; superseded by `protocol-config` |
 | `src/public/` | Expose protocol-related fields on public measurement responses |
-| `src/app.module.ts` | Register `ProtocolConfigController` / `ProtocolConfigService` |
+| `src/app.module.ts` | Register `ProtocolConfigController` / `ProtocolConfigService`; unregister `CountryConfigModule` |
 | `src/prisma/` | Schema + migrations + optional local seed (`seed.ts`, `local-dev-seed.sql`) |
 | `src/common/mock-objects.ts` | Test fixtures for new shapes |
 
@@ -34,6 +35,7 @@ M-Lab must remain on the legacy `POST /api/v1/measurements` contract without bre
 
 - `20260506140000_protocol_config_tables` — `country_protocol_config`, `school_protocol_config` (FK to `country.code`, unique per country/school).
 - `20260512160000_add_measurement_protocol_quality_metrics` — `measurements.protocol` (default `mlab`), nullable quality columns, index on `protocol`.
+- `20260518164253_remove_old_country_config` — drops legacy `country_config` table and `MeasurementProvider` enum (replaced by protocol-config tables).
 
 **Schema highlights:**
 
@@ -51,6 +53,12 @@ M-Lab must remain on the legacy `POST /api/v1/measurements` contract without bre
 | `PUT` / `DELETE` | `/api/v1/protocol-config/country/:countryCode` | Admin upsert/delete |
 | `PUT` / `DELETE` | `/api/v1/protocol-config/school/:gigaIdSchool` | Admin upsert/delete |
 
+**Removed (breaking for any caller still on legacy config API):**
+
+| Method | Path | Replacement |
+| --- | --- | --- |
+| `GET` / `POST` / `PUT` / `DELETE` | `/api/v1/country-config` and `/api/v1/country-config/:code` | `protocol-config` resolve + country/school admin routes |
+
 ## Summary of changes
 
 - Added typed **Cloudflare measurement DTO** and **mapper** → internal `AddMeasurementDto` for shared `createMeasurement()` persistence.
@@ -58,9 +66,10 @@ M-Lab must remain on the legacy `POST /api/v1/measurements` contract without bre
 - Extended **measurement list/create** paths with `protocol` discriminator and validation (`measurement-query-validation.ts`, `measurement-upload-protocol.ts`).
 - Introduced **`protocol-config` module** with precedence: school override (only if at least one field set) → country → default (`mlab`, `0` sec delay).
 - Wired module in `AppModule`; updated public API DTOs/services for new fields.
+- **Removed legacy `country-config` module** (`CountryConfig` Prisma model, `MeasurementProvider` enum, `/api/v1/country-config/*`). Runtime config is exclusively via `protocol-config`.
 - Added unit tests: mapper, quality metrics, controller protocol route, service, protocol-config service, ping-aggregation/scheduler/public spec adjustments.
 
-**Note:** Final commit `7e41360` does **not** modify `package.json` / `package-lock.json` (dependency bump was reverted before amend). Commit message still mentions schedule/cron — ignore for dependency audit.
+**Note:** Commit `7e41360` does **not** modify `package.json` / `package-lock.json` (dependency bump was reverted before amend). Commit message still mentions schedule/cron — ignore for dependency audit.
 
 ## Technical decisions
 
@@ -91,6 +100,13 @@ M-Lab must remain on the legacy `POST /api/v1/measurements` contract without bre
 - **Rationale:** Upload success is more important than perfect analytics on edge payloads.
 - **Trade-offs:** Some metrics may be null even when present under unexpected key shapes.
 
+### Decision 5: Retire `country-config` in favor of `protocol-config`
+
+- **Chosen:** Drop `country_config` table, `MeasurementProvider` enum, Nest `country-config` module, and `/api/v1/country-config/*` in the same rollout as protocol-config.
+- **Alternatives considered:** Keep `country-config` as a compatibility shim mapping to `measurementProvider` only; dual-write during transition.
+- **Rationale:** `country_protocol_config` / `school_protocol_config` are the single source of truth; no in-repo consumers of the legacy API; avoids two admin surfaces and a dead Prisma model after migration.
+- **Trade-offs:** External callers (if any) on `/api/v1/country-config` must migrate to `GET /api/v1/protocol-config/resolve` and admin upsert routes.
+
 ## Out of scope / deferred
 
 - `POST /api/v1/measurements/mlab` on protocol route (reserved, not implemented).
@@ -101,13 +117,16 @@ M-Lab must remain on the legacy `POST /api/v1/measurements` contract without bre
 ## Validation
 
 - [x] `npm run test -- --testPathPattern="measurement|protocol-config|cloudflare"` — 4 suites passed, 56 tests passed; 2 suites failed in local env (`Users` missing from `@prisma/client` — run `npx prisma generate` before full suite; 1 pre-existing `createMultipleMeasurement` assertion failure).
+- [x] `npm run build` — passes after `country-config` removal.
 - [x] Manual: `POST /api/v1/measurements/cloudflare` with fixture payload; `GET /api/v1/protocol-config/resolve?gigaIdSchool=...`
+- [x] Confirm `/api/v1/country-config` no longer registered (404 or absent from Swagger).
 
 ## Documentation updated
 
-- [x] `/docs/CURRENT_STATE.md` — backend summary for measurements and protocol-config
-- [x] `/docs/adr/001-dual-protocol-measurements-and-config.md`
+- [x] `/docs/CURRENT_STATE.md` — measurements, protocol-config; legacy `country-config` removed
+- [x] `/docs/adr/001-dual-protocol-measurements-and-config.md` — retirement of `country_config`
 - [x] `/docs/CHANGELOG.md`
+- [x] `/prs/321-cloudflare-measurements-protocol.md` — this record (legacy API removal)
 
 ## Links
 

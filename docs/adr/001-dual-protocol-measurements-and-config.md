@@ -44,6 +44,9 @@ tests** per deployment context (school or country), without hard-coding defaults
   non-null (empty rows do not shadow country config).
 - Invalid stored provider values coerce to `mlab` in the resolver.
 - Expose `GET /api/v1/protocol-config/resolve` and admin upsert/delete per country/school.
+- Retire the legacy `country_config` table, `MeasurementProvider` enum, Nest `country-config`
+  module, and `/api/v1/country-config/*` endpoints (migration
+  `20260518164253_remove_old_country_config`). No compatibility shim in this repo.
 
 ## Consequences
 
@@ -75,4 +78,5 @@ tests** per deployment context (school or country), without hard-coding defaults
 
 - PR record: `/prs/321-cloudflare-measurements-protocol.md`
 - Migrations: `20260506140000_protocol_config_tables`,
-  `20260512160000_add_measurement_protocol_quality_metrics`
+  `20260512160000_add_measurement_protocol_quality_metrics`,
+  `20260518164253_remove_old_country_config`

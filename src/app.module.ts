@@ -41,7 +41,6 @@ import { GeolocationModule } from './geolocation/geolocation.module';
 import { NearestSchoolModule } from './nearest-school/nearest-school.module';
 import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
-import { CountryConfigModule } from './country-config/country-config.module';
 import { SchoolRegistrationController } from './school-registration/school-registration.controller';
 import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
 import { SchoolRegistrationService } from './school-registration/school-registration.service';
@@ -76,7 +75,6 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     }),
     ScheduleModule.forRoot(),
     CategoryConfigModule,
-    CountryConfigModule,
     AuthModule,
     IpMetadataModule,
     GeolocationModule,

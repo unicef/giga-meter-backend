@@ -14,7 +14,7 @@
 | `measurement` | Speed/latency uploads (M-Lab legacy + protocol-specific routes) |
 | `protocol-config` | Country/school protocol resolution and admin CRUD |
 | `school`, `school-master` | Daily Check installations and canonical school data |
-| `country`, `country-config` | Country metadata and API segmentation |
+| `country` | Country metadata and API segmentation |
 | `auth` | API keys, device tokens, HMAC |
 | `connectivity`, `ping-aggregation` | Router ping snapshots and aggregation |
 | `public` | Public/category-filtered read APIs |
@@ -34,6 +34,8 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 
 - Tables: `country_protocol_config`, `school_protocol_config` (see migrations under `src/prisma/migrations/`).
 - Resolution: school override → country → default (`protocol-config.service.ts`).
+- Endpoints: `GET /api/v1/protocol-config/resolve`; admin `PUT`/`DELETE` on country and school paths (`protocol-config.controller.ts`).
+- **Legacy removed:** `country_config` table, `MeasurementProvider` enum, and `/api/v1/country-config/*` (Nest module deleted). Do not add a `country-config` module — use `protocol-config` only.
 
 ## Local data
 
