@@ -1,5 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { SpeedTestProtocol } from '@prisma/client';
 import { ProtocolConfigService } from './protocol-config.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -168,7 +169,9 @@ describe('ProtocolConfigService', () => {
       name: 'Spain',
       created_at: createdAt,
       iso3_format: 'ESP',
-      latest_school_master_data_version: null,
+      latest_school_master_data_version: 1,
+      speed_test_protocol: SpeedTestProtocol.NDT7,
+      is_active: true,
     });
     jest.spyOn(prisma.countryProtocolConfig, 'upsert').mockResolvedValue({
       id: 1,
