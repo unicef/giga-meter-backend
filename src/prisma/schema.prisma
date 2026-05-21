@@ -253,7 +253,7 @@ model measurements {
   timestamp          DateTime? @db.Timestamptz(6)
   uuid               String?
   browser_id         String?
-  school_id          String
+  school_id          String?
   device_type        String?
   notes              String?
   client_info        Json?
@@ -431,7 +431,7 @@ model connectivity_ping_checks {
   timestamp       DateTime? @db.Timestamptz(6)
   isConnected     Boolean?  @map("is_connected")
   errorMessage    String?   @map("error_message")
-  giga_id_school  String    @map("giga_id_school")
+  giga_id_school  String?   @map("giga_id_school")
   app_local_uuid  String    @unique
   browserId       String?   @map("browser_id")
   latency         Float?    @map("latency")
