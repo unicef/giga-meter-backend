@@ -276,14 +276,22 @@ model measurements {
   windows_username   String?
   installed_path     String?
   wifi_connections   Json?
-  detected_latitude           Float?    // Detected latitude from device
-  detected_longitude          Float?    // Detected longitude from device
-  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
-  detected_location_distance  Float?    // Distance between school location and detected location
-  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  detected_latitude            Float?   // Detected latitude from device
+  detected_longitude           Float?   // Detected longitude from device
+  detected_location_accuracy   Float?   // Accuracy from geolocation API in meters
+  detected_location_distance   Float?   // Distance between school location and detected location
+  detected_location_is_flagged Boolean? @default(false) // Flag if distance > X & accuracy > Y
+  entity_type_id               Int?
+  registration_id              BigInt?
+  giga_id_health               String?
+  entity_type                  entity_type?  @relation(fields: [entity_type_id], references: [id])
+  registration                 registration? @relation(fields: [registration_id], references: [id])
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
+  @@index([entity_type_id])
+  @@index([registration_id])
+  @@index([giga_id_health])
 }
 
 model measurements_failed {
@@ -419,17 +427,26 @@ model CategoryConfig {
 }
 
 model connectivity_ping_checks {
-  id             Int       @id() @default(autoincrement())
-  timestamp      DateTime? @db.Timestamptz(6)
-  isConnected    Boolean?  @map("is_connected")
-  errorMessage   String?   @map("error_message")
-  giga_id_school String    @map("giga_id_school")
-  app_local_uuid String    @unique
-  browserId      String?   @map("browser_id")
-  latency        Float?    @map("latency")
-  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  deleted_at     DateTime? @db.Timestamptz(6)
-  is_deleted     Boolean   @default(false)
+  id              Int       @id() @default(autoincrement())
+  timestamp       DateTime? @db.Timestamptz(6)
+  isConnected     Boolean?  @map("is_connected")
+  errorMessage    String?   @map("error_message")
+  giga_id_school  String    @map("giga_id_school")
+  app_local_uuid  String    @unique
+  browserId       String?   @map("browser_id")
+  latency         Float?    @map("latency")
+  created_at      DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted_at      DateTime? @db.Timestamptz(6)
+  is_deleted      Boolean   @default(false)
+  entity_type_id  Int?
+  registration_id BigInt?
+  giga_id_health  String?
+  entity_type     entity_type?  @relation(fields: [entity_type_id], references: [id])
+  registration    registration? @relation(fields: [registration_id], references: [id])
+
+  @@index([entity_type_id])
+  @@index([registration_id])
+  @@index([giga_id_health])
 }
 
 model IpMetadata {
@@ -700,6 +717,8 @@ model entity_type {
   created_at                DateTime?                        @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   registrations             registration[]
   country_whitelist_entries country_entity_type_whitelist[]
+  measurements              measurements[]
+  connectivity_ping_checks  connectivity_ping_checks[]
 }
 
 model health {
@@ -795,9 +814,11 @@ model registration {
   windows_username    String?
   installed_path      String?
   wifi_connections    Json?
-  entity_type         entity_type @relation(fields: [entity_type_id], references: [id])
-  school              school?     @relation(fields: [school_id], references: [id])
-  health              health?     @relation(fields: [health_id], references: [id])
+  entity_type              entity_type              @relation(fields: [entity_type_id], references: [id])
+  school                   school?                  @relation(fields: [school_id], references: [id])
+  health                   health?                  @relation(fields: [health_id], references: [id])
+  measurements             measurements[]
+  connectivity_ping_checks connectivity_ping_checks[]
 
   @@index([entity_type_id])
   @@index([school_id])
