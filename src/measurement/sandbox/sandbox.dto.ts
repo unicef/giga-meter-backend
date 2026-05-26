@@ -38,11 +38,14 @@ export class MeasurementSandboxDto {
 
   @ApiProperty({
     enum: ['school', 'health'],
+    required: false,
+    nullable: true,
     description:
       'Discriminator for the new polymorphic measurement model. ' +
-      'Returned as the entity-type name (not the FK id).',
+      'Returned as the entity-type name (not the FK id). ' +
+      'Null on legacy rows whose entity_type_id was not backfilled.',
   })
-  entity_type!: EntityType;
+  entity_type?: EntityType | null;
 
   @ApiProperty({
     required: false,
@@ -67,11 +70,13 @@ export class MeasurementSandboxDto {
 
   @ApiProperty({
     required: false,
+    nullable: true,
     description:
       'Stringified BigInt id of the registration row that produced this ' +
-      'measurement. Stable across measurements from the same install.',
+      'measurement. Stable across measurements from the same install. ' +
+      'Null on legacy rows whose installation pre-dates the registration table.',
   })
-  registration_id?: string;
+  registration_id?: string | null;
 
   @ApiProperty()
   country_code?: string;
