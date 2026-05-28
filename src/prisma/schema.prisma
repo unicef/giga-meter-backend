@@ -160,7 +160,6 @@ model country {
   is_active                         Boolean?                   @default(true)
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
-  countryConfigs                    CountryConfig[]
   healths                           health[]
   master_sync_intermediate_health   master_sync_intermediate_health[]
   whitelist_entries                 country_entity_type_whitelist[]
