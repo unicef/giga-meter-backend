@@ -77,8 +77,6 @@ model dailycheckapp_school {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
-  @@index([giga_id_school])
-  @@index([giga_id_school, device_hardware_id])
 }
 
 model school {
@@ -110,43 +108,15 @@ model school {
   feature_flags            Json?
   created_at               DateTime?                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   country_code             String?                     @db.VarChar
-  not_verified             Boolean?
   deleted                  DateTime?                   @db.Timestamptz(6)
   last_school_static_id    Int?
-  is_active                Boolean?                    @default(true)
   latest_master_sync       master_sync_school_static?  @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
   country                  country?                    @relation(fields: [country_code], references: [code])
   master_sync_records      master_sync_school_static[] @relation("schoolToMasterSync")
-  registrations            registration[]
 
   @@index([country_code])
   @@index([deleted])
   @@index([last_school_static_id])
-}
-
-model school_new_registration {
-  id                        BigInt    @id @default(autoincrement())
-  school_id                 String    @db.VarChar(256)
-  school_name               String    @db.VarChar(256)
-  country_iso3_code         String    @db.VarChar(3)
-  latitude                  Float
-  longitude                 Float
-  address                   Json
-  education_level           String    @db.VarChar(128)
-  contact_name              String    @db.VarChar(256)
-  contact_email             String    @db.VarChar(256)
-  giga_id_school            String    @db.VarChar(256)
-  verification_status       String?   @db.VarChar(64)
-  verification_requested_at DateTime? @db.Timestamptz(6)
-  verification_error        String?
-  created                   DateTime? @db.Timestamptz(6)
-  modified                  DateTime? @db.Timestamptz(6)
-  created_at                DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  deleted                   DateTime? @db.Timestamptz(6)
-
-  @@index([giga_id_school])
-  @@index([deleted])
-  @@index([giga_id_school, deleted])
 }
 
 model country {
@@ -157,12 +127,8 @@ model country {
   iso3_format                       String?                    @db.VarChar(32)
   latest_school_master_data_version Int?
   speed_test_protocol               SpeedTestProtocol          @default(NDT7)
-  is_active                         Boolean?                   @default(true)
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
-  healths                           health[]
-  master_sync_intermediate_health   master_sync_intermediate_health[]
-  whitelist_entries                 country_entity_type_whitelist[]
   country_protocol_config           CountryProtocolConfig?
 }
 
@@ -281,7 +247,7 @@ model measurements {
   timestamp          DateTime? @db.Timestamptz(6)
   uuid               String?
   browser_id         String?
-  school_id          String?
+  school_id          String
   device_type        String?
   notes              String?
   client_info        Json?
@@ -304,30 +270,22 @@ model measurements {
   windows_username   String?
   installed_path     String?
   wifi_connections   Json?
-  detected_latitude            Float?   // Detected latitude from device
-  detected_longitude           Float?   // Detected longitude from device
-  detected_location_accuracy   Float?   // Accuracy from geolocation API in meters
-  detected_location_distance   Float?   // Distance between school location and detected location
-  detected_location_is_flagged Boolean? @default(false) // Flag if distance > X & accuracy > Y
-  entity_type_id               Int?
-  registration_id              BigInt?
-  giga_id_health               String?
-  protocol                     String   @default("mlab") @db.VarChar(32)
-  download_latency             Float?
-  upload_latency               Float?
-  download_jitter              Float?
-  upload_jitter                Float?
-  jitter                       Float?
-  packet_loss                  Float?
-  network_quality_score        Float?
-  entity_type                  entity_type?  @relation(fields: [entity_type_id], references: [id])
-  registration                 registration? @relation(fields: [registration_id], references: [id])
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  protocol                    String    @default("mlab") @db.VarChar(32)
+  download_latency            Float?
+  upload_latency              Float?
+  download_jitter             Float?
+  upload_jitter               Float?
+  jitter                      Float?
+  packet_loss                 Float?
+  network_quality_score       Float?
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
-  @@index([entity_type_id])
-  @@index([registration_id])
-  @@index([giga_id_health])
   @@index([protocol])
 }
 
@@ -464,26 +422,17 @@ model CategoryConfig {
 }
 
 model connectivity_ping_checks {
-  id              Int       @id() @default(autoincrement())
-  timestamp       DateTime? @db.Timestamptz(6)
-  isConnected     Boolean?  @map("is_connected")
-  errorMessage    String?   @map("error_message")
-  giga_id_school  String?   @map("giga_id_school")
-  app_local_uuid  String    @unique
-  browserId       String?   @map("browser_id")
-  latency         Float?    @map("latency")
-  created_at      DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  deleted_at      DateTime? @db.Timestamptz(6)
-  is_deleted      Boolean   @default(false)
-  entity_type_id  Int?
-  registration_id BigInt?
-  giga_id_health  String?
-  entity_type     entity_type?  @relation(fields: [entity_type_id], references: [id])
-  registration    registration? @relation(fields: [registration_id], references: [id])
-
-  @@index([entity_type_id])
-  @@index([registration_id])
-  @@index([giga_id_health])
+  id             Int       @id() @default(autoincrement())
+  timestamp      DateTime? @db.Timestamptz(6)
+  isConnected    Boolean?  @map("is_connected")
+  errorMessage   String?   @map("error_message")
+  giga_id_school String    @map("giga_id_school")
+  app_local_uuid String    @unique
+  browserId      String?   @map("browser_id")
+  latency        Float?    @map("latency")
+  created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  is_deleted     Boolean   @default(false)
 }
 
 model IpMetadata {
@@ -517,459 +466,4 @@ model ConnectivityPingChecksDailyAggr {
   @@index([giga_id_school, timestamp_date])
   @@index([giga_id_school, browser_id, timestamp_date])
   @@map("connectivity_ping_checks_daily_aggr")
-}
-
-model Users {
-  id            Int       @id @default(autoincrement())
-  first_name    String?
-  last_name     String?
-  username      String     @unique
-  email         String     @unique
-  user_name     String?
-  last_login    DateTime?
-  is_active     Boolean    @default(true)
-  is_superuser  Boolean    @default(false)
-  created_at    DateTime   @default(now())
-  updated_at    DateTime   @updatedAt
-
-  // Relationships
-  createdRoles          CustomAuthRole[]           @relation("RoleCreatedBy")
-  modifiedRoles         CustomAuthRole[]           @relation("RoleModifiedBy")
-
-  createdRolePermissions CustomAuthRolePermission[] @relation("RolePermCreatedBy")
-  modifiedRolePermissions CustomAuthRolePermission[] @relation("RolePermModifiedBy")
-
-  createdUserRoles      CustomAuthUserRoleRelationship[] @relation("UserRoleCreatedBy")
-  modifiedUserRoles     CustomAuthUserRoleRelationship[] @relation("UserRoleModifiedBy")
-
-  roleAssignments       CustomAuthUserRoleRelationship[] @relation("UserRoleAssignment")
-
-  createdCmsContent     CmsContent[]               @relation("CmsContentCreatedBy")
-  updatedCmsContent     CmsContent[]               @relation("CmsContentUpdatedBy")
-
-  createdCmsMedia       CmsMedia[]                 @relation("CmsMediaCreatedBy")
-  updatedCmsMedia       CmsMedia[]                 @relation("CmsMediaUpdatedBy")
-
-  @@map("users")
-}
-
-model CustomAuthRole {
-  id                    Int       @id @default(autoincrement())
-  deleted               DateTime? @db.Timestamptz
-  last_modified_at      DateTime  @db.Timestamptz
-  created               DateTime  @db.Timestamptz
-  name                  String    @db.VarChar(255)
-  description           String?   @db.VarChar(255)
-  category              String    @db.VarChar(50)
-
-  created_by_id         Int?
-  createdBy             Users?     @relation("RoleCreatedBy", fields: [created_by_id], references: [id])
-
-  last_modified_by_id   Int?
-  modifiedBy            Users?     @relation("RoleModifiedBy", fields: [last_modified_by_id], references: [id])
-
-  // Role Permissions
-  rolePermissions       CustomAuthRolePermission[]
-
-  // User-Role Assignment
-  userRoleRelationships CustomAuthUserRoleRelationship[]
-
-  @@index([created_by_id])
-  @@index([last_modified_by_id])
-  @@index([deleted])
-  @@index([name])
-  @@index([name], map: "custom_auth_role_name_4ba7d950_like")
-
-  @@map("custom_auth_role")
-}
-
-
-model CustomAuthRolePermission {
-  id                  Int       @id @default(autoincrement())
-  deleted             DateTime? @db.Timestamptz
-  last_modified_at    DateTime  @db.Timestamptz
-  created             DateTime  @db.Timestamptz
-  slug                String    @db.VarChar(100)
-
-  created_by_id       Int?
-  createdBy           Users?     @relation("RolePermCreatedBy", fields: [created_by_id], references: [id])
-
-  last_modified_by_id Int?
-  modifiedBy          Users?     @relation("RolePermModifiedBy", fields: [last_modified_by_id], references: [id])
-
-  role_id             Int
-  role                CustomAuthRole @relation(fields: [role_id], references: [id])
-
-  @@index([created_by_id])
-  @@index([deleted])
-  @@index([last_modified_by_id])
-  @@index([role_id])
-  @@index([slug])
-  @@index([slug], map: "custom_auth_rolepermission_slug_858572f8_like")
-
-  @@map("custom_auth_rolepermission")
-}
-
-
-model CustomAuthUserRoleRelationship {
-  id                   Int       @id @default(autoincrement())
-  deleted              DateTime? @db.Timestamptz
-  last_modified_at     DateTime  @db.Timestamptz
-  created              DateTime  @db.Timestamptz
-
-  created_by_id        Int?
-  createdBy            Users?     @relation("UserRoleCreatedBy", fields: [created_by_id], references: [id])
-
-  last_modified_by_id  Int?
-  modifiedBy           Users?     @relation("UserRoleModifiedBy", fields: [last_modified_by_id], references: [id])
-
-  role_id              Int
-  role                 CustomAuthRole @relation(fields: [role_id], references: [id])
-
-  user_id              Int
-  user                 Users     @relation("UserRoleAssignment", fields: [user_id], references: [id])
-
-  @@index([created_by_id])
-  @@index([deleted])
-  @@index([last_modified_by_id])
-  @@index([role_id])
-  @@index([user_id])
-
-  @@map("custom_auth_userrolerelationship")
-}
-
-model CmsContent {
-  id           Int       @id @default(autoincrement())
-  status       String    @unique @db.VarChar(20)
-  contentJson  Json      @map("content_json")
-  publishedAt  DateTime? @map("published_at")
-  lastModified DateTime  @default(now()) @map("last_modified")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  
-  createdById  Int?      @map("created_by_id")
-  createdBy    Users?    @relation("CmsContentCreatedBy", fields: [createdById], references: [id])
-  
-  updatedById  Int?      @map("updated_by_id")
-  updatedBy    Users?    @relation("CmsContentUpdatedBy", fields: [updatedById], references: [id])
-
-  @@index([status])
-  @@index([createdById])
-  @@index([updatedById])
-  @@map("cms_content")
-}
-
-model CmsMedia {
-  id               String    @id @db.VarChar(50)
-  name             String    @db.VarChar(255)
-  altText          String?   @map("alt_text")
-  fileType         String    @map("file_type") @db.VarChar(100)
-  fileSize         Int       @map("file_size")
-  filePath         String    @map("file_path")
-  url              String?
-  width            Int?
-  height           Int?
-  duration         Int?
-  uploadedAt       DateTime  @default(now()) @map("uploaded_at")
-  used_in_sections String[]
-  deletedAt        DateTime? @map("deleted_at")
-  
-  createdById      Int?      @map("created_by_id")
-  createdBy        Users?    @relation("CmsMediaCreatedBy", fields: [createdById], references: [id])
-  
-  updatedById      Int?      @map("updated_by_id")
-  updatedBy        Users?    @relation("CmsMediaUpdatedBy", fields: [updatedById], references: [id])
-
-  @@index([name])
-  @@index([fileType])
-  @@index([uploadedAt])
-  @@index([deletedAt])
-  @@index([createdById])
-  @@index([updatedById])
-  @@map("cms_media")
-}
-
-enum FeatureFlagType {
-  BOOLEAN
-  PERCENTAGE
-}
-
-enum FeatureFlagScope {
-  COUNTRY
-  SCHOOL
-}
-
-model FeatureFlag {
-  id          String          @id @default(uuid()) @db.Uuid
-  key         String          @unique @db.VarChar(255)
-  name        String          @db.VarChar(255)
-  description String?         @db.Text
-  flag_type   FeatureFlagType
-  enabled     Boolean         @default(false)
-  percentage  Int?
-  created_at  DateTime        @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  updated_at  DateTime        @updatedAt @db.Timestamptz(6)
-
-  overrides FeatureFlagOverride[]
-
-  @@map("feature_flag")
-}
-
-model FeatureFlagOverride {
-  id              String           @id @default(uuid()) @db.Uuid
-  feature_flag_id String           @db.Uuid
-  scope           FeatureFlagScope
-  scope_id        String           @db.VarChar(255)
-  enabled         Boolean          @default(false)
-  created_at      DateTime         @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  updated_at      DateTime         @updatedAt @db.Timestamptz(6)
-
-  feature_flag FeatureFlag @relation(fields: [feature_flag_id], references: [id], onDelete: Cascade)
-
-  @@unique([feature_flag_id, scope, scope_id])
-  @@map("feature_flag_override")
-}
-
-model entity_type {
-  id                        Int                              @id @default(autoincrement())
-  name                      String                           @unique @db.VarChar
-  code                      String                           @unique @db.VarChar
-  created_at                DateTime?                        @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  registrations             registration[]
-  country_whitelist_entries country_entity_type_whitelist[]
-  measurements              measurements[]
-  connectivity_ping_checks  connectivity_ping_checks[]
-}
-
-model health {
-  id                                      BigInt    @id @default(autoincrement())
-  created                                 DateTime? @db.Timestamptz(6)
-  modified                                DateTime? @db.Timestamptz(6)
-  health_id_giga                          String    @db.VarChar
-  facility_name                           String    @db.VarChar
-  facility_data_source                    String    @db.VarChar
-  signature                               String    @db.VarChar
-  latitude                                Float
-  longitude                               Float
-  dhis2_id                                String?   @db.VarChar
-  hims_id                                 String?   @db.VarChar
-  hfml_id                                 String?   @db.VarChar
-  facility_type_govt                      String?   @db.VarChar
-  facility_ownership_govt                 String?   @db.VarChar
-  facility_level                          String?   @db.VarChar
-  facility_accessibility                  String?   @db.VarChar
-  is_facility_open                        Boolean?
-  health_service_provider                 String?   @db.VarChar
-  facility_data_collection_year           Int?
-  admin1                                  String?   @db.VarChar
-  admin2                                  String?   @db.VarChar
-  admin3                                  String?   @db.VarChar
-  admin4                                  String?   @db.VarChar
-  admin1_id_giga                          String?   @db.VarChar
-  admin2_id_giga                          String?   @db.VarChar
-  area_type_govt                          String?   @db.VarChar
-  distance_to_closest_settlement          Float?
-  distance_to_country_boundary            Float?
-  connectivity                            String?   @db.VarChar
-  connectivity_type                       String?   @db.VarChar
-  connectivity_govt                       String?   @db.VarChar
-  connectivity_govt_collection_year       Int?
-  connectivity_catchment_coverage         String?   @db.VarChar
-  electricity_availability                String?   @db.VarChar
-  electricity_type                        String?   @db.VarChar
-  electricity_availability_hours          Float?
-  power_backup_system                     String?   @db.VarChar
-  hmis_system                             String?   @db.VarChar
-  hmis_system_use                         String?   @db.VarChar
-  ers_system                              String?   @db.VarChar
-  ers_system_use                          String?   @db.VarChar
-  computer_availability                   String?   @db.VarChar
-  device_availability                     String?   @db.VarChar
-  tablets_availability                    String?   @db.VarChar
-  num_staff                               Int?
-  num_community_health_workers            Int?
-  num_community_health_workers_within_5km Int?
-  pop_est_govt                            Int?
-  pop_est_hf                              Int?
-  pop_within_1km                          Int?
-  pop_within_3km                          Int?
-  pop_within_5km                          Int?
-  pop_within_10km                         Int?
-  country_code                            String?   @db.VarChar
-  created_at                              DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  deleted                                 DateTime? @db.Timestamptz(6)
-  last_health_static_id                   Int?
-  country                                 country?                   @relation(fields: [country_code], references: [code])
-  latest_master_sync                      master_sync_health_static? @relation("latestHealthMasterSync", fields: [last_health_static_id], references: [id])
-  master_sync_records                     master_sync_health_static[] @relation("healthToMasterSync")
-  registrations                           registration[]
-
-  @@index([country_code])
-  @@index([health_id_giga])
-  @@index([deleted])
-  @@index([last_health_static_id])
-}
-
-model registration {
-  id                  BigInt    @id @default(autoincrement())
-  entity_type_id      Int
-  installation_id     String?
-  school_id           BigInt?
-  health_id           BigInt?
-  giga_id_school      String?
-  giga_id_health      String?
-  user_id             String?
-  mac_address         String?
-  os                  String?
-  app_version         String?
-  created             String?
-  network_information String?   @db.VarChar
-  ip_address          String?
-  country_code        String?
-  is_blocked          Boolean   @default(false)
-  notify              Boolean   @default(false)
-  created_at          DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  device_hardware_id  String?
-  is_active           Boolean?
-  windows_username    String?
-  installed_path      String?
-  wifi_connections    Json?
-  entity_type              entity_type              @relation(fields: [entity_type_id], references: [id])
-  school                   school?                  @relation(fields: [school_id], references: [id])
-  health                   health?                  @relation(fields: [health_id], references: [id])
-  measurements             measurements[]
-  connectivity_ping_checks connectivity_ping_checks[]
-
-  @@index([entity_type_id])
-  @@index([school_id])
-  @@index([health_id])
-  @@index([installation_id])
-  @@index([device_hardware_id])
-  @@index([country_code])
-}
-
-model country_entity_type_whitelist {
-  id             Int         @id @default(autoincrement())
-  country_code   String      @db.VarChar
-  entity_type_id Int
-  created_at     DateTime?   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  country        country     @relation(fields: [country_code], references: [code])
-  entity_type    entity_type @relation(fields: [entity_type_id], references: [id])
-
-  @@unique([country_code, entity_type_id])
-  @@index([entity_type_id])
-}
-
-model master_sync_health_static {
-  id                                      Int      @id @default(autoincrement())
-  created                                 DateTime @db.Timestamptz
-  modified                                DateTime @db.Timestamptz
-  latitude                                Float?
-  longitude                               Float?
-  admin1_id_giga                          String?  @db.VarChar(50)
-  admin2_id_giga                          String?  @db.VarChar(50)
-  facility_data_collection_year           Int?
-  facility_data_source                    String?  @db.VarChar(255)
-  facility_type_govt                      String?  @db.VarChar(255)
-  facility_ownership_govt                 String?  @db.VarChar(255)
-  facility_level                          String?  @db.VarChar(255)
-  facility_accessibility                  String?  @db.VarChar(255)
-  is_facility_open                        Boolean?
-  health_service_provider                 String?  @db.VarChar(255)
-  area_type_govt                          String?  @db.VarChar(255)
-  distance_to_closest_settlement          Float?
-  distance_to_country_boundary            Float?
-  connectivity                            Boolean?
-  connectivity_type                       String?  @db.VarChar(255)
-  connectivity_govt                       Boolean?
-  connectivity_govt_collection_year       Int?
-  connectivity_catchment_coverage         String?  @db.VarChar(255)
-  electricity_availability                Boolean?
-  electricity_type                        String?  @db.VarChar(255)
-  electricity_availability_hours          Float?
-  power_backup_system                     String?  @db.VarChar(255)
-  hmis_system                             String?  @db.VarChar(255)
-  hmis_system_use                         String?  @db.VarChar(255)
-  ers_system                              String?  @db.VarChar(255)
-  ers_system_use                          String?  @db.VarChar(255)
-  computer_availability                   Boolean?
-  device_availability                     Boolean?
-  tablets_availability                    Boolean?
-  num_staff                               Int?
-  num_community_health_workers            Int?
-  num_community_health_workers_within_5km Int?
-  pop_est_govt                            Int?
-  pop_est_hf                              Int?
-  pop_within_1km                          Int?
-  pop_within_3km                          Int?
-  pop_within_5km                          Int?
-  pop_within_10km                         Int?
-  version                                 Int?
-  health_id                               BigInt?
-  health                                  health?  @relation("healthToMasterSync", fields: [health_id], references: [id])
-  healths                                 health[] @relation("latestHealthMasterSync")
-
-  @@index([health_id], map: "master_sync_health_static_health_id")
-  @@map("master_sync_health_static")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model master_sync_intermediate_health {
-  id                                      Int       @id @default(autoincrement())
-  created                                 DateTime  @db.Timestamptz
-  modified                                DateTime  @db.Timestamptz
-  health_id_giga                          String    @db.VarChar(50)
-  health_id_govt                          String?   @db.VarChar(255)
-  facility_name                           String    @db.VarChar(1000)
-  admin1                                  String?   @db.VarChar(255)
-  admin1_id_giga                          String?   @db.VarChar(50)
-  admin2                                  String?   @db.VarChar(255)
-  admin2_id_giga                          String?   @db.VarChar(50)
-  latitude                                Float?
-  longitude                               Float?
-  facility_data_collection_year           Int?      @db.SmallInt
-  facility_data_source                    String?   @db.VarChar(255)
-  facility_type_govt                      String?   @db.VarChar(255)
-  facility_ownership_govt                 String?   @db.VarChar(255)
-  facility_level                          String?   @db.VarChar(255)
-  facility_accessibility                  String?   @db.VarChar(255)
-  is_facility_open                        String?   @db.VarChar(255)
-  health_service_provider                 String?   @db.VarChar(255)
-  area_type_govt                          String?   @db.VarChar(255)
-  distance_to_closest_settlement          Float?
-  distance_to_country_boundary            Float?
-  connectivity                            String?   @db.VarChar(255)
-  connectivity_type                       String?   @db.VarChar(255)
-  connectivity_govt                       String?   @db.VarChar(255)
-  connectivity_govt_collection_year       Int?      @db.SmallInt
-  connectivity_catchment_coverage         String?   @db.VarChar(255)
-  electricity_availability                String?   @db.VarChar(255)
-  electricity_type                        String?   @db.VarChar(255)
-  electricity_availability_hours          Float?
-  power_backup_system                     String?   @db.VarChar(255)
-  hmis_system                             String?   @db.VarChar(255)
-  hmis_system_use                         String?   @db.VarChar(255)
-  ers_system                              String?   @db.VarChar(255)
-  ers_system_use                          String?   @db.VarChar(255)
-  computer_availability                   String?   @db.VarChar(255)
-  device_availability                     String?   @db.VarChar(255)
-  tablets_availability                    String?   @db.VarChar(255)
-  num_staff                               Int?
-  num_community_health_workers            Int?
-  num_community_health_workers_within_5km Int?
-  pop_est_govt                            Int?
-  pop_est_hf                              Int?
-  pop_within_1km                          Int?
-  pop_within_3km                          Int?
-  pop_within_5km                          Int?
-  pop_within_10km                         Int?
-  version                                 Int?
-  status                                  String    @db.VarChar(50)
-  country_id                              BigInt?
-  country                                 country?  @relation(fields: [country_id], references: [id])
-
-  @@index([country_id], map: "master_sync_intermediate_health_country_id")
-  @@index([health_id_giga], map: "master_sync_intermediate_health_health_id_giga")
-  @@index([health_id_govt], map: "master_sync_intermediate_health_health_id_govt")
-  @@index([status], map: "master_sync_intermediate_health_status")
-  @@map("master_sync_intermediate_health")
 }
