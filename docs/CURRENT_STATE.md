@@ -1,6 +1,8 @@
 # Current state — giga-meter-backend
 
-> **Maintainers:** update this file when merging PRs. Do not store PR narratives here — use `/prs/{number}-{slug}.md`.
+_Last reviewed: 2026-06-02_
+
+> **Maintainers:** update this file when merging PRs. Do not store PR narratives here — use `/prs/{number}-{slug}.md`. This file is a link-first index, not a full narrative — see [How to keep this current](#how-to-keep-this-current).
 
 ## Stack
 
@@ -46,3 +48,10 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 
 - Full route list: add `docs/API_ROUTES.md`
 - Env vars: add `docs/ENV_VARS.md`
+
+## How to keep this current
+
+- **Link-first:** keep this file as a concise index; link to ADRs, [CHANGELOG.md](./CHANGELOG.md), or `/prs/` instead of duplicating detail here.
+- **Size cap:** if a section needs more than ~5 bullets, move the detail into a dedicated ADR or doc and link it.
+- **TTL:** if `Last reviewed` is older than 14 days, treat this file as stale and re-verify against the code.
+- **PR gate:** PRs changing architecture, API, or schema must bump `Last reviewed` and the relevant bullet, or state "no current-state impact".
