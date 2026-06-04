@@ -44,6 +44,8 @@ import { PingAggregationController } from './ping-aggregation/ping-aggregation.c
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
+import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
+import { ProtocolConfigService } from './protocol-config/protocol-config.service';
 
 @Module({
   imports: [
@@ -81,6 +83,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     ConnectivityController,
     PingAggregationController,
     PublicController,
+    ProtocolConfigController,
   ],
   providers: [
     AppService,
@@ -111,6 +114,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     SchedulerService,
     ConnectivityService,
     PublicService,
+    ProtocolConfigService,
   ],
 })
 export class AppModule {}
