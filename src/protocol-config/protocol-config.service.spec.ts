@@ -171,7 +171,6 @@ describe('ProtocolConfigService', () => {
       iso3_format: 'ESP',
       latest_school_master_data_version: 1,
       speed_test_protocol: SpeedTestProtocol.NDT7,
-      is_active: true,
     });
     jest.spyOn(prisma.countryProtocolConfig, 'upsert').mockResolvedValue({
       id: 1,

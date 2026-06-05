@@ -38,7 +38,7 @@ describe('PingAggregationService', () => {
 
     service = module.get<PingAggregationService>(PingAggregationService);
     prisma = module.get<PrismaService>(PrismaService);
-    (redisClient.get as jest.Mock).mockResolvedValue('completed');
+    (redisClient.get as jest.Mock).mockResolvedValue(null);
     (redisClient.set as jest.Mock).mockResolvedValue('OK');
   });
 
@@ -110,7 +110,7 @@ describe('PingAggregationService', () => {
           pageSize: query.pageSize,
           total,
           aggregationSchedulerStatus: 'completed',
-          aggregationSchedulerLastRunTime: 'completed',
+          aggregationSchedulerLastRunTime: 'not_found',
         },
         data: mockData,
       });
@@ -167,7 +167,7 @@ describe('PingAggregationService', () => {
           pageSize: undefined,
           total,
           aggregationSchedulerStatus: 'completed',
-          aggregationSchedulerLastRunTime: 'completed',
+          aggregationSchedulerLastRunTime: 'not_found',
         },
         data: mockData,
       });

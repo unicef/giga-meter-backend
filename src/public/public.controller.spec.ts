@@ -1,24 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PublicController } from './public.controller';
-import { SchoolService } from 'src/school/school.service';
 import { PublicService } from './public.service';
+import { SchoolService } from 'src/school/school.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
-import { CacheInterCeptorOptional } from 'src/config/cache.config';
 
 describe('PublicController', () => {
   let controller: PublicController;
 
   beforeEach(async () => {
-    const moduleRef = Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [PublicController],
       providers: [
+        {
+          provide: PublicService,
+          useValue: {},
+        },
         {
           provide: SchoolService,
           useValue: {},
         },
         {
-          provide: PublicService,
+          provide: 'CACHE_MANAGER',
           useValue: {},
         },
       ],
@@ -27,12 +30,7 @@ describe('PublicController', () => {
       .useValue({ canActivate: () => true })
       .overrideGuard(ThrottlerGuard)
       .useValue({ canActivate: () => true })
-      .overrideInterceptor(CacheInterCeptorOptional)
-      .useValue({
-        intercept: (_context, next) => next.handle(),
-      });
-
-    const module: TestingModule = await moduleRef.compile();
+      .compile();
 
     controller = module.get<PublicController>(PublicController);
   });
