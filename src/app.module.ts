@@ -16,12 +16,9 @@ import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
 import { MeasurementV2Controller } from './measurement/measurement.v2.controller';
 import { MeasurementService } from './measurement/measurement.service';
-<<<<<<< HEAD
 import { MeasurementSandboxController } from './measurement/sandbox/sandbox.controller';
 import { MeasurementSandboxService } from './measurement/sandbox/sandbox.service';
-=======
 import { MeasurementServiceV2 } from './measurement/measurement.service.v2';
->>>>>>> develop
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
@@ -96,11 +93,8 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     SchoolMasterController,
     CountryController,
     MeasurementController,
-<<<<<<< HEAD
     MeasurementSandboxController,
-=======
     MeasurementV2Controller,
->>>>>>> develop
     AdminController,
     DataFixController,
     MetricsController,
@@ -119,11 +113,8 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     SchoolMasterService,
     CountryService,
     MeasurementService,
-<<<<<<< HEAD
     MeasurementSandboxService,
-=======
     MeasurementServiceV2,
->>>>>>> develop
     AdminService,
     MetricsService,
     CategoryConfigProvider,
@@ -149,4 +140,4 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     SchoolRegistrationService,
   ],
 })
-export class AppModule { }
+export class AppModule {}
