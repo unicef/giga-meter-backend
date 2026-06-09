@@ -7,7 +7,7 @@ import { schoolMasterSelect } from './school-master.constant';
 
 @Injectable()
 export class SchoolMasterService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async checkSchool(
     country_code: string,
@@ -20,18 +20,19 @@ export class SchoolMasterService {
         is_active: true,
         deleted: null,
       },
-      select: schoolMasterSelect
+      select: schoolMasterSelect,
     });
     if (schools.length > 0) {
       return schools.map(this.toDto);
     }
 
-    const schoolRegistration = await this.prisma.school_new_registration.findFirst({
-      where: {
-        school_id: { equals: school_id, mode: 'insensitive' },
-        deleted: null,
-      },
-    });
+    const schoolRegistration =
+      await this.prisma.school_new_registration.findFirst({
+        where: {
+          school_id: { equals: school_id, mode: 'insensitive' },
+          deleted: null,
+        },
+      });
 
     return schoolRegistration
       ? [this.toRegistrationDto(schoolRegistration, country_code)]
@@ -43,7 +44,7 @@ export class SchoolMasterService {
       where: {
         giga_id_school,
       },
-      select: schoolMasterSelect
+      select: schoolMasterSelect,
     };
 
     const school = await this.prisma.school.findFirstOrThrow(query);
@@ -69,7 +70,7 @@ export class SchoolMasterService {
   ): Promise<boolean> {
     const school = await this.prisma.school.findFirstOrThrow({
       where: { giga_id_school },
-      select: schoolMasterSelect
+      select: schoolMasterSelect,
     });
     if (school) {
       const updatedSchool = this.updateFlags(school, flagDto);
@@ -112,7 +113,10 @@ export class SchoolMasterService {
   ): SchoolMasterDto {
     const addressObject =
       registration.address && typeof registration.address === 'object'
-        ? (JSON.parse(JSON.stringify(registration.address)) as Record<string, any>)
+        ? (JSON.parse(JSON.stringify(registration.address)) as Record<
+            string,
+            any
+          >)
         : {};
 
     return {
@@ -124,7 +128,9 @@ export class SchoolMasterService {
       country: country_code,
       location_id: null,
       address:
-        typeof addressObject.address === 'string' ? addressObject.address : null,
+        typeof addressObject.address === 'string'
+          ? addressObject.address
+          : null,
       email: registration.contact_email,
       postal_code:
         typeof addressObject.postalCode === 'string'
