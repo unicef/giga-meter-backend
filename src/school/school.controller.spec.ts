@@ -10,6 +10,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 
 describe('SchoolController', () => {
   let controller: SchoolController;
@@ -22,6 +23,13 @@ describe('SchoolController', () => {
 
     const mockConnectivityService = {
       // Add any required ConnectivityService methods used in tests
+    };
+
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
     };
 
     const mockCacheManager = {
@@ -37,6 +45,7 @@ describe('SchoolController', () => {
         SchoolService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: ConnectivityService, useValue: mockConnectivityService },
+        { provide: GeolocationUtility, useValue: mockGeolocationUtility },
         {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager,
@@ -209,10 +218,16 @@ describe('SchoolController', () => {
 
   describe('CreateSchool', () => {
     it('should create school', async () => {
-      jest.spyOn(service, 'createSchool').mockResolvedValue('1');
+      jest.spyOn(service, 'createSchool').mockResolvedValue({
+        user_id: '1',
+        is_verified: false,
+      });
 
       const response = await controller.createSchool(mockSchoolDto[0]);
-      expect(response.data).toStrictEqual({ user_id: '1' });
+      expect(response.data).toStrictEqual({
+        user_id: '1',
+        is_verified: false,
+      });
     });
 
     it('should handle database error', async () => {
@@ -222,6 +237,26 @@ describe('SchoolController', () => {
       await expect(controller.createSchool(mockSchoolDto[0])).rejects.toThrow(
         'Database error',
       );
+    });
+  });
+
+  describe('CheckExistingInstallation', () => {
+    it('should include is_verified in response', async () => {
+      jest.spyOn(service, 'checkExistingInstallation').mockResolvedValue({
+        exists: true,
+        user_id: '1',
+        giga_id_school: mockSchoolDto[0].giga_id_school,
+        is_verified: false,
+      });
+
+      const response = await controller.checkExistingInstallation('device-1');
+
+      expect(response.data).toStrictEqual({
+        exists: true,
+        user_id: '1',
+        giga_id_school: mockSchoolDto[0].giga_id_school,
+        is_verified: false,
+      });
     });
   });
 });

@@ -62,3 +62,4 @@ package-lock.json
 # Sandbox seed source CSVs (not committed; the generated
 # fixtures.measurements.json is the source of truth shipped with the repo).
 /src/measurement/sandbox/data/*.csv
+/.storage

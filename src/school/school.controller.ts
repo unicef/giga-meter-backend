@@ -23,16 +23,18 @@ import {
 import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import {
-  AddRecordResponseDto,
   ApiSuccessResponseDto,
 } from '../common/common.dto';
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
-  CheckDeviceStatusDto,
+  CreateSchoolResponseDto,
   DeactivateDeviceDto,
-  DeactivateDeviceResponseDto,
   SchoolDto,
+  CheckDeviceAndSchoolStatusDto,
+  DeactivateDeviceResponseDto,
+  CheckDeviceStatusDto,
+  CheckDeviceAndSchoolStatusResponseDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
@@ -53,7 +55,7 @@ export class SchoolController {
   constructor(
     private readonly schoolService: SchoolService,
     private readonly connectivityService: ConnectivityService,
-  ) {}
+  ) { }
 
   @Get('')
   @UseInterceptors(CacheInterCeptorOptional)
@@ -371,6 +373,37 @@ export class SchoolController {
     };
   }
 
+  @Post('check-device-school-status')
+  @ApiOperation({
+    summary: 'Check if a device and school has been deactivated',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns whether the device and school is active or has been deactivated',
+    type: CheckDeviceAndSchoolStatusResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async checkDeviceAndSchoolStatus(
+    @Body() body: CheckDeviceAndSchoolStatusDto,
+  ): Promise<ApiSuccessResponseDto<CheckDeviceAndSchoolStatusResponseDto>> {
+    const result = await this.schoolService.checkDeviceAndSchool(body);
+
+    return {
+      success: result.isActive,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: result.message,
+    };
+  }
+
   @Get('checkNotify/:user_id')
   @ApiExcludeEndpoint()
   @ApiOperation({
@@ -415,7 +448,7 @@ export class SchoolController {
   @ApiResponse({
     status: 201,
     description: 'Returns Id of school created',
-    type: String,
+    type: CreateSchoolResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -423,12 +456,12 @@ export class SchoolController {
   })
   async createSchool(
     @Body() schoolDto: SchoolDto,
-  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
-    const schoolId = await this.schoolService.createSchool(schoolDto);
+  ): Promise<ApiSuccessResponseDto<CreateSchoolResponseDto>> {
+    const school = await this.schoolService.createSchool(schoolDto);
 
     return {
       success: true,
-      data: { user_id: schoolId },
+      data: school,
       timestamp: new Date().toISOString(),
       message: 'success',
     };

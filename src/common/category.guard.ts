@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   CanActivate,
   ExecutionContext,
@@ -8,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { CATEGORY_KEY } from './category.decorator';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { CategoryConfigProvider } from './category-config.provider';
+import { IS_ADMIN_KEY } from './admin.decorator';
 
 @Injectable()
 export class CategoryGuard implements CanActivate {
@@ -19,16 +21,18 @@ export class CategoryGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     
-    if (request.url === '/metrics') {
-      return true;
-    }
-    // Check if the route is marked as public
+    const isMetrics = request.url === '/metrics';
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
+    
+    const isAdmin = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
-    if (isPublic) {
+    if (isPublic || isMetrics || isAdmin) {
       return true;
     }
     

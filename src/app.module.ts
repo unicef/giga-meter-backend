@@ -14,9 +14,14 @@ import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
+import { MeasurementV2Controller } from './measurement/measurement.v2.controller';
 import { MeasurementService } from './measurement/measurement.service';
+<<<<<<< HEAD
 import { MeasurementSandboxController } from './measurement/sandbox/sandbox.controller';
 import { MeasurementSandboxService } from './measurement/sandbox/sandbox.service';
+=======
+import { MeasurementServiceV2 } from './measurement/measurement.service.v2';
+>>>>>>> develop
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
 import { DataFixController } from './data-fix/data-fix.controller';
@@ -37,8 +42,24 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
+import { GeolocationModule } from './geolocation/geolocation.module';
+import { NearestSchoolModule } from './nearest-school/nearest-school.module';
+import { PublicController } from './public/public.controller';
+import { PublicService } from './public/public.service';
+import { CountryConfigModule } from './country-config/country-config.module';
+import { SchoolRegistrationController } from './school-registration/school-registration.controller';
+import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
+import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
-
+import { DeviceTokenController } from './auth/device-token.controller';
+import { DeviceTokenService } from './auth/device-token.service';
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
+import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { TranslateModule } from './translate';
+import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
 
 @Module({
   imports: [
@@ -56,9 +77,16 @@ import * as redisStore from 'cache-manager-redis-store';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
+    CountryConfigModule,
     AuthModule,
     IpMetadataModule,
+    GeolocationModule,
+    NearestSchoolModule,
+    AdminMeterModule,
+    TranslateModule,
+    FeatureFlagModule,
   ],
   controllers: [
     AppController,
@@ -68,11 +96,19 @@ import * as redisStore from 'cache-manager-redis-store';
     SchoolMasterController,
     CountryController,
     MeasurementController,
+<<<<<<< HEAD
     MeasurementSandboxController,
+=======
+    MeasurementV2Controller,
+>>>>>>> develop
     AdminController,
     DataFixController,
     MetricsController,
     ConnectivityController,
+    DeviceTokenController,
+    PingAggregationController,
+    PublicController,
+    SchoolRegistrationController,
   ],
   providers: [
     AppService,
@@ -83,10 +119,17 @@ import * as redisStore from 'cache-manager-redis-store';
     SchoolMasterService,
     CountryService,
     MeasurementService,
+<<<<<<< HEAD
     MeasurementSandboxService,
+=======
+    MeasurementServiceV2,
+>>>>>>> develop
     AdminService,
     MetricsService,
     CategoryConfigProvider,
+    DeviceTokenService,
+    PingAggregationService,
+    ConnectivityService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -99,7 +142,11 @@ import * as redisStore from 'cache-manager-redis-store';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    SchedulerService,
     ConnectivityService,
+    PublicService,
+    SchoolRegistrationGuard,
+    SchoolRegistrationService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

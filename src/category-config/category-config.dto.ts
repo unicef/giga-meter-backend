@@ -93,3 +93,11 @@ export class CategoryConfigDto extends CreateCategoryConfigDto {
   @ApiProperty({ description: 'Last update timestamp' })
   updatedAt: Date;
 }
+
+export class AllowedCountriesDto {
+  @ApiProperty({ description: 'Category name' })
+  category: string;
+
+  @ApiProperty({ description: 'List of allowed country codes', type: [String] })
+  allowedCountries: string[];
+}

@@ -1,10 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { CategoryConfigService } from './category-config.service';
-import { CreateCategoryConfigDto, UpdateCategoryConfigDto, CategoryConfigDto } from './category-config.dto';
+import { CreateCategoryConfigDto, UpdateCategoryConfigDto, CategoryConfigDto, AllowedCountriesDto } from './category-config.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '../auth/auth.guard';
 import { ApiSuccessResponseDto } from '../common/common.dto';
 import { CategoryConfig } from '@prisma/client';
+import { Public } from 'src/common/public.decorator';
 
 @ApiTags('Category Configuration')
 @Controller('api/v1/category-config')
@@ -53,6 +54,20 @@ export class CategoryConfigController {
       data: result,
       timestamp: new Date().toISOString(),
       message: 'Default category configuration retrieved successfully',
+    };
+  }
+
+  @Get('allowed-countries')
+  @Public()
+  @ApiOperation({ summary: 'Get allowed countries for each category' })
+  @ApiResponse({ status: 200, description: 'Returns allowed countries list for each category', type: [AllowedCountriesDto] })
+  async getAllowedCountries(): Promise<ApiSuccessResponseDto<AllowedCountriesDto[]>> {
+    const result = await this.categoryConfigService.getAllowedCountries();
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: 'Allowed countries retrieved successfully',
     };
   }
 
