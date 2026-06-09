@@ -8,6 +8,7 @@ import { MessagesController } from './messages/messages.controller';
 import { FlaggedSchoolService } from './flagged-school/flagged-school.service';
 import { FlaggedSchoolController } from './flagged-school/flagged-school.controller';
 import { SchoolController } from './school/school.controller';
+import { StagingSchoolController } from './school/staging-school.controller';
 import { SchoolService } from './school/school.service';
 import { CountryController } from './country/country.controller';
 import { CountryService } from './country/country.service';
@@ -72,6 +73,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     MessagesController,
     FlaggedSchoolController,
     SchoolController,
+    StagingSchoolController,
     SchoolMasterController,
     CountryController,
     MeasurementController,
