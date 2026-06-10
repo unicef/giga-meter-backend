@@ -18,7 +18,13 @@ export class toggleIsActiveSchoolDto {
   giga_id_school: string;
 
   @ApiProperty()
+  giga_ids_school?: string[] = [];
+
+  @ApiProperty()
   is_active: boolean;
+
+  @ApiProperty({ required: false, type: [String] })
+  country_codes?: string[] = [];
 }
 
 export class FeatureFlagSchoolDto {
@@ -83,4 +89,7 @@ export class RequestSchoolsAdminDto {
 
   @ApiProperty({ required: false, type: [String] })
   countries?: string[];
+
+  @ApiProperty({ required: false })
+  status?: boolean = null as any;
 }

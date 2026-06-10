@@ -21,10 +21,10 @@ import { isHardwareIdBlocked } from 'src/common/hardware-id.utils';
 export class SchoolsService {
   private logger = new Logger(SchoolsService.name);
 
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
   async getSchoolsAndDeviceCount(bodyRequest: RequestSchoolsAdminDto) {
     try {
-      const { giga_id_school, countries, search } = bodyRequest;
+      const { giga_id_school, countries, search, status } = bodyRequest;
       // Normalize page and limit to safe integers
       const page = Math.floor(bodyRequest.page || 1);
       const limit = Math.floor(bodyRequest.limit || 10);
@@ -47,6 +47,7 @@ export class SchoolsService {
             is_active: true,
             giga_id_school: true,
             app_version: true,
+            os: true,
           },
           distinct: ['device_hardware_id'],
           orderBy: {
@@ -63,9 +64,17 @@ export class SchoolsService {
           );
         }
         if (search && search.trim()) {
+          const searchTerm = `%${search.trim()}%`;
           where.push(
-            Prisma.sql`school.name ILIKE ${'%' + search.trim() + '%'}`,
+            Prisma.sql`(school.name ILIKE ${searchTerm} 
+            OR school.giga_id_school ILIKE ${searchTerm} 
+            OR school.country_code ILIKE ${searchTerm})
+            OR school.education_level ILIKE ${searchTerm}
+            OR school.external_id ILIKE ${searchTerm}`,
           );
+        }
+        if (status !== null && status !== undefined) {
+          where.push(Prisma.sql`school.is_active = ${status}`);
         }
 
         if (page <= 0 || limit <= 0 || limit > 100)
@@ -77,11 +86,19 @@ export class SchoolsService {
         SELECT 
           school.id,
           school.name,
+          school.external_id,
           school.giga_id_school,
           school.feature_flags,
           school.country_code,
           school.is_active,
           school.education_level,
+          school.school_type,
+          school.address,
+          school.postal_code,
+          school.admin_1_name,
+          school.admin_2_name,
+          school.admin_3_name,
+          school.admin_4_name,
           (
             SELECT COUNT(DISTINCT ds.device_hardware_id)::int 
             FROM dailycheckapp_school ds 
@@ -95,7 +112,10 @@ export class SchoolsService {
 
       if (data.length > 0 && schooldDailyPromise) {
         total = 1;
-        data[0].school_devices = (await schooldDailyPromise).map((item) => ({ ...item, is_active: item.is_active ?? true }));
+        data[0].school_devices = (await schooldDailyPromise).map((item) => ({
+          ...item,
+          is_active: item.is_active ?? true,
+        }));
       } else {
         const countData = await this.prisma.$queryRaw<any[]>`
           SELECT count(school.id)::int as total 
@@ -135,7 +155,7 @@ export class SchoolsService {
     );
     // If the hardware ID is blocked/generic, don't perform deactivation
     if (isHardwareIdBlocked(device_hardware_id)) {
-       throw new BadRequestException('device_hardware_id is blocked/generic');
+      throw new BadRequestException('device_hardware_id is blocked/generic');
     }
     if (!device_hardware_id || device_hardware_id.trim().length === 0) {
       throw new BadRequestException('device_hardware_id is null/empty');
@@ -175,39 +195,52 @@ export class SchoolsService {
 
   async toggleIsActiveSchool(reqDto: toggleIsActiveSchoolDto) {
     // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
-    const { giga_id_school, is_active } = reqDto;
+    const { is_active, giga_ids_school, giga_id_school, country_codes } =
+      reqDto;
+    let gigaIds = giga_id_school ? [giga_id_school] : giga_ids_school || [];
 
-    if (!giga_id_school || giga_id_school.trim().length === 0) {
-      throw new BadRequestException('giga_id_school is null/empty');
+    if (
+      (!gigaIds || gigaIds.length === 0) &&
+      (!country_codes || country_codes.length === 0)
+    ) {
+      throw new BadRequestException(
+        'giga_id_school or country_codes is null/empty',
+      );
     }
+
     if (typeof is_active !== 'boolean') {
       throw new BadRequestException('is_active is null/empty');
     }
-    const school = await this.prisma.school.findFirst({
+    gigaIds = gigaIds.map((gigaId) => gigaId.trim());
+    const school = await this.prisma.school.findMany({
       where: {
-        giga_id_school: giga_id_school?.trim(),
-      },
-    });
-    if (!school) throw new NotFoundException('school not found');
-
-    const result = await this.prisma.school.update({
-      where: {
-        id: school.id,
-      },
-      data: {
-        is_active: is_active,
-      },
-      select: {
-        giga_id_school: true,
-        name: true,
-        is_active: true,
+        ...(gigaIds.length && { giga_id_school: { in: gigaIds } }),
+        ...(country_codes?.length && { country_code: { in: country_codes } }),
+        is_active: { not: is_active },
       },
     });
 
-    if (result) {
+    const CHUNK_SIZE = 10000;
+    const results = [];
+
+    for (let i = 0; i < school.length; i += CHUNK_SIZE) {
+      const chunk = school.slice(i, i + CHUNK_SIZE);
+      const result = await this.prisma.school.updateMany({
+        where: {
+          id: { in: chunk.map((s) => s.id) },
+        },
+        data: {
+          is_active: is_active,
+        },
+      });
+      results.push(result);
+    }
+    const totalUpdated = results.reduce((acc, curr) => acc + curr.count, 0);
+
+    if (totalUpdated > 0 || results.length == 0) {
       return {
         success: true,
-        data: result,
+        data: { count: totalUpdated },
         timestamp: new Date().toISOString(),
         message: 'success',
       };
