@@ -623,6 +623,9 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(2),
@@ -657,6 +660,9 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(3),
@@ -691,6 +697,9 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
 ];
 
@@ -725,6 +734,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(2),
@@ -756,6 +768,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(3),
@@ -787,6 +802,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
 ];
 

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   measurements as Measurement,
@@ -6,8 +6,10 @@ import {
 } from '@prisma/client';
 import {
   AddMeasurementDto,
+  AddMeasurementV2Dto,
   ClientInfoDto,
   MeasurementDto,
+  MeasurementEntityV2Dto,
   MeasurementFailedDto,
   MeasurementV2Dto,
   ResultsDto,
@@ -16,6 +18,8 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import { EntityTypeService } from '../entity-type/entity-type.service';
+import { HealthService } from '../health/health.service';
 
 @Injectable()
 export class MeasurementService {
@@ -24,6 +28,8 @@ export class MeasurementService {
   constructor(
     private prisma: PrismaService,
     private geolocationUtility: GeolocationUtility,
+    private entityTypeService: EntityTypeService,
+    private healthService: HealthService,
   ) {}
 
   async measurements(
@@ -329,6 +335,209 @@ export class MeasurementService {
         : this.WRONG_COUNTRY_CODE_ERR;
     }
     return null;
+  }
+
+  // ---------------------------------------------------------------------------
+  // V2 entity-aware methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /api/v1/measurements/v2
+   * Entity-aware measurement submission for health (and school) devices.
+   */
+  async createMeasurementV2(dto: AddMeasurementV2Dto): Promise<string> {
+    // 1. Validate: at least one entity ID must be present
+    if (!dto.giga_id_school && !dto.giga_id_health) {
+      throw new BadRequestException(
+        'At least one of giga_id_school or giga_id_health must be provided',
+      );
+    }
+
+    // 2. Resolve entity_type_id
+    const entityType = await this.entityTypeService.getByCode(dto.entity_type);
+    if (!entityType) {
+      throw new BadRequestException(
+        `Unknown entity_type "${dto.entity_type}"`,
+      );
+    }
+
+    // 3. If health entity: verify the health facility exists
+    if (dto.giga_id_health) {
+      const healthFacility = await this.healthService.findActiveById(
+        dto.giga_id_health,
+      );
+      if (!healthFacility) {
+        throw new BadRequestException(
+          `Health facility "${dto.giga_id_health}" not found`,
+        );
+      }
+    }
+
+    // 4. If registration_id provided: verify it exists and is not blocked
+    if (dto.registration_id != null) {
+      const registration = await this.prisma.registration.findFirst({
+        where: { id: BigInt(dto.registration_id.toString()) },
+      });
+      if (!registration) {
+        throw new BadRequestException(
+          `Registration "${dto.registration_id}" not found`,
+        );
+      }
+      if (registration.is_blocked) {
+        throw new BadRequestException(
+          `Registration "${dto.registration_id}" is blocked`,
+        );
+      }
+    }
+
+    // 5. Write the measurement
+    await this.prisma.measurements.create({
+      data: {
+        timestamp: dto.Timestamp,
+        uuid: dto.UUID,
+        browser_id: dto.BrowserID,
+        school_id: dto.school_id ?? null,
+        download: dto.Download,
+        upload: dto.Upload,
+        latency: dto.Latency,
+        giga_id_school: dto.giga_id_school?.toLowerCase().trim() ?? null,
+        giga_id_health: dto.giga_id_health?.toLowerCase().trim() ?? null,
+        entity_type_id: entityType.id,
+        registration_id: dto.registration_id != null ? BigInt(dto.registration_id.toString()) : null,
+        country_code: dto.country_code,
+        ip_address: dto.ip_address,
+        app_version: dto.app_version,
+        device_hardware_id: dto.device_hardware_id,
+        windows_username: dto.windows_username,
+        installed_path: dto.installed_path,
+        wifi_connections: dto.wifi_connections ?? undefined,
+        source: 'DailyCheckApp',
+        detected_latitude: dto.geolocation?.location?.lat ?? null,
+        detected_longitude: dto.geolocation?.location?.lng ?? null,
+      },
+    });
+
+    return '';
+  }
+
+  /**
+   * GET /api/v1/measurements/v2/entity
+   * Entity-aware measurement list — returns a plain array (no wrapper).
+   */
+  async measurementsV2Entity(
+    skip: number,
+    take: number,
+    order_by: string,
+    entity_type?: string,
+    giga_id_health?: string,
+    giga_id_school?: string,
+    country_iso3_code?: string,
+    filter_by?: string,
+    filter_condition?: string,
+    filter_value?: Date,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<MeasurementEntityV2Dto[]> {
+    const filter: Record<string, any> = {};
+
+    // Country access filter
+    if (!write_access && countries?.length) {
+      filter.country_code = { in: countries };
+    }
+
+    if (country_iso3_code) {
+      const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
+        where: { code_iso3: country_iso3_code },
+      });
+      if (
+        !dbCountry?.code ||
+        (!write_access && !countries?.includes(dbCountry.code))
+      ) {
+        return [];
+      }
+      filter.country_code = { in: [dbCountry.code] };
+    }
+
+    if (giga_id_school) {
+      filter.giga_id_school = giga_id_school;
+    }
+    if (giga_id_health) {
+      filter.giga_id_health = giga_id_health;
+    }
+
+    // Resolve entity_type filter: string name → entity_type_id
+    if (entity_type) {
+      const et = await this.entityTypeService.getByCode(entity_type);
+      if (!et) {
+        return []; // unknown entity_type — return empty rather than error
+      }
+      filter.entity_type_id = et.id;
+    }
+
+    // Date filter
+    if (filter_by && filter_condition && filter_value != null) {
+      const parsedDate = new Date(filter_value);
+      const formattedDate = parsedDate.toISOString();
+      const hasTime =
+        parsedDate.getUTCHours() > 0 ||
+        parsedDate.getUTCMinutes() > 0 ||
+        parsedDate.getUTCSeconds() > 0 ||
+        parsedDate.getUTCMilliseconds() > 0;
+      const endOfDay = new Date(filter_value);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      switch (filter_condition) {
+        case 'lt': filter[filter_by] = { lt: hasTime ? formattedDate : parsedDate.toISOString() }; break;
+        case 'lte': filter[filter_by] = { lte: hasTime ? formattedDate : endOfDay.toISOString() }; break;
+        case 'gt': filter[filter_by] = { gt: hasTime ? formattedDate : endOfDay.toISOString() }; break;
+        case 'gte': filter[filter_by] = { gte: hasTime ? formattedDate : parsedDate.toISOString() }; break;
+        case 'eq':
+          filter[filter_by] = hasTime
+            ? { equals: formattedDate }
+            : { gte: parsedDate, lte: endOfDay };
+          break;
+      }
+    }
+
+    const orderField = order_by.replace('-', '');
+    const orderDir: 'asc' | 'desc' = order_by.startsWith('-') ? 'desc' : 'asc';
+
+    const rows = await this.prisma.measurements.findMany({
+      where: filter,
+      skip,
+      take,
+      orderBy: { [orderField]: orderDir },
+    });
+
+    return Promise.all(rows.map(async (m) => this.toEntityV2Dto(m)));
+  }
+
+  private async toEntityV2Dto(m: Measurement): Promise<MeasurementEntityV2Dto> {
+    // Resolve entity_type name (from cache — no extra DB round-trip)
+    let entityTypeName = 'school';
+    if (m.entity_type_id != null) {
+      const et = await this.entityTypeService.getById(m.entity_type_id);
+      if (et) entityTypeName = et.name;
+    }
+
+    return {
+      timestamp: m.timestamp,
+      browserId: m.browser_id,
+      download: m.download,
+      upload: m.upload,
+      latency: m.latency != null ? parseInt(m.latency.toString()) : null,
+      entity_type: entityTypeName,
+      school_id: m.school_id ?? null,
+      giga_id_school: m.giga_id_school ?? null,
+      giga_id_health: m.giga_id_health ?? null,
+      registration_id: m.registration_id != null ? m.registration_id.toString() : null,
+      country_code: m.country_code,
+      ip_address: m.ip_address,
+      app_version: m.app_version,
+      source: m.source,
+      created_at: m.created_at,
+      device_hardware_id: m.device_hardware_id,
+    };
   }
 
   private applyFilter(

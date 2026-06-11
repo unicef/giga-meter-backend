@@ -57,6 +57,10 @@ import { SchedulerService } from './scheduler/scheduler.service';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
 import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
+import { EntityTypeModule } from './entity-type/entity-type.module';
+import { HealthModule } from './health/health.module';
+import { RegistrationModule } from './registration/registration.module';
+import { NearestFacilityModule } from './nearest-facility/nearest-facility.module';
 
 @Module({
   imports: [
@@ -84,6 +88,10 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     AdminMeterModule,
     TranslateModule,
     FeatureFlagModule,
+    EntityTypeModule,
+    HealthModule,
+    RegistrationModule,
+    NearestFacilityModule,
   ],
   controllers: [
     AppController,
