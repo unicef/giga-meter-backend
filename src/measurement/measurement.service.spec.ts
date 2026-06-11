@@ -3,6 +3,8 @@ import { MeasurementService } from './measurement.service';
 import { AddMeasurementDto } from './measurement.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import { EntityTypeService } from '../entity-type/entity-type.service';
+import { HealthService } from '../health/health.service';
 import {
   mockAddMeasurementDto,
   mockCountryModel,
@@ -27,6 +29,18 @@ describe('MeasurementService', () => {
       calculateDistance: jest.fn(),
     };
 
+    const mockEntityTypeService = {
+      getByCode: jest.fn(),
+      getById: jest.fn(),
+      resolveIdByCode: jest.fn(),
+    };
+
+    const mockHealthService = {
+      findActiveById: jest.fn(),
+      findAll: jest.fn(),
+      findByGigaId: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MeasurementService,
@@ -34,6 +48,14 @@ describe('MeasurementService', () => {
         {
           provide: GeolocationUtility,
           useValue: mockGeolocationUtility,
+        },
+        {
+          provide: EntityTypeService,
+          useValue: mockEntityTypeService,
+        },
+        {
+          provide: HealthService,
+          useValue: mockHealthService,
         },
       ],
     }).compile();

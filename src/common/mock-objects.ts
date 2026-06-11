@@ -632,6 +632,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(2),
@@ -674,6 +677,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(3),
@@ -716,6 +722,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
 ];
 
@@ -750,6 +759,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(2),
@@ -781,6 +793,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(3),
@@ -812,6 +827,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    entity_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
 ];
 
