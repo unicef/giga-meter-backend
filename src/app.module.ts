@@ -52,6 +52,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
 import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
 import { ProtocolConfigService } from './protocol-config/protocol-config.service';
+import { EntityTypeModule } from './entity-type/entity-type.module';
+import { HealthModule } from './health/health.module';
+import { RegistrationModule } from './registration/registration.module';
+import { NearestFacilityModule } from './nearest-facility/nearest-facility.module';
 
 @Module({
   imports: [
@@ -78,6 +82,10 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     AdminMeterModule,
     TranslateModule,
     FeatureFlagModule,
+    EntityTypeModule,
+    HealthModule,
+    RegistrationModule,
+    NearestFacilityModule,
   ],
   controllers: [
     AppController,
