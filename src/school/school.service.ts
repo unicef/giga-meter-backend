@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
 import { SchoolDto } from './school.dto';
+import { CreateSchoolDto } from './create-school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
@@ -401,6 +403,63 @@ export class SchoolService {
       message:
         'No active device found with the provided hardware_id and giga_id_school',
     };
+  }
+
+  /**
+   * Creates a record in the canonical `school` table.
+   *
+   * NOTE: this writes to the master `school` table (not `dailycheckapp_school`)
+   * and is only exposed through the staging-only endpoint. The PostGIS
+   * `geopoint` column is unsupported by Prisma's typed client, so when
+   * latitude/longitude are provided it is populated with a follow-up raw query
+   * inside the same transaction.
+   */
+  async createSchoolRecord(dto: CreateSchoolDto): Promise<string> {
+    const now = new Date();
+
+    const data: Prisma.schoolUncheckedCreateInput = {
+      name: dto.name,
+      name_lower: dto.name?.toLowerCase(),
+      timezone: dto.timezone,
+      gps_confidence: dto.gps_confidence,
+      altitude: dto.altitude,
+      address: dto.address,
+      postal_code: dto.postal_code,
+      email: dto.email,
+      education_level: dto.education_level,
+      environment: dto.environment,
+      school_type: dto.school_type,
+      country_id: dto.country_id,
+      location_id: dto.location_id,
+      admin_1_name: dto.admin_1_name,
+      admin_2_name: dto.admin_2_name,
+      admin_3_name: dto.admin_3_name,
+      admin_4_name: dto.admin_4_name,
+      external_id: dto.external_id,
+      giga_id_school: dto.giga_id_school?.toLowerCase().trim(),
+      education_level_regional: dto.education_level_regional,
+      feature_flags: dto.feature_flags as Prisma.InputJsonValue,
+      country_code: dto.country_code,
+      created: now,
+      modified: now,
+      created_at: now,
+    };
+
+    const id = await this.prisma.$transaction(async (tx) => {
+      const school = await tx.school.create({ data });
+
+      if (dto.latitude != null && dto.longitude != null) {
+        await tx.$executeRaw`
+          UPDATE school
+          SET geopoint = ST_SetSRID(ST_MakePoint(${dto.longitude}, ${dto.latitude}), 4326)::geography
+          WHERE id = ${school.id}
+        `;
+      }
+
+      return school.id;
+    });
+
+    return id.toString();
   }
 
   private toDto(school: School): SchoolDto {
