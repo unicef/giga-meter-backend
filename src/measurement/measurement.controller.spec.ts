@@ -5,7 +5,6 @@ import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
@@ -16,6 +15,8 @@ import {
   mockMeasurementFailedDto,
   mockMeasurementV2Dto,
 } from '../common/mock-objects';
+import { exampleCloudflareMeasurementDto } from './cloudflare-measurement.fixture';
+import { HttpException } from '@nestjs/common';
 
 describe('MeasurementController', () => {
   let controller: MeasurementController;
@@ -51,14 +52,6 @@ describe('MeasurementController', () => {
           useValue: mockCacheManager,
         },
         {
-          provide: APP_GUARD,
-          useClass: AuthGuard,
-        },
-        {
-          provide: APP_GUARD,
-          useClass: ThrottlerGuard,
-        },
-        {
           provide: CategoryConfigProvider,
           useValue: mockCategoryConfigProvider,
         },
@@ -73,6 +66,10 @@ describe('MeasurementController', () => {
         ]),
       ],
     })
+      .overrideGuard(AuthGuard)
+      .useValue({
+        canActivate: () => Promise.resolve(true),
+      })
       .overrideGuard(ThrottlerGuard)
       .useValue({
         canActivate: () => Promise.resolve(true),
@@ -242,6 +239,43 @@ describe('MeasurementController', () => {
       await expect(
         controller.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('CreateMeasurementByProtocol', () => {
+    it('should create a cloudflare measurement', async () => {
+      jest.spyOn(service, 'createMeasurement').mockResolvedValue('');
+
+      const response = await controller.createMeasurementByProtocol(
+        'cloudflare',
+        exampleCloudflareMeasurementDto,
+      );
+
+      expect(service.createMeasurement).toHaveBeenCalledWith(
+        expect.objectContaining({
+          UUID: exampleCloudflareMeasurementDto.uuid,
+        }),
+        'cloudflare',
+      );
+      expect(response.data.user_id).toBeDefined();
+    });
+
+    it('should reject unsupported protocols', async () => {
+      await expect(
+        controller.createMeasurementByProtocol(
+          'invalid',
+          exampleCloudflareMeasurementDto,
+        ),
+      ).rejects.toThrow(HttpException);
+    });
+
+    it('should reject reserved but unimplemented protocols', async () => {
+      await expect(
+        controller.createMeasurementByProtocol(
+          'mlab',
+          exampleCloudflareMeasurementDto,
+        ),
+      ).rejects.toThrow(HttpException);
     });
   });
 
