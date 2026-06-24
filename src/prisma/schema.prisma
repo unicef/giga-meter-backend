@@ -193,6 +193,7 @@ model SchoolProtocolConfig {
 
   @@index([giga_id_school])
   @@map("school_protocol_config")
+}
 
 model master_sync_school_static {
   id                                    Int       @id @default(autoincrement())
