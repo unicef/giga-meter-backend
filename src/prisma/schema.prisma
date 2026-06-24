@@ -133,6 +133,35 @@ model country {
   is_active                         Boolean?                   @default(true)
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
+  country_protocol_config           CountryProtocolConfig?
+}
+
+/// Per-country defaults for measurement protocol (school may override).
+model CountryProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  country_code            String   @unique @db.VarChar
+  measurement_provider    String   @db.VarChar(32)
+  between_tests_delay_sec Int      @default(0)
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  country country @relation(fields: [country_code], references: [code])
+
+  @@index([country_code])
+  @@map("country_protocol_config")
+}
+
+/// Per-school overrides for protocol (nullable fields inherit from country / default).
+model SchoolProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  giga_id_school          String   @unique @db.VarChar
+  measurement_provider    String?  @db.VarChar(32)
+  between_tests_delay_sec Int?
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([giga_id_school])
+  @@map("school_protocol_config")
 }
 
 model master_sync_school_static {
@@ -250,9 +279,18 @@ model measurements {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  protocol                    String    @default("mlab") @db.VarChar(32)
+  download_latency            Float?
+  upload_latency              Float?
+  download_jitter             Float?
+  upload_jitter               Float?
+  jitter                      Float?
+  packet_loss                 Float?
+  network_quality_score       Float?
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
+  @@index([protocol])
 }
 
 model measurements_failed {
@@ -397,6 +435,8 @@ model connectivity_ping_checks {
   browserId      String?   @map("browser_id")
   latency        Float?    @map("latency")
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  is_deleted     Boolean   @default(false)
 }
 
 model IpMetadata {
@@ -624,4 +664,19 @@ model FeatureFlagOverride {
 
   @@unique([feature_flag_id, scope, scope_id])
   @@map("feature_flag_override")
+}
+model ConnectivityPingChecksDailyAggr {
+  id                   Int      @id @default(autoincrement())
+  timestamp_date       DateTime
+  giga_id_school       String
+  browser_id           String?
+  is_connected_true    Int
+  is_connected_all     Int
+  uptime               Float
+  unloaded_latency_avg Float?
+  created_at           DateTime @default(now())
+
+  @@index([giga_id_school, timestamp_date])
+  @@index([giga_id_school, browser_id, timestamp_date])
+  @@map("connectivity_ping_checks_daily_aggr")
 }

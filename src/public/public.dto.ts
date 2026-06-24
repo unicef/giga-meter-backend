@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PublicGeoLocationDto {
   @ApiProperty({
@@ -793,4 +793,28 @@ export class PublicMeasurementDto {
 
   @ApiProperty({ required: false })
   wifi_connections?: any[];
+
+  @ApiPropertyOptional()
+  protocol?: string;
+
+  @ApiPropertyOptional()
+  download_latency?: number;
+
+  @ApiPropertyOptional()
+  upload_latency?: number;
+
+  @ApiPropertyOptional()
+  download_jitter?: number;
+
+  @ApiPropertyOptional()
+  upload_jitter?: number;
+
+  @ApiPropertyOptional()
+  jitter?: number;
+
+  @ApiPropertyOptional()
+  packet_loss?: number;
+
+  @ApiPropertyOptional()
+  network_quality_score?: number;
 }

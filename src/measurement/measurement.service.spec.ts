@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MeasurementService } from './measurement.service';
+import { AddMeasurementDto } from './measurement.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
@@ -433,6 +434,79 @@ describe('MeasurementService', () => {
       await expect(
         service.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
+    });
+
+    it('should persist mlab protocol with null quality metrics by default', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement(mockAddMeasurementDto[0]);
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          protocol: 'mlab',
+          download_latency: null,
+          upload_latency: null,
+          download_jitter: null,
+          upload_jitter: null,
+          jitter: null,
+          packet_loss: null,
+          network_quality_score: null,
+        }),
+      });
+    });
+
+    it('should persist cloudflare protocol and derived quality metrics', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement(
+        {
+          ...mockAddMeasurementDto[0],
+          Results: {
+            summary: {
+              downLoadedLatency: 10,
+              upLoadedLatency: 20,
+              downLoadedJitter: 1,
+              upLoadedJitter: 2,
+              jitter: 3,
+            },
+            scores: {
+              streaming: { points: 10 },
+              gaming: { points: 20 },
+              rtc: { points: 30 },
+            },
+          } as AddMeasurementDto['Results'],
+        },
+        'cloudflare',
+      );
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          protocol: 'cloudflare',
+          download_latency: 10,
+          upload_latency: 20,
+          download_jitter: 1,
+          upload_jitter: 2,
+          jitter: 3,
+          packet_loss: null,
+          network_quality_score: 20,
+        }),
+      });
     });
   });
   describe('createMultipleMeasurement', () => {

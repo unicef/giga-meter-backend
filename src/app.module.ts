@@ -43,6 +43,13 @@ import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
 import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
 
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
+import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
+import { ProtocolConfigService } from './protocol-config/protocol-config.service';
+
 @Module({
   imports: [
     HttpModule,
@@ -59,6 +66,7 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
@@ -79,7 +87,9 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     DataFixController,
     MetricsController,
     ConnectivityController,
+    PingAggregationController,
     PublicController,
+    ProtocolConfigController,
   ],
   providers: [
     AppService,
@@ -93,6 +103,8 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     AdminService,
     MetricsService,
     CategoryConfigProvider,
+    PingAggregationService,
+    ConnectivityService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -105,8 +117,10 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    SchedulerService,
     ConnectivityService,
     PublicService,
+    ProtocolConfigService,
   ],
 })
 export class AppModule { }

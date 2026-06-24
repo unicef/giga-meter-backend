@@ -18,6 +18,7 @@ export class SchoolMasterService {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
         is_active: true,
+        deleted: null,
       },
       select: schoolMasterSelect
     });
