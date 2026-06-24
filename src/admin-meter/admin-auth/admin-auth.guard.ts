@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
-import jwksRsa from 'jwks-rsa';
+import jwksRsa = require('jwks-rsa');
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ROLES_KEY } from '../roles/roles.decorator';
 

@@ -1,3 +1,12 @@
+jest.mock('src/utils/redis.client', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    set: jest.fn(),
+    del: jest.fn().mockResolvedValue(1),
+  },
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContentService } from './content.service';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -120,6 +129,7 @@ describe('ContentService', () => {
       };
 
       mockPrismaService.cmsContent.upsert.mockResolvedValue(mockPublishedContent);
+      mockPrismaService.cmsContent.deleteMany.mockResolvedValue({ count: 1 });
 
       await service.saveContent(mockSaveDto, ContentStatus.PUBLISHED);
 
