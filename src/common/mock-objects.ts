@@ -221,6 +221,7 @@ export const mockSchoolMasterModel = {
   created_at: new Date('2024-04-12T04:13:37.300Z'),
   deleted: null,
   last_school_static_id: 1,
+  is_active: true,
 };
 
 export const mockSchoolMasterDto: SchoolMasterDto[] = [

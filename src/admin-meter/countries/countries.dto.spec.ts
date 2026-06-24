@@ -1,7 +1,7 @@
-import { CountriesDto } from './countries.dto';
+import { CountriesListingDto } from './countries.dto';
 
-describe('CountriesDto', () => {
+describe('CountriesListingDto', () => {
   it('should be defined', () => {
-    expect(new CountriesDto()).toBeDefined();
+    expect(new CountriesListingDto()).toBeDefined();
   });
 });
