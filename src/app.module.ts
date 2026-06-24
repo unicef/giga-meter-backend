@@ -39,6 +39,9 @@ import { GeolocationModule } from './geolocation/geolocation.module';
 import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
 import * as redisStore from 'cache-manager-redis-store';
+import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { TranslateModule } from './translate';
+import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
 
 import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
@@ -68,6 +71,9 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     AuthModule,
     IpMetadataModule,
     GeolocationModule,
+    AdminMeterModule,
+    TranslateModule,
+    FeatureFlagModule,
   ],
   controllers: [
     AppController,
@@ -117,4 +123,4 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     ProtocolConfigService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

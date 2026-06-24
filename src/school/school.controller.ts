@@ -29,10 +29,10 @@ import {
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
-  CheckDeviceStatusDto,
   DeactivateDeviceDto,
-  DeactivateDeviceResponseDto,
   SchoolDto,
+  DeactivateDeviceResponseDto,
+  CheckDeviceStatusDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';

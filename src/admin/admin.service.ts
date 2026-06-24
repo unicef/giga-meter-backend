@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
 import { AdminSchoolDto } from './admin.dto';
@@ -34,6 +34,30 @@ export class AdminService {
       data: { notify: true },
     });
     return true;
+  }
+
+  async assignRoleToUser(id: number, roleId: number) {
+    try {
+      // Check if the user already has a role assignment
+      const existingAssignment =
+        await this.prisma.customAuthUserRoleRelationship.findFirst({
+          where: { user_id: parseInt(id.toString()), deleted: null },
+        });
+
+      // Update existing role assignment
+      const user = await this.prisma.customAuthUserRoleRelationship.update({
+        where: { id: existingAssignment.id },
+        data: { role_id: roleId, last_modified_at: new Date() },
+      });
+
+      return {
+        data: { ...user, role_id: roleId },
+        message: 'Role assigned successfully',
+        status: 200,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException('Error assigning role to user');
+    }
   }
 
   private toDto(school: School): AdminSchoolDto {
