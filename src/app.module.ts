@@ -61,6 +61,8 @@ import { EntityTypeModule } from './entity-type/entity-type.module';
 import { HealthModule } from './health/health.module';
 import { RegistrationModule } from './registration/registration.module';
 import { NearestFacilityModule } from './nearest-facility/nearest-facility.module';
+import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
+import { ProtocolConfigService } from './protocol-config/protocol-config.service';
 
 @Module({
   imports: [
@@ -111,6 +113,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     PingAggregationController,
     PublicController,
     SchoolRegistrationController,
+    ProtocolConfigController,
   ],
   providers: [
     AppService,
@@ -146,6 +149,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     PublicService,
     SchoolRegistrationGuard,
     SchoolRegistrationService,
+    ProtocolConfigService,
   ],
 })
 export class AppModule {}

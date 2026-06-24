@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsNumber,
@@ -723,6 +723,30 @@ export class MeasurementDto {
 
   @ApiProperty({ required: false })
   wifi_connections?: any[];
+
+  @ApiPropertyOptional()
+  protocol?: string;
+
+  @ApiPropertyOptional()
+  download_latency?: number;
+
+  @ApiPropertyOptional()
+  upload_latency?: number;
+
+  @ApiPropertyOptional()
+  download_jitter?: number;
+
+  @ApiPropertyOptional()
+  upload_jitter?: number;
+
+  @ApiPropertyOptional()
+  jitter?: number;
+
+  @ApiPropertyOptional()
+  packet_loss?: number;
+
+  @ApiPropertyOptional()
+  network_quality_score?: number;
 }
 
 export class MeasurementV2Dto {
@@ -795,6 +819,30 @@ export class MeasurementV2Dto {
 
   @ApiProperty({ required: false })
   wifi_connections?: any[];
+
+  @ApiPropertyOptional()
+  protocol?: string;
+
+  @ApiPropertyOptional()
+  download_latency?: number;
+
+  @ApiPropertyOptional()
+  upload_latency?: number;
+
+  @ApiPropertyOptional()
+  download_jitter?: number;
+
+  @ApiPropertyOptional()
+  upload_jitter?: number;
+
+  @ApiPropertyOptional()
+  jitter?: number;
+
+  @ApiPropertyOptional()
+  packet_loss?: number;
+
+  @ApiPropertyOptional()
+  network_quality_score?: number;
 }
 
 export class AddMeasurementDto extends MeasurementDto {
