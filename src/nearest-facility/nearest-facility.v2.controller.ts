@@ -15,25 +15,18 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Public } from '../common/public.decorator';
-import { toEntityTypeFieldName } from '../common/facility-type-compat';
 import { ApiSuccessResponseDto } from '../common/common.dto';
 import {
-  FindNearestFacilityDto,
-  NearestFacilityResponseDto,
-} from './nearest-facility.dto';
+  FindNearestFacilityV2Dto,
+  NearestFacilityV2ResponseDto,
+} from './nearest-facility.v2.dto';
 import { NearestFacilityService } from './nearest-facility.service';
 
-@ApiTags('nearest-facility')
-@Controller('api/v1/nearest-facility')
-export class NearestFacilityController {
+@ApiTags('nearest-facility V2')
+@Controller('api/v2/nearest-facility')
+export class NearestFacilityV2Controller {
   constructor(private readonly nearestFacilityService: NearestFacilityService) {}
 
-  /**
-   * POST /api/v1/nearest-facility
-   *
-   * Finds the nearest facility (school OR health) within a configurable radius.
-   * Auth: Public.
-   */
   @Public()
   @Post()
   @HttpCode(HttpStatus.OK)
@@ -44,33 +37,31 @@ export class NearestFacilityController {
       transform: true,
     }),
   )
-  @ApiOperation({ summary: 'Find the nearest school or health facility within the configured radius' })
-  @ApiBody({ type: FindNearestFacilityDto })
+  @ApiOperation({ summary: 'Find the nearest school or health facility (V2)' })
+  @ApiBody({ type: FindNearestFacilityV2Dto })
   @ApiResponse({
     status: 200,
     description: 'Nearest facility details with distance',
-    type: NearestFacilityResponseDto,
+    type: NearestFacilityV2ResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'entity_type missing or invalid' })
-  @ApiResponse({ status: 404, description: 'No facility within configured max distance' })
   async findNearestFacility(
-    @Body() dto: FindNearestFacilityDto,
-  ): Promise<ApiSuccessResponseDto<NearestFacilityResponseDto>> {
-    if (!dto.entity_type) {
+    @Body() dto: FindNearestFacilityV2Dto,
+  ): Promise<ApiSuccessResponseDto<NearestFacilityV2ResponseDto>> {
+    if (!dto.facility_type) {
       throw new BadRequestException(
-        'entity_type is required and must be "school" or "health"',
+        'facility_type is required and must be "school" or "health"',
       );
     }
 
     const data = await this.nearestFacilityService.findNearest(
       dto.latitude,
       dto.longitude,
-      dto.entity_type,
+      dto.facility_type,
     );
 
     return {
       success: true,
-      data: toEntityTypeFieldName(data),
+      data,
       timestamp: new Date().toISOString(),
       message: 'success',
     };

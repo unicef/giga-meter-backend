@@ -57,7 +57,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
 import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
-import { EntityTypeModule } from './entity-type/entity-type.module';
+import { FacilityTypeModule } from './facility-type/facility-type.module';
 import { HealthModule } from './health/health.module';
 import { RegistrationModule } from './registration/registration.module';
 import { NearestFacilityModule } from './nearest-facility/nearest-facility.module';
@@ -90,7 +90,7 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     AdminMeterModule,
     TranslateModule,
     FeatureFlagModule,
-    EntityTypeModule,
+    FacilityTypeModule,
     HealthModule,
     RegistrationModule,
     NearestFacilityModule,
