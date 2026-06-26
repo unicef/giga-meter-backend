@@ -1,12 +1,11 @@
-# Health Entity V1 — Backend Refactor Plan
+# Health Facility V1/V2 — Backend Refactor Plan
 
-> **Context:** The three Prisma migrations in `health-entity-v1-migration-status.md` are complete.
+> **Context:** The Prisma migrations in `health-entity-v1-migration-status.md` are complete, including
+> `20260624120000_rename_entity_type_to_facility_type` (entity → facility naming).
 > This document describes the application-layer work needed to expose and use those schema changes.
-> Schema design rationale lives in the companion design doc.
 >
-> **Goal:** Refactor the Giga Meter Backend to support an entity-based approach so that health
-> facilities can be registered, discovered, and measured alongside schools — without breaking
-> any existing school-facing API contracts.
+> **Goal:** Support health facilities alongside schools. **V2** (`/api/v2/*`) is the canonical API with
+> `facility_type` naming. **V1** (`/api/v1/*`) remains for backward compatibility with `entity_type` in JSON.
 
 ---
 
@@ -32,10 +31,10 @@ The migrations added the following models and column changes that drive this ref
 
 | Prisma model | Key fields | Purpose |
 |---|---|---|
-| `entity_type` | `id`, `name`, `code` (UNIQUE) | Discriminator — seed rows: `{ name:"school", code:"school" }`, `{ name:"health", code:"health" }` |
+| `facility_type` | `id`, `name`, `code` (UNIQUE) | Discriminator — seed rows: `{ name:"school", code:"school" }`, `{ name:"health", code:"health" }` |
 | `health` | `health_id_giga`, `facility_name`, `latitude`, `longitude`, `country_code`, … | Health facility master record (mirrors `school`) |
-| `registration` | `entity_type_id`, `school_id?`, `health_id?`, `giga_id_school?`, `giga_id_health?`, `installation_id` | Entity-agnostic device registration — replaces `dailycheckapp_school` for all new writes |
-| `country_entity_type_whitelist` | `country_code`, `entity_type_id` | Per-country activation gate for entity types |
+| `registration` | `facility_type_id`, `school_id?`, `health_id?`, `giga_id_school?`, `giga_id_health?`, `installation_id` | Facility-agnostic device registration — replaces `dailycheckapp_school` for all new writes |
+| `country_facility_type_whitelist` | `country_code`, `facility_type_id` | Per-country activation gate for facility types |
 | `master_sync_health_static` | mirrors `master_sync_school_static` | Versioned snapshot table for health facilities |
 | `master_sync_intermediate_health` | mirrors `master_sync_intermediate` | Staging table for inbound health data |
 
@@ -43,14 +42,14 @@ The migrations added the following models and column changes that drive this ref
 
 | Table | New columns | Notes |
 |---|---|---|
-| `measurements` | `entity_type_id Int?`, `registration_id BigInt?`, `giga_id_health String?` | `school_id` made nullable |
-| `connectivity_ping_checks` | `entity_type_id Int?`, `registration_id BigInt?`, `giga_id_health String?` | `giga_id_school` made nullable |
+| `measurements` | `facility_type_id Int?`, `registration_id BigInt?`, `giga_id_health String?` | `school_id` made nullable |
+| `connectivity_ping_checks` | `facility_type_id Int?`, `registration_id BigInt?`, `giga_id_health String?` | `giga_id_school` made nullable |
 | `school` | `+ registrations registration[]` back-relation | No column added |
 | `country` | `+ healths health[]`, `+ whitelist_entries …`, `+ master_sync_intermediate_health[]` | No column added |
 
 ### Seed data prerequisite
 
-`entity_type` rows (`school`, `health`) **must exist before any application code runs** that resolves entity types by name/code. See `health-entity-v1-migration-status.md` §4.
+`facility_type` rows (`school`, `health`) **must exist before any application code runs** that resolves facility types by name/code. See `health-entity-v1-migration-status.md` §4.
 
 ---
 
@@ -70,11 +69,11 @@ Three tables handle "registration" concepts and are often confused. Understandin
 
 ## 3. New Modules to Create
 
-### 3.1 `entity-type` module
+### 3.1 `facility-type` module
 
-**Location:** `src/entity-type/`
+**Location:** `src/facility-type/`
 
-**Purpose:** Shared service for resolving `entity_type` rows by name or code. Used internally by registration, measurement, and guard logic — not exposed as a public HTTP API.
+**Purpose:** Shared service for resolving `facility_type` rows by name or code. Used internally by registration, measurement, and guard logic — not exposed as a public HTTP API.
 
 **Files:**
 

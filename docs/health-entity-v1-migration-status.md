@@ -11,6 +11,7 @@
 | Phase 1 | `20260518232740_add_health_entity_tables` | Creates all 6 new tables with indexes and FKs. Adds back-relations to `country` and `school`. |
 | Phase 2 | `20260521120332_add_health_columns_to_existing_tables` | Adds `entity_type_id`, `registration_id`, `giga_id_health` to `measurements` and `connectivity_ping_checks` with indexes and FKs. |
 | Phase 3 | `20260521124932_add_health_make_school_id_giga_id_nullable` | Makes `measurements.school_id` and `connectivity_ping_checks.giga_id_school` nullable. |
+| Phase 4 | `20260624120000_rename_entity_type_to_facility_type` | Renames `entity_type` → `facility_type`, `entity_type_id` → `facility_type_id`, `country_entity_type_whitelist` → `country_facility_type_whitelist`. |
 
 ---
 
@@ -18,10 +19,10 @@
 
 | Model | Table | Status |
 |---|---|---|
-| `entity_type` | `entity_type` | ✅ Created — includes `code VARCHAR UNIQUE` column |
+| `facility_type` | `facility_type` | ✅ Created (renamed from `entity_type` in Phase 4) |
 | `health` | `health` | ✅ Created — all columns, indexes, FKs including circular FK with `master_sync_health_static` |
-| `registration` | `registration` | ✅ Created — FKs to `entity_type`, `school`, `health` |
-| `country_entity_type_whitelist` | `country_entity_type_whitelist` | ✅ Created — uses `country.code` FK (not `country.id` — see notes below) |
+| `registration` | `registration` | ✅ Created — FKs to `facility_type`, `school`, `health` |
+| `country_facility_type_whitelist` | `country_facility_type_whitelist` | ✅ Created (renamed from `country_entity_type_whitelist` in Phase 4) |
 | `master_sync_health_static` | `master_sync_health_static` | ✅ Created — circular FK with `health` handled correctly |
 | `master_sync_intermediate_health` | `master_sync_intermediate_health` | ✅ Created — FK to `country.id` |
 

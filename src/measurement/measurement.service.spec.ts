@@ -3,7 +3,7 @@ import { MeasurementService } from './measurement.service';
 import { AddMeasurementDto } from './measurement.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
-import { EntityTypeService } from '../entity-type/entity-type.service';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { HealthService } from '../health/health.service';
 import {
   mockAddMeasurementDto,
@@ -29,7 +29,7 @@ describe('MeasurementService', () => {
       calculateDistance: jest.fn(),
     };
 
-    const mockEntityTypeService = {
+    const mockFacilityTypeService = {
       getByCode: jest.fn(),
       getById: jest.fn(),
       resolveIdByCode: jest.fn(),
@@ -50,8 +50,8 @@ describe('MeasurementService', () => {
           useValue: mockGeolocationUtility,
         },
         {
-          provide: EntityTypeService,
-          useValue: mockEntityTypeService,
+          provide: FacilityTypeService,
+          useValue: mockFacilityTypeService,
         },
         {
           provide: HealthService,

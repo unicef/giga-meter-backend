@@ -15,6 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Public } from '../common/public.decorator';
+import { toEntityTypeFieldName } from '../common/facility-type-compat';
 import { ApiSuccessResponseDto } from '../common/common.dto';
 import {
   FindNearestFacilityDto,
@@ -69,7 +70,7 @@ export class NearestFacilityController {
 
     return {
       success: true,
-      data,
+      data: toEntityTypeFieldName(data),
       timestamp: new Date().toISOString(),
       message: 'success',
     };

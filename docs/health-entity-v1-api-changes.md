@@ -1,7 +1,9 @@
-# Health Entity V1 — API Changes
+# Health Facility API — Changes (V1 backward compat + V2)
 
-> Quick-reference changelog for the V1 health entity rollout.
+> Quick-reference changelog for the health facility rollout.
 > For full implementation detail see `health-entity-v1-backend-refactor.md`.
+>
+> **V2 is the canonical API** for new integrations. V1 endpoints remain available for backward compatibility and use legacy `entity_type` field names in JSON.
 >
 > **Change markers used inline:**
 > ```
@@ -12,9 +14,35 @@
 
 ---
 
+## V2 endpoints (preferred)
+
+| Method | V2 path | V1 equivalent (deprecated field names) |
+|--------|---------|--------------------------------------|
+| `POST` | `/api/v2/registration` | `/api/v1/registration` — response uses `facility_type` |
+| `POST` | `/api/v2/nearest-facility` | `/api/v1/nearest-facility` — body uses `facility_type` |
+| `GET` | `/api/v2/health` | `/api/v1/health` |
+| `GET` | `/api/v2/health/giga-id/:giga_id` | `/api/v1/health/giga-id/:giga_id` |
+| `POST` | `/api/v2/measurements` | `/api/v1/measurements/v2` — body uses `facility_type` |
+| `GET` | `/api/v2/measurements/facility` | `/api/v1/measurements/v2/entity` — query uses `facility_type` |
+
+### Naming: entity → facility
+
+| Layer | Legacy (V1 API) | Current (DB + V2 API) |
+|-------|-----------------|------------------------|
+| Discriminator table | `entity_type` | `facility_type` |
+| FK column | `entity_type_id` | `facility_type_id` |
+| Country whitelist | `country_entity_type_whitelist` | `country_facility_type_whitelist` |
+| JSON field | `entity_type` | `facility_type` |
+| Internal service | `EntityTypeService` | `FacilityTypeService` |
+
+Apply migration `20260624120000_rename_entity_type_to_facility_type` and run `npx prisma generate` after pulling.
+
+---
+
 ## Contents
 
-- [New Endpoints (6)](#new-endpoints)
+- [V2 endpoints (preferred)](#v2-endpoints-preferred)
+- [New V1 Endpoints (backward compat, 6)](#new-endpoints)
   - [POST /api/v1/registration](#post-apiv1registration)
   - [POST /api/v1/nearest-facility](#post-apiv1nearest-facility)
   - [GET /api/v1/health](#get-apiv1health)
@@ -35,9 +63,9 @@
 
 ---
 
-## New Endpoints
+## New Endpoints (V1 — backward compatibility)
 
----
+> These routes remain supported. New clients should use the [V2 endpoints](#v2-endpoints-preferred) with `facility_type` naming instead of `entity_type`.
 
 ### POST /api/v1/registration
 
@@ -182,7 +210,13 @@ Returns a paginated list of health facility master records, scoped to the caller
 | `country_code` | `string` | — | Filter by country code (e.g. `KE`) |
 | `page` | `number` | `0` | Zero-based page offset |
 | `size` | `number` | `10` | Results per page (max `100`) |
-| `orderBy` | `string` | — | Column to sort by; prefix `-` for DESC |
+| `orderBy` | `string` | `facility_name` | Column to sort by; prefix `-` for DESC |
+
+**Example request**
+```
+GET /api/v1/health?country_code=KE&page=0&size=25&orderBy=-facility_name
+Authorization: Bearer <vendor-api-key>
+```
 
 **Response `200 OK`**
 ```json

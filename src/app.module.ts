@@ -14,6 +14,7 @@ import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
+import { MeasurementV2Controller } from './measurement/measurement.v2.controller';
 import { MeasurementService } from './measurement/measurement.service';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
@@ -52,7 +53,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
 import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
 import { ProtocolConfigService } from './protocol-config/protocol-config.service';
-import { EntityTypeModule } from './entity-type/entity-type.module';
+import { FacilityTypeModule } from './facility-type/facility-type.module';
 import { HealthModule } from './health/health.module';
 import { RegistrationModule } from './registration/registration.module';
 import { NearestFacilityModule } from './nearest-facility/nearest-facility.module';
@@ -82,7 +83,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     AdminMeterModule,
     TranslateModule,
     FeatureFlagModule,
-    EntityTypeModule,
+    FacilityTypeModule,
     HealthModule,
     RegistrationModule,
     NearestFacilityModule,
@@ -95,6 +96,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     SchoolMasterController,
     CountryController,
     MeasurementController,
+    MeasurementV2Controller,
     AdminController,
     DataFixController,
     MetricsController,

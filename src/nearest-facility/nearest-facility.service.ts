@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NearestFacilityResponseDto } from './nearest-facility.dto';
+import { NearestFacilityV2ResponseDto } from './nearest-facility.v2.dto';
 
 @Injectable()
 export class NearestFacilityService {
@@ -11,29 +11,21 @@ export class NearestFacilityService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // ---------------------------------------------------------------------------
-  // Public entry point
-  // ---------------------------------------------------------------------------
-
   async findNearest(
     latitude: number,
     longitude: number,
-    entity_type: 'school' | 'health',
-  ): Promise<NearestFacilityResponseDto> {
-    if (entity_type === 'health') {
+    facility_type: 'school' | 'health',
+  ): Promise<NearestFacilityV2ResponseDto> {
+    if (facility_type === 'health') {
       return this.findNearestHealth(latitude, longitude);
     }
     return this.findNearestSchool(latitude, longitude);
   }
 
-  // ---------------------------------------------------------------------------
-  // School — uses existing geopoint column (same logic as NearestSchoolService)
-  // ---------------------------------------------------------------------------
-
   private async findNearestSchool(
     latitude: number,
     longitude: number,
-  ): Promise<NearestFacilityResponseDto> {
+  ): Promise<NearestFacilityV2ResponseDto> {
     const result = await this.prisma.$queryRaw<
       Array<{
         id: string;
@@ -84,7 +76,7 @@ export class NearestFacilityService {
       id: s.id,
       name: s.name ?? '',
       giga_id: s.giga_id_school ?? '',
-      entity_type: 'school',
+      facility_type: 'school',
       latitude: s.latitude,
       longitude: s.longitude,
       country_code: s.country_code ?? '',
@@ -93,14 +85,10 @@ export class NearestFacilityService {
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Health — builds geography inline from plain lat/lon columns
-  // ---------------------------------------------------------------------------
-
   private async findNearestHealth(
     latitude: number,
     longitude: number,
-  ): Promise<NearestFacilityResponseDto> {
+  ): Promise<NearestFacilityV2ResponseDto> {
     const result = await this.prisma.$queryRaw<
       Array<{
         id: string;
@@ -148,7 +136,7 @@ export class NearestFacilityService {
       id: h.id,
       name: h.name ?? '',
       giga_id: h.health_id_giga ?? '',
-      entity_type: 'health',
+      facility_type: 'health',
       latitude: h.latitude,
       longitude: h.longitude,
       country_code: h.country_code ?? '',

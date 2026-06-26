@@ -14,28 +14,28 @@
 --
 -- Idempotent: safe to run multiple times.
 --   * INSERT rows use ON CONFLICT DO NOTHING (keyed on PK or unique col).
---   * entity_type code UPDATE is a no-op when already correct.
+--   * facility_type code UPDATE is a no-op when already correct.
 --   * Fixture measurements are guarded by a WHERE NOT EXISTS check.
 -- ============================================================
 
 BEGIN;
 
 -- ============================================================
--- 0.  entity_type — normalise codes
+-- 0.  facility_type — normalise codes
 -- ============================================================
 -- The migration seed (20260521135124) inserted code='SCHL'/'HLTH'.
--- Application code calls EntityTypeService.getByCode('school'/'health'),
+-- Application code calls FacilityTypeService.getByCode('school'/'health'),
 -- so the codes must match.  This UPDATE is a no-op if already correct.
 -- ============================================================
-UPDATE entity_type SET code = 'school' WHERE name = 'school' AND code <> 'school';
-UPDATE entity_type SET code = 'health' WHERE name = 'health' AND code <> 'health';
+UPDATE facility_type SET code = 'school' WHERE name = 'school' AND code <> 'school';
+UPDATE facility_type SET code = 'health' WHERE name = 'health' AND code <> 'health';
 
 -- Fallback: insert rows if the migration seed was never applied.
-INSERT INTO entity_type (name, code)
+INSERT INTO facility_type (name, code)
 VALUES ('school', 'school')
 ON CONFLICT (code) DO NOTHING;
 
-INSERT INTO entity_type (name, code)
+INSERT INTO facility_type (name, code)
 VALUES ('health', 'health')
 ON CONFLICT (code) DO NOTHING;
 
@@ -200,7 +200,7 @@ INSERT INTO school (
   -- Used in: POST /api/v1/registration (school request body)
   --          POST /api/v1/measurements/v2 (school request body)
   --          POST /api/v1/nearest-school (response example)
-  --          POST /api/v1/nearest-facility?entity_type=school (response)
+  --          POST /api/v1/nearest-facility?facility_type=school (response)
   1234,
   '2abb47dd-3fca-44b1-b6c8-0ec0c863c236',
   'Westlands Primary School',
@@ -222,26 +222,26 @@ SELECT setval(
 );
 
 -- ============================================================
--- 4.  country_entity_type_whitelist
+-- 4.  country_facility_type_whitelist
 -- ============================================================
 -- Required for POST /api/v1/registration to succeed (403 otherwise).
--- Using subselects so this works regardless of entity_type.id values.
+-- Using subselects so this works regardless of facility_type.id values.
 -- ============================================================
-INSERT INTO country_entity_type_whitelist (country_code, entity_type_id)
-SELECT 'KE', id FROM entity_type WHERE code = 'school'
-ON CONFLICT (country_code, entity_type_id) DO NOTHING;
+INSERT INTO country_facility_type_whitelist (country_code, facility_type_id)
+SELECT 'KE', id FROM facility_type WHERE code = 'school'
+ON CONFLICT (country_code, facility_type_id) DO NOTHING;
 
-INSERT INTO country_entity_type_whitelist (country_code, entity_type_id)
-SELECT 'KE', id FROM entity_type WHERE code = 'health'
-ON CONFLICT (country_code, entity_type_id) DO NOTHING;
+INSERT INTO country_facility_type_whitelist (country_code, facility_type_id)
+SELECT 'KE', id FROM facility_type WHERE code = 'health'
+ON CONFLICT (country_code, facility_type_id) DO NOTHING;
 
-INSERT INTO country_entity_type_whitelist (country_code, entity_type_id)
-SELECT 'UZ', id FROM entity_type WHERE code = 'health'
-ON CONFLICT (country_code, entity_type_id) DO NOTHING;
+INSERT INTO country_facility_type_whitelist (country_code, facility_type_id)
+SELECT 'UZ', id FROM facility_type WHERE code = 'health'
+ON CONFLICT (country_code, facility_type_id) DO NOTHING;
 
-INSERT INTO country_entity_type_whitelist (country_code, entity_type_id)
-SELECT 'ZA', id FROM entity_type WHERE code = 'health'
-ON CONFLICT (country_code, entity_type_id) DO NOTHING;
+INSERT INTO country_facility_type_whitelist (country_code, facility_type_id)
+SELECT 'ZA', id FROM facility_type WHERE code = 'health'
+ON CONFLICT (country_code, facility_type_id) DO NOTHING;
 
 -- ============================================================
 -- 5.  registration — sample device registrations
@@ -251,7 +251,7 @@ ON CONFLICT (country_code, entity_type_id) DO NOTHING;
 -- ============================================================
 INSERT INTO registration (
   id,
-  entity_type_id,
+  facility_type_id,
   health_id,
   giga_id_health,
   school_id,
@@ -275,7 +275,7 @@ INSERT INTO registration (
 --          POST /api/v1/registration health response example
 SELECT
   987654,
-  (SELECT id FROM entity_type WHERE code = 'health'),
+  (SELECT id FROM facility_type WHERE code = 'health'),
   4001, 'hf-a1b2c3d4-5e6f-7890-abcd-ef1234567890',
   NULL, NULL,
   'KE',
@@ -294,7 +294,7 @@ WHERE NOT EXISTS (SELECT 1 FROM registration WHERE id = 987654);
 -- Used in: POST /api/v1/registration school response (illustrative)
 INSERT INTO registration (
   id,
-  entity_type_id,
+  facility_type_id,
   health_id,
   giga_id_health,
   school_id,
@@ -315,7 +315,7 @@ INSERT INTO registration (
 )
 SELECT
   987655,
-  (SELECT id FROM entity_type WHERE code = 'school'),
+  (SELECT id FROM facility_type WHERE code = 'school'),
   NULL, NULL,
   1234, '2abb47dd-3fca-44b1-b6c8-0ec0c863c236',
   'KE',
@@ -334,7 +334,7 @@ WHERE NOT EXISTS (SELECT 1 FROM registration WHERE id = 987655);
 -- Used in: GET /api/v1/measurements/v2/entity fixture row 1
 INSERT INTO registration (
   id,
-  entity_type_id,
+  facility_type_id,
   health_id,
   giga_id_health,
   school_id,
@@ -354,7 +354,7 @@ INSERT INTO registration (
 )
 SELECT
   1001,
-  (SELECT id FROM entity_type WHERE code = 'health'),
+  (SELECT id FROM facility_type WHERE code = 'health'),
   4002, '166a7f2d-b341-3762-ac7f-77b02745cf81',
   NULL, NULL,
   'UZ',
@@ -372,7 +372,7 @@ WHERE NOT EXISTS (SELECT 1 FROM registration WHERE id = 1001);
 -- Used in: GET /api/v1/measurements/v2/entity fixture row 2
 INSERT INTO registration (
   id,
-  entity_type_id,
+  facility_type_id,
   health_id,
   giga_id_health,
   school_id,
@@ -392,7 +392,7 @@ INSERT INTO registration (
 )
 SELECT
   1247,
-  (SELECT id FROM entity_type WHERE code = 'health'),
+  (SELECT id FROM facility_type WHERE code = 'health'),
   4003, '2a8c9f4d-1e22-4b58-9a0c-5d3e8b7f1a92',
   NULL, NULL,
   'ZA',
@@ -410,7 +410,7 @@ WHERE NOT EXISTS (SELECT 1 FROM registration WHERE id = 1247);
 -- Used to test: POST /api/v1/measurements/v2 with a blocked registration → 400
 INSERT INTO registration (
   id,
-  entity_type_id,
+  facility_type_id,
   health_id,
   giga_id_health,
   school_id,
@@ -426,7 +426,7 @@ INSERT INTO registration (
 )
 SELECT
   999999,
-  (SELECT id FROM entity_type WHERE code = 'health'),
+  (SELECT id FROM facility_type WHERE code = 'health'),
   4001, 'hf-a1b2c3d4-5e6f-7890-abcd-ef1234567890',
   NULL, NULL,
   'KE',
@@ -457,7 +457,7 @@ INSERT INTO measurements (
   download,
   upload,
   latency,
-  entity_type_id,
+  facility_type_id,
   giga_id_health,
   giga_id_school,
   school_id,
@@ -474,7 +474,7 @@ SELECT
   337,
   173,
   41,
-  (SELECT id FROM entity_type WHERE code = 'health'),
+  (SELECT id FROM facility_type WHERE code = 'health'),
   '166a7f2d-b341-3762-ac7f-77b02745cf81',
   NULL, NULL,
   1001,
@@ -494,7 +494,7 @@ INSERT INTO measurements (
   download,
   upload,
   latency,
-  entity_type_id,
+  facility_type_id,
   giga_id_health,
   giga_id_school,
   school_id,
@@ -511,7 +511,7 @@ SELECT
   12450,
   3210,
   67,
-  (SELECT id FROM entity_type WHERE code = 'health'),
+  (SELECT id FROM facility_type WHERE code = 'health'),
   '2a8c9f4d-1e22-4b58-9a0c-5d3e8b7f1a92',
   NULL, NULL,
   1247,
@@ -529,13 +529,13 @@ COMMIT;
 -- ============================================================
 -- Verification — quick row counts after seed
 -- ============================================================
-SELECT 'entity_type'              AS "table", COUNT(*)::int AS rows FROM entity_type
+SELECT 'facility_type'              AS "table", COUNT(*)::int AS rows FROM facility_type
 UNION ALL
 SELECT 'health (active)',                      COUNT(*)::int FROM health    WHERE deleted IS NULL
 UNION ALL
 SELECT 'school (active)',                      COUNT(*)::int FROM school    WHERE deleted IS NULL
 UNION ALL
-SELECT 'country_entity_type_whitelist',        COUNT(*)::int FROM country_entity_type_whitelist
+SELECT 'country_facility_type_whitelist',        COUNT(*)::int FROM country_facility_type_whitelist
 UNION ALL
 SELECT 'registration',                         COUNT(*)::int FROM registration
 UNION ALL
