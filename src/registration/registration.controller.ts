@@ -66,6 +66,11 @@ export class RegistrationController {
   async createRegistration(
     @Body() dto: CreateRegistrationDto,
   ): Promise<RegistrationResponseDto> {
-    return this.registrationService.createRegistration(dto);
+    const result = await this.registrationService.createRegistration(dto);
+    return {
+      giga_id: result.giga_id,
+      registration_id: result.registration_id,
+      entity_type: result.facility_type,
+    };
   }
 }

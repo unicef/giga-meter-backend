@@ -4,13 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EntityTypeService } from '../entity-type/entity-type.service';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { HealthService } from '../health/health.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegistrationService } from './registration.service';
 
-const mockEntityTypeSchool = { id: 1, name: 'school', code: 'school' } as any;
-const mockEntityTypeHealth = { id: 2, name: 'health', code: 'health' } as any;
+const mockFacilityTypeSchool = { id: 1, name: 'school', code: 'school' } as any;
+const mockFacilityTypeHealth = { id: 2, name: 'health', code: 'health' } as any;
 
 const mockHealthFacility = {
   id: BigInt(4001),
@@ -27,7 +27,7 @@ const mockSchool = {
 describe('RegistrationService', () => {
   let service: RegistrationService;
   let prisma: PrismaService;
-  let entityTypeService: EntityTypeService;
+  let facilityTypeService: FacilityTypeService;
   let healthService: HealthService;
 
   beforeEach(async () => {
@@ -36,7 +36,7 @@ describe('RegistrationService', () => {
         RegistrationService,
         PrismaService,
         {
-          provide: EntityTypeService,
+          provide: FacilityTypeService,
           useValue: {
             getByCode: jest.fn(),
           },
@@ -52,7 +52,7 @@ describe('RegistrationService', () => {
 
     service = module.get<RegistrationService>(RegistrationService);
     prisma = module.get<PrismaService>(PrismaService);
-    entityTypeService = module.get<EntityTypeService>(EntityTypeService);
+    facilityTypeService = module.get<FacilityTypeService>(FacilityTypeService);
     healthService = module.get<HealthService>(HealthService);
   });
 
@@ -76,8 +76,8 @@ describe('RegistrationService', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
-  it('rejects when entity_type row is missing', async () => {
-    jest.spyOn(entityTypeService, 'getByCode').mockResolvedValue(null);
+  it('rejects when facility_type row is missing', async () => {
+    jest.spyOn(facilityTypeService, 'getByCode').mockResolvedValue(null);
 
     await expect(
       service.createRegistration({
@@ -89,8 +89,8 @@ describe('RegistrationService', () => {
 
   it('rejects when health facility is not found', async () => {
     jest
-      .spyOn(entityTypeService, 'getByCode')
-      .mockResolvedValue(mockEntityTypeHealth);
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue(mockFacilityTypeHealth);
     jest.spyOn(healthService, 'findActiveById').mockResolvedValue(null);
 
     await expect(
@@ -103,8 +103,8 @@ describe('RegistrationService', () => {
 
   it('rejects when school is not found', async () => {
     jest
-      .spyOn(entityTypeService, 'getByCode')
-      .mockResolvedValue(mockEntityTypeSchool);
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue(mockFacilityTypeSchool);
     jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(null);
 
     await expect(
@@ -115,15 +115,15 @@ describe('RegistrationService', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('rejects when country is not whitelisted for the entity type', async () => {
+  it('rejects when country is not whitelisted for the facility type', async () => {
     jest
-      .spyOn(entityTypeService, 'getByCode')
-      .mockResolvedValue(mockEntityTypeHealth);
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue(mockFacilityTypeHealth);
     jest
       .spyOn(healthService, 'findActiveById')
       .mockResolvedValue(mockHealthFacility);
     jest
-      .spyOn(prisma.country_entity_type_whitelist, 'findFirst')
+      .spyOn(prisma.country_facility_type_whitelist, 'findFirst')
       .mockResolvedValue(null);
 
     await expect(
@@ -136,13 +136,13 @@ describe('RegistrationService', () => {
 
   it('creates a health registration', async () => {
     jest
-      .spyOn(entityTypeService, 'getByCode')
-      .mockResolvedValue(mockEntityTypeHealth);
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue(mockFacilityTypeHealth);
     jest
       .spyOn(healthService, 'findActiveById')
       .mockResolvedValue(mockHealthFacility);
     jest
-      .spyOn(prisma.country_entity_type_whitelist, 'findFirst')
+      .spyOn(prisma.country_facility_type_whitelist, 'findFirst')
       .mockResolvedValue({ id: 1 } as any);
     jest.spyOn(prisma.registration, 'create').mockResolvedValue({
       id: BigInt(1001),
@@ -157,12 +157,12 @@ describe('RegistrationService', () => {
     expect(result).toEqual({
       giga_id: mockHealthFacility.health_id_giga,
       registration_id: '1001',
-      entity_type: 'health',
+      facility_type: 'health',
     });
     expect(prisma.registration.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          entity_type_id: mockEntityTypeHealth.id,
+          facility_type_id: mockFacilityTypeHealth.id,
           health_id: mockHealthFacility.id,
           school_id: null,
           giga_id_health: mockHealthFacility.health_id_giga,
@@ -174,11 +174,11 @@ describe('RegistrationService', () => {
 
   it('creates a school registration', async () => {
     jest
-      .spyOn(entityTypeService, 'getByCode')
-      .mockResolvedValue(mockEntityTypeSchool);
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue(mockFacilityTypeSchool);
     jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(mockSchool);
     jest
-      .spyOn(prisma.country_entity_type_whitelist, 'findFirst')
+      .spyOn(prisma.country_facility_type_whitelist, 'findFirst')
       .mockResolvedValue({ id: 2 } as any);
     jest.spyOn(prisma.registration, 'create').mockResolvedValue({
       id: BigInt(2002),
@@ -192,12 +192,12 @@ describe('RegistrationService', () => {
     expect(result).toEqual({
       giga_id: mockSchool.giga_id_school,
       registration_id: '2002',
-      entity_type: 'school',
+      facility_type: 'school',
     });
     expect(prisma.registration.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          entity_type_id: mockEntityTypeSchool.id,
+          facility_type_id: mockFacilityTypeSchool.id,
           school_id: mockSchool.id,
           health_id: null,
           giga_id_school: mockSchool.giga_id_school,

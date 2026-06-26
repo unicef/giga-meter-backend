@@ -1000,6 +1000,151 @@ export class MeasurementEntityV2Dto {
   device_hardware_id?: string;
 }
 
+// ---------------------------------------------------------------------------
+// V2 facility-aware DTOs (api/v2/measurements)
+// ---------------------------------------------------------------------------
+
+/** Input for POST /api/v2/measurements */
+export class AddMeasurementFacilityV2Dto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  giga_id_school?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  school_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  giga_id_health?: string;
+
+  @ApiProperty({ enum: ['school', 'health'] })
+  @IsString()
+  facility_type: 'school' | 'health';
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  registration_id?: number | bigint;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Timestamp?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Download?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Upload?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Latency?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  ip_address?: string;
+
+  @ApiProperty({ required: false, type: GeoLocationDto })
+  @IsOptional()
+  geolocation?: GeoLocationDto;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  BrowserID?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  UUID?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  wifi_connections?: any[];
+}
+
+/** Single row returned by GET /api/v2/measurements/facility */
+export class MeasurementFacilityV2Dto {
+  @ApiProperty()
+  timestamp?: Date;
+
+  @ApiProperty()
+  browserId?: string;
+
+  @ApiProperty()
+  download?: number;
+
+  @ApiProperty()
+  upload?: number;
+
+  @ApiProperty()
+  latency?: number;
+
+  @ApiProperty({ description: 'Resolved facility type name: "school" or "health"' })
+  facility_type: string;
+
+  @ApiProperty({ nullable: true })
+  school_id: string | null;
+
+  @ApiProperty({ nullable: true })
+  giga_id_school: string | null;
+
+  @ApiProperty({ nullable: true })
+  giga_id_health: string | null;
+
+  @ApiProperty({ nullable: true })
+  registration_id: string | null;
+
+  @ApiProperty({ required: false })
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  ip_address?: string;
+
+  @ApiProperty({ required: false })
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  source?: string;
+
+  @ApiProperty({ required: false })
+  created_at?: Date;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+}
+
 export class MeasurementFailedDto extends AddMeasurementDto {
   @ApiProperty()
   reason?: string;

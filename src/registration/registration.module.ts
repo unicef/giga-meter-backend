@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { RegistrationController } from './registration.controller';
+import { RegistrationV2Controller } from './registration.v2.controller';
 import { RegistrationService } from './registration.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { EntityTypeModule } from '../entity-type/entity-type.module';
+import { FacilityTypeModule } from '../facility-type/facility-type.module';
 import { HealthModule } from '../health/health.module';
 
 @Module({
-  imports: [EntityTypeModule, HealthModule],
-  controllers: [RegistrationController],
+  imports: [FacilityTypeModule, HealthModule],
+  controllers: [RegistrationController, RegistrationV2Controller],
   providers: [RegistrationService, PrismaService],
 })
 export class RegistrationModule {}

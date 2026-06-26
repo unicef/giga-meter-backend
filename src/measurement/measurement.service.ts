@@ -7,9 +7,11 @@ import {
 import {
   AddMeasurementDto,
   AddMeasurementV2Dto,
+  AddMeasurementFacilityV2Dto,
   ClientInfoDto,
   MeasurementDto,
   MeasurementEntityV2Dto,
+  MeasurementFacilityV2Dto,
   MeasurementFailedDto,
   MeasurementV2Dto,
   ResultsDto,
@@ -19,7 +21,7 @@ import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
-import { EntityTypeService } from '../entity-type/entity-type.service';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { HealthService } from '../health/health.service';
 
 @Injectable()
@@ -29,7 +31,7 @@ export class MeasurementService {
   constructor(
     private prisma: PrismaService,
     private geolocationUtility: GeolocationUtility,
-    private entityTypeService: EntityTypeService,
+    private facilityTypeService: FacilityTypeService,
     private healthService: HealthService,
   ) {}
 
@@ -369,8 +371,8 @@ export class MeasurementService {
     }
 
     // 2. Resolve entity_type_id
-    const entityType = await this.entityTypeService.getByCode(dto.entity_type);
-    if (!entityType) {
+    const facilityType = await this.facilityTypeService.getByCode(dto.entity_type);
+    if (!facilityType) {
       throw new BadRequestException(
         `Unknown entity_type "${dto.entity_type}"`,
       );
@@ -417,7 +419,7 @@ export class MeasurementService {
         latency: dto.Latency,
         giga_id_school: dto.giga_id_school?.toLowerCase().trim() ?? null,
         giga_id_health: dto.giga_id_health?.toLowerCase().trim() ?? null,
-        entity_type_id: entityType.id,
+        facility_type_id: facilityType.id,
         registration_id: dto.registration_id != null ? BigInt(dto.registration_id.toString()) : null,
         country_code: dto.country_code,
         ip_address: dto.ip_address,
@@ -433,6 +435,51 @@ export class MeasurementService {
     });
 
     return '';
+  }
+
+  /** POST /api/v2/measurements — facility-aware measurement submission */
+  async createMeasurementFacilityV2(
+    dto: AddMeasurementFacilityV2Dto,
+  ): Promise<string> {
+    return this.createMeasurementV2({
+      ...dto,
+      entity_type: dto.facility_type,
+    });
+  }
+
+  /** GET /api/v2/measurements/facility — facility-aware measurement list */
+  async measurementsV2Facility(
+    skip: number,
+    take: number,
+    order_by: string,
+    facility_type?: string,
+    giga_id_health?: string,
+    giga_id_school?: string,
+    country_iso3_code?: string,
+    filter_by?: string,
+    filter_condition?: string,
+    filter_value?: Date,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<MeasurementFacilityV2Dto[]> {
+    const rows = await this.measurementsV2Entity(
+      skip,
+      take,
+      order_by,
+      facility_type,
+      giga_id_health,
+      giga_id_school,
+      country_iso3_code,
+      filter_by,
+      filter_condition,
+      filter_value,
+      write_access,
+      countries,
+    );
+    return rows.map((row) => {
+      const { entity_type, ...rest } = row;
+      return { ...rest, facility_type: entity_type };
+    });
   }
 
   /**
@@ -482,11 +529,11 @@ export class MeasurementService {
 
     // Resolve entity_type filter: string name → entity_type_id
     if (entity_type) {
-      const et = await this.entityTypeService.getByCode(entity_type);
-      if (!et) {
-        return []; // unknown entity_type — return empty rather than error
+      const ft = await this.facilityTypeService.getByCode(entity_type);
+      if (!ft) {
+        return [];
       }
-      filter.entity_type_id = et.id;
+      filter.facility_type_id = ft.id;
     }
 
     // Date filter
@@ -529,10 +576,10 @@ export class MeasurementService {
 
   private async toEntityV2Dto(m: Measurement): Promise<MeasurementEntityV2Dto> {
     // Resolve entity_type name (from cache — no extra DB round-trip)
-    let entityTypeName = 'school';
-    if (m.entity_type_id != null) {
-      const et = await this.entityTypeService.getById(m.entity_type_id);
-      if (et) entityTypeName = et.name;
+    let facilityTypeName = 'school';
+    if (m.facility_type_id != null) {
+      const ft = await this.facilityTypeService.getById(m.facility_type_id);
+      if (ft) facilityTypeName = ft.name;
     }
 
     return {
@@ -541,7 +588,7 @@ export class MeasurementService {
       download: m.download,
       upload: m.upload,
       latency: m.latency != null ? parseInt(m.latency.toString()) : null,
-      entity_type: entityTypeName,
+      entity_type: facilityTypeName,
       school_id: m.school_id ?? null,
       giga_id_school: m.giga_id_school ?? null,
       giga_id_health: m.giga_id_health ?? null,
