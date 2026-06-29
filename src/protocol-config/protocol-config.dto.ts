@@ -3,10 +3,11 @@ import { MEASUREMENT_PROVIDERS } from './protocol-config.types';
 
 export class ResolvedProtocolConfigDto {
   @ApiProperty({
+    isArray: true,
     enum: MEASUREMENT_PROVIDERS,
-    example: 'mlab',
+    example: ['mlab'],
   })
-  measurementProvider: string;
+  measurementProviders: string[];
 
   @ApiProperty({ example: 0 })
   betweenTestsDelaySec: number;

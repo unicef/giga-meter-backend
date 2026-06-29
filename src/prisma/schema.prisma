@@ -140,7 +140,7 @@ model country {
 model CountryProtocolConfig {
   id                      Int      @id @default(autoincrement())
   country_code            String   @unique @db.VarChar
-  measurement_provider    String   @db.VarChar(32)
+  measurement_providers   String[] @db.VarChar(32)
   between_tests_delay_sec Int      @default(0)
   created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -151,11 +151,12 @@ model CountryProtocolConfig {
   @@map("country_protocol_config")
 }
 
-/// Per-school overrides for protocol (nullable fields inherit from country / default).
+/// Per-school overrides for protocol. Empty `measurement_providers` ([]) or null
+/// `between_tests_delay_sec` inherit from country / default.
 model SchoolProtocolConfig {
   id                      Int      @id @default(autoincrement())
   giga_id_school          String   @unique @db.VarChar
-  measurement_provider    String?  @db.VarChar(32)
+  measurement_providers   String[] @db.VarChar(32)
   between_tests_delay_sec Int?
   created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)

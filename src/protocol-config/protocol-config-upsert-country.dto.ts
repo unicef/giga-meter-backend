@@ -1,14 +1,28 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsInt, Min } from 'class-validator';
-import { MEASUREMENT_PROVIDERS, MeasurementProvider } from './protocol-config.types';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsIn,
+  IsInt,
+  Min,
+} from 'class-validator';
+import {
+  MEASUREMENT_PROVIDERS,
+  MeasurementProvider,
+} from './protocol-config.types';
 
 export class UpsertCountryProtocolConfigDto {
   @ApiProperty({
+    isArray: true,
     enum: MEASUREMENT_PROVIDERS,
-    example: 'mlab',
+    example: ['mlab'],
   })
-  @IsIn(MEASUREMENT_PROVIDERS)
-  measurementProvider: MeasurementProvider;
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayUnique()
+  @IsIn(MEASUREMENT_PROVIDERS, { each: true })
+  measurementProviders: MeasurementProvider[];
 
   @ApiProperty({ example: 0, minimum: 0 })
   @IsInt()

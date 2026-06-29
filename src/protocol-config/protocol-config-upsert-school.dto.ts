@@ -1,17 +1,31 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsInt, IsOptional, Min, ValidateIf } from 'class-validator';
-import { MEASUREMENT_PROVIDERS, MeasurementProvider } from './protocol-config.types';
+import {
+  ArrayUnique,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  Min,
+  ValidateIf,
+} from 'class-validator';
+import {
+  MEASUREMENT_PROVIDERS,
+  MeasurementProvider,
+} from './protocol-config.types';
 
 export class UpsertSchoolProtocolConfigDto {
   @ApiPropertyOptional({
+    isArray: true,
     enum: MEASUREMENT_PROVIDERS,
-    nullable: true,
-    example: 'cloudflare',
+    description:
+      'Empty array clears the override (school inherits from country / default).',
+    example: ['cloudflare'],
   })
   @IsOptional()
-  @ValidateIf((_, value) => value != null)
-  @IsIn(MEASUREMENT_PROVIDERS)
-  measurementProvider?: MeasurementProvider | null;
+  @IsArray()
+  @ArrayUnique()
+  @IsIn(MEASUREMENT_PROVIDERS, { each: true })
+  measurementProviders?: MeasurementProvider[];
 
   @ApiPropertyOptional({ example: 5, minimum: 0, nullable: true })
   @IsOptional()
