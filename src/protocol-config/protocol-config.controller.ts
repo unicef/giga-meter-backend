@@ -68,7 +68,7 @@ export class ProtocolConfigController {
     return {
       success: true,
       data: {
-        measurementProvider: data.measurementProvider,
+        measurementProviders: data.measurementProviders,
         betweenTestsDelaySec: data.betweenTestsDelaySec,
         configSource: data.configSource,
       },
@@ -98,7 +98,10 @@ export class ProtocolConfigController {
     @Param('countryCode') countryCode: string,
     @Body() body: UpsertCountryProtocolConfigDto,
   ): Promise<ApiSuccessResponseDto<CountryProtocolConfigRecordDto>> {
-    const data = await this.protocolConfigService.upsertCountry(countryCode, body);
+    const data = await this.protocolConfigService.upsertCountry(
+      countryCode,
+      body,
+    );
     return {
       success: true,
       data,
@@ -119,7 +122,10 @@ export class ProtocolConfigController {
     required: true,
     type: String,
   })
-  @ApiResponse({ status: 200, description: 'Country protocol configuration deleted' })
+  @ApiResponse({
+    status: 200,
+    description: 'Country protocol configuration deleted',
+  })
   async deleteCountry(
     @Param('countryCode') countryCode: string,
   ): Promise<ApiSuccessResponseDto<null>> {
@@ -153,7 +159,10 @@ export class ProtocolConfigController {
     @Param('gigaIdSchool') gigaIdSchool: string,
     @Body() body: UpsertSchoolProtocolConfigDto,
   ): Promise<ApiSuccessResponseDto<SchoolProtocolConfigRecordDto>> {
-    const data = await this.protocolConfigService.upsertSchool(gigaIdSchool, body);
+    const data = await this.protocolConfigService.upsertSchool(
+      gigaIdSchool,
+      body,
+    );
     return {
       success: true,
       data,
@@ -174,7 +183,10 @@ export class ProtocolConfigController {
     required: true,
     type: String,
   })
-  @ApiResponse({ status: 200, description: 'School protocol configuration deleted' })
+  @ApiResponse({
+    status: 200,
+    description: 'School protocol configuration deleted',
+  })
   async deleteSchool(
     @Param('gigaIdSchool') gigaIdSchool: string,
   ): Promise<ApiSuccessResponseDto<null>> {
