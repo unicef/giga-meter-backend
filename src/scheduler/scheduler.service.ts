@@ -36,7 +36,7 @@ export class SchedulerService {
         await this.prisma.school_new_registration.findMany({
           where: {
             verification_status: {
-              in: ['PENDING', 'DISPATCH'],
+              in: ['PENDING', 'DISPATCHED'],
             },
             deleted: null,
           },
@@ -80,7 +80,7 @@ export class SchedulerService {
             await this.prisma.school_new_registration.updateMany({
               where: {
                 verification_status: {
-                  in: ['PENDING', 'DISPATCH'],
+                  in: ['PENDING', 'DISPATCHED'],
                 },
                 giga_id_school: { in: matchedGigaIds },
                 deleted: null,
