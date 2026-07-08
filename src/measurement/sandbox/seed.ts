@@ -24,17 +24,34 @@ interface CountrySpec {
   iso3: string;
   iso2: string;
   csvFile: string;
+  // Optional per-country window overrides. Default to WINDOW_START / DAYS_IN_WINDOW.
+  windowStart?: Date;
+  days?: number;
 }
-
-const COUNTRIES: CountrySpec[] = [
-  { iso3: 'UZB', iso2: 'UZ', csvFile: 'uzb.csv' },
-  { iso3: 'ZAF', iso2: 'ZA', csvFile: 'zaf.csv' },
-  { iso3: 'SLE', iso2: 'SL', csvFile: 'sle.csv' },
-];
 
 // 14-day window: Thursday Jun 11 — Wednesday Jun 24, 2026 (UTC).
 const WINDOW_START = new Date('2026-06-11T00:00:00Z');
 const DAYS_IN_WINDOW = 14;
+
+// Past-1-week window for the second wave of countries: Wed Jul 1 — Tue Jul 7, 2026 (UTC).
+const PAST_WEEK_START = new Date('2026-07-01T00:00:00Z');
+const PAST_WEEK_DAYS = 7;
+
+const COUNTRIES: CountrySpec[] = [
+  // First wave — 14-day window.
+  { iso3: 'UZB', iso2: 'UZ', csvFile: 'uzb.csv' },
+  { iso3: 'ZAF', iso2: 'ZA', csvFile: 'zaf.csv' },
+  { iso3: 'SLE', iso2: 'SL', csvFile: 'sle.csv' },
+  // Second wave — past-1-week window.
+  { iso3: 'BEN', iso2: 'BJ', csvFile: 'ben.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+  { iso3: 'KHM', iso2: 'KH', csvFile: 'khm.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+  { iso3: 'FJI', iso2: 'FJ', csvFile: 'fji.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+  { iso3: 'GMB', iso2: 'GM', csvFile: 'gmb.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+  { iso3: 'KEN', iso2: 'KE', csvFile: 'ken.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+  { iso3: 'MWI', iso2: 'MW', csvFile: 'mwi.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+  { iso3: 'MNG', iso2: 'MN', csvFile: 'mng.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+  { iso3: 'LKA', iso2: 'LK', csvFile: 'lka.csv', windowStart: PAST_WEEK_START, days: PAST_WEEK_DAYS },
+];
 
 const ISO3_TO_ISO2: Record<string, string> = {};
 for (const c of COUNTRIES) ISO3_TO_ISO2[c.iso3] = c.iso2;
@@ -114,6 +131,8 @@ function generate(): MeasurementSandboxDto[] {
 
   for (const country of COUNTRIES) {
     const centers = loadCenters(country);
+    const windowStart = country.windowStart ?? WINDOW_START;
+    const days = country.days ?? DAYS_IN_WINDOW;
     console.log(`  ${country.iso3}: ${centers.length} health centers`);
 
     for (const center of centers) {
@@ -125,9 +144,9 @@ function generate(): MeasurementSandboxDto[] {
       const minute = (regId * 13) % 60;
       const second = (regId * 17) % 60;
 
-      for (let day = 0; day < DAYS_IN_WINDOW; day++) {
+      for (let day = 0; day < days; day++) {
         mIndex++;
-        const ts = new Date(WINDOW_START.getTime() + day * 86_400_000);
+        const ts = new Date(windowStart.getTime() + day * 86_400_000);
         ts.setUTCHours(hour, minute, second, 0);
         const created = new Date(ts.getTime() + 60_000);
 
