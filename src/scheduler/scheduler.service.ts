@@ -35,7 +35,9 @@ export class SchedulerService {
       const pendingRegistrations =
         await this.prisma.school_new_registration.findMany({
           where: {
-            verification_status: 'PENDING',
+            verification_status: {
+              in: ['PENDING', 'DISPATCH'],
+            },
             deleted: null,
           },
           select: { giga_id_school: true },
@@ -77,7 +79,9 @@ export class SchedulerService {
           const updateResult =
             await this.prisma.school_new_registration.updateMany({
               where: {
-                verification_status: 'PENDING',
+                verification_status: {
+                  in: ['PENDING', 'DISPATCH'],
+                },
                 giga_id_school: { in: matchedGigaIds },
                 deleted: null,
               },
