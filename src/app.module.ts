@@ -42,11 +42,16 @@ import { SchoolRegistrationController } from './school-registration/school-regis
 import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
 import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
+import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { TranslateModule } from './translate';
+import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
 
 import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
+import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
+import { ProtocolConfigService } from './protocol-config/protocol-config.service';
 
 @Module({
   imports: [
@@ -69,6 +74,9 @@ import { SchedulerService } from './scheduler/scheduler.service';
     AuthModule,
     IpMetadataModule,
     GeolocationModule,
+    AdminMeterModule,
+    TranslateModule,
+    FeatureFlagModule,
   ],
   controllers: [
     AppController,
@@ -85,6 +93,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     PingAggregationController,
     PublicController,
     SchoolRegistrationController,
+    ProtocolConfigController,
   ],
   providers: [
     AppService,
@@ -117,6 +126,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     PublicService,
     SchoolRegistrationGuard,
     SchoolRegistrationService,
+    ProtocolConfigService,
   ],
 })
 export class AppModule { }

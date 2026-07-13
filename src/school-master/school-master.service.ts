@@ -17,6 +17,7 @@ export class SchoolMasterService {
       where: {
         external_id: { equals: school_id, mode: 'insensitive' },
         country_code,
+        is_active: true,
         deleted: null,
       },
       select: schoolMasterSelect
@@ -138,6 +139,7 @@ export class SchoolMasterService {
       admin_4_name: null,
       giga_id_school: registration.giga_id_school,
       is_verified: false,
+      is_active: school?.is_active,
     };
   }
 

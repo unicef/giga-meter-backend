@@ -65,4 +65,5 @@ export class SchoolMasterDto {
 
   @ApiProperty()
   is_verified?: boolean;
+  is_active: boolean;
 }

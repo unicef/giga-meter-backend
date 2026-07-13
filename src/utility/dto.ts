@@ -15,3 +15,17 @@ export class PaginationDto {
   })
   per_page?: number;
 }
+
+export class CommonResponseDto {
+  @ApiProperty({
+    description: 'Status of the response',
+    example: 'success',
+  })
+  status: number;
+
+  @ApiProperty({
+    description: 'Message of the response',
+    example: 'Data retrieved successfully',
+  })
+  message: string;
+}

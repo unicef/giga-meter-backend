@@ -14,25 +14,36 @@ import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(require('express').json({ limit: '2mb' }));
+  app.use(require('express').urlencoded({ limit: '2mb', extended: true }));
+
   app.useStaticAssets(join(__dirname, '..', 'public'));
+
+  // Serve .storage directory for local file uploads (development only)
+  if (process.env.NODE_ENV === 'development') {
+    app.useStaticAssets(join(__dirname, '..', '.storage'), {
+      prefix: '/storage/',
+    });
+  }
 
   // Get the Category
   const categoryConfigProvider = app.get(CategoryConfigProvider);
   await categoryConfigProvider.initialize();
   const categories = await categoryConfigProvider.getCategories();
-  
+
   const authGuard = app.get(AuthGuard);
   const swaggerMiddleware = new SwaggerAuthMiddleware(authGuard);
-  
-  const categoryPaths = categories.map(path => `/api/${path}`);
+
+  const categoryPaths = categories.map((path) => `/api/${path}`);
   app.use(categoryPaths, swaggerMiddleware.use.bind(swaggerMiddleware));
 
   // Configure basic Swagger options
   const baseConfig = new DocumentBuilder()
-  .setTitle('Giga Meter API')
-  .setDescription(
+    .setTitle('Giga Meter API')
+    .setDescription(
       'API to query list schools and countries with GIGA Meter installed and their raw measurements indicators like download speed, latency, upload speed etc.\n\n' +
-        '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',    
+      '<b>License</b>: The dataset accessed through this API is made available under the <a target="_blank" href="https://opendatacommons.org/licenses/odbl/1-0/">Open Data Commons Open Database License (ODbL)</a>. You are free to copy, distribute, transmit and adapt our data, as long as you credit Giga and its contributors. If you alter or build upon our data, you may distribute the result only under the same license. The full legal code explains your rights and responsibilities.',
     )
     .setVersion('1.0')
     .setLicense(
@@ -45,9 +56,12 @@ async function bootstrap() {
       scheme: 'bearer',
       bearerFormat: 'JWT',
     })
-    .addServer(process.env.GIGA_METER_BE_HOST || 'https://uni-ooi-giga-meter-backend.azurewebsites.net')
+    .addServer(
+      process.env.GIGA_METER_BE_HOST ||
+      'https://uni-ooi-giga-meter-backend.azurewebsites.net',
+    )
     .build();
-  
+
   // Create a Swagger endpoint for each category
   const categoriesConfig = await categoryConfigProvider.getAllCategoryConfigs();
   for (const config of categoriesConfig) {
@@ -55,7 +69,7 @@ async function bootstrap() {
       // Filter the Swagger document for this category
       const freshDoc = SwaggerModule.createDocument(app, baseConfig);
       const categoryDocument = filterSwaggerDocByCategory(freshDoc, config);
-      
+
       // Set up the Swagger endpoint for this category
       SwaggerModule.setup(`api/${config.name}`, app, categoryDocument, {
         customCssUrl: '/swagger-custom.css',
@@ -67,7 +81,7 @@ async function bootstrap() {
   if (process.env.NODE_ENV === 'development') {
     app.enableCors({
       origin: '*',
-      methods: ['GET', 'POST', 'PUT'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
       preflightContinue: false,
     });
   } else {
@@ -79,7 +93,7 @@ async function bootstrap() {
       //   'https://uni-ooi-giga-daily-check-service-api.azurewebsites.net/',
       // ],
       origin: '*',
-      methods: ['GET', 'POST', 'PUT'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE'],
       preflightContinue: false,
     });
   }

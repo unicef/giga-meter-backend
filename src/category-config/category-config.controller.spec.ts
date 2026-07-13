@@ -7,6 +7,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateCategoryConfigDto,
   UpdateCategoryConfigDto,
@@ -102,11 +103,15 @@ describe('CategoryConfigController', () => {
         },
         {
           provide: APP_GUARD,
-          useClass: AuthGuard,
+          useClass: ThrottlerGuard,
         },
         {
-          provide: APP_GUARD,
-          useClass: ThrottlerGuard,
+          provide: AuthGuard,
+          useValue: { canActivate: jest.fn().mockResolvedValue(true) },
+        },
+        {
+          provide: PrismaService,
+          useValue: {},
         },
         {
           provide: CategoryConfigProvider,

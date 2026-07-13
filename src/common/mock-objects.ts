@@ -224,6 +224,7 @@ export const mockSchoolMasterModel = {
   not_verified: false,
   deleted: null,
   last_school_static_id: 1,
+  is_active: true,
 };
 
 export const mockSchoolMasterDto: SchoolMasterDto[] = [
@@ -246,6 +247,7 @@ export const mockSchoolMasterDto: SchoolMasterDto[] = [
     admin_4_name: '',
     giga_id_school: 'gigaid1',
     is_verified: true,
+    is_active: true,
   },
 ];
 
@@ -622,6 +624,14 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    protocol: 'mlab',
+    download_latency: null,
+    upload_latency: null,
+    download_jitter: null,
+    upload_jitter: null,
+    jitter: null,
+    packet_loss: null,
+    network_quality_score: null,
   },
   {
     id: toBigInt(2),
@@ -656,6 +666,14 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    protocol: 'mlab',
+    download_latency: null,
+    upload_latency: null,
+    download_jitter: null,
+    upload_jitter: null,
+    jitter: null,
+    packet_loss: null,
+    network_quality_score: null,
   },
   {
     id: toBigInt(3),
@@ -690,6 +708,14 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    protocol: 'mlab',
+    download_latency: null,
+    upload_latency: null,
+    download_jitter: null,
+    upload_jitter: null,
+    jitter: null,
+    packet_loss: null,
+    network_quality_score: null,
   },
 ];
 

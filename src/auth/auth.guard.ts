@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Category, DEFAULT_CATEGORY } from '../common/category.config';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../common/public.decorator';
@@ -6,17 +11,17 @@ import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { CategoryConfigProvider } from '../common/category-config.provider';
-
-
+import { PrismaService } from 'src/prisma/prisma.service';
+import { IS_ADMIN_KEY } from 'src/common/admin.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-
   constructor(
     private readonly httpService: HttpService,
     private readonly categoryConfigProvider: CategoryConfigProvider,
     private reflector: Reflector,
-  ) { }
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Check if the route is marked as public
@@ -25,12 +30,26 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    const isAdmin = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     const isMetrics = request.url === '/metrics';
     const useAuth = process.env.USE_AUTH === 'true';
-    
-    if (!useAuth || isPublic || request.category || isMetrics) {
+
+    if (!useAuth || isPublic || request.category || isMetrics || isAdmin) {
       return true;
     }
+    const authHeader = request.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException('Missing authorization token');
+    }
+    // Check if it's a Bearer token or device token
+    const parts: string[] = authHeader.split(' ');
+    if (parts.length !== 2) {
+      throw new UnauthorizedException('Invalid authorization header format');
+    }
+
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -56,9 +75,8 @@ export class AuthGuard implements CanActivate {
       );
       if (
         !response.data.success ||
-        (!response.data.data.has_write_access &&
-          (/*request?.method != 'GET' ||*/
-            response.data.data.countries?.length === 0))
+        (!response.data.data.has_write_access /*request?.method != 'GET' ||*/ &&
+          response.data.data.countries?.length === 0)
       ) {
         return false;
       }
@@ -66,10 +84,16 @@ export class AuthGuard implements CanActivate {
       request.has_write_access = response.data.data.has_write_access;
       const apiCategory = response?.data?.data?.apiCategory?.code;
       // Extract and set the category from the response
-      //TODO:// remove this logic after swagger categories are added 
-      request.category = (apiCategory ? apiCategory : request.has_write_access ? Category.GIGA_METER : DEFAULT_CATEGORY).toLowerCase();
+      //TODO:// remove this logic after swagger categories are added
+      request.category = (
+        apiCategory
+          ? apiCategory
+          : request.has_write_access
+            ? Category.GIGA_METER
+            : DEFAULT_CATEGORY
+      ).toLowerCase();
 
-      //TODO:// remove this logic after swagger categories are added 
+      //TODO:// remove this logic after swagger categories are added
       if (request?.method == 'GET' && !response.data.data.has_write_access) {
         request.allowed_countries = response.data.data.countries.map(
           (c) => c.code,
@@ -77,12 +101,17 @@ export class AuthGuard implements CanActivate {
         request.allowed_countries_iso3 = response.data.data.countries.map(
           (c) => c.iso3_format,
         );
-        request.allowed_countries_map = response.data.data.countries.reduce((acc, country) => {
-          acc[country.code] = country.iso3_format;
-          return acc;
-        }, {});
+        request.allowed_countries_map = response.data.data.countries.reduce(
+          (acc, country) => {
+            acc[country.code] = country.iso3_format;
+            return acc;
+          },
+          {},
+        );
       }
-      const config = await this.categoryConfigProvider.getCategoryConfig(request.category);
+      const config = await this.categoryConfigProvider.getCategoryConfig(
+        request.category,
+      );
       request.category_allowed_countries = config?.allowedCountries ?? [];
 
       return true;
