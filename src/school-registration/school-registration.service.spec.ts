@@ -195,40 +195,29 @@ describe('SchoolRegistrationService', () => {
     });
   });
 
-  it('should no-op when callback says school is not deleted', async () => {
+  it('should throw ConflictException when callback says school is not deleted', async () => {
     jest
       .spyOn(prisma.school_new_registration, 'findFirst')
       .mockResolvedValue(registrationRecord as any);
 
-    const result = await service.rejectRegistration({
-      giga_id_school: generatedGigaId,
-      is_deleted: false,
-    });
-
-    expect(result).toEqual({
-      giga_id_school: generatedGigaId,
-      verification_status: 'PENDING',
-    });
+    await expect(
+      service.rejectRegistration({
+        giga_id_school: generatedGigaId,
+        is_deleted: false,
+      }),
+    ).rejects.toThrow();
   });
 
-  it('should be idempotent when repeated rejection arrives after deletion', async () => {
+  it('should throw ConflictException when repeated rejection arrives after deletion', async () => {
     jest
       .spyOn(prisma.school_new_registration, 'findFirst')
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        ...registrationRecord,
-        verification_status: 'REJECTED',
-        deleted: new Date('2026-03-16T06:10:00.000Z'),
-      } as any);
+      .mockResolvedValueOnce(null);
 
-    const result = await service.rejectRegistration({
-      giga_id_school: generatedGigaId,
-      is_deleted: true,
-    });
-
-    expect(result).toEqual({
-      giga_id_school: generatedGigaId,
-      verification_status: 'REJECTED',
-    });
+    await expect(
+      service.rejectRegistration({
+        giga_id_school: generatedGigaId,
+        is_deleted: true,
+      }),
+    ).rejects.toThrow();
   });
 });

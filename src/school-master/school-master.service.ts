@@ -102,6 +102,7 @@ export class SchoolMasterService {
       admin_4_name: school.admin_4_name,
       giga_id_school: school.giga_id_school,
       is_verified: school.not_verified !== true,
+      is_active: school.is_active ?? true,
     };
   }
 
@@ -139,7 +140,7 @@ export class SchoolMasterService {
       admin_4_name: null,
       giga_id_school: registration.giga_id_school,
       is_verified: false,
-      is_active: school?.is_active,
+      is_active: false,
     };
   }
 

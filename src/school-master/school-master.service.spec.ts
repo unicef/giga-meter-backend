@@ -93,6 +93,7 @@ describe('SchoolMasterService', () => {
           admin_4_name: null,
           giga_id_school: 'registration-giga-id',
           is_verified: false,
+          is_active: false,
         },
       ]);
     });
