@@ -64,5 +64,6 @@ export class SchoolMasterDto {
   giga_id_school?: string;
 
   @ApiProperty()
+  is_verified?: boolean;
   is_active: boolean;
 }

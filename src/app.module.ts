@@ -38,6 +38,9 @@ import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
 import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
+import { SchoolRegistrationController } from './school-registration/school-registration.controller';
+import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
+import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
@@ -89,6 +92,7 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     ConnectivityController,
     PingAggregationController,
     PublicController,
+    SchoolRegistrationController,
     ProtocolConfigController,
   ],
   providers: [
@@ -120,6 +124,8 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     SchedulerService,
     ConnectivityService,
     PublicService,
+    SchoolRegistrationGuard,
+    SchoolRegistrationService,
     ProtocolConfigService,
   ],
 })
