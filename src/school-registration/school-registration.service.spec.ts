@@ -195,7 +195,7 @@ describe('SchoolRegistrationService', () => {
     });
   });
 
-  it('should no-op when callback says school is not deleted', async () => {
+  it('should keep registration pending when callback says school is not deleted', async () => {
     jest
       .spyOn(prisma.school_new_registration, 'findFirst')
       .mockResolvedValue(registrationRecord as any);
@@ -211,15 +211,10 @@ describe('SchoolRegistrationService', () => {
     });
   });
 
-  it('should be idempotent when repeated rejection arrives after deletion', async () => {
+  it('should stay idempotent when repeated rejection arrives after deletion', async () => {
     jest
       .spyOn(prisma.school_new_registration, 'findFirst')
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({
-        ...registrationRecord,
-        verification_status: 'REJECTED',
-        deleted: new Date('2026-03-16T06:10:00.000Z'),
-      } as any);
+      .mockResolvedValueOnce(null);
 
     const result = await service.rejectRegistration({
       giga_id_school: generatedGigaId,

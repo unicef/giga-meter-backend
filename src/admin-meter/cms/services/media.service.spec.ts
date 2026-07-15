@@ -26,6 +26,14 @@ describe('MediaService', () => {
   };
 
   beforeEach(async () => {
+    mockStorageService.uploadFile.mockImplementation(
+      (_file: Express.Multer.File, filePath: string) =>
+        Promise.resolve({ path: `/content/media/${filePath}` }),
+    );
+    mockStorageService.getFileUrl.mockImplementation((filePath: string) =>
+      Promise.resolve(`https://example.com${filePath}`),
+    );
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MediaService,
@@ -316,7 +324,10 @@ describe('MediaService', () => {
       };
 
       mockPrismaService.cmsMedia.findUnique.mockResolvedValue(mockMedia);
-      mockPrismaService.cmsMedia.delete.mockResolvedValue(mockMedia);
+      mockPrismaService.cmsMedia.update.mockResolvedValue({
+        ...mockMedia,
+        deletedAt: new Date(),
+      });
       mockStorageService.deleteFile.mockResolvedValue(undefined);
 
       await service.deleteFile('file_1');
@@ -324,12 +335,15 @@ describe('MediaService', () => {
       expect(mockStorageService.deleteFile).toHaveBeenCalledWith(
         '/content/media/test.jpg',
       );
-      expect(mockPrismaService.cmsMedia.delete).toHaveBeenCalledWith({
+      expect(mockPrismaService.cmsMedia.update).toHaveBeenCalledWith({
         where: { id: 'file_1' },
+        data: {
+          deletedAt: expect.any(Date),
+        },
       });
     });
 
-    it('should throw error if file is used in sections', async () => {
+    it('should throw BadRequestException if storage deletion fails', async () => {
       const mockMedia = {
         id: 'file_1',
         name: 'Test.jpg',
@@ -337,6 +351,7 @@ describe('MediaService', () => {
       };
 
       mockPrismaService.cmsMedia.findUnique.mockResolvedValue(mockMedia);
+      mockStorageService.deleteFile.mockRejectedValue(new Error('Storage down'));
 
       await expect(service.deleteFile('file_1')).rejects.toThrow(
         BadRequestException,

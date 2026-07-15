@@ -57,6 +57,8 @@ import { SchedulerService } from './scheduler/scheduler.service';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
 import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
+import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
+import { ProtocolConfigService } from './protocol-config/protocol-config.service';
 
 @Module({
   imports: [
@@ -103,6 +105,7 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     PingAggregationController,
     PublicController,
     SchoolRegistrationController,
+    ProtocolConfigController,
   ],
   providers: [
     AppService,
@@ -138,6 +141,7 @@ import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.modul
     PublicService,
     SchoolRegistrationGuard,
     SchoolRegistrationService,
+    ProtocolConfigService,
   ],
 })
 export class AppModule {}
