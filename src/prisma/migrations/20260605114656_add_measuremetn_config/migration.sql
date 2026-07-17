@@ -61,4 +61,6 @@ CREATE INDEX "measurements_protocol_idx" ON "measurements"("protocol");
 ALTER TABLE "country_protocol_config" ADD CONSTRAINT "country_protocol_config_country_code_fkey" FOREIGN KEY ("country_code") REFERENCES "country"("code") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- RenameIndex
-ALTER INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" RENAME TO "connectivity_ping_checks_daily_aggr_giga_id_school_browser__idx";
+-- IF EXISTS: this same rename also ships in 20260521120332 (develop branch); whichever
+-- runs second must be a no-op, both on existing DBs and on fresh replays (shadow DB/CI).
+ALTER INDEX IF EXISTS "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" RENAME TO "connectivity_ping_checks_daily_aggr_giga_id_school_browser__idx";
