@@ -39,6 +39,7 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'List of health facilities', type: HealthListItemDto, isArray: true })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiQuery({ name: 'country_code', required: false, description: 'Filter by country code, e.g. KE', type: 'string' })
+  @ApiQuery({ name: 'govt_id', required: false, description: 'Government-assigned facility ID (matches dhis2_id, hims_id or hfml_id)', type: 'string' })
   @ApiQuery({ name: 'page', required: false, description: 'Zero-based page offset (default: 0)', type: 'number' })
   @ApiQuery({ name: 'size', required: false, description: 'Results per page (max 100, default: 10)', type: 'number' })
   @ApiQuery({
@@ -49,6 +50,7 @@ export class HealthController {
   })
   async getHealth(
     @Query('country_code') country_code?: string,
+    @Query('govt_id') govt_id?: string,
     @Query('page') page?: number,
     @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
     @Query('orderBy') orderBy?: string,
@@ -62,6 +64,7 @@ export class HealthController {
       country_code,
       write_access,
       countries,
+      govt_id,
     );
 
     return {

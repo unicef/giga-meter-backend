@@ -34,11 +34,19 @@ export class HealthV2Controller {
   @ApiOperation({ summary: 'Returns a paginated list of health facility master records (V2)' })
   @ApiResponse({ status: 200, description: 'List of health facilities', type: HealthListItemDto, isArray: true })
   @ApiQuery({ name: 'country_code', required: false, type: 'string' })
+  @ApiQuery({
+    name: 'govt_id',
+    required: false,
+    type: 'string',
+    description:
+      'Government-assigned facility ID (matches dhis2_id, hims_id or hfml_id)',
+  })
   @ApiQuery({ name: 'page', required: false, type: 'number' })
   @ApiQuery({ name: 'size', required: false, type: 'number' })
   @ApiQuery({ name: 'orderBy', required: false, type: 'string' })
   async getHealth(
     @Query('country_code') country_code?: string,
+    @Query('govt_id') govt_id?: string,
     @Query('page') page?: number,
     @ValidateSize({ min: 1, max: 100 }) @Query('size') size?: number,
     @Query('orderBy') orderBy?: string,
@@ -52,6 +60,7 @@ export class HealthV2Controller {
       country_code,
       write_access,
       countries,
+      govt_id,
     );
 
     return {
