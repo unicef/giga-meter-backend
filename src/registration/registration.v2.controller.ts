@@ -1,21 +1,27 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBody,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { Public } from '../common/public.decorator';
 import {
   CreateRegistrationDto,
+  DeactivateRegistrationDto,
+  ExistingRegistrationResponseDto,
+  RegistrationStatusResponseDto,
   RegistrationV2ResponseDto,
 } from './registration.v2.dto';
 import { RegistrationService } from './registration.service';
@@ -51,5 +57,70 @@ export class RegistrationV2Controller {
     @Body() dto: CreateRegistrationDto,
   ): Promise<RegistrationV2ResponseDto> {
     return this.registrationService.createRegistration(dto);
+  }
+
+  @Public()
+  @Get('existing')
+  @ApiOperation({
+    summary: 'Resolve an existing registration from legacy/partial identifiers',
+    description:
+      'Resolution priority chain (first match wins): `installation_id` → ' +
+      '`device_hardware_id` → `giga_id` (+ optional `browser_id`). Lets ' +
+      'legacy installs (which never stored a registration_id) recover it on ' +
+      'first launch after update.',
+  })
+  @ApiQuery({ name: 'installation_id', required: false, type: 'string' })
+  @ApiQuery({ name: 'device_hardware_id', required: false, type: 'string' })
+  @ApiQuery({ name: 'giga_id', required: false, type: 'string' })
+  @ApiQuery({ name: 'browser_id', required: false, type: 'string' })
+  @ApiResponse({ status: 200, type: ExistingRegistrationResponseDto })
+  @ApiResponse({ status: 404, description: 'No registration matches' })
+  async findExisting(
+    @Query('installation_id') installation_id?: string,
+    @Query('device_hardware_id') device_hardware_id?: string,
+    @Query('giga_id') giga_id?: string,
+    @Query('browser_id') browser_id?: string,
+  ): Promise<ExistingRegistrationResponseDto> {
+    return this.registrationService.findExisting({
+      installation_id,
+      device_hardware_id,
+      giga_id,
+      browser_id,
+    });
+  }
+
+  @Public()
+  @Get('status')
+  @ApiOperation({
+    summary: 'Device status by installation_id (facility-agnostic)',
+  })
+  @ApiQuery({ name: 'installation_id', required: true, type: 'string' })
+  @ApiResponse({ status: 200, type: RegistrationStatusResponseDto })
+  async getStatus(
+    @Query('installation_id') installation_id: string,
+  ): Promise<RegistrationStatusResponseDto> {
+    return this.registrationService.getStatus(installation_id);
+  }
+
+  @Public()
+  @Post('deactivate')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  )
+  @ApiOperation({
+    summary: 'Deactivate a registration (logout) for any facility type',
+  })
+  @ApiBody({ type: DeactivateRegistrationDto })
+  @ApiResponse({ status: 200, description: 'Registration deactivated' })
+  @ApiResponse({ status: 404, description: 'No registration matches' })
+  async deactivate(
+    @Body() dto: DeactivateRegistrationDto,
+  ): Promise<{ success: true }> {
+    return this.registrationService.deactivate(dto);
   }
 }

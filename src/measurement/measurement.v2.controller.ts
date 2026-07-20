@@ -4,6 +4,7 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  ParseArrayPipe,
   Post,
   Query,
   UseGuards,
@@ -74,6 +75,53 @@ export class MeasurementV2Controller {
       data: { user_id: uuidv4() },
       timestamp: new Date().toISOString(),
       message: 'success',
+    };
+  }
+
+  @Post('batch')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Batch measurement submission (V2) — offline queue flush. Array body, ' +
+      'same record shape as POST /api/v2/measurements. Tolerant: one bad ' +
+      'record does not reject the batch.',
+  })
+  @ApiResponse({
+    status: 201,
+    description:
+      'Batch processed — returns accepted/rejected counts and per-record errors',
+  })
+  async createMeasurementBatchV2(
+    @Body(new ParseArrayPipe({ items: AddMeasurementFacilityV2Dto }))
+    records: AddMeasurementFacilityV2Dto[],
+  ): Promise<
+    ApiSuccessResponseDto<{
+      accepted: number;
+      rejected: number;
+      errors: { index: number; error: string }[];
+    }>
+  > {
+    const errors: { index: number; error: string }[] = [];
+    let accepted = 0;
+    for (let i = 0; i < records.length; i++) {
+      try {
+        const result =
+          await this.measurementService.createMeasurementFacilityV2(records[i]);
+        if (result.length) {
+          errors.push({ index: i, error: result });
+        } else {
+          accepted++;
+        }
+      } catch (error) {
+        errors.push({ index: i, error: error?.message ?? String(error) });
+      }
+    }
+    return {
+      success: errors.length < records.length || records.length === 0,
+      data: { accepted, rejected: errors.length, errors },
+      timestamp: new Date().toISOString(),
+      message: errors.length ? 'partial' : 'success',
     };
   }
 

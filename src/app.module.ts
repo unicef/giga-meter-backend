@@ -10,6 +10,7 @@ import { FlaggedSchoolController } from './flagged-school/flagged-school.control
 import { SchoolController } from './school/school.controller';
 import { SchoolService } from './school/school.service';
 import { CountryController } from './country/country.controller';
+import { CountryV2Controller } from './country/country.v2.controller';
 import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
@@ -38,6 +39,7 @@ import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityV2Controller } from './connectivity/connectivity.v2.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
 import { NearestSchoolModule } from './nearest-school/nearest-school.module';
@@ -102,6 +104,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     SchoolController,
     SchoolMasterController,
     CountryController,
+    CountryV2Controller,
     MeasurementController,
     MeasurementSandboxController,
     MeasurementV2Controller,
@@ -109,6 +112,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     DataFixController,
     MetricsController,
     ConnectivityController,
+    ConnectivityV2Controller,
     DeviceTokenController,
     PingAggregationController,
     PublicController,
