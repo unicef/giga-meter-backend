@@ -23,7 +23,7 @@ export class FacilityTypeService implements OnModuleInit {
     if (this.cache.size === 0) {
       await this.warmCache();
     }
-    return this.cache.get(code) ?? null;
+    return this.cache.get(code?.toLowerCase()) ?? null;
   }
 
   /** Returns a single facility_type by its numeric PK. */
@@ -51,7 +51,13 @@ export class FacilityTypeService implements OnModuleInit {
       const rows = await this.prisma.facility_type.findMany();
       this.cache.clear();
       for (const row of rows) {
-        this.cache.set(row.code, row);
+        // Index by code AND name (lowercased) — tolerant of the legacy seed
+        // variant that stored codes as 'SCHL'/'HLTH' before the
+        // normalize_facility_type_codes migration runs.
+        this.cache.set(row.code?.toLowerCase(), row);
+        if (row.name) {
+          this.cache.set(row.name.toLowerCase(), row);
+        }
       }
       this.logger.log(
         `FacilityTypeService cache warmed with ${rows.length} row(s)`,

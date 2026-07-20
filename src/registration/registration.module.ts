@@ -10,5 +10,6 @@ import { HealthModule } from '../health/health.module';
   imports: [FacilityTypeModule, HealthModule],
   controllers: [RegistrationController, RegistrationV2Controller],
   providers: [RegistrationService, PrismaService],
+  exports: [RegistrationService],
 })
 export class RegistrationModule {}

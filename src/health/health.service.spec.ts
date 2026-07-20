@@ -81,6 +81,35 @@ describe('HealthService', () => {
       );
     });
 
+    it('filters by govt_id across dhis2/hims/hfml columns', async () => {
+      const findMany = jest
+        .spyOn(prisma.health, 'findMany')
+        .mockResolvedValue([mockHealthRow]);
+
+      await service.findAll(
+        0,
+        10,
+        'facility_name',
+        'KE',
+        undefined,
+        undefined,
+        'DHIS2-KE-40001',
+      );
+
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            country_code: 'KE',
+            OR: [
+              { dhis2_id: 'DHIS2-KE-40001' },
+              { hims_id: 'DHIS2-KE-40001' },
+              { hfml_id: 'DHIS2-KE-40001' },
+            ],
+          }),
+        }),
+      );
+    });
+
     it('restricts to allowed countries when write_access is false', async () => {
       const findMany = jest
         .spyOn(prisma.health, 'findMany')
