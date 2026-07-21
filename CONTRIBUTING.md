@@ -21,6 +21,18 @@ Every pull requests should contain tests to coverage the functionality.
 - All the test cases should pass in order to merge.
 - One review is needed before merging PRs
 
+### Documenting merged PRs (required)
+
+After a PR is merged, add a record under [`prs/`](./prs/):
+
+1. Copy [`prs/_TEMPLATE.md`](./prs/_TEMPLATE.md).
+2. Save as `prs/{number}-{kebab-slug}.md` (e.g. `prs/320-cloudflare-measurements-v2.md`).
+3. Include **context** (why), **scope** (modules/migrations/endpoints), **technical decisions** (choices and trade-offs), and **validation** (tests run).
+
+Update [`docs/CURRENT_STATE.md`](./docs/CURRENT_STATE.md) when behavior changes. For architectural decisions, add [`docs/adr/NNN-slug.md`](./docs/adr/README.md).
+
+AI agents working in this repo must follow [`.agent/CONTEXT_RULES.md`](./.agent/CONTEXT_RULES.md).
+
 ## Folder Structure
 
 - /src

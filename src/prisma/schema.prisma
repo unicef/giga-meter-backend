@@ -9,6 +9,11 @@ datasource db {
   extensions = [postgis]
 }
 
+enum SpeedTestProtocol {
+  NDT7
+  CLOUDFLARE
+}
+
 model EFMigrationsHistory {
   MigrationId    String @id(map: "PK___EFMigrationsHistory") @db.VarChar(150)
   ProductVersion String @db.VarChar(32)
@@ -72,6 +77,8 @@ model dailycheckapp_school {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  @@index([giga_id_school])
+  @@index([giga_id_school, device_hardware_id])
 }
 
 model school {
@@ -103,8 +110,10 @@ model school {
   feature_flags            Json?
   created_at               DateTime?                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   country_code             String?                     @db.VarChar
+  not_verified             Boolean?
   deleted                  DateTime?                   @db.Timestamptz(6)
   last_school_static_id    Int?
+  is_active                Boolean?                    @default(true)
   latest_master_sync       master_sync_school_static?  @relation("latestMasterSync", fields: [last_school_static_id], references: [id])
   country                  country?                    @relation(fields: [country_code], references: [code])
   master_sync_records      master_sync_school_static[] @relation("schoolToMasterSync")
@@ -114,6 +123,31 @@ model school {
   @@index([last_school_static_id])
 }
 
+model school_new_registration {
+  id                        BigInt    @id @default(autoincrement())
+  school_id                 String    @db.VarChar(256)
+  school_name               String    @db.VarChar(256)
+  country_iso3_code         String    @db.VarChar(3)
+  latitude                  Float
+  longitude                 Float
+  address                   Json
+  education_level           String    @db.VarChar(128)
+  contact_name              String    @db.VarChar(256)
+  contact_email             String    @db.VarChar(256)
+  giga_id_school            String    @db.VarChar(256)
+  verification_status       String?   @db.VarChar(64)
+  verification_requested_at DateTime? @db.Timestamptz(6)
+  verification_error        String?
+  created                   DateTime? @db.Timestamptz(6)
+  modified                  DateTime? @db.Timestamptz(6)
+  created_at                DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted                   DateTime? @db.Timestamptz(6)
+
+  @@index([giga_id_school])
+  @@index([deleted])
+  @@index([giga_id_school, deleted])
+}
+
 model country {
   id                                BigInt                     @id @default(autoincrement())
   name                              String                     @db.VarChar
@@ -121,8 +155,40 @@ model country {
   created_at                        DateTime                   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   iso3_format                       String?                    @db.VarChar(32)
   latest_school_master_data_version Int?
+  speed_test_protocol               SpeedTestProtocol          @default(NDT7)
+  is_active                         Boolean?                   @default(true)
   master_sync_intermediate          master_sync_intermediate[]
   schools                           school[]
+  country_protocol_config           CountryProtocolConfig?
+}
+
+/// Per-country defaults for measurement protocol (school may override).
+model CountryProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  country_code            String   @unique @db.VarChar
+  measurement_providers   String[] @db.VarChar(32)
+  between_tests_delay_sec Int      @default(0)
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  country country @relation(fields: [country_code], references: [code])
+
+  @@index([country_code])
+  @@map("country_protocol_config")
+}
+
+/// Per-school overrides for protocol. Empty `measurement_providers` ([]) or null
+/// `between_tests_delay_sec` inherit from country / default.
+model SchoolProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  giga_id_school          String   @unique @db.VarChar
+  measurement_providers   String[] @db.VarChar(32)
+  between_tests_delay_sec Int?
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([giga_id_school])
+  @@map("school_protocol_config")
 }
 
 model master_sync_school_static {
@@ -240,9 +306,18 @@ model measurements {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  protocol                    String    @default("mlab") @db.VarChar(32)
+  download_latency            Float?
+  upload_latency              Float?
+  download_jitter             Float?
+  upload_jitter               Float?
+  jitter                      Float?
+  packet_loss                 Float?
+  network_quality_score       Float?
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
+  @@index([protocol])
 }
 
 model measurements_failed {
@@ -387,6 +462,8 @@ model connectivity_ping_checks {
   browserId      String?   @map("browser_id")
   latency        Float?    @map("latency")
   created_at     DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  deleted_at     DateTime? @db.Timestamptz(6)
+  is_deleted     Boolean   @default(false)
 }
 
 model IpMetadata {
@@ -404,4 +481,229 @@ model IpMetadata {
   source   String?
 
   @@unique([ip, source])
+}
+
+model Users {
+  id            Int       @id @default(autoincrement())
+  first_name    String?
+  last_name     String?
+  username      String     @unique
+  email         String     @unique
+  user_name     String?
+  last_login    DateTime?
+  is_active     Boolean    @default(true)
+  is_superuser  Boolean    @default(false)
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  // Relationships
+  createdRoles          CustomAuthRole[]           @relation("RoleCreatedBy")
+  modifiedRoles         CustomAuthRole[]           @relation("RoleModifiedBy")
+
+  createdRolePermissions CustomAuthRolePermission[] @relation("RolePermCreatedBy")
+  modifiedRolePermissions CustomAuthRolePermission[] @relation("RolePermModifiedBy")
+
+  createdUserRoles      CustomAuthUserRoleRelationship[] @relation("UserRoleCreatedBy")
+  modifiedUserRoles     CustomAuthUserRoleRelationship[] @relation("UserRoleModifiedBy")
+
+  roleAssignments       CustomAuthUserRoleRelationship[] @relation("UserRoleAssignment")
+
+  createdCmsContent     CmsContent[]               @relation("CmsContentCreatedBy")
+  updatedCmsContent     CmsContent[]               @relation("CmsContentUpdatedBy")
+
+  createdCmsMedia       CmsMedia[]                 @relation("CmsMediaCreatedBy")
+  updatedCmsMedia       CmsMedia[]                 @relation("CmsMediaUpdatedBy")
+
+  @@map("users")
+}
+
+model CustomAuthRole {
+  id                    Int       @id @default(autoincrement())
+  deleted               DateTime? @db.Timestamptz
+  last_modified_at      DateTime  @db.Timestamptz
+  created               DateTime  @db.Timestamptz
+  name                  String    @db.VarChar(255)
+  description           String?   @db.VarChar(255)
+  category              String    @db.VarChar(50)
+
+  created_by_id         Int?
+  createdBy             Users?     @relation("RoleCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id   Int?
+  modifiedBy            Users?     @relation("RoleModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  // Role Permissions
+  rolePermissions       CustomAuthRolePermission[]
+
+  // User-Role Assignment
+  userRoleRelationships CustomAuthUserRoleRelationship[]
+
+  @@index([created_by_id])
+  @@index([last_modified_by_id])
+  @@index([deleted])
+  @@index([name])
+  @@index([name], map: "custom_auth_role_name_4ba7d950_like")
+
+  @@map("custom_auth_role")
+}
+
+
+model CustomAuthRolePermission {
+  id                  Int       @id @default(autoincrement())
+  deleted             DateTime? @db.Timestamptz
+  last_modified_at    DateTime  @db.Timestamptz
+  created             DateTime  @db.Timestamptz
+  slug                String    @db.VarChar(100)
+
+  created_by_id       Int?
+  createdBy           Users?     @relation("RolePermCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id Int?
+  modifiedBy          Users?     @relation("RolePermModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  role_id             Int
+  role                CustomAuthRole @relation(fields: [role_id], references: [id])
+
+  @@index([created_by_id])
+  @@index([deleted])
+  @@index([last_modified_by_id])
+  @@index([role_id])
+  @@index([slug])
+  @@index([slug], map: "custom_auth_rolepermission_slug_858572f8_like")
+
+  @@map("custom_auth_rolepermission")
+}
+
+
+model CustomAuthUserRoleRelationship {
+  id                   Int       @id @default(autoincrement())
+  deleted              DateTime? @db.Timestamptz
+  last_modified_at     DateTime  @db.Timestamptz
+  created              DateTime  @db.Timestamptz
+
+  created_by_id        Int?
+  createdBy            Users?     @relation("UserRoleCreatedBy", fields: [created_by_id], references: [id])
+
+  last_modified_by_id  Int?
+  modifiedBy           Users?     @relation("UserRoleModifiedBy", fields: [last_modified_by_id], references: [id])
+
+  role_id              Int
+  role                 CustomAuthRole @relation(fields: [role_id], references: [id])
+
+  user_id              Int
+  user                 Users     @relation("UserRoleAssignment", fields: [user_id], references: [id])
+
+  @@index([created_by_id])
+  @@index([deleted])
+  @@index([last_modified_by_id])
+  @@index([role_id])
+  @@index([user_id])
+
+  @@map("custom_auth_userrolerelationship")
+}
+
+model CmsContent {
+  id           Int       @id @default(autoincrement())
+  status       String    @unique @db.VarChar(20)
+  contentJson  Json      @map("content_json")
+  publishedAt  DateTime? @map("published_at")
+  lastModified DateTime  @default(now()) @map("last_modified")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  
+  createdById  Int?      @map("created_by_id")
+  createdBy    Users?    @relation("CmsContentCreatedBy", fields: [createdById], references: [id])
+  
+  updatedById  Int?      @map("updated_by_id")
+  updatedBy    Users?    @relation("CmsContentUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([status])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("cms_content")
+}
+
+model CmsMedia {
+  id               String    @id @db.VarChar(50)
+  name             String    @db.VarChar(255)
+  altText          String?   @map("alt_text")
+  fileType         String    @map("file_type") @db.VarChar(100)
+  fileSize         Int       @map("file_size")
+  filePath         String    @map("file_path")
+  url              String?
+  width            Int?
+  height           Int?
+  duration         Int?
+  uploadedAt       DateTime  @default(now()) @map("uploaded_at")
+  used_in_sections String[]
+  deletedAt        DateTime? @map("deleted_at")
+  
+  createdById      Int?      @map("created_by_id")
+  createdBy        Users?    @relation("CmsMediaCreatedBy", fields: [createdById], references: [id])
+  
+  updatedById      Int?      @map("updated_by_id")
+  updatedBy        Users?    @relation("CmsMediaUpdatedBy", fields: [updatedById], references: [id])
+
+  @@index([name])
+  @@index([fileType])
+  @@index([uploadedAt])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("cms_media")
+}
+
+enum FeatureFlagType {
+  BOOLEAN
+  PERCENTAGE
+}
+
+enum FeatureFlagScope {
+  COUNTRY
+  SCHOOL
+}
+
+model FeatureFlag {
+  id          String          @id @default(uuid()) @db.Uuid
+  key         String          @unique @db.VarChar(255)
+  name        String          @db.VarChar(255)
+  description String?         @db.Text
+  flag_type   FeatureFlagType
+  enabled     Boolean         @default(false)
+  percentage  Int?
+  created_at  DateTime        @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  updated_at  DateTime        @updatedAt @db.Timestamptz(6)
+
+  overrides FeatureFlagOverride[]
+
+  @@map("feature_flag")
+}
+
+model FeatureFlagOverride {
+  id              String           @id @default(uuid()) @db.Uuid
+  feature_flag_id String           @db.Uuid
+  scope           FeatureFlagScope
+  scope_id        String           @db.VarChar(255)
+  enabled         Boolean          @default(false)
+  created_at      DateTime         @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  updated_at      DateTime         @updatedAt @db.Timestamptz(6)
+
+  feature_flag FeatureFlag @relation(fields: [feature_flag_id], references: [id], onDelete: Cascade)
+
+  @@unique([feature_flag_id, scope, scope_id])
+  @@map("feature_flag_override")
+}
+model ConnectivityPingChecksDailyAggr {
+  id                   Int      @id @default(autoincrement())
+  timestamp_date       DateTime
+  giga_id_school       String
+  browser_id           String?
+  is_connected_true    Int
+  is_connected_all     Int
+  uptime               Float
+  unloaded_latency_avg Float?
+  created_at           DateTime @default(now())
+
+  @@index([giga_id_school, timestamp_date])
+  @@index([giga_id_school, browser_id, timestamp_date])
+  @@map("connectivity_ping_checks_daily_aggr")
 }

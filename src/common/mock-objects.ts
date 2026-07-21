@@ -109,6 +109,7 @@ export const mockSchoolDto: SchoolDto[] = [
     windows_username: null,
     installed_path: null,
     wifi_connections: undefined,
+    is_verified: false,
   },
   {
     id: '2',
@@ -128,6 +129,7 @@ export const mockSchoolDto: SchoolDto[] = [
     windows_username: null,
     installed_path: null,
     wifi_connections: undefined,
+    is_verified: false,
   },
 ];
 
@@ -219,8 +221,10 @@ export const mockSchoolMasterModel = {
   feature_flags: mockFeatureFlagsDto,
   giga_id_school: 'gigaid1',
   created_at: new Date('2024-04-12T04:13:37.300Z'),
+  not_verified: false,
   deleted: null,
   last_school_static_id: 1,
+  is_active: true,
 };
 
 export const mockSchoolMasterDto: SchoolMasterDto[] = [
@@ -242,6 +246,8 @@ export const mockSchoolMasterDto: SchoolMasterDto[] = [
     admin_3_name: '',
     admin_4_name: '',
     giga_id_school: 'gigaid1',
+    is_verified: true,
+    is_active: true,
   },
 ];
 
@@ -618,6 +624,14 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    protocol: 'mlab',
+    download_latency: null,
+    upload_latency: null,
+    download_jitter: null,
+    upload_jitter: null,
+    jitter: null,
+    packet_loss: null,
+    network_quality_score: null,
   },
   {
     id: toBigInt(2),
@@ -652,6 +666,14 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    protocol: 'mlab',
+    download_latency: null,
+    upload_latency: null,
+    download_jitter: null,
+    upload_jitter: null,
+    jitter: null,
+    packet_loss: null,
+    network_quality_score: null,
   },
   {
     id: toBigInt(3),
@@ -686,6 +708,14 @@ export const mockMeasurementModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    protocol: 'mlab',
+    download_latency: null,
+    upload_latency: null,
+    download_jitter: null,
+    upload_jitter: null,
+    jitter: null,
+    packet_loss: null,
+    network_quality_score: null,
   },
 ];
 
