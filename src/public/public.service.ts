@@ -96,6 +96,7 @@ export class PublicService {
     countries?: string[],
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSuperUser?: boolean,
+    protocol?: string,
   ): Promise<PublicMeasurementDto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -105,6 +106,10 @@ export class PublicService {
       write_access,
       countries,
     );
+
+    if (protocol) {
+      filter.protocol = protocol;
+    }
 
     if (country_iso3_code) {
       const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
@@ -280,6 +285,14 @@ export class PublicService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
+      protocol: measurement.protocol,
+      download_latency: measurement.download_latency ?? undefined,
+      upload_latency: measurement.upload_latency ?? undefined,
+      download_jitter: measurement.download_jitter ?? undefined,
+      upload_jitter: measurement.upload_jitter ?? undefined,
+      jitter: measurement.jitter ?? undefined,
+      packet_loss: measurement.packet_loss ?? undefined,
+      network_quality_score: measurement.network_quality_score ?? undefined,
     };
     // if (isSuperUser) {
     filterMeasurementData['UUID'] = measurement.uuid;

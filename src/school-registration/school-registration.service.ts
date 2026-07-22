@@ -93,11 +93,21 @@ export class SchoolRegistrationService {
         });
 
       return this.toResponseDto(updatedRegistration);
-    } else {
-      throw new ConflictException(
-        `No active registration found for giga_id_school '${gigaId}' to reject.`,
-      );
     }
+
+    if (!rejectionDto.is_deleted) {
+      // Callback says the school was not deleted: leave the registration as-is.
+      return {
+        giga_id_school: gigaId,
+        verification_status: activeRegistration?.verification_status ?? 'PENDING',
+      };
+    }
+
+    // Repeated rejection after the registration was already deleted: idempotent.
+    return {
+      giga_id_school: gigaId,
+      verification_status: 'REJECTED',
+    };
   }
 
   private async dispatchVerification(registration: any): Promise<void> {

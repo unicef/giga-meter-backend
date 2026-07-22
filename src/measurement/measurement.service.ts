@@ -16,6 +16,7 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 
 @Injectable()
 export class MeasurementService {
@@ -38,6 +39,7 @@ export class MeasurementService {
     write_access?: boolean,
     countries?: string[],
     isSuperUser?: boolean,
+    protocol?: string,
   ): Promise<MeasurementDto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -47,6 +49,10 @@ export class MeasurementService {
       write_access,
       countries,
     );
+
+    if (protocol) {
+      filter.protocol = protocol;
+    }
 
     if (country_iso3_code) {
       const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
@@ -85,6 +91,7 @@ export class MeasurementService {
     filter_value?: Date,
     write_access?: boolean,
     countries?: string[],
+    protocol?: string,
   ): Promise<MeasurementV2Dto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -94,6 +101,10 @@ export class MeasurementService {
       write_access,
       countries,
     );
+
+    if (protocol) {
+      filter.protocol = protocol;
+    }
 
     if (!giga_id_school) {
       delete filter.giga_id_school;
@@ -189,7 +200,10 @@ export class MeasurementService {
     );
   }
 
-  async createMeasurement(measurementDto: AddMeasurementDto): Promise<string> {
+  async createMeasurement(
+    measurementDto: AddMeasurementDto,
+    uploadProtocol?: string,
+  ): Promise<string> {
     const processedResponse = await this.processMeasurement(measurementDto);
 
     switch (processedResponse) {
@@ -231,6 +245,7 @@ export class MeasurementService {
           }
         }
 
+        enrichMeasurementForPersistence(measurementDto, uploadProtocol);
         const model = this.toModel(measurementDto);
         await this.prisma.measurements.create({
           data: model,
@@ -458,6 +473,14 @@ export class MeasurementService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
+      protocol: measurement.protocol,
+      download_latency: measurement.download_latency ?? undefined,
+      upload_latency: measurement.upload_latency ?? undefined,
+      download_jitter: measurement.download_jitter ?? undefined,
+      upload_jitter: measurement.upload_jitter ?? undefined,
+      jitter: measurement.jitter ?? undefined,
+      packet_loss: measurement.packet_loss ?? undefined,
+      network_quality_score: measurement.network_quality_score ?? undefined,
     };
     // if (isSuperUser) {
     filterMeasurementData['UUID'] = measurement.uuid;
@@ -515,6 +538,14 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      protocol: measurement.protocol,
+      download_latency: measurement.download_latency ?? undefined,
+      upload_latency: measurement.upload_latency ?? undefined,
+      download_jitter: measurement.download_jitter ?? undefined,
+      upload_jitter: measurement.upload_jitter ?? undefined,
+      jitter: measurement.jitter ?? undefined,
+      packet_loss: measurement.packet_loss ?? undefined,
+      network_quality_score: measurement.network_quality_score ?? undefined,
     };
   }
 
@@ -595,6 +626,14 @@ export class MeasurementService {
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
+      protocol: measurement.protocol ?? 'mlab',
+      download_latency: measurement.download_latency ?? null,
+      upload_latency: measurement.upload_latency ?? null,
+      download_jitter: measurement.download_jitter ?? null,
+      upload_jitter: measurement.upload_jitter ?? null,
+      jitter: measurement.jitter ?? null,
+      packet_loss: measurement.packet_loss ?? null,
+      network_quality_score: measurement.network_quality_score ?? null,
     };
   }
 

@@ -28,12 +28,12 @@ import {
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
+  CheckDeviceStatusDto,
   CreateSchoolResponseDto,
   DeactivateDeviceDto,
   SchoolDto,
   CheckDeviceAndSchoolStatusDto,
   DeactivateDeviceResponseDto,
-  CheckDeviceStatusDto,
   CheckDeviceAndSchoolStatusResponseDto,
 } from './school.dto';
 import { Countries, WriteAccess } from '../common/common.decorator';

@@ -1,6 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsArray,
   IsNumber,
   IsObject,
   IsOptional,
@@ -9,6 +7,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CloudflareDataUsageDto {
   @ApiProperty({
@@ -115,7 +114,10 @@ export class CloudflareAccessInformationDto {
 }
 
 export class CloudflareServerInfoDto {
-  @ApiProperty({ required: false, description: 'City where the server is located' })
+  @ApiProperty({
+    required: false,
+    description: 'City where the server is located',
+  })
   @IsOptional()
   @IsString()
   city?: string;
@@ -130,7 +132,10 @@ export class CloudflareServerInfoDto {
   @IsString()
   country?: string;
 
-  @ApiProperty({ required: false, description: 'Server label (typically city name)' })
+  @ApiProperty({
+    required: false,
+    description: 'Server label (typically city name)',
+  })
   @IsOptional()
   @IsString()
   label?: string;
@@ -723,6 +728,30 @@ export class MeasurementDto {
 
   @ApiProperty({ required: false })
   wifi_connections?: any[];
+
+  @ApiPropertyOptional()
+  protocol?: string;
+
+  @ApiPropertyOptional()
+  download_latency?: number;
+
+  @ApiPropertyOptional()
+  upload_latency?: number;
+
+  @ApiPropertyOptional()
+  download_jitter?: number;
+
+  @ApiPropertyOptional()
+  upload_jitter?: number;
+
+  @ApiPropertyOptional()
+  jitter?: number;
+
+  @ApiPropertyOptional()
+  packet_loss?: number;
+
+  @ApiPropertyOptional()
+  network_quality_score?: number;
 }
 
 export class MeasurementV2Dto {
@@ -795,6 +824,30 @@ export class MeasurementV2Dto {
 
   @ApiProperty({ required: false })
   wifi_connections?: any[];
+
+  @ApiPropertyOptional()
+  protocol?: string;
+
+  @ApiPropertyOptional()
+  download_latency?: number;
+
+  @ApiPropertyOptional()
+  upload_latency?: number;
+
+  @ApiPropertyOptional()
+  download_jitter?: number;
+
+  @ApiPropertyOptional()
+  upload_jitter?: number;
+
+  @ApiPropertyOptional()
+  jitter?: number;
+
+  @ApiPropertyOptional()
+  packet_loss?: number;
+
+  @ApiPropertyOptional()
+  network_quality_score?: number;
 }
 
 export class AddMeasurementDto extends MeasurementDto {

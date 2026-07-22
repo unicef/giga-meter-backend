@@ -98,6 +98,7 @@ export class ContentController {
     status: 400,
     description: 'Invalid content structure or validation failed',
   })
+  @Roles(PERMISSION_SLUGS.CAN_ADD_CMS, PERMISSION_SLUGS.CAN_UPDATE_CMS)
   async saveContent(
     @AdminLoggedInUser() user: Users,
     @Query() query: SaveContentQueryDto,

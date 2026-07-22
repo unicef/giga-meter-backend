@@ -287,7 +287,6 @@ describe('SchoolService', () => {
         exists: true,
         user_id: mockSchoolModel[0].user_id,
         giga_id_school: mockSchoolModel[0].giga_id_school,
-        is_verified: true,
       });
     });
   });

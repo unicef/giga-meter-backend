@@ -39,4 +39,6 @@ ALTER TABLE "connectivity_ping_checks" ADD CONSTRAINT "connectivity_ping_checks_
 ALTER TABLE "connectivity_ping_checks" ADD CONSTRAINT "connectivity_ping_checks_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "registration"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- RenameIndex
-ALTER INDEX "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" RENAME TO "connectivity_ping_checks_daily_aggr_giga_id_school_browser__idx";
+-- IF EXISTS: this same rename also ships in 20260605114656 (staging branch); whichever
+-- runs second must be a no-op, both on existing DBs and on fresh replays (shadow DB/CI).
+ALTER INDEX IF EXISTS "connectivity_ping_checks_daily_aggr_giga_id_school_browser_idx" RENAME TO "connectivity_ping_checks_daily_aggr_giga_id_school_browser__idx";

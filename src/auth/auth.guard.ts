@@ -49,7 +49,6 @@ export class AuthGuard implements CanActivate {
       return true;
     }
     const authHeader = request.headers.authorization;
-
     if (!authHeader) {
       throw new UnauthorizedException('Missing authorization token');
     }
