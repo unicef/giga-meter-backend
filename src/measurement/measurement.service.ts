@@ -16,6 +16,7 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 
 @Injectable()
 export class MeasurementService {
@@ -35,6 +36,7 @@ export class MeasurementService {
     write_access?: boolean,
     countries?: string[],
     isSuperUser?: boolean,
+    protocol?: string,
   ): Promise<MeasurementDto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -44,6 +46,10 @@ export class MeasurementService {
       write_access,
       countries,
     );
+
+    if (protocol) {
+      filter.protocol = protocol;
+    }
 
     if (country_iso3_code) {
       const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
@@ -82,6 +88,7 @@ export class MeasurementService {
     filter_value?: Date,
     write_access?: boolean,
     countries?: string[],
+    protocol?: string,
   ): Promise<MeasurementV2Dto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -91,6 +98,10 @@ export class MeasurementService {
       write_access,
       countries,
     );
+
+    if (protocol) {
+      filter.protocol = protocol;
+    }
 
     if (!giga_id_school) {
       delete filter.giga_id_school;
@@ -186,7 +197,10 @@ export class MeasurementService {
     );
   }
 
-  async createMeasurement(measurementDto: AddMeasurementDto): Promise<string> {
+  async createMeasurement(
+    measurementDto: AddMeasurementDto,
+    uploadProtocol?: string,
+  ): Promise<string> {
     const processedResponse = await this.processMeasurement(measurementDto);
 
     switch (processedResponse) {
@@ -225,6 +239,7 @@ export class MeasurementService {
           }
         }
 
+        enrichMeasurementForPersistence(measurementDto, uploadProtocol);
         const model = this.toModel(measurementDto);
         await this.prisma.measurements.create({
           data: model,
@@ -233,6 +248,71 @@ export class MeasurementService {
         return '';
       }
     }
+  }
+
+  async createMultipleMeasurement(
+    multipleMeasurementDto: AddMeasurementDto[],
+  ): Promise<any[]> {
+    const allResponse: any[] = [];
+    for (const measurementDto of multipleMeasurementDto) {
+      if (measurementDto.Results && measurementDto.app_version) {
+        try {
+          // Validate app_version format
+          const versionParts = measurementDto.app_version.toString().split('.');
+          if (
+            versionParts.length !== 3 ||
+            versionParts.some((part) => !/^\d+$/.test(part))
+          ) {
+            console.warn(
+              `Invalid version format: ${measurementDto.app_version}`,
+            );
+            return;
+          }
+
+          const [major, minor, patch] = versionParts.map(Number);
+          const isVersionAbove109 =
+            major > 1 ||
+            (major === 1 && minor > 0) ||
+            (major === 1 && minor === 0 && patch >= 9);
+
+          if (isVersionAbove109) {
+            const results = measurementDto.Results;
+            const dataDownloaded =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo
+                ?.BytesAcked;
+            const dataUploaded =
+              results['NDTResult.C2S']?.LastServerMeasurement?.TCPInfo
+                ?.BytesReceived;
+            // Use strict null check (==) to handle both null and undefined
+            // Use nullish coalescing (??) instead of OR (||) to only replace null/undefined with 0
+            // This ensures we don't accidentally convert falsy values like 0 to 0
+            const dataUsage =
+              dataDownloaded == null && dataUploaded == null
+                ? null // If both are null/undefined, return null
+                : (dataDownloaded ?? 0) + (dataUploaded ?? 0); // Otherwise sum them, replacing null/undefined with 0
+            measurementDto.DataDownloaded = dataDownloaded;
+            measurementDto.DataUploaded = dataUploaded;
+            measurementDto.DataUsage = dataUsage;
+            const minRTT =
+              results['NDTResult.S2C']?.LastServerMeasurement?.TCPInfo?.MinRTT;
+            if (typeof minRTT === 'number' && !isNaN(minRTT)) {
+              measurementDto.Latency = Number((minRTT / 1000).toFixed(0));
+            } else {
+              console.warn('Invalid or missing MinRTT value');
+            }
+          }
+        } catch (error) {
+          console.error('Error processing measurement:', error);
+        }
+      }
+      const response = await this.createMeasurement(measurementDto);
+
+      if (response.length) {
+        allResponse.push(response);
+      }
+    }
+
+    return allResponse;
   }
 
   private async processMeasurement(
@@ -332,6 +412,7 @@ export class MeasurementService {
 
   private toDto(
     measurement: Measurement,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     isSuperUser?: boolean,
   ): MeasurementDto {
     const clientInfo = plainToInstance(ClientInfoDto, measurement.client_info);
@@ -386,6 +467,14 @@ export class MeasurementService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
+      protocol: measurement.protocol,
+      download_latency: measurement.download_latency ?? undefined,
+      upload_latency: measurement.upload_latency ?? undefined,
+      download_jitter: measurement.download_jitter ?? undefined,
+      upload_jitter: measurement.upload_jitter ?? undefined,
+      jitter: measurement.jitter ?? undefined,
+      packet_loss: measurement.packet_loss ?? undefined,
+      network_quality_score: measurement.network_quality_score ?? undefined,
     };
     // if (isSuperUser) {
     filterMeasurementData['UUID'] = measurement.uuid;
@@ -443,6 +532,14 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      protocol: measurement.protocol,
+      download_latency: measurement.download_latency ?? undefined,
+      upload_latency: measurement.upload_latency ?? undefined,
+      download_jitter: measurement.download_jitter ?? undefined,
+      upload_jitter: measurement.upload_jitter ?? undefined,
+      jitter: measurement.jitter ?? undefined,
+      packet_loss: measurement.packet_loss ?? undefined,
+      network_quality_score: measurement.network_quality_score ?? undefined,
     };
   }
 
@@ -520,6 +617,14 @@ export class MeasurementService {
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
+      protocol: measurement.protocol ?? 'mlab',
+      download_latency: measurement.download_latency ?? null,
+      upload_latency: measurement.upload_latency ?? null,
+      download_jitter: measurement.download_jitter ?? null,
+      upload_jitter: measurement.upload_jitter ?? null,
+      jitter: measurement.jitter ?? null,
+      packet_loss: measurement.packet_loss ?? null,
+      network_quality_score: measurement.network_quality_score ?? null,
     };
   }
 
@@ -544,11 +649,14 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: 'DailyCheckApp',
       reason,
-      detected_latitude: measurement.geolocation?.location?.lat || null, 
-      detected_longitude: measurement.geolocation?.location?.lng || null, 
-      detected_location_accuracy: measurement.detected_location_accuracy || null,
-      detected_location_distance: measurement.detected_location_distance || null,
-      detected_location_is_flagged: measurement.detected_location_is_flagged || false
+      detected_latitude: measurement.geolocation?.location?.lat || null,
+      detected_longitude: measurement.geolocation?.location?.lng || null,
+      detected_location_accuracy:
+        measurement.detected_location_accuracy || null,
+      detected_location_distance:
+        measurement.detected_location_distance || null,
+      detected_location_is_flagged:
+        measurement.detected_location_is_flagged || false,
     };
   }
 }

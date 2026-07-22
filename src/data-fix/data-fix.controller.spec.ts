@@ -12,11 +12,14 @@ describe('DataFixController', () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [DataFixController],
       providers: [
-        AuthGuard,
+        { provide: AuthGuard, useValue: { canActivate: jest.fn().mockResolvedValue(true) } },
         { provide: CategoryConfigProvider, useValue: mockCategoryConfigProvider },
       ],
       imports: [HttpModule],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: jest.fn().mockResolvedValue(true) })
+      .compile();
 
     controller = app.get<DataFixController>(DataFixController);
   });

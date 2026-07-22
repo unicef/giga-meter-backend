@@ -4,6 +4,8 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  InternalServerErrorException,
+  Param,
   Put,
   UseGuards,
 } from '@nestjs/common';
@@ -17,6 +19,7 @@ import {
 import { AdminService } from './admin.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { AdminSchoolDto } from './admin.dto';
+import { RequiredCategories } from 'src/common/category.decorator';
 
 @ApiExcludeController()
 @Controller('api/v1/admin')
@@ -129,5 +132,18 @@ export class AdminController {
       );
 
     return await this.adminService.notifySchools(schoolIds);
+  }
+
+  @Put('assign-role/:id')
+  @RequiredCategories('admin')
+  async assignRoleToUser(
+    @Param('id') id: number,
+    @Body('roleId') roleId: number,
+  ): Promise<any> {
+    try {
+      return this.adminService.assignRoleToUser(id, roleId);
+    } catch (error) {
+      throw new InternalServerErrorException('Error assigning role to user');
+    }
   }
 }

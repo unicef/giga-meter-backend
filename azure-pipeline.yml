@@ -1,6 +1,6 @@
 trigger:
   - main
-  - development
+  - develop
   - staging
 
 name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
@@ -24,7 +24,8 @@ stages:
       displayName: Unit Tests
       condition: or(
           eq(variables['Build.Reason'], 'PullRequest'),
-          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+          eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/staging')
         )
       continueOnError: false
       inputs:
@@ -37,7 +38,8 @@ stages:
       displayName: Sonar Scan
       condition: or(
           eq(variables['Build.Reason'], 'PullRequest'),
-          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+          eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/staging')
         )
       inputs:
         targetType: 'inline'
@@ -82,7 +84,7 @@ stages:
     vmImage: 'ubuntu-22.04'
   jobs:
   - job: Development
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/development')
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
     steps: 
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: uni-connect-services'

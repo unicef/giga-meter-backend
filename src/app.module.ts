@@ -36,9 +36,24 @@ import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
+import { PublicController } from './public/public.controller';
+import { PublicService } from './public/public.service';
+import { SchoolRegistrationController } from './school-registration/school-registration.controller';
+import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
+import { SchoolRegistrationService } from './school-registration/school-registration.service';
 import * as redisStore from 'cache-manager-redis-store';
 import { DeviceTokenController } from './auth/device-token.controller';
 import { DeviceTokenService } from './auth/device-token.service';
+import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { TranslateModule } from './translate';
+import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
+
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
+import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
+import { ProtocolConfigService } from './protocol-config/protocol-config.service';
 
 @Module({
   imports: [
@@ -56,10 +71,14 @@ import { DeviceTokenService } from './auth/device-token.service';
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
     GeolocationModule,
+    AdminMeterModule,
+    TranslateModule,
+    FeatureFlagModule,
   ],
   controllers: [
     AppController,
@@ -74,6 +93,10 @@ import { DeviceTokenService } from './auth/device-token.service';
     MetricsController,
     ConnectivityController,
     DeviceTokenController,
+    PingAggregationController,
+    PublicController,
+    SchoolRegistrationController,
+    ProtocolConfigController,
   ],
   providers: [
     AppService,
@@ -88,6 +111,8 @@ import { DeviceTokenService } from './auth/device-token.service';
     MetricsService,
     CategoryConfigProvider,
     DeviceTokenService,
+    PingAggregationService,
+    ConnectivityService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
@@ -100,7 +125,12 @@ import { DeviceTokenService } from './auth/device-token.service';
       provide: APP_INTERCEPTOR,
       useClass: CategoryResponseInterceptor,
     },
+    SchedulerService,
     ConnectivityService,
+    PublicService,
+    SchoolRegistrationGuard,
+    SchoolRegistrationService,
+    ProtocolConfigService,
   ],
 })
 export class AppModule {}
