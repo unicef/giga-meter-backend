@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsNumber,
   IsObject,
   IsOptional,
@@ -855,11 +856,135 @@ export class AddMeasurementDto extends MeasurementDto {
 // ---------------------------------------------------------------------------
 
 /** Input for POST /api/v1/measurements/v2 */
-export class AddMeasurementV2Dto {
+/**
+ * Telemetry and diagnostics shared by both v2 ingest DTOs.
+ *
+ * Split out so the entity- and facility-flavoured payloads cannot drift apart:
+ * every column the v2 write path persists beyond identity + core speed metrics
+ * is declared here exactly once.
+ */
+export class MeasurementV2TelemetryDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  DeviceType?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  Notes?: string;
+
+  @ApiProperty({ required: false, type: ClientInfoDto })
+  @IsOptional()
+  ClientInfo?: ClientInfoDto;
+
+  @ApiProperty({ required: false, type: ServerInfoDto })
+  @IsOptional()
+  ServerInfo?: ServerInfoDto;
+
+  @ApiProperty({ required: false, description: 'Raw speed-test result blob' })
+  @IsOptional()
+  Results?: ResultsDto | ResultsNdt7Dto | Record<string, any>;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  annotation?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Legacy casing accepted from the desktop client',
+  })
+  @IsOptional()
+  @IsString()
+  Annotation?: string;
+
+  @ApiProperty({ required: false, description: 'Bytes downloaded' })
+  @IsOptional()
+  @IsNumber()
+  DataDownloaded?: number;
+
+  @ApiProperty({ required: false, description: 'Bytes uploaded' })
+  @IsOptional()
+  @IsNumber()
+  DataUploaded?: number;
+
+  @ApiProperty({ required: false, description: 'Total bytes moved' })
+  @IsOptional()
+  @IsNumber()
+  DataUsage?: number;
+
+  @ApiProperty({
+    required: false,
+    enum: ['mlab', 'cloudflare'],
+    description:
+      'Measurement provider. Quality metrics below are derived from Results for cloudflare and stored as null for mlab.',
+  })
+  @IsOptional()
+  @IsString()
+  protocol?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  download_latency?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  upload_latency?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  download_jitter?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  upload_jitter?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  jitter?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  packet_loss?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  network_quality_score?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  detected_location_accuracy?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  detected_location_distance?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  detected_location_is_flagged?: boolean;
+}
+
+export class AddMeasurementV2Dto extends MeasurementV2TelemetryDto {
   @ApiProperty({ required: false, description: 'Giga ID of the school (required for school entity)' })
   @IsOptional()
   @IsString()
   giga_id_school?: string;
+
+  @ApiProperty({ required: false, description: 'Platform installation ID' })
+  @IsOptional()
+  @IsString()
+  installation_id?: string;
 
   @ApiProperty({ required: false, description: 'Legacy school_id (optional for school entity)' })
   @IsOptional()
@@ -1000,11 +1125,16 @@ export class MeasurementEntityV2Dto {
 // ---------------------------------------------------------------------------
 
 /** Input for POST /api/v2/measurements */
-export class AddMeasurementFacilityV2Dto {
+export class AddMeasurementFacilityV2Dto extends MeasurementV2TelemetryDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   giga_id_school?: string;
+
+  @ApiProperty({ required: false, description: 'Platform installation ID' })
+  @IsOptional()
+  @IsString()
+  installation_id?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

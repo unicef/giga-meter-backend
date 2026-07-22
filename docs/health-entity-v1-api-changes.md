@@ -25,6 +25,40 @@
 | `POST` | `/api/v2/measurements` | `/api/v1/measurements/v2` — body uses `facility_type` |
 | `GET` | `/api/v2/measurements/facility` | `/api/v1/measurements/v2/entity` — query uses `facility_type` |
 
+### Frontend-driven V2 additions (2026-07-16)
+
+Endpoints added for the multi-facility desktop client (see the workspace's
+`project-memory/plans/0003-multi-facility-frontend.md`, backend deps B2–B8):
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/api/v2/registration/existing` | Public. Recovers a registration via the priority chain `installation_id → device_hardware_id → giga_id (+ browser_id)`. `200 { registration_id, facility_type, giga_id, is_active, is_blocked }`, `404` if no match. |
+| `GET` | `/api/v2/registration/status?installation_id=` | Public. `{ exists, is_active, is_blocked }` (nulls when `exists=false`). |
+| `POST` | `/api/v2/registration/deactivate` | Public. Body `{ installation_id?, registration_id? }` (at least one). Sets `is_active=false`. |
+| `GET` | `/api/v2/health?govt_id=` | New filter (also on v1): matches `dhis2_id`, `hims_id` or `hfml_id`. Powers the "type an ID" Health lookup. |
+| `POST` | `/api/v2/measurements/batch` | Auth. Array body, same record shape as the single POST. Tolerant: per-record errors reported in `data.errors`, valid records still stored. |
+| `POST` | `/api/v2/connectivity` | Auth. Body `{ registration_id?, facility_type, giga_id_school?/giga_id_health?, installation_id?, records: [...] }`. `app_local_uuid` duplicates skipped (idempotent retries). |
+| `GET` | `/api/v2/countries` | Public, cached. `[ { country_code, name, supported_facility_types } ]` — whitelist-driven; enabling a facility type per country needs no deploy. |
+| `GET` | `/api/v2/feature-flags?installation_id=` | Public. Flat `{ flagKey: boolean }`. Works pre-registration (global defaults); context enriched from the registration when the installation is known. |
+
+**Ingest self-heal:** `POST /api/v2/measurements` (single and batch) and
+`POST /api/v2/connectivity` resolve the registration server-side via the same
+priority chain when `registration_id` is missing (legacy installs whose
+reconciliation never ran). Unresolvable records are stored with
+`registration_id = null` rather than rejected. `installation_id` is now
+accepted on measurement records for this purpose.
+
+**Legacy backfill-on-read (2026-07-17):** v1 registrations live in
+`dailycheckapp_school`, not in `registration`. Both `GET
+/registration/existing` and the ingest self-heal now fall back to that table
+(`device_hardware_id` → `giga_id + user_id` → `giga_id`) and lazily
+materialize a v2 `registration` row from the v1 data (school-only,
+idempotent, caller's `installation_id` stamped for future lookups). As a last
+resort the ingest self-heal lazy-creates a registration from a **valid**
+`giga_id_*` (facility must exist in the master table — junk traffic mints
+nothing). A 404 from `existing` therefore means "genuinely never registered":
+the client sends the user through the normal registration flow.
+
 ### Naming: entity → facility
 
 | Layer | Legacy (V1 API) | Current (DB + V2 API) |

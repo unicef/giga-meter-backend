@@ -102,6 +102,16 @@ export class CreateRegistrationDto {
   @IsString()
   network_information?: string;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  installed_path?: string;
+
   @ApiProperty({
     required: false,
     description: 'Array of visible Wi-Fi access points',

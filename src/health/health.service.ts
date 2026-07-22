@@ -18,6 +18,7 @@ export class HealthService {
     country_code?: string,
     write_access?: boolean,
     allowed_countries?: string[],
+    govt_id?: string,
   ): Promise<HealthListItemDto[]> {
     const where: Record<string, any> = {
       deleted: null,
@@ -27,6 +28,16 @@ export class HealthService {
       where.country_code = country_code;
     } else if (!write_access && allowed_countries?.length) {
       where.country_code = { in: allowed_countries };
+    }
+
+    // The "government ID" a user types can live in any of the three
+    // source-system columns; match all of them.
+    if (govt_id) {
+      where.OR = [
+        { dhis2_id: govt_id },
+        { hims_id: govt_id },
+        { hfml_id: govt_id },
+      ];
     }
 
     const orderField = orderBy.replace('-', '');

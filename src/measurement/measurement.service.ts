@@ -21,8 +21,10 @@ import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
+import { RegistrationService } from '../registration/registration.service';
 import { HealthService } from '../health/health.service';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
+import { buildMeasurementV2Row } from './measurement-v2.mapper';
 
 @Injectable()
 export class MeasurementService {
@@ -33,6 +35,7 @@ export class MeasurementService {
     private geolocationUtility: GeolocationUtility,
     private facilityTypeService: FacilityTypeService,
     private healthService: HealthService,
+    private registrationService: RegistrationService,
   ) {}
 
   async measurements(
@@ -391,9 +394,11 @@ export class MeasurementService {
     }
 
     // 4. If registration_id provided: verify it exists and is not blocked
-    if (dto.registration_id != null) {
+    let registrationId: bigint | null =
+      dto.registration_id != null ? BigInt(dto.registration_id.toString()) : null;
+    if (registrationId != null) {
       const registration = await this.prisma.registration.findFirst({
-        where: { id: BigInt(dto.registration_id.toString()) },
+        where: { id: registrationId },
       });
       if (!registration) {
         throw new BadRequestException(
@@ -405,36 +410,68 @@ export class MeasurementService {
           `Registration "${dto.registration_id}" is blocked`,
         );
       }
+    } else {
+      // Self-heal for legacy installs that never stored a registration_id
+      // (v1 never returned one) and whose reconciliation call failed: resolve
+      // it — or lazily create it from a valid giga_id — instead of rejecting.
+      // Best-effort — an unresolved registration stays null.
+      registrationId = await this.registrationService.resolveForIngest({
+        installation_id: dto.installation_id,
+        device_hardware_id: dto.device_hardware_id,
+        giga_id_school: dto.giga_id_school,
+        giga_id_health: dto.giga_id_health,
+        browser_id: dto.BrowserID,
+        country_code: dto.country_code,
+      });
     }
 
-    // 5. Write the measurement
+    // 5. Resolve the detected-location verdict (school only — see below)
+    const detectedLocation = await this.resolveDetectedLocationV2(dto);
+
+    // 6. Write the measurement
     await this.prisma.measurements.create({
-      data: {
-        timestamp: dto.Timestamp,
-        uuid: dto.UUID,
-        browser_id: dto.BrowserID,
-        school_id: dto.school_id ?? null,
-        download: dto.Download,
-        upload: dto.Upload,
-        latency: dto.Latency,
-        giga_id_school: dto.giga_id_school?.toLowerCase().trim() ?? null,
-        giga_id_health: dto.giga_id_health?.toLowerCase().trim() ?? null,
-        facility_type_id: facilityType.id,
-        registration_id: dto.registration_id != null ? BigInt(dto.registration_id.toString()) : null,
-        country_code: dto.country_code,
-        ip_address: dto.ip_address,
-        app_version: dto.app_version,
-        device_hardware_id: dto.device_hardware_id,
-        windows_username: dto.windows_username,
-        installed_path: dto.installed_path,
-        wifi_connections: dto.wifi_connections ?? undefined,
-        source: 'DailyCheckApp',
-        detected_latitude: dto.geolocation?.location?.lat ?? null,
-        detected_longitude: dto.geolocation?.location?.lng ?? null,
-      },
+      data: buildMeasurementV2Row(dto, {
+        facilityTypeId: facilityType.id,
+        registrationId,
+        detectedLocation,
+      }),
     });
 
     return '';
+  }
+
+  /**
+   * Distance/accuracy/flag for a v2 measurement.
+   *
+   * Only resolvable for schools today: the geolocation utility looks the
+   * reference coordinates up from the school table. Health facilities carry
+   * lat/lng too, so this is where that support would slot in — until then a
+   * health measurement stores the reported coordinates with a null verdict
+   * rather than a misleading `is_flagged`.
+   */
+  private async resolveDetectedLocationV2(
+    dto: AddMeasurementV2Dto,
+  ): Promise<{
+    distance: number | null;
+    accuracy: number | null;
+    isFlagged: boolean | null;
+  } | null> {
+    const location = dto.geolocation?.location;
+    const accuracy = dto.geolocation?.accuracy;
+    if (!location || !accuracy || !dto.giga_id_school) {
+      return null;
+    }
+
+    try {
+      return await this.geolocationUtility.calculateDistanceAndSetFlag(
+        dto.giga_id_school,
+        location,
+        accuracy,
+      );
+    } catch (error) {
+      console.error('Error processing geolocation data (v2):', error);
+      return null;
+    }
   }
 
   /** POST /api/v2/measurements — facility-aware measurement submission */
@@ -446,6 +483,7 @@ export class MeasurementService {
       entity_type: dto.facility_type,
     });
   }
+
 
   /** GET /api/v2/measurements/facility — facility-aware measurement list */
   async measurementsV2Facility(
