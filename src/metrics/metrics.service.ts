@@ -19,6 +19,15 @@ export class MetricsService {
         giga_id_school: true,
       },
     }); // ideal solution should be using distinct: 'giga_id_school', but it was not working so it is an alternate solution
+    // Health facilities register through `registration` (there is no
+    // dailycheckapp_* table for them), so count distinct giga_id_health there.
+    const healthFacilities = await this.prisma.registration.groupBy({
+      by: ['giga_id_health'],
+      where: {
+        facility_type: { code: 'health' },
+        giga_id_health: { not: null },
+      },
+    });
     const measurements = await this.prisma.measurements.count({
       where: {
         source: 'DailyCheckApp',
@@ -28,6 +37,7 @@ export class MetricsService {
     return {
       countries: Number(countries[0].count),
       schools: schools?.length,
+      health_facilities: healthFacilities?.length,
       measurements,
     };
   }

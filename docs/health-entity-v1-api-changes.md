@@ -59,6 +59,35 @@ resort the ingest self-heal lazy-creates a registration from a **valid**
 nothing). A 404 from `existing` therefore means "genuinely never registered":
 the client sends the user through the normal registration flow.
 
+### Health parity for public / metrics / protocol-config (2026-07-22)
+
+Gaps found in review: the health rollout added registration, lookup and ingest,
+but left three long-standing surfaces school-only. All three are additive —
+no existing field or route changes shape.
+
+| Method | Path | Notes |
+|--------|------|-------|
+| `GET` | `/api/v1/public/health` | Auth + throttled + cached, mirroring `/api/v1/public/schools`. Lists **registered** health facilities (from `registration`, not the `health` master table), so the response shape mirrors `PublicSchoolDto` with `giga_id_health` in place of `giga_id_school`. Filters: `giga_id_health`, `country_iso3_code`, `page`, `size` (1–100). Country scoping honours the API key's countries unless it has write access. |
+| `PUT` | `/api/v1/protocol-config/health/:gigaIdHealth` | Per-facility protocol override, mirroring `PUT /protocol-config/school/:gigaIdSchool`. Body `{ measurementProviders?, betweenTestsDelaySec? }`; at least one required. `[]` clears the provider override. |
+| `DELETE` | `/api/v1/protocol-config/health/:gigaIdHealth` | Deletes the override; `404` when absent. |
+
+**`GET /api/v1/metrics`** gains `health_facilities` — the count of distinct
+`giga_id_health` values among health-type registrations. `countries`, `schools`
+and `measurements` keep their existing meaning, so the change is purely
+additive for current consumers.
+
+**`GET /api/v1/protocol-config/resolve`** gains an optional `gigaIdHealth`
+query param. Precedence becomes **facility → country → default**, where
+"facility" is the school or health override depending on which giga id was
+passed. `configSource` can now return `'health'` in addition to `'school'`,
+`'country'` and `'default'`. `gigaIdSchool` and `gigaIdHealth` are mutually
+exclusive; if both arrive, the school override wins.
+
+New table `health_protocol_config` (migration
+`20260722120000_add_health_protocol_config`) mirrors `school_protocol_config`
+exactly, including the deliberate absence of `NOT NULL`/`DEFAULT` on
+`measurement_providers` so `prisma migrate dev --create-only` stays drift-free.
+
 ### Naming: entity → facility
 
 | Layer | Legacy (V1 API) | Current (DB + V2 API) |

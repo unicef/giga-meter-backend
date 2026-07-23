@@ -36,6 +36,42 @@ describe('MetricsService', () => {
     //   expect(metrics).toEqual(mockMetricsDto);
     // });
 
+    it('should count distinct registered health facilities', async () => {
+      prisma.$queryRaw = jest.fn().mockResolvedValue([{ count: BigInt(3) }]);
+      prisma.dailycheckapp_school.groupBy = jest
+        .fn()
+        .mockResolvedValue([
+          { giga_id_school: 'school1' },
+          { giga_id_school: 'school2' },
+        ]);
+      const registrationGroupByMock = jest
+        .fn()
+        .mockResolvedValue([
+          { giga_id_health: 'health1' },
+          { giga_id_health: 'health2' },
+          { giga_id_health: 'health3' },
+        ]);
+      prisma.registration.groupBy = registrationGroupByMock;
+      prisma.measurements.count = jest.fn().mockResolvedValue(42);
+
+      const metrics = await service.get();
+
+      expect(metrics).toEqual({
+        countries: 3,
+        schools: 2,
+        health_facilities: 3,
+        measurements: 42,
+      });
+      // Only health-type registrations that actually carry a giga id count.
+      expect(registrationGroupByMock).toHaveBeenCalledWith({
+        by: ['giga_id_health'],
+        where: {
+          facility_type: { code: 'health' },
+          giga_id_health: { not: null },
+        },
+      });
+    });
+
     it('should handle database error for country', async () => {
       // Mock the raw query for countries
       const queryRawMock = jest

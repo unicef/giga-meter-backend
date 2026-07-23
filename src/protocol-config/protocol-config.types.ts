@@ -2,7 +2,7 @@ export const MEASUREMENT_PROVIDERS = ['mlab', 'cloudflare'] as const;
 
 export type MeasurementProvider = (typeof MEASUREMENT_PROVIDERS)[number];
 
-export type ProtocolConfigSource = 'school' | 'country' | 'default';
+export type ProtocolConfigSource = 'school' | 'health' | 'country' | 'default';
 
 export interface ResolvedProtocolConfig {
   measurementProviders: MeasurementProvider[];

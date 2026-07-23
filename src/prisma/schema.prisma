@@ -196,6 +196,21 @@ model SchoolProtocolConfig {
   @@map("school_protocol_config")
 }
 
+/// Per-health-facility overrides for protocol. Mirrors SchoolProtocolConfig:
+/// empty `measurement_providers` ([]) or null `between_tests_delay_sec`
+/// inherit from country / default.
+model HealthProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  giga_id_health          String   @unique @db.VarChar
+  measurement_providers   String[] @db.VarChar(32)
+  between_tests_delay_sec Int?
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([giga_id_health])
+  @@map("health_protocol_config")
+}
+
 model master_sync_school_static {
   id                                    Int       @id @default(autoincrement())
   created                               DateTime  @db.Timestamptz

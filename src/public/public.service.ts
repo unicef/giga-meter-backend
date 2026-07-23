@@ -3,11 +3,13 @@ import { dailycheckapp_school as School } from '@prisma/client';
 import {
   PublicClientInfoDto,
   PublicCountryDto,
+  PublicHealthDto,
   PublicMeasurementDto,
   PublicResultsDto,
   PublicSchoolDto,
   PublicServerInfoDto,
 } from './public.dto';
+import { registration as Registration } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { dailycheckapp_country as Country } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
@@ -56,6 +58,47 @@ export class PublicService {
       orderBy: { created: 'desc' },
     });
     return (await schools).map(this.toSchoolDto);
+  }
+
+  async health(
+    skip?: number,
+    take?: number,
+    giga_id_health?: string,
+    country_iso3_code?: string,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<PublicHealthDto[]> {
+    const filter: Record<string, any> = {
+      facility_type: { code: 'health' },
+      // A blank giga id is treated as "no filter" (matches `schools()`), but the
+      // null guard always stays so unregistered rows never leak into the list.
+      giga_id_health: giga_id_health || { not: null },
+      country_code: { in: countries },
+    };
+
+    if (write_access) {
+      delete filter.country_code;
+    }
+    if (country_iso3_code) {
+      const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
+        where: { code_iso3: country_iso3_code },
+      });
+      if (
+        !dbCountry?.code ||
+        (!write_access && !countries?.includes(dbCountry.code))
+      ) {
+        return [];
+      }
+      filter.country_code = { in: [dbCountry.code] };
+    }
+
+    const records = this.prisma.registration.findMany({
+      skip,
+      take,
+      where: filter,
+      orderBy: { created_at: 'desc' },
+    });
+    return (await records).map(this.toHealthDto);
   }
 
   async countries(params: {
@@ -335,6 +378,30 @@ export class PublicService {
       installed_path: school.installed_path,
       wifi_connections: school.wifi_connections
         ? JSON.parse(JSON.stringify(school.wifi_connections))
+        : undefined,
+    };
+  }
+
+  private toHealthDto(registration: Registration): PublicHealthDto {
+    return {
+      id: registration.id.toString(),
+      user_id: registration.user_id,
+      giga_id_health: registration.giga_id_health,
+      mac_address: registration.mac_address,
+      os: registration.os,
+      app_version: registration.app_version,
+      created: registration.created,
+      network_information: registration.network_information,
+      ip_address: registration.ip_address,
+      country_code: registration.country_code,
+      is_blocked: registration.is_blocked,
+      created_at: registration.created_at,
+      device_hardware_id: registration.device_hardware_id,
+      is_active: registration.is_active,
+      windows_username: registration.windows_username,
+      installed_path: registration.installed_path,
+      wifi_connections: registration.wifi_connections
+        ? JSON.parse(JSON.stringify(registration.wifi_connections))
         : undefined,
     };
   }

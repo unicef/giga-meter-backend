@@ -26,11 +26,13 @@ import { ProtocolConfigService } from './protocol-config.service';
 import { ResolvedProtocolConfigDto } from './protocol-config.dto';
 import {
   CountryProtocolConfigRecordDto,
+  HealthProtocolConfigRecordDto,
   SchoolProtocolConfigRecordDto,
 } from './protocol-config-record.dto';
 import { ProtocolConfigResolveQueryDto } from './protocol-config-resolve-query.dto';
 import { UpsertCountryProtocolConfigDto } from './protocol-config-upsert-country.dto';
 import { UpsertSchoolProtocolConfigDto } from './protocol-config-upsert-school.dto';
+import { UpsertHealthProtocolConfigDto } from './protocol-config-upsert-health.dto';
 
 const validationPipe = new ValidationPipe({
   transform: true,
@@ -64,6 +66,7 @@ export class ProtocolConfigController {
     const data = await this.protocolConfigService.resolve(
       query.gigaIdSchool,
       query.countryCode,
+      query.gigaIdHealth,
     );
     return {
       success: true,
@@ -191,6 +194,69 @@ export class ProtocolConfigController {
     @Param('gigaIdSchool') gigaIdSchool: string,
   ): Promise<ApiSuccessResponseDto<null>> {
     await this.protocolConfigService.deleteSchool(gigaIdSchool);
+    return {
+      success: true,
+      data: null,
+      timestamp: new Date().toISOString(),
+      message: '',
+    };
+  }
+
+  @Put('health/:gigaIdHealth')
+  @Throttle(getRateLimitConfig('countries'))
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Create or update health facility protocol configuration',
+  })
+  @ApiParam({
+    name: 'gigaIdHealth',
+    description: 'Giga health facility identifier',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Persisted health facility protocol configuration',
+    type: HealthProtocolConfigRecordDto,
+  })
+  @UsePipes(validationPipe)
+  async upsertHealth(
+    @Param('gigaIdHealth') gigaIdHealth: string,
+    @Body() body: UpsertHealthProtocolConfigDto,
+  ): Promise<ApiSuccessResponseDto<HealthProtocolConfigRecordDto>> {
+    const data = await this.protocolConfigService.upsertHealth(
+      gigaIdHealth,
+      body,
+    );
+    return {
+      success: true,
+      data,
+      timestamp: new Date().toISOString(),
+      message: '',
+    };
+  }
+
+  @Delete('health/:gigaIdHealth')
+  @HttpCode(200)
+  @Throttle(getRateLimitConfig('countries'))
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete health facility protocol configuration' })
+  @ApiParam({
+    name: 'gigaIdHealth',
+    description: 'Giga health facility identifier',
+    required: true,
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Health facility protocol configuration deleted',
+  })
+  async deleteHealth(
+    @Param('gigaIdHealth') gigaIdHealth: string,
+  ): Promise<ApiSuccessResponseDto<null>> {
+    await this.protocolConfigService.deleteHealth(gigaIdHealth);
     return {
       success: true,
       data: null,

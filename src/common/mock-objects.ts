@@ -876,6 +876,7 @@ export const mockCountryModel = [
 export const mockMetricsDto: MetricsDto = {
   countries: 10,
   schools: 7000,
+  health_facilities: 350,
   measurements: 100000,
 };
 

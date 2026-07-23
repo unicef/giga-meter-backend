@@ -20,6 +20,11 @@ describe('ProtocolConfigService', () => {
               upsert: jest.fn(),
               deleteMany: jest.fn(),
             },
+            healthProtocolConfig: {
+              findUnique: jest.fn(),
+              upsert: jest.fn(),
+              deleteMany: jest.fn(),
+            },
             countryProtocolConfig: {
               findUnique: jest.fn(),
               upsert: jest.fn(),
@@ -166,6 +171,166 @@ describe('ProtocolConfigService', () => {
       measurementProviders: ['mlab'],
       configSource: 'country',
     });
+  });
+
+  it('uses health facility override when resolving by gigaIdHealth', async () => {
+    jest
+      .spyOn(prisma.schoolProtocolConfig, 'findUnique')
+      .mockResolvedValue(null);
+    jest.spyOn(prisma.healthProtocolConfig, 'findUnique').mockResolvedValue({
+      id: 1,
+      giga_id_health: 'hlt1',
+      measurement_providers: ['cloudflare'],
+      between_tests_delay_sec: 11,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    jest.spyOn(prisma.countryProtocolConfig, 'findUnique').mockResolvedValue({
+      id: 2,
+      country_code: 'BR',
+      measurement_providers: ['mlab'],
+      between_tests_delay_sec: 99,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    await expect(service.resolve(undefined, 'BR', 'hlt1')).resolves.toEqual({
+      measurementProviders: ['cloudflare'],
+      betweenTestsDelaySec: 11,
+      configSource: 'health',
+    });
+  });
+
+  it('falls back to country when health facility has no meaningful override', async () => {
+    jest
+      .spyOn(prisma.schoolProtocolConfig, 'findUnique')
+      .mockResolvedValue(null);
+    jest.spyOn(prisma.healthProtocolConfig, 'findUnique').mockResolvedValue({
+      id: 1,
+      giga_id_health: 'hlt1',
+      measurement_providers: [],
+      between_tests_delay_sec: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    jest.spyOn(prisma.countryProtocolConfig, 'findUnique').mockResolvedValue({
+      id: 2,
+      country_code: 'BR',
+      measurement_providers: ['cloudflare'],
+      between_tests_delay_sec: 2,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    await expect(service.resolve(undefined, 'BR', 'hlt1')).resolves.toEqual({
+      measurementProviders: ['cloudflare'],
+      betweenTestsDelaySec: 2,
+      configSource: 'country',
+    });
+  });
+
+  it('does not query health config when no gigaIdHealth is supplied', async () => {
+    const healthFindUnique = jest
+      .spyOn(prisma.healthProtocolConfig, 'findUnique')
+      .mockResolvedValue(null);
+    jest
+      .spyOn(prisma.schoolProtocolConfig, 'findUnique')
+      .mockResolvedValue(null);
+    jest
+      .spyOn(prisma.countryProtocolConfig, 'findUnique')
+      .mockResolvedValue(null);
+
+    await service.resolve('sch1', 'BR');
+
+    expect(healthFindUnique).not.toHaveBeenCalled();
+  });
+
+  it('school override wins when both giga ids are supplied', async () => {
+    jest.spyOn(prisma.schoolProtocolConfig, 'findUnique').mockResolvedValue({
+      id: 1,
+      giga_id_school: 'sch1',
+      measurement_providers: ['mlab'],
+      between_tests_delay_sec: 3,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    jest.spyOn(prisma.healthProtocolConfig, 'findUnique').mockResolvedValue({
+      id: 2,
+      giga_id_health: 'hlt1',
+      measurement_providers: ['cloudflare'],
+      between_tests_delay_sec: 8,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+    jest
+      .spyOn(prisma.countryProtocolConfig, 'findUnique')
+      .mockResolvedValue(null);
+
+    await expect(service.resolve('sch1', 'BR', 'hlt1')).resolves.toEqual({
+      measurementProviders: ['mlab'],
+      betweenTestsDelaySec: 3,
+      configSource: 'school',
+    });
+  });
+
+  it('upserts health facility config', async () => {
+    const createdAt = new Date('2026-07-22T10:00:00.000Z');
+    const upsertMock = jest
+      .spyOn(prisma.healthProtocolConfig, 'upsert')
+      .mockResolvedValue({
+        id: 1,
+        giga_id_health: 'hlt1',
+        measurement_providers: ['cloudflare'],
+        between_tests_delay_sec: 5,
+        created_at: createdAt,
+        updated_at: createdAt,
+      });
+
+    await expect(
+      service.upsertHealth('hlt1', {
+        measurementProviders: ['cloudflare'],
+        betweenTestsDelaySec: 5,
+      }),
+    ).resolves.toEqual({
+      gigaIdHealth: 'hlt1',
+      measurementProviders: ['cloudflare'],
+      betweenTestsDelaySec: 5,
+      createdAt: createdAt.toISOString(),
+      updatedAt: createdAt.toISOString(),
+    });
+    expect(upsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { giga_id_health: 'hlt1' } }),
+    );
+  });
+
+  it('rejects health upsert with neither providers nor delay', async () => {
+    await expect(service.upsertHealth('hlt1', {})).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+  });
+
+  it('rejects health upsert with a blank giga id', async () => {
+    await expect(
+      service.upsertHealth('   ', { betweenTestsDelaySec: 5 }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('throws when deleting a health config that does not exist', async () => {
+    jest
+      .spyOn(prisma.healthProtocolConfig, 'deleteMany')
+      .mockResolvedValue({ count: 0 });
+
+    await expect(service.deleteHealth('hlt1')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('deletes an existing health config', async () => {
+    jest
+      .spyOn(prisma.healthProtocolConfig, 'deleteMany')
+      .mockResolvedValue({ count: 1 });
+
+    await expect(service.deleteHealth('hlt1')).resolves.toBeUndefined();
   });
 
   it('upserts country config when country exists', async () => {
