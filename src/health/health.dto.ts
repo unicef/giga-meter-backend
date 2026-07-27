@@ -12,6 +12,12 @@ export class HealthListItemDto {
   @ApiProperty({ description: 'Official facility name' })
   facility_name: string;
 
+  @ApiProperty({
+    required: false,
+    description: 'Government-assigned facility ID (DHIS2)',
+  })
+  dhis2_id?: string | null;
+
   @ApiProperty({ required: false })
   facility_level?: string | null;
 
@@ -48,8 +54,7 @@ export class HealthListItemDto {
 
 /** Fuller shape returned by GET /api/v1/health/giga-id/:giga_id (detail endpoint). */
 export class HealthDetailDto extends HealthListItemDto {
-  @ApiProperty({ required: false })
-  dhis2_id?: string | null;
+  // dhis2_id is inherited from HealthListItemDto (now part of the list shape).
 
   @ApiProperty({ required: false })
   num_staff?: number | null;

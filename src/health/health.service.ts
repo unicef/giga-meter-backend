@@ -101,6 +101,7 @@ export class HealthService {
       id: h.id.toString(),
       health_id_giga: h.health_id_giga,
       facility_name: h.facility_name,
+      dhis2_id: h.dhis2_id,
       facility_level: h.facility_level,
       facility_type_govt: h.facility_type_govt,
       facility_ownership_govt: h.facility_ownership_govt,
@@ -118,7 +119,6 @@ export class HealthService {
   private toDetailDto(h: health): HealthDetailDto {
     return {
       ...this.toListDto(h),
-      dhis2_id: h.dhis2_id,
       num_staff: h.num_staff,
       pop_within_5km: h.pop_within_5km,
     };
