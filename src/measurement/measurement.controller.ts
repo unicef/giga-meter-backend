@@ -28,7 +28,9 @@ import {
 } from '../common/common.dto';
 import {
   AddMeasurementDto,
+  AddMeasurementV2Dto,
   MeasurementDto,
+  MeasurementEntityV2Dto,
   MeasurementFailedDto,
   MeasurementV2Dto,
 } from './measurement.dto';
@@ -42,6 +44,7 @@ import {
   validateMeasurementListFilterBy,
   validateMeasurementListOrderBy,
   validateMeasurementListProtocol,
+  validateGetMeasurementsParams,
 } from './measurement-query-validation';
 import {
   Countries,
@@ -308,6 +311,115 @@ export class MeasurementController {
       write_access,
       countries,
       protocol,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // POST /api/v1/measurements/v2 — entity-aware submission (NEW)
+  // ---------------------------------------------------------------------------
+
+  @Post('v2')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Entity-aware measurement submission for health (and school) devices. ' +
+      'At least one of giga_id_school or giga_id_health must be present.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Measurement created',
+    type: ApiSuccessResponseDto<AddRecordResponseDto>,
+  })
+  @ApiResponse({ status: 400, description: 'Validation error or entity not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async createMeasurementV2(
+    @Body() dto: AddMeasurementV2Dto,
+  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
+    const response = await this.measurementService.createMeasurementV2(dto);
+    if (response.length) {
+      throw new HttpException(
+        'Failed to add measurement with error: ' + response,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    return {
+      success: true,
+      data: { user_id: uuidv4() },
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /api/v1/measurements/v2/entity — entity-aware list (NEW)
+  // ---------------------------------------------------------------------------
+
+  @Get('v2/entity')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary:
+      'Entity-aware measurement list. Extends the GET /api/v1/measurements/v2 brief shape ' +
+      'with entity fields (entity_type, giga_id_health, registration_id). Returns a plain array.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Array of entity-aware measurement records',
+    type: MeasurementEntityV2Dto,
+    isArray: true,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiQuery({ name: 'entity_type', required: false, description: '"school" or "health"', type: 'string' })
+  @ApiQuery({ name: 'giga_id_health', required: false, description: 'Filter by health facility Giga ID', type: 'string' })
+  @ApiQuery({ name: 'giga_id_school', required: false, description: 'Filter by school Giga ID', type: 'string' })
+  @ApiQuery({ name: 'filterValue', required: false, description: 'ISO 8601 filter value', type: 'string' })
+  @ApiQuery({ name: 'filterCondition', required: false, description: 'lt, lte, gt, gte, eq', type: 'string' })
+  @ApiQuery({ name: 'filterBy', required: false, description: 'Column to filter on: timestamp, created_at', type: 'string' })
+  @ApiQuery({ name: 'country_iso3_code', required: false, description: 'ISO3 country code', type: 'string' })
+  @ApiQuery({ name: 'orderBy', required: false, description: 'Sort column; prefix "-" for DESC. Default: -timestamp', type: 'string' })
+  @ApiQuery({ name: 'size', required: false, description: 'Max results (max 1000). Default: 10', type: 'number' })
+  @ApiQuery({ name: 'page', required: false, description: 'Zero-based page offset. Default: 0', type: 'number' })
+  async getMeasurementsV2Entity(
+    @Query('page') page?: number,
+    @ValidateSize({ min: 1, max: 1000 })
+    @Query('size')
+    size?: number,
+    @Query('orderBy') orderBy?: string,
+    @Query('entity_type') entity_type?: string,
+    @Query('giga_id_health') giga_id_health?: string,
+    @Query('giga_id_school') giga_id_school?: string,
+    @Query('country_iso3_code') country_iso3_code?: string,
+    @Query('filterBy') filterBy?: string,
+    @Query('filterCondition') filterCondition?: string,
+    @Query('filterValue') filterValue?: Date,
+    @WriteAccess() write_access?: boolean,
+    @Countries() countries?: string[],
+    @CountriesIso3() countries_iso3?: string[],
+  ): Promise<MeasurementEntityV2Dto[]> {
+    validateGetMeasurementsParams(
+      orderBy,
+      country_iso3_code,
+      filterBy,
+      filterCondition,
+      filterValue,
+      write_access,
+      countries_iso3,
+    );
+
+    return this.measurementService.measurementsV2Entity(
+      (page ?? 0) * (size ?? 10),
+      size ?? 10,
+      orderBy ?? '-timestamp',
+      entity_type,
+      giga_id_health,
+      giga_id_school,
+      country_iso3_code,
+      filterBy ?? '',
+      filterCondition ?? '',
+      filterValue ?? null,
+      write_access,
+      countries,
     );
   }
 
@@ -644,40 +756,5 @@ export class MeasurementController {
       timestamp: new Date().toISOString(),
       message: 'success',
     };
-  }
-}
-
-function validateGetMeasurementsParams(
-  orderBy?: string,
-  country_iso3_code?: string,
-  filterBy?: string,
-  filterCondition?: string,
-  filterValue?: Date,
-  write_access?: boolean,
-  countries_iso3?: string[],
-  protocol?: string,
-) {
-  validateMeasurementListOrderBy(orderBy);
-  validateMeasurementListFilterBy(filterBy);
-  validateMeasurementListProtocol(protocol);
-  if (filterBy && !filterCondition) {
-    throw new HttpException(
-      'Please provide a valid filterCondition with filterBy column ${filterBy}',
-      HttpStatus.BAD_REQUEST,
-    );
-  }
-  if (filterBy && filterCondition && filterValue == null) {
-    throw new HttpException(
-      'No filterValue provided with filterBy and filterCondition values',
-      HttpStatus.BAD_REQUEST,
-    );
-  }
-  // TODO:// remove this logic after adding countries to non expired api keys
-  if (
-    !write_access &&
-    country_iso3_code &&
-    !countries_iso3.includes(country_iso3_code)
-  ) {
-    throw new HttpException('not authorized to access', HttpStatus.BAD_REQUEST);
   }
 }

@@ -632,6 +632,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    facility_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(2),
@@ -674,6 +677,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    facility_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(3),
@@ -716,6 +722,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    facility_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
 ];
 
@@ -750,6 +759,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    facility_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(2),
@@ -781,6 +793,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    facility_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
   {
     id: toBigInt(3),
@@ -812,6 +827,9 @@ export const mockMeasurementFailedModel = [
     detected_location_accuracy: null,
     detected_location_distance: null,
     detected_location_is_flagged: false,
+    facility_type_id: null,
+    registration_id: null,
+    giga_id_health: null,
   },
 ];
 
@@ -858,6 +876,7 @@ export const mockCountryModel = [
 export const mockMetricsDto: MetricsDto = {
   countries: 10,
   schools: 7000,
+  health_facilities: 350,
   measurements: 100000,
 };
 

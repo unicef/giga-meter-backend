@@ -89,6 +89,64 @@ export class PublicSchoolDto {
   wifi_connections?: any[];
 }
 
+/**
+ * A health facility registered on Giga Meter. Mirrors {@link PublicSchoolDto},
+ * but health facilities register through the `registration` table (keyed by
+ * `giga_id_health`) rather than through `dailycheckapp_school`.
+ */
+export class PublicHealthDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  user_id: string;
+
+  @ApiProperty()
+  giga_id_health: string;
+
+  @ApiProperty()
+  mac_address: string;
+
+  @ApiProperty()
+  os: string;
+
+  @ApiProperty()
+  app_version: string;
+
+  @ApiProperty()
+  created: string;
+
+  @ApiProperty()
+  network_information: string;
+
+  @ApiProperty()
+  ip_address: string;
+
+  @ApiProperty()
+  country_code: string;
+
+  @ApiProperty()
+  is_blocked: boolean;
+
+  @ApiProperty()
+  created_at: Date;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  is_active?: boolean;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
+}
+
 export class PublicCountryDto {
   @ApiProperty()
   id: string;

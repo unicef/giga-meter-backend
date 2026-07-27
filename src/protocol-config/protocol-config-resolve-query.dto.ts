@@ -9,6 +9,15 @@ export class ProtocolConfigResolveQueryDto {
   gigaIdSchool?: string;
 
   @ApiPropertyOptional({
+    description:
+      'Giga health facility identifier. Mutually exclusive with gigaIdSchool.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  gigaIdHealth?: string;
+
+  @ApiPropertyOptional({
     description: 'Country code matching country.code (e.g. ISO alpha-2)',
   })
   @IsOptional()

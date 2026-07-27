@@ -3,6 +3,9 @@ import { MeasurementService } from './measurement.service';
 import { AddMeasurementDto } from './measurement.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
+import { RegistrationService } from '../registration/registration.service';
+import { HealthService } from '../health/health.service';
 import {
   mockAddMeasurementDto,
   mockCountryModel,
@@ -18,6 +21,8 @@ import {
 describe('MeasurementService', () => {
   let service: MeasurementService;
   let prisma: PrismaService;
+  let facilityTypeService: FacilityTypeService;
+  let registrationService: RegistrationService;
 
   beforeEach(async () => {
     const mockGeolocationUtility = {
@@ -25,6 +30,22 @@ describe('MeasurementService', () => {
       updateLatLngColumns: jest.fn(),
       getSchoolCoordinates: jest.fn(),
       calculateDistance: jest.fn(),
+    };
+
+    const mockFacilityTypeService = {
+      getByCode: jest.fn(),
+      getById: jest.fn(),
+      resolveIdByCode: jest.fn(),
+    };
+
+    const mockHealthService = {
+      findActiveById: jest.fn(),
+      findAll: jest.fn(),
+      findByGigaId: jest.fn(),
+    };
+
+    const mockRegistrationService = {
+      resolveForIngest: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -35,11 +56,25 @@ describe('MeasurementService', () => {
           provide: GeolocationUtility,
           useValue: mockGeolocationUtility,
         },
+        {
+          provide: FacilityTypeService,
+          useValue: mockFacilityTypeService,
+        },
+        {
+          provide: HealthService,
+          useValue: mockHealthService,
+        },
+        {
+          provide: RegistrationService,
+          useValue: mockRegistrationService,
+        },
       ],
     }).compile();
 
     service = module.get<MeasurementService>(MeasurementService);
     prisma = module.get<PrismaService>(PrismaService);
+    facilityTypeService = module.get<FacilityTypeService>(FacilityTypeService);
+    registrationService = module.get<RegistrationService>(RegistrationService);
   });
 
   it('should be defined', () => {
@@ -267,6 +302,65 @@ describe('MeasurementService', () => {
 
       await expect(service.measurementsV2(0, 5, 'timestamp')).rejects.toThrow(
         'Database error',
+      );
+    });
+  });
+
+  describe('createMeasurementV2 — registration self-heal', () => {
+    beforeEach(() => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue({
+        id: 1,
+        name: 'school',
+        code: 'school',
+      });
+    });
+
+    it('delegates the self-heal to RegistrationService.resolveForIngest', async () => {
+      (registrationService.resolveForIngest as jest.Mock).mockResolvedValue(
+        BigInt(555),
+      );
+      const create = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue({} as any);
+
+      const result = await service.createMeasurementV2({
+        entity_type: 'school',
+        giga_id_school: 'giga-1',
+        installation_id: 'inst-7',
+      } as any);
+
+      expect(result).toBe('');
+      expect(registrationService.resolveForIngest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          installation_id: 'inst-7',
+          giga_id_school: 'giga-1',
+        }),
+      );
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ registration_id: BigInt(555) }),
+        }),
+      );
+    });
+
+    it('stores the measurement with null registration when nothing resolves', async () => {
+      (registrationService.resolveForIngest as jest.Mock).mockResolvedValue(
+        null,
+      );
+      const create = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue({} as any);
+
+      const result = await service.createMeasurementV2({
+        entity_type: 'school',
+        giga_id_school: 'giga-1',
+      } as any);
+
+      expect(result).toBe('');
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ registration_id: null }),
+        }),
       );
     });
   });

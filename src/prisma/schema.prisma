@@ -163,7 +163,7 @@ model country {
   countryConfigs                    CountryConfig[]
   healths                           health[]
   master_sync_intermediate_health   master_sync_intermediate_health[]
-  whitelist_entries                 country_entity_type_whitelist[]
+  whitelist_entries                 country_facility_type_whitelist[]
   country_protocol_config           CountryProtocolConfig?
 }
 
@@ -194,6 +194,21 @@ model SchoolProtocolConfig {
 
   @@index([giga_id_school])
   @@map("school_protocol_config")
+}
+
+/// Per-health-facility overrides for protocol. Mirrors SchoolProtocolConfig:
+/// empty `measurement_providers` ([]) or null `between_tests_delay_sec`
+/// inherit from country / default.
+model HealthProtocolConfig {
+  id                      Int      @id @default(autoincrement())
+  giga_id_health          String   @unique @db.VarChar
+  measurement_providers   String[] @db.VarChar(32)
+  between_tests_delay_sec Int?
+  created_at              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updated_at              DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([giga_id_health])
+  @@map("health_protocol_config")
 }
 
 model master_sync_school_static {
@@ -319,16 +334,16 @@ model measurements {
   jitter                       Float?
   packet_loss                  Float?
   network_quality_score        Float?
-  entity_type_id               Int?
+  facility_type_id             Int?
   registration_id              BigInt?
   giga_id_health               String?
-  entity_type                  entity_type?  @relation(fields: [entity_type_id], references: [id])
+  facility_type                facility_type?  @relation(fields: [facility_type_id], references: [id])
   registration                 registration? @relation(fields: [registration_id], references: [id])
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
   @@index([protocol])
-  @@index([entity_type_id])
+  @@index([facility_type_id])
   @@index([registration_id])
   @@index([giga_id_health])
 }
@@ -477,13 +492,13 @@ model connectivity_ping_checks {
   created_at      DateTime? @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   deleted_at      DateTime? @db.Timestamptz(6)
   is_deleted      Boolean   @default(false)
-  entity_type_id  Int?
+  facility_type_id  Int?
   registration_id BigInt?
   giga_id_health  String?
-  entity_type     entity_type?  @relation(fields: [entity_type_id], references: [id])
+  facility_type   facility_type?  @relation(fields: [facility_type_id], references: [id])
   registration    registration? @relation(fields: [registration_id], references: [id])
 
-  @@index([entity_type_id])
+  @@index([facility_type_id])
   @@index([registration_id])
   @@index([giga_id_health])
 }
@@ -749,15 +764,17 @@ model FeatureFlagOverride {
   @@map("feature_flag_override")
 }
 
-model entity_type {
+model facility_type {
   id                        Int                              @id @default(autoincrement())
   name                      String                           @unique @db.VarChar
   code                      String                           @unique @db.VarChar
   created_at                DateTime?                        @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
   registrations             registration[]
-  country_whitelist_entries country_entity_type_whitelist[]
+  country_whitelist_entries country_facility_type_whitelist[]
   measurements              measurements[]
   connectivity_ping_checks  connectivity_ping_checks[]
+
+  @@map("facility_type")
 }
 
 model health {
@@ -831,7 +848,7 @@ model health {
 
 model registration {
   id                  BigInt    @id @default(autoincrement())
-  entity_type_id      Int
+  facility_type_id      Int
   installation_id     String?
   school_id           BigInt?
   health_id           BigInt?
@@ -853,13 +870,13 @@ model registration {
   windows_username    String?
   installed_path      String?
   wifi_connections    Json?
-  entity_type              entity_type              @relation(fields: [entity_type_id], references: [id])
+  facility_type            facility_type            @relation(fields: [facility_type_id], references: [id])
   school                   school?                  @relation(fields: [school_id], references: [id])
   health                   health?                  @relation(fields: [health_id], references: [id])
   measurements             measurements[]
   connectivity_ping_checks connectivity_ping_checks[]
 
-  @@index([entity_type_id])
+  @@index([facility_type_id])
   @@index([school_id])
   @@index([health_id])
   @@index([installation_id])
@@ -867,16 +884,17 @@ model registration {
   @@index([country_code])
 }
 
-model country_entity_type_whitelist {
-  id             Int         @id @default(autoincrement())
-  country_code   String      @db.VarChar
-  entity_type_id Int
-  created_at     DateTime?   @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
-  country        country     @relation(fields: [country_code], references: [code])
-  entity_type    entity_type @relation(fields: [entity_type_id], references: [id])
+model country_facility_type_whitelist {
+  id               Int           @id @default(autoincrement())
+  country_code     String        @db.VarChar
+  facility_type_id Int
+  created_at       DateTime?     @default(dbgenerated("(CURRENT_TIMESTAMP AT TIME ZONE 'UTC'::text)")) @db.Timestamptz(6)
+  country          country       @relation(fields: [country_code], references: [code])
+  facility_type    facility_type @relation(fields: [facility_type_id], references: [id])
 
-  @@unique([country_code, entity_type_id])
-  @@index([entity_type_id])
+  @@unique([country_code, facility_type_id])
+  @@index([facility_type_id])
+  @@map("country_facility_type_whitelist")
 }
 
 model master_sync_health_static {
