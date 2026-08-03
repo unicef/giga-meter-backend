@@ -134,18 +134,37 @@ async function bootstrap() {
     }
   }
 
-  const corsOptions = {
+  // --- CORS Configuration (per IRD §6) ---
+  // Public API paths (/api/v1/public/*) bypass CORS checks (Origin: * allowed)
+  // App-specific paths enforce strict validation against ALLOWED_HOSTS
+  // Requests with no Origin header (desktop apps, cURL) are always allowed
+
+  const logger = new Logger('Bootstrap');
+
+  // Permissive CORS middleware for /api/v1/public/* endpoints
+  app.use('/api/v1/public', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Nonce, X-HMAC-Signature');
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+    next();
+  });
+
+  // Strict CORS for all other routes
+  const appCorsOptions = {
     origin: (origin, callback) => {
       // In development, allow all origins
       if (process.env.NODE_ENV === 'development') {
-        logger.log('[CORS] Devlopment mode - allowing all origins');
+        logger.log('[CORS] Development mode - allowing all origins');
         return callback(null, true);
       }
 
       // In production, check against allowed origins
       const allowedOrigins = process.env.ALLOWED_HOSTS?.split('|') ?? [];
 
-      // Allow requests with no origin (like mobile apps, curl, etc.)
+      // Allow requests with no origin (like mobile apps, curl, desktop clients)
       if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -156,7 +175,7 @@ async function bootstrap() {
     credentials: true,
   };
 
-  app.enableCors(corsOptions);
+  app.enableCors(appCorsOptions);
 
   app.useGlobalFilters(new AllExceptionFilter());
 
@@ -173,7 +192,6 @@ async function bootstrap() {
   app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
 
-  const logger = new Logger('Bootstrap');
   app.set('trust proxy', true);
   await app.listen(3000, () => {
     logger.log('Server started on port 3000');

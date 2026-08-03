@@ -32,206 +32,104 @@ describe('DeviceTokenController', () => {
   });
 
   describe('generateToken', () => {
-    it('should generate token successfully with valid UUID', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
+    it('should generate token successfully with valid hardwareId and uuid', async () => {
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
       const mockResponse: TokenGenerationResponse = {
         token: 'generated-token-base64',
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        deviceId: 'hashed-device-id',
+        expiresIn: 24 * 60 * 60 * 1000,
+        issuedAt: Date.now(),
+        hashId: 'hashed-device-id',
       };
 
       mockDeviceTokenService.generateToken.mockResolvedValue(mockResponse);
 
-      const dto: GenerateDeviceTokenDto = { deviceId };
+      const dto: GenerateDeviceTokenDto = { hardwareId, uuid };
       const result = await controller.generateToken(dto);
 
       expect(result).toEqual({
         token: mockResponse.token,
         expiresAt: mockResponse.expiresAt,
-        deviceId: mockResponse.deviceId,
+        expiresIn: mockResponse.expiresIn,
+        issuedAt: mockResponse.issuedAt,
+        hashId: mockResponse.hashId,
         success: true,
         message: 'Token generated successfully',
       });
-      expect(mockDeviceTokenService.generateToken).toHaveBeenCalledWith(deviceId);
+      expect(mockDeviceTokenService.generateToken).toHaveBeenCalledWith(hardwareId, uuid);
     });
 
-    it('should generate token successfully with non-UUID device ID', async () => {
-      const deviceId = 'device-fingerprint-12345678';
-      const mockResponse: TokenGenerationResponse = {
-        token: 'generated-token-base64',
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        deviceId: 'hashed-device-id',
-      };
-
-      mockDeviceTokenService.generateToken.mockResolvedValue(mockResponse);
-
-      const dto: GenerateDeviceTokenDto = { deviceId };
-      const result = await controller.generateToken(dto);
-
-      expect(result.success).toBe(true);
-      expect(result.token).toBe(mockResponse.token);
-      expect(mockDeviceTokenService.generateToken).toHaveBeenCalledWith(deviceId);
-    });
-
-    it('should throw BadRequestException when deviceId is missing', async () => {
-      const dto: GenerateDeviceTokenDto = { deviceId: '' };
+    it('should throw BadRequestException when hardwareId is missing', async () => {
+      const dto: GenerateDeviceTokenDto = { hardwareId: '', uuid: 'some-uuid' };
 
       await expect(controller.generateToken(dto)).rejects.toThrow(BadRequestException);
-      await expect(controller.generateToken(dto)).rejects.toThrow('Device ID is required');
+      await expect(controller.generateToken(dto)).rejects.toThrow('Hardware ID is required');
       expect(mockDeviceTokenService.generateToken).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException when deviceId is null', async () => {
-      const dto: GenerateDeviceTokenDto = { deviceId: null as any };
+    it('should throw BadRequestException when hardwareId is null', async () => {
+      const dto: GenerateDeviceTokenDto = { hardwareId: null as any, uuid: 'some-uuid' };
 
       await expect(controller.generateToken(dto)).rejects.toThrow(BadRequestException);
       expect(mockDeviceTokenService.generateToken).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException when deviceId is too short', async () => {
-      const dto: GenerateDeviceTokenDto = { deviceId: '1234567' }; // 7 characters
+    it('should throw BadRequestException when hardwareId is too short', async () => {
+      const dto: GenerateDeviceTokenDto = { hardwareId: '12345', uuid: 'some-uuid-value' };
 
       await expect(controller.generateToken(dto)).rejects.toThrow(BadRequestException);
-      await expect(controller.generateToken(dto)).rejects.toThrow('Device ID must be at least 8 characters long');
+      await expect(controller.generateToken(dto)).rejects.toThrow('Hardware ID must be at least 6 characters long');
+      expect(mockDeviceTokenService.generateToken).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when uuid is missing', async () => {
+      const dto: GenerateDeviceTokenDto = { hardwareId: 'BIOS-SERIAL-123456', uuid: '' };
+
+      await expect(controller.generateToken(dto)).rejects.toThrow(BadRequestException);
+      await expect(controller.generateToken(dto)).rejects.toThrow('UUID is required');
+      expect(mockDeviceTokenService.generateToken).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when uuid is too short', async () => {
+      const dto: GenerateDeviceTokenDto = { hardwareId: 'BIOS-SERIAL-123456', uuid: '12345' };
+
+      await expect(controller.generateToken(dto)).rejects.toThrow(BadRequestException);
+      await expect(controller.generateToken(dto)).rejects.toThrow('UUID must be at least 6 characters long');
       expect(mockDeviceTokenService.generateToken).not.toHaveBeenCalled();
     });
 
     it('should handle service errors gracefully', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
       mockDeviceTokenService.generateToken.mockRejectedValue(new Error('Service error'));
 
-      const dto: GenerateDeviceTokenDto = { deviceId };
+      const dto: GenerateDeviceTokenDto = { hardwareId, uuid };
 
       await expect(controller.generateToken(dto)).rejects.toThrow(BadRequestException);
       await expect(controller.generateToken(dto)).rejects.toThrow('Failed to generate token');
     });
 
-    it('should trim whitespace from deviceId', async () => {
-      const deviceId = '  550e8400-e29b-41d4-a716-446655440000  ';
-      const trimmedDeviceId = '550e8400-e29b-41d4-a716-446655440000';
+    it('should trim whitespace from inputs', async () => {
+      const hardwareId = '  BIOS-SERIAL-123456  ';
+      const uuid = '  8afc0e86-1234-4bc9-93e1-22920c78b4a0  ';
       const mockResponse: TokenGenerationResponse = {
         token: 'generated-token-base64',
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        deviceId: 'hashed-device-id',
+        expiresIn: 24 * 60 * 60 * 1000,
+        issuedAt: Date.now(),
+        hashId: 'hashed-device-id',
       };
 
       mockDeviceTokenService.generateToken.mockResolvedValue(mockResponse);
 
-      const dto: GenerateDeviceTokenDto = { deviceId };
+      const dto: GenerateDeviceTokenDto = { hardwareId, uuid };
       await controller.generateToken(dto);
 
-      expect(mockDeviceTokenService.generateToken).toHaveBeenCalledWith(trimmedDeviceId);
-    });
-  });
-
-  describe('validateToken', () => {
-    it('should validate token successfully', async () => {
-      const token = 'valid-token-base64';
-      const mockPayload = {
-        deviceId: 'hashed-device-id',
-        timestamp: Date.now() - 1000,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      };
-
-      mockDeviceTokenService.validateToken.mockResolvedValue(mockPayload);
-
-      const result = await controller.validateToken({ token });
-
-      expect(result).toEqual({
-        valid: true,
-        payload: {
-          deviceId: mockPayload.deviceId,
-          timestamp: mockPayload.timestamp,
-          expiresAt: mockPayload.expiresAt,
-        },
-        message: 'Token is valid',
-      });
-      expect(mockDeviceTokenService.validateToken).toHaveBeenCalledWith(token);
-    });
-
-    it('should return invalid for expired/invalid token', async () => {
-      const token = 'invalid-token';
-      mockDeviceTokenService.validateToken.mockResolvedValue(null);
-
-      const result = await controller.validateToken({ token });
-
-      expect(result).toEqual({
-        valid: false,
-        message: 'Token is invalid or expired',
-      });
-      expect(mockDeviceTokenService.validateToken).toHaveBeenCalledWith(token);
-    });
-
-    it('should return invalid when token is missing', async () => {
-      const result = await controller.validateToken({ token: '' });
-
-      expect(result).toEqual({
-        valid: false,
-        message: 'Token is required',
-      });
-      expect(mockDeviceTokenService.validateToken).not.toHaveBeenCalled();
-    });
-
-    it('should handle service errors gracefully', async () => {
-      const token = 'some-token';
-      mockDeviceTokenService.validateToken.mockRejectedValue(new Error('Service error'));
-
-      const result = await controller.validateToken({ token });
-
-      expect(result).toEqual({
-        valid: false,
-        message: 'Token validation failed',
-      });
-    });
-  });
-
-  describe('UUID validation', () => {
-    it('should accept valid UUID v4', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
-      const mockResponse: TokenGenerationResponse = {
-        token: 'generated-token-base64',
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        deviceId: 'hashed-device-id',
-      };
-
-      mockDeviceTokenService.generateToken.mockResolvedValue(mockResponse);
-
-      const dto: GenerateDeviceTokenDto = { deviceId };
-      const result = await controller.generateToken(dto);
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept valid UUID v1', async () => {
-      const deviceId = '550e8400-e29b-11d4-a716-446655440000';
-      const mockResponse: TokenGenerationResponse = {
-        token: 'generated-token-base64',
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        deviceId: 'hashed-device-id',
-      };
-
-      mockDeviceTokenService.generateToken.mockResolvedValue(mockResponse);
-
-      const dto: GenerateDeviceTokenDto = { deviceId };
-      const result = await controller.generateToken(dto);
-
-      expect(result.success).toBe(true);
-    });
-
-    it('should accept long non-UUID device fingerprints', async () => {
-      const deviceId = 'device-fingerprint-with-long-identifier-123456789';
-      const mockResponse: TokenGenerationResponse = {
-        token: 'generated-token-base64',
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        deviceId: 'hashed-device-id',
-      };
-
-      mockDeviceTokenService.generateToken.mockResolvedValue(mockResponse);
-
-      const dto: GenerateDeviceTokenDto = { deviceId };
-      const result = await controller.generateToken(dto);
-
-      expect(result.success).toBe(true);
+      expect(mockDeviceTokenService.generateToken).toHaveBeenCalledWith(
+        'BIOS-SERIAL-123456',
+        '8afc0e86-1234-4bc9-93e1-22920c78b4a0',
+      );
     });
   });
 });

@@ -1,15 +1,18 @@
-import { 
-  Controller, 
-  Post, 
-  Body, 
-  HttpCode, 
-  HttpStatus, 
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
   BadRequestException,
   Logger,
-  UseGuards 
+  UseGuards,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { DeviceTokenService, TokenGenerationResponse } from './device-token.service';
+import {
+  DeviceTokenService,
+  TokenGenerationResponse,
+} from './device-token.service';
 import { Public } from '../common/public.decorator';
 
 /**
@@ -17,10 +20,16 @@ import { Public } from '../common/public.decorator';
  */
 export class GenerateDeviceTokenDto {
   /**
-   * Device fingerprint or UUIDv4 identifier
-   * @example "550e8400-e29b-41d4-a716-446655440000"
+   * Device hardware/BIOS serial identifier
+   * @example "BIOS-SERIAL-123456"
    */
-  deviceId: string;
+  hardwareId: string;
+
+  /**
+   * Device UUID identifier
+   * @example "8afc0e86-1234-4bc9-93e1-22920c78b4a0"
+   */
+  uuid: string;
 }
 
 /**
@@ -28,13 +37,19 @@ export class GenerateDeviceTokenDto {
  */
 export class DeviceTokenResponseDto {
   token: string; // Generated encrypted token
-  expiresAt: number; //Token expiration timestamp
-  expiresIn: number; //Token expiration in milliseconds
-  issuedAt: number; //Token issue timestamp
-  deviceId: string; //Hashed device identifier
+  expiresAt: number; // Token expiration timestamp
+  expiresIn: number; // Token expiration in milliseconds
+  issuedAt: number; // Token issue timestamp
+  hashId: string; // Derived SHA-256 device identifier
   success: boolean;
   message: string;
 }
+
+// Dynamic rate limit values from environment
+const AUTH_RATE_LIMIT_MAX =
+  parseInt(process.env.AUTH_RATE_LIMIT_MAX, 10) || 120;
+const AUTH_RATE_LIMIT_TTL =
+  (parseInt(process.env.AUTH_RATE_LIMIT_TTL, 10) || 60) * 1000;
 
 @Controller('api/v1/auth')
 @UseGuards(ThrottlerGuard)
@@ -47,54 +62,64 @@ export class DeviceTokenController {
    * Generates a secure token for device authentication
    */
   @Post('initialize')
-  @Public() 
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
+  @Public()
+  @Throttle({
+    default: { limit: AUTH_RATE_LIMIT_MAX, ttl: AUTH_RATE_LIMIT_TTL },
+  })
   @HttpCode(HttpStatus.OK)
   async generateToken(
     @Body() generateTokenDto: GenerateDeviceTokenDto,
   ): Promise<DeviceTokenResponseDto> {
     try {
-      // Validate input
-      if (!generateTokenDto.deviceId) {
-        throw new BadRequestException('Device ID is required');
+      // Validate hardwareId
+      if (!generateTokenDto.hardwareId) {
+        throw new BadRequestException('Hardware ID is required');
       }
 
-      // Validate device ID format (basic validation)
-      const deviceId = generateTokenDto.deviceId.trim();
-      if (deviceId.length < 6) {
-        throw new BadRequestException('Device ID must be at least 6 characters long');
+      const hardwareId = generateTokenDto.hardwareId.trim();
+      if (hardwareId.length < 6) {
+        throw new BadRequestException(
+          'Hardware ID must be at least 6 characters long',
+        );
       }
 
-      // Check if it's a valid UUID format (optional, but recommended)
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-      const isValidUuid = uuidRegex.test(deviceId);
-      
-      if (!isValidUuid && deviceId.length < 16) {
-        // Still allow non-UUID device IDs but log for monitoring
-        this.logger.warn(`Received non-UUID device ID: ${deviceId}...`);
+      // Validate uuid
+      if (!generateTokenDto.uuid) {
+        throw new BadRequestException('UUID is required');
       }
 
-      this.logger.log(`Generating token for device: ${deviceId}...`);
+      const uuid = generateTokenDto.uuid.trim();
+      if (uuid.length < 6) {
+        throw new BadRequestException(
+          'UUID must be at least 6 characters long',
+        );
+      }
+
+      this.logger.log(
+        `Generating token for device with hardwareId: ${hardwareId.substring(0, 8)}...`,
+      );
 
       // Generate the token
-      const tokenResponse: TokenGenerationResponse = await this.deviceTokenService.generateToken(deviceId);
+      const tokenResponse: TokenGenerationResponse =
+        await this.deviceTokenService.generateToken(hardwareId, uuid);
 
       const response: DeviceTokenResponseDto = {
         token: tokenResponse.token,
         expiresAt: tokenResponse.expiresAt,
         expiresIn: tokenResponse.expiresIn,
         issuedAt: tokenResponse.issuedAt,
-        deviceId: tokenResponse.deviceId,
+        hashId: tokenResponse.hashId,
         success: true,
         message: 'Token generated successfully',
       };
 
-      this.logger.log(`Successfully generated token for device: ${tokenResponse.deviceId.substring(0, 8)}...`);
+      this.logger.log(
+        `Successfully generated token for device: ${tokenResponse.hashId.substring(0, 8)}...`,
+      );
       return response;
-
     } catch (error) {
       this.logger.error(`Token generation failed: ${error.message}`);
-      
+
       if (error instanceof BadRequestException) {
         throw error;
       }

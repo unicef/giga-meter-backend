@@ -8,6 +8,9 @@ import { Reflector } from '@nestjs/core';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { mockCategoryConfigProvider } from 'src/common/mock-objects';
 import { PrismaService } from '../prisma/prisma.service';
+import { DeviceTokenService } from './device-token.service';
+import { NonceService } from './nonce.service';
+import { HmacSignatureService } from './hmac-signature.service';
 
 const mockHttpService = () => ({
   get: jest.fn(),
@@ -15,6 +18,21 @@ const mockHttpService = () => ({
 
 const mockReflector = {
   getAllAndOverride: jest.fn().mockReturnValue(false), // Default to false, adjust as needed
+};
+
+const mockDeviceTokenService = {
+  validateToken: jest.fn(),
+  generateToken: jest.fn(),
+  isDeviceToken: jest.fn(),
+};
+
+const mockNonceService = {
+  isValidNonceFormat: jest.fn(),
+  validateAndConsumeNonce: jest.fn(),
+};
+
+const mockHmacSignatureService = {
+  validateRequestIntegrity: jest.fn(),
 };
 
 describe('AuthGuard', () => {
@@ -39,6 +57,18 @@ describe('AuthGuard', () => {
         {
           provide: PrismaService,
           useValue: {},
+        },
+        {
+          provide: DeviceTokenService,
+          useValue: mockDeviceTokenService,
+        },
+        {
+          provide: NonceService,
+          useValue: mockNonceService,
+        },
+        {
+          provide: HmacSignatureService,
+          useValue: mockHmacSignatureService,
         },
       ],
       imports: [HttpModule],

@@ -25,8 +25,6 @@ describe('HmacSignatureService', () => {
     const validParams: HmacSignatureParams = {
       token: 'test-token',
       nonce: 'test-nonce',
-      payload: { test: 'data' },
-      timestamp: 1692123456789,
     };
 
     it('should generate a valid HMAC signature', () => {
@@ -61,30 +59,6 @@ describe('HmacSignatureService', () => {
       expect(signature1).not.toBe(signature2);
     });
 
-    it('should handle missing payload', () => {
-      const paramsWithoutPayload = {
-        token: 'test-token',
-        nonce: 'test-nonce',
-        timestamp: 1692123456789,
-      };
-      
-      const signature = service.generateSignature(paramsWithoutPayload);
-      expect(signature).toBeDefined();
-      expect(typeof signature).toBe('string');
-    });
-
-    it('should handle missing timestamp', () => {
-      const paramsWithoutTimestamp = {
-        token: 'test-token',
-        nonce: 'test-nonce',
-        payload: { test: 'data' },
-      };
-      
-      const signature = service.generateSignature(paramsWithoutTimestamp);
-      expect(signature).toBeDefined();
-      expect(typeof signature).toBe('string');
-    });
-
     it('should throw error for missing required parameters', () => {
       expect(() => service.generateSignature({ token: '', nonce: 'test-nonce' }))
         .toThrow('Token and nonce are required for HMAC signature generation');
@@ -98,8 +72,6 @@ describe('HmacSignatureService', () => {
     const validParams: HmacSignatureParams = {
       token: 'test-token',
       nonce: 'test-nonce',
-      payload: { test: 'data' },
-      timestamp: Date.now(),
     };
 
     it('should validate correct signature', async () => {
@@ -137,33 +109,6 @@ describe('HmacSignatureService', () => {
       expect(result2.reason).toBe('Token and nonce are required for HMAC validation');
     });
 
-    it('should validate timestamp tolerance', async () => {
-      const now = Date.now();
-      
-      // Valid timestamp (within tolerance)
-      const validTimestamp = now - 60000; // 1 minute ago
-      const validParams1 = { ...validParams, timestamp: validTimestamp };
-      const signature1 = service.generateSignature(validParams1);
-      const result1 = await service.validateSignature(signature1, validParams1);
-      expect(result1.isValid).toBe(true);
-      
-      // Too old timestamp (beyond tolerance)
-      const oldTimestamp = now - 10 * 60 * 1000; // 10 minutes ago
-      const validParams2 = { ...validParams, timestamp: oldTimestamp };
-      const signature2 = service.generateSignature(validParams2);
-      const result2 = await service.validateSignature(signature2, validParams2);
-      expect(result2.isValid).toBe(false);
-      expect(result2.reason).toBe('HMAC signature timestamp is too old');
-      
-      // Future timestamp (beyond tolerance)
-      const futureTimestamp = now + 10 * 60 * 1000; // 10 minutes in future
-      const validParams3 = { ...validParams, timestamp: futureTimestamp };
-      const signature3 = service.generateSignature(validParams3);
-      const result3 = await service.validateSignature(signature3, validParams3);
-      expect(result3.isValid).toBe(false);
-      expect(result3.reason).toBe('HMAC signature timestamp is too far in the future');
-    });
-
     it('should handle signature length mismatch', async () => {
       const shortSignature = 'c2hvcnQ='; // "short" in base64
       const result = await service.validateSignature(shortSignature, validParams);
@@ -194,94 +139,18 @@ describe('HmacSignatureService', () => {
     });
   });
 
-  describe('extractTimestamp', () => {
-    it('should extract timestamp from X-Timestamp header', () => {
-      const request = {
-        headers: { 'x-timestamp': '1692123456789' },
-        body: {},
-      };
-      
-      const timestamp = service.extractTimestamp(request);
-      expect(timestamp).toBe(1692123456789);
-    });
-
-    it('should extract timestamp from request body', () => {
-      const request = {
-        headers: {},
-        body: { timestamp: 1692123456789 },
-      };
-      
-      const timestamp = service.extractTimestamp(request);
-      expect(timestamp).toBe(1692123456789);
-    });
-
-    it('should prefer header over body', () => {
-      const request = {
-        headers: { 'x-timestamp': '1692123456789' },
-        body: { timestamp: 9999999999999 },
-      };
-      
-      const timestamp = service.extractTimestamp(request);
-      expect(timestamp).toBe(1692123456789);
-    });
-
-    it('should return undefined for invalid timestamps', () => {
-      const request1 = {
-        headers: { 'x-timestamp': 'invalid' },
-        body: {},
-      };
-      expect(service.extractTimestamp(request1)).toBeUndefined();
-      
-      const request2 = {
-        headers: {},
-        body: { timestamp: 'invalid' },
-      };
-      expect(service.extractTimestamp(request2)).toBeUndefined();
-      
-      const request3 = {
-        headers: {},
-        body: {},
-      };
-      expect(service.extractTimestamp(request3)).toBeUndefined();
-    });
-  });
-
-  describe('createSignatureWithTimestamp', () => {
-    it('should create signature with current timestamp', () => {
-      const params = {
-        token: 'test-token',
-        nonce: 'test-nonce',
-        payload: { test: 'data' },
-      };
-      
-      const before = Date.now();
-      const result = service.createSignatureWithTimestamp(params);
-      const after = Date.now();
-      
-      expect(result.signature).toBeDefined();
-      expect(result.timestamp).toBeGreaterThanOrEqual(before);
-      expect(result.timestamp).toBeLessThanOrEqual(after);
-      
-      // Verify signature is valid
-      expect(service.isValidSignatureFormat(result.signature)).toBe(true);
-    });
-  });
-
   describe('validateRequestIntegrity', () => {
     const token = 'test-token';
     const nonce = 'test-nonce';
 
     it('should validate request with valid HMAC signature', async () => {
-      const timestamp = Date.now();
-      const payload = { test: 'data' };
-      const signature = service.generateSignature({ token, nonce, payload, timestamp });
+      const signature = service.generateSignature({ token, nonce });
       
       const request = {
         headers: {
           'x-hmac-signature': signature,
-          'x-timestamp': timestamp.toString(),
         },
-        body: payload,
+        body: {},
       };
       
       const result = await service.validateRequestIntegrity(request, token, nonce);
@@ -314,8 +183,6 @@ describe('HmacSignatureService', () => {
       const wrongSignature = service.generateSignature({
         token: 'wrong-token',
         nonce: 'wrong-nonce',
-        payload: { test: 'data' },
-        timestamp: Date.now(),
       });
       
       const request = {
@@ -334,7 +201,6 @@ describe('HmacSignatureService', () => {
       const config = service.getConfiguration();
       
       expect(config.algorithm).toBe('sha256');
-      expect(config.timestampToleranceMs).toBe(5 * 60 * 1000);
       expect(config.secretConfigured).toBe(true);
     });
 
@@ -388,7 +254,6 @@ describe('HmacSignatureService', () => {
       const validParams: HmacSignatureParams = {
         token: 'test-token',
         nonce: 'test-nonce',
-        timestamp: Date.now(),
       };
       
       const correctSignature = service.generateSignature(validParams);

@@ -23,59 +23,69 @@ describe('DeviceTokenService', () => {
   });
 
   describe('generateToken', () => {
-    it('should generate a valid token for a device ID', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
+    it('should generate a valid token for hardwareId and uuid', async () => {
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
       
-      const result = await service.generateToken(deviceId);
+      const result = await service.generateToken(hardwareId, uuid);
       
       expect(result).toBeDefined();
       expect(result.token).toBeDefined();
       expect(typeof result.token).toBe('string');
       expect(result.expiresAt).toBeGreaterThan(Date.now());
-      expect(result.deviceId).toBeDefined();
-      expect(result.deviceId).toHaveLength(64); // SHA256 hash length
+      expect(result.hashId).toBeDefined();
+      expect(result.hashId).toHaveLength(64); // SHA256 hash length
     });
 
-    it('should generate different tokens for different device IDs', async () => {
-      const deviceId1 = '550e8400-e29b-41d4-a716-446655440000';
-      const deviceId2 = '550e8400-e29b-41d4-a716-446655440001';
+    it('should generate different tokens for different device identifiers', async () => {
+      const hardwareId1 = 'BIOS-SERIAL-123456';
+      const uuid1 = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
+      const hardwareId2 = 'BIOS-SERIAL-654321';
+      const uuid2 = '8afc0e86-1234-4bc9-93e1-22920c78b4a1';
       
-      const result1 = await service.generateToken(deviceId1);
-      const result2 = await service.generateToken(deviceId2);
+      const result1 = await service.generateToken(hardwareId1, uuid1);
+      const result2 = await service.generateToken(hardwareId2, uuid2);
       
       expect(result1.token).not.toBe(result2.token);
-      expect(result1.deviceId).not.toBe(result2.deviceId);
+      expect(result1.hashId).not.toBe(result2.hashId);
     });
 
-    it('should generate the same hashed device ID for the same input', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
+    it('should generate the same hashId for the same hardwareId+uuid', async () => {
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
       
-      const result1 = await service.generateToken(deviceId);
-      const result2 = await service.generateToken(deviceId);
+      const result1 = await service.generateToken(hardwareId, uuid);
+      const result2 = await service.generateToken(hardwareId, uuid);
       
-      expect(result1.deviceId).toBe(result2.deviceId);
+      expect(result1.hashId).toBe(result2.hashId);
     });
 
-    it('should throw error for empty device ID', async () => {
-      await expect(service.generateToken('')).rejects.toThrow('Token generation failed');
-      await expect(service.generateToken('   ')).rejects.toThrow('Token generation failed');
+    it('should throw error for empty hardwareId', async () => {
+      await expect(service.generateToken('', 'some-uuid')).rejects.toThrow('Token generation failed');
+      await expect(service.generateToken('   ', 'some-uuid')).rejects.toThrow('Token generation failed');
     });
 
-    it('should throw error for null/undefined device ID', async () => {
-      await expect(service.generateToken(null as any)).rejects.toThrow('Token generation failed');
-      await expect(service.generateToken(undefined as any)).rejects.toThrow('Token generation failed');
+    it('should throw error for empty uuid', async () => {
+      await expect(service.generateToken('some-hwid', '')).rejects.toThrow('Token generation failed');
+      await expect(service.generateToken('some-hwid', '   ')).rejects.toThrow('Token generation failed');
+    });
+
+    it('should throw error for null/undefined inputs', async () => {
+      await expect(service.generateToken(null as any, 'uuid')).rejects.toThrow('Token generation failed');
+      await expect(service.generateToken('hwid', null as any)).rejects.toThrow('Token generation failed');
     });
   });
 
   describe('validateToken', () => {
     it('should validate a valid token', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
       
-      const generated = await service.generateToken(deviceId);
+      const generated = await service.generateToken(hardwareId, uuid);
       const payload = await service.validateToken(generated.token);
       
       expect(payload).toBeDefined();
-      expect(payload!.deviceId).toBe(generated.deviceId);
+      expect(payload!.hashId).toBe(generated.hashId);
       expect(payload!.timestamp).toBeLessThanOrEqual(Date.now());
       expect(payload!.expiresAt).toBeGreaterThan(Date.now());
     });
@@ -105,10 +115,11 @@ describe('DeviceTokenService', () => {
     });
 
     it('should return null for token with wrong key', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
       
       // Generate token with one key
-      const generated = await service.generateToken(deviceId);
+      const generated = await service.generateToken(hardwareId, uuid);
       
       // Change the key and try to validate
       process.env.DEVICE_TOKEN_MASTER_KEY = 'ZGlmZmVyZW50a2V5Zm9ydGVzdGluZzEyMzQ1Njc4OTA=';
@@ -121,8 +132,9 @@ describe('DeviceTokenService', () => {
 
   describe('isDeviceToken', () => {
     it('should identify device tokens correctly', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
-      const generated = await service.generateToken(deviceId);
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
+      const generated = await service.generateToken(hardwareId, uuid);
       
       expect(service.isDeviceToken(generated.token)).toBe(true);
     });
@@ -148,29 +160,31 @@ describe('DeviceTokenService', () => {
 
   describe('validateTokenForDevice', () => {
     it('should validate token for correct device', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
       
-      const generated = await service.generateToken(deviceId);
-      const isValid = await service.validateTokenForDevice(generated.token, deviceId);
+      const generated = await service.generateToken(hardwareId, uuid);
+      const isValid = await service.validateTokenForDevice(generated.token, hardwareId, uuid);
       
       expect(isValid).toBe(true);
     });
 
     it('should reject token for different device', async () => {
-      const deviceId1 = '550e8400-e29b-41d4-a716-446655440000';
-      const deviceId2 = '550e8400-e29b-41d4-a716-446655440001';
+      const hardwareId1 = 'BIOS-SERIAL-123456';
+      const uuid1 = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
+      const hardwareId2 = 'BIOS-SERIAL-654321';
+      const uuid2 = '8afc0e86-1234-4bc9-93e1-22920c78b4a1';
       
-      const generated = await service.generateToken(deviceId1);
-      const isValid = await service.validateTokenForDevice(generated.token, deviceId2);
+      const generated = await service.generateToken(hardwareId1, uuid1);
+      const isValid = await service.validateTokenForDevice(generated.token, hardwareId2, uuid2);
       
       expect(isValid).toBe(false);
     });
 
     it('should reject invalid token', async () => {
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
       const invalidToken = 'invalid-token';
       
-      const isValid = await service.validateTokenForDevice(invalidToken, deviceId);
+      const isValid = await service.validateTokenForDevice(invalidToken, 'hwid', 'uuid');
       
       expect(isValid).toBe(false);
     });
@@ -182,8 +196,9 @@ describe('DeviceTokenService', () => {
       
       const loggerSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
       
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
-      await service.generateToken(deviceId);
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
+      await service.generateToken(hardwareId, uuid);
       
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('DEVICE_TOKEN_MASTER_KEY not set in environment')
@@ -201,8 +216,9 @@ describe('DeviceTokenService', () => {
       
       Date.now = jest.fn(() => pastTime);
       
-      const deviceId = '550e8400-e29b-41d4-a716-446655440000';
-      const generated = await service.generateToken(deviceId);
+      const hardwareId = 'BIOS-SERIAL-123456';
+      const uuid = '8afc0e86-1234-4bc9-93e1-22920c78b4a0';
+      const generated = await service.generateToken(hardwareId, uuid);
       
       // Restore Date.now to current time
       Date.now = originalDateNow;

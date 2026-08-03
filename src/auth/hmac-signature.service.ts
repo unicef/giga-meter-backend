@@ -11,19 +11,19 @@ export interface HmacValidationResult {
 export interface HmacSignatureParams {
   token: string;
   nonce: string;
-  payload?: any;
-  timestamp?: number;
 }
 
 /**
  * Service responsible for HMAC signature generation and validation
  * Provides message integrity and authenticity verification for device token requests
+ *
+ * HMAC payload format (per IRD §5.1): message = token + "|" + nonce
+ * No timestamp validation is performed.
  */
 @Injectable()
 export class HmacSignatureService {
   private readonly logger = new Logger(HmacSignatureService.name);
   private readonly algorithm = 'sha256';
-  private readonly timestampToleranceMs = 5 * 60 * 1000; // 5 minutes tolerance for timestamp validation
 
   /**
    * Gets the HMAC secret key from environment variables
@@ -53,27 +53,21 @@ export class HmacSignatureService {
   }
 
   /**
-   * Generates HMAC signature - this is used to verify the integrity of the device token request to test the signature
+   * Generates HMAC signature for the given token and nonce
+   * Message format: token + "|" + nonce
    * @returns Base64 encoded HMAC signature
    */
   generateSignature(params: HmacSignatureParams): string {
     try {
-      const { token, nonce, timestamp } = params;
+      const { token, nonce } = params;
       
       // Validate required parameters
       if (!token || !nonce) {
         throw new Error('Token and nonce are required for HMAC signature generation');
       }
 
-      // Create the message to sign
-      const messageComponents = [
-        token,
-        nonce,
-        timestamp ? timestamp.toString() : Date.now().toString(),
-        // payload ? JSON.stringify(payload) : ''
-      ];
-
-      const message = messageComponents.join('|');
+      // Create the message to sign: token|nonce (no timestamp per IRD §5.1)
+      const message = `${token}|${nonce}`;
       
       // Generate HMAC signature
       const secret = this.getHmacSecret();
@@ -111,28 +105,6 @@ export class HmacSignatureService {
           isValid: false,
           reason: 'Token and nonce are required for HMAC validation',
         };
-      }
-
-      // Validate timestamp if provided (prevent replay attacks with old signatures)
-      if (params.timestamp) {
-        const now = Date.now();
-        const timestampAge = now - params.timestamp;
-        
-        if (timestampAge > this.timestampToleranceMs) {
-          this.logger.warn(`HMAC signature timestamp too old: ${timestampAge}ms`);
-          return {
-            isValid: false,
-            reason: 'HMAC signature timestamp is too old',
-          };
-        }
-
-        if (timestampAge < -this.timestampToleranceMs) {
-          this.logger.warn(`HMAC signature timestamp too far in future: ${timestampAge}ms`);
-          return {
-            isValid: false,
-            reason: 'HMAC signature timestamp is too far in the future',
-          };
-        }
       }
 
       // Generate expected signature
@@ -192,56 +164,8 @@ export class HmacSignatureService {
   }
 
   /**
-   * Extracts timestamp from request headers or body
-   * @param request - HTTP request object
-   * @returns Timestamp if found, undefined otherwise
-   */
-  extractTimestamp(request: any): number | undefined {
-    try {
-      // Check X-Timestamp header first
-      const headerTimestamp = request.headers['x-timestamp'];
-      if (headerTimestamp) {
-        const timestamp = parseInt(headerTimestamp, 10);
-        if (!isNaN(timestamp) && timestamp > 0) {
-          return timestamp;
-        }
-      }
-
-      // Check request body for timestamp
-      if (request.body && request.body.timestamp) {
-        const timestamp = parseInt(request.body.timestamp, 10);
-        if (!isNaN(timestamp) && timestamp > 0) {
-          return timestamp;
-        }
-      }
-
-      return undefined;
-    } catch (error) {
-      this.logger.warn(`Failed to extract timestamp: ${error.message}`);
-      return undefined;
-    }
-  }
-
-  /**
-   * Creates a complete HMAC signature with timestamp - this is used to verify the integrity of the device token request to test the signature
-   * @param params - Parameters for signature generation
-   * @returns Object containing signature and timestamp
-   */
-  createSignatureWithTimestamp(params: Omit<HmacSignatureParams, 'timestamp'>): {
-    signature: string;
-    timestamp: number;
-  } {
-    const timestamp = Date.now();
-    const signature = this.generateSignature({ ...params, timestamp });
-    
-    return {
-      signature,
-      timestamp,
-    };
-  }
-
-  /**
    * Validates request payload integrity using HMAC
+   * Extracts signature from X-HMAC-Signature header, recomputes using token|nonce
    * @param request - HTTP request object
    * @param token - Device token
    * @param nonce - Request nonce
@@ -270,18 +194,10 @@ export class HmacSignatureService {
         };
       }
 
-      // Extract timestamp
-      const timestamp = this.extractTimestamp(request);
-
-      // Extract payload (if any)
-      const payload = request.body || {};
-
-      // Validate signature
+      // Validate signature (no timestamp — per IRD §5.1)
       return await this.validateSignature(signature, {
         token,
         nonce,
-        payload,
-        timestamp,
       });
     } catch (error) {
       this.logger.error(`Request integrity validation failed: ${error.message}`);
@@ -298,12 +214,10 @@ export class HmacSignatureService {
    */
   getConfiguration(): {
     algorithm: string;
-    timestampToleranceMs: number;
     secretConfigured: boolean;
   } {
     return {
       algorithm: this.algorithm,
-      timestampToleranceMs: this.timestampToleranceMs,
       secretConfigured: !!process.env.DEVICE_TOKEN_HMAC_SECRET,
     };
   }

@@ -1,8 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes,
+  createHash,
+} from 'crypto';
 
 export interface DeviceTokenPayload {
-  deviceId: string;
+  hashId: string;
   timestamp: number;
   expiresAt: number;
 }
@@ -12,7 +17,7 @@ export interface TokenGenerationResponse {
   expiresAt: number;
   expiresIn: number;
   issuedAt: number;
-  deviceId: string;
+  hashId: string;
 }
 
 /**
@@ -26,7 +31,7 @@ export class DeviceTokenService {
   private readonly keyLength = 32; // 32 bytes for AES-256
   private readonly ivLength = 16; // 16 bytes for GCM IV
   private readonly tagLength = 16; // 16 bytes for GCM auth tag
-  private readonly tokenTtlHours = 0.05; // Token valid for 24 hours
+  private readonly tokenTtlHours = 24; // Token valid for 24 hours
 
   /**
    * Generates a secure encryption key - Base64 encoded 32-byte random key
@@ -42,20 +47,23 @@ export class DeviceTokenService {
   private getMasterKey(): Buffer {
     let masterKey = process.env.DEVICE_TOKEN_MASTER_KEY;
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     if (!masterKey) {
       if (isProduction) {
-        this.logger.error('DEVICE_TOKEN_MASTER_KEY not set in production environment');
+        this.logger.error(
+          'DEVICE_TOKEN_MASTER_KEY not set in production environment',
+        );
         throw new Error(
           'DEVICE_TOKEN_MASTER_KEY is required in production. ' +
-          'Generate one using: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'base64\'))"'
+            "Generate one using: node -e \"console.log(require('crypto').randomBytes(32).toString('base64'))\"",
         );
       }
       // Generate a new key if not set (for development only)
       masterKey = this.generateEncryptionKey();
       this.logger.warn(
         'DEVICE_TOKEN_MASTER_KEY not set in environment. Generated temporary key. ' +
-        'Please set this in production: ' + masterKey
+          'Please set this in production: ' +
+          masterKey,
       );
     }
 
@@ -63,32 +71,43 @@ export class DeviceTokenService {
   }
 
   /**
-   * Creates a hash of the device identifier for consistent token generation
-   * @param deviceId - Device fingerprint or UUID
-   * @returns Hashed device identifier
+   * Computes a SHA-256 hash from the device's hardware ID and UUID
+   * The database must never persist this final hash — it is always derived in memory.
+   * @param hardwareId - Device hardware/BIOS serial identifier
+   * @param uuid - Device UUID
+   * @returns Hex-encoded SHA-256 hash
    */
-  private hashDeviceId(deviceId: string): string {
-    return createHash('sha256').update(deviceId).digest('hex');
+  private computeHashId(hardwareId: string, uuid: string): string {
+    return createHash('sha256')
+      .update(hardwareId + uuid)
+      .digest('hex');
   }
 
   /**
-   * Generates a secure token for the given device identifier
-   * @param deviceId - Device fingerprint or UUIDv4
+   * Generates a secure token for the given device identifiers
+   * @param hardwareId - Device hardware/BIOS serial identifier
+   * @param uuid - Device UUID
    * @returns Promise containing token generation response
    */
-  async generateToken(deviceId: string): Promise<TokenGenerationResponse> {
+  async generateToken(
+    hardwareId: string,
+    uuid: string,
+  ): Promise<TokenGenerationResponse> {
     try {
-      if (!deviceId || deviceId.trim().length === 0) {
-        throw new Error('Device ID cannot be empty');
+      if (!hardwareId || hardwareId.trim().length === 0) {
+        throw new Error('Hardware ID cannot be empty');
+      }
+      if (!uuid || uuid.trim().length === 0) {
+        throw new Error('UUID cannot be empty');
       }
 
       const now = Date.now();
-      const expiresAt = now + (this.tokenTtlHours * 60 * 60 * 1000);
-      const hashedDeviceId = this.hashDeviceId(deviceId);
+      const expiresAt = now + this.tokenTtlHours * 60 * 60 * 1000;
+      const hashId = this.computeHashId(hardwareId, uuid);
 
       // Create payload
       const payload: DeviceTokenPayload = {
-        deviceId: hashedDeviceId,
+        hashId,
         timestamp: now,
         expiresAt,
       };
@@ -99,7 +118,7 @@ export class DeviceTokenService {
 
       // Create cipher
       const cipher = createCipheriv(this.algorithm, key, iv);
-      
+
       // Encrypt the payload
       const payloadString = JSON.stringify(payload);
       let encrypted = cipher.update(payloadString, 'utf8', 'base64');
@@ -112,19 +131,21 @@ export class DeviceTokenService {
       const tokenData = Buffer.concat([
         iv,
         tag,
-        Buffer.from(encrypted, 'base64')
+        Buffer.from(encrypted, 'base64'),
       ]);
 
       const token = tokenData.toString('base64');
 
-      this.logger.log(`Generated token for device: ${hashedDeviceId.substring(0, 8)}...`);
+      this.logger.log(
+        `Generated token for device: ${hashId.substring(0, 8)}...`,
+      );
 
       return {
         token,
         expiresAt,
         expiresIn: this.tokenTtlHours * 60 * 60 * 1000,
         issuedAt: now,
-        deviceId: hashedDeviceId,
+        hashId,
       };
     } catch (error) {
       this.logger.error(`Failed to generate token: ${error.message}`);
@@ -153,8 +174,13 @@ export class DeviceTokenService {
       }
 
       const iv = tokenBuffer.subarray(0, this.ivLength);
-      const tag = tokenBuffer.subarray(this.ivLength, this.ivLength + this.tagLength);
-      const encryptedData = tokenBuffer.subarray(this.ivLength + this.tagLength);
+      const tag = tokenBuffer.subarray(
+        this.ivLength,
+        this.ivLength + this.tagLength,
+      );
+      const encryptedData = tokenBuffer.subarray(
+        this.ivLength + this.tagLength,
+      );
 
       // Create decipher
       const decipher = createDecipheriv(this.algorithm, key, iv);
@@ -168,18 +194,22 @@ export class DeviceTokenService {
       const payload: DeviceTokenPayload = JSON.parse(decrypted);
 
       // Validate payload structure
-      if (!payload.deviceId || !payload.timestamp || !payload.expiresAt) {
+      if (!payload.hashId || !payload.timestamp || !payload.expiresAt) {
         this.logger.warn('Invalid payload structure');
         return null;
       }
 
       // Check if token has expired
       if (Date.now() > payload.expiresAt) {
-        this.logger.warn(`Token expired for device: ${payload.deviceId.substring(0, 8)}...`);
+        this.logger.warn(
+          `Token expired for device: ${payload.hashId.substring(0, 8)}...`,
+        );
         return null;
       }
 
-      this.logger.log(`Validated token for device: ${payload.deviceId.substring(0, 8)}...`);
+      this.logger.log(
+        `Validated token for device: ${payload.hashId.substring(0, 8)}...`,
+      );
       return payload;
     } catch (error) {
       this.logger.warn(`Token validation failed: ${error.message}`);
@@ -195,14 +225,14 @@ export class DeviceTokenService {
    */
   isDeviceToken(token: string): boolean {
     if (!token) return false;
-    
+
     try {
       // Device tokens should be base64 encoded
       const decoded = Buffer.from(token, 'base64');
-      
+
       // Should be at least IV + tag + some encrypted data
       const minLength = this.ivLength + this.tagLength + 32;
-      
+
       // Device tokens don't contain dots (unlike JWTs)
       return decoded.length >= minLength && !token.includes('.');
     } catch {
@@ -211,18 +241,23 @@ export class DeviceTokenService {
   }
 
   /**
-   * Validates a device token against a specific device ID
+   * Validates a device token against a specific device's hardware ID and UUID
    * @param token - Token to validate
-   * @param deviceId - Expected device ID
+   * @param hardwareId - Expected hardware ID
+   * @param uuid - Expected UUID
    * @returns Promise - true / false
    */
-  async validateTokenForDevice(token: string, deviceId: string): Promise<boolean> {
+  async validateTokenForDevice(
+    token: string,
+    hardwareId: string,
+    uuid: string,
+  ): Promise<boolean> {
     try {
       const payload = await this.validateToken(token);
       if (!payload) return false;
 
-      const hashedDeviceId = this.hashDeviceId(deviceId);
-      return payload.deviceId === hashedDeviceId;
+      const hashId = this.computeHashId(hardwareId, uuid);
+      return payload.hashId === hashId;
     } catch (error) {
       this.logger.error(`Device token validation failed: ${error.message}`);
       return false;

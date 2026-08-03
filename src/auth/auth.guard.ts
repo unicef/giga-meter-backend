@@ -92,29 +92,41 @@ export class AuthGuard implements CanActivate {
   }
 
   /**
-   * Validates device token and nonce, then sets request context
+   * Validates device token, nonce (from X-Device-Nonce header),
+   * and HMAC signature (from X-HMAC-Signature header), then sets request context.
+   *
+   * Flow per IRD §7:
+   * 1. Decrypt token & check expiry
+   * 2. Extract nonce from X-Device-Nonce, validate format, consume via NonceService
+   * 3. Validate HMAC signature (message = token|nonce)
+   * 4. Set request.hashId, request.nonce, request.tokenType, request.category, request.has_write_access
    */
   private async validateDeviceToken(
     token: string,
     request: any,
   ): Promise<boolean> {
     try {
-      // First, validate the device token
+      // Step 1: Validate the device token (decrypt & check expiry)
+      if (!token) {
+        return false;
+      }
       const payload = await this.deviceTokenService.validateToken(token);
       if (!payload) {
         return false;
       }
 
-      // Extract nonce from request headers
+      // Step 2: Extract nonce from X-Device-Nonce header
       const nonce = request.headers['x-device-nonce'];
       if (!nonce) {
-        this.logger.warn('Device token request missing required nonce header');
+        this.logger.warn(
+          'Device token request missing required X-Device-Nonce header',
+        );
         throw new UnauthorizedException(
-          'Missing x-device-nonce header for device token authentication',
+          'Missing X-Device-Nonce header for device token authentication',
         );
       }
 
-      // Validate nonce format
+      // Validate nonce format (valid base64, >= 16 bytes)
       if (!this.nonceService.isValidNonceFormat(nonce)) {
         this.logger.warn('Invalid nonce format provided');
         throw new UnauthorizedException('Invalid nonce format');
@@ -123,7 +135,7 @@ export class AuthGuard implements CanActivate {
       // Validate and consume the nonce (prevents replay attacks)
       const nonceValidation = await this.nonceService.validateAndConsumeNonce(
         nonce,
-        payload.deviceId,
+        payload.hashId,
       );
       if (!nonceValidation.isValid) {
         this.logger.warn(`Nonce validation failed: ${nonceValidation.reason}`);
@@ -132,7 +144,7 @@ export class AuthGuard implements CanActivate {
         );
       }
 
-      // Validate HMAC signature for request integrity
+      // Step 3: Validate HMAC signature for request integrity
       const hmacValidation =
         await this.hmacSignatureService.validateRequestIntegrity(
           request,
@@ -148,8 +160,8 @@ export class AuthGuard implements CanActivate {
         );
       }
 
-      // Set device-specific context on request
-      request.deviceId = payload.deviceId;
+      // Step 4: Set device-specific context on request
+      request.hashId = payload.hashId;
       request.nonce = nonce;
       request.tokenType = 'device';
       request.category = Category.GIGA_METER.toLowerCase();

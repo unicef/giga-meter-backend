@@ -143,4 +143,54 @@ export class SchedulerService {
       );
     }
   }
+
+  /**
+   * Purges expired nonces from the database every hour (per IRD §4.3)
+   * Prevents the nonces table from growing unbounded
+   */
+  @Cron('0 * * * *')
+  async purgeExpiredNonces() {
+    try {
+      const now = new Date();
+      const startOfDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds(),
+        0,
+      );
+      const millisecondsElapsed = now.getTime() - startOfDay.getTime();
+      await new Promise((resolve) =>
+        setTimeout(resolve, millisecondsElapsed * 1000),
+      );
+      const lockKey = 'scheduler-nonce-purge-lock';
+      const acquired = await redisClient.set(
+        lockKey,
+        'locked',
+        'PX',
+        60000,
+        'NX',
+      );
+      if (acquired !== 'OK') {
+        this.logger.log(
+          'Another pod is already running the nonce purge task. Skipping.',
+        );
+        return;
+      }
+      this.logger.log('Starting expired nonce purge');
+
+      const result = await this.prisma.nonce.deleteMany({
+        where: { expires_at: { lt: new Date() } },
+      });
+
+      this.logger.log(`Purged ${result.count} expired nonces`);
+    } catch (error) {
+      this.logger.error(
+        `Error during nonce purge: ${error.message}`,
+        error.stack,
+      );
+    }
+  }
 }

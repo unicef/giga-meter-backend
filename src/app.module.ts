@@ -65,6 +65,10 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
       url: process.env.REDIS_URL || 'redis://localhost:6379',
       ttl: CACHE_TTL,
       max: 5000,
+      enable_offline_queue: false,
+      retry_strategy: (options: any) => {
+        return 10000;
+      },
     }),
     PrometheusModule.register({
       defaultMetrics: {
