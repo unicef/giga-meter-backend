@@ -1,6 +1,6 @@
 # Current state — giga-meter-backend
 
-_Last reviewed: 2026-06-02_
+_Last reviewed: 2026-08-05_
 
 > **Maintainers:** update this file when merging PRs. Do not store PR narratives here — use `/prs/{number}-{slug}.md`. This file is a link-first index, not a full narrative — see [How to keep this current](#how-to-keep-this-current).
 
@@ -16,7 +16,8 @@ _Last reviewed: 2026-06-02_
 | `measurement` | Speed/latency uploads (M-Lab legacy + protocol-specific routes) |
 | `protocol-config` | Country/school protocol resolution and admin CRUD |
 | `school`, `school-master` | Daily Check installations and canonical school data |
-| `country` | Country metadata and API segmentation |
+| `health` | Health facility master records (synced into DB by giga-maps jobs) |
+| `country` | Country metadata; school + health master CDC watermarks |
 | `auth` | API keys, device tokens, HMAC |
 | `connectivity`, `ping-aggregation` | Router ping snapshots and aggregation |
 | `public` | Public/category-filtered read APIs |
@@ -38,6 +39,12 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 - Resolution: school override → country → default (`protocol-config.service.ts`).
 - Endpoints: `GET /api/v1/protocol-config/resolve`; admin `PUT`/`DELETE` on country and school paths (`protocol-config.controller.ts`).
 - **Legacy removed:** `country_config` table, `MeasurementProvider` enum, and `/api/v1/country-config/*` (Nest module deleted). Do not add a `country-config` module — use `protocol-config` only.
+
+## Health master sync (schema only)
+
+- Master tables: `health`, `master_sync_intermediate_health`, `master_sync_health_static`
+- CDC watermark: `country.latest_health_master_data_version` (parallel to school)
+- Pull/promote jobs: **giga-maps-backend**, not Nest — see [health-master-data-sync-support.md](./health-master-data-sync-support.md)
 
 ## Local data
 

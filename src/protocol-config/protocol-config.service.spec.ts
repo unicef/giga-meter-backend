@@ -343,6 +343,7 @@ describe('ProtocolConfigService', () => {
       created_at: createdAt,
       iso3_format: 'ESP',
       latest_school_master_data_version: 1,
+      latest_health_master_data_version: null,
       speed_test_protocol: SpeedTestProtocol.NDT7,
       is_active: true,
     });
