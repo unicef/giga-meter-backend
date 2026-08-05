@@ -12,6 +12,7 @@
 | Phase 2 | `20260521120332_add_health_columns_to_existing_tables` | Adds `entity_type_id`, `registration_id`, `giga_id_health` to `measurements` and `connectivity_ping_checks` with indexes and FKs. |
 | Phase 3 | `20260521124932_add_health_make_school_id_giga_id_nullable` | Makes `measurements.school_id` and `connectivity_ping_checks.giga_id_school` nullable. |
 | Phase 4 | `20260624120000_rename_entity_type_to_facility_type` | Renames `entity_type` → `facility_type`, `entity_type_id` → `facility_type_id`, `country_entity_type_whitelist` → `country_facility_type_whitelist`. |
+| Phase 5 | `20260805180000_add_country_latest_health_master_data_version` | Adds `country.latest_health_master_data_version` for health master CDC (parallel to school watermark). See [health-master-data-sync-support.md](./health-master-data-sync-support.md). |
 
 ---
 
@@ -36,6 +37,7 @@
 | `country` | `+ healths health[]` | 1 | ✅ Done |
 | `country` | `+ master_sync_intermediate_health master_sync_intermediate_health[]` | 1 | ✅ Done |
 | `country` | `+ whitelist_entries country_entity_type_whitelist[]` | 1 | ✅ Done |
+| `country` | `+ latest_health_master_data_version Int?` | 5 | ✅ Done |
 | `measurements` | `+ entity_type_id Int?` | 2 | ✅ Done |
 | `measurements` | `+ registration_id BigInt?` | 2 | ✅ Done |
 | `measurements` | `+ giga_id_health String?` | 2 | ✅ Done |
@@ -51,7 +53,8 @@
 
 | Item | Status | Notes |
 |---|---|---|
-| Seed `entity_type` rows: `{ name: "school" }`, `{ name: "health" }` | ⚠️ **NOT IN MIGRATION** | Design doc requires this in the same migration. Needs a separate seed script or added to Phase 1 SQL manually. |
+| Seed `entity_type` / `facility_type` rows: `{ name: "school" }`, `{ name: "health" }` | ✅ Done later | Seeded in `20260521135124` (codes SCHL/HLTH); normalized to `school`/`health` in `20260727120500_normalize_facility_type_codes`. |
+| `country.latest_health_master_data_version` for master sync watermark | ✅ Phase 5 | Required by giga-maps health master CDC jobs (must not reuse school watermark). |
 | Make `measurements.school_id` nullable | ✅ Phase 3 | |
 | Write `registration` population script from `dailycheckapp_school` | ⏳ Out of scope for migrations | Separate Python script task — not a Prisma migration concern. |
 | Add `entity_type_id` back-fill on migrated `registration` rows | ⏳ Out of scope for migrations | Part of the population script above. |
@@ -72,8 +75,11 @@ The design doc originally described `code` as a future addition (*"add a code va
 ### 3. `country_entity_type_whitelist` uses `country.code` not `country.id`
 The design doc and checklist confirm `country.code` is the correct V1 target. Our implementation is aligned. The design doc notes `master_sync_intermediate` and `master_sync_intermediate_health` still use `country.id` — those are marked as V2 updates and are not changed here.
 
-### 4. Seed data gap
-The design doc checklist requires `entity_type` seed rows (`school`, `health`) to be inserted in the same migration as the table creation. This was not included in Phase 1. The seed data must be applied before any application code attempts to resolve entity types by name. **Action required before going live.**
+### 4. Seed data gap (resolved)
+The design doc checklist required `entity_type` seed rows in Phase 1. They landed later (`20260521135124`) and codes were normalized to `school`/`health` (`20260727120500`). No further seed migration is required for V1 facility types.
+
+### 5. Health master CDC watermark (Phase 5)
+School master sync uses `country.latest_school_master_data_version`. Health master sync needs a **separate** column so the two pipelines do not overwrite each other. Phase 5 adds `latest_health_master_data_version`. Application writers are giga-maps Celery jobs, not Nest request handlers.
 
 ---
 
@@ -82,6 +88,6 @@ The design doc checklist requires `entity_type` seed rows (`school`, `health`) t
 | Item | Notes |
 |---|---|
 | `dailycheckapp_school` → `registration` data migration | Python script, separate task |
-| `entity_type` seed data | Must be added to Phase 1 SQL or run as a standalone script |
-| Application logic changes (endpoints, services) | Outside scope of schema migrations |
+| Delta Sharing load / promote / delete pipeline for health | Owned by **giga-maps-backend** (`proco.giga_meter`), not Nest |
+| Application logic changes (endpoints, services) | Outside scope of schema migrations (health APIs tracked elsewhere) |
 | `master_sync_intermediate` / `master_sync_intermediate_health` country FK standardisation | Deferred to V2 per design doc |
