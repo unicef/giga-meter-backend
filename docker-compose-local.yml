@@ -17,7 +17,7 @@ services:
       -c log_disconnections=on
       -c log_min_duration_statement=0
     ports:
-      - '${POSTGRES_PORT}:${POSTGRES_PORT}'
+      - '${POSTGRES_PORT:-7432}:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -58,7 +58,7 @@ services:
       giga-meter-redis:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@giga-meter-db:${POSTGRES_PORT}/${POSTGRES_DB}?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@giga-meter-db:5432/${POSTGRES_DB}?schema=public
       REDIS_URL: redis://giga-meter-redis:${REDIS_PORT}
       PORT: ${PORT:-3000}
       NODE_ENV: ${NODE_ENV}
