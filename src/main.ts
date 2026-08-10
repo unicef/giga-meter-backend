@@ -13,6 +13,14 @@ import { AuthGuard } from './auth/auth.guard';
 import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 
 async function bootstrap() {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.APP_ENV,
+    tracesSampleRate: Number(
+      process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1,
+    ),
+  });
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
@@ -86,17 +94,19 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionFilter());
 
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    // Performance Monitoring
-    tracesSampleRate: 1.0,
-    environment: process.env.NODE_ENV ?? 'production',
-  });
+  // sentry should be initalize before nest starts processing requests
+  // Sentry.init({
+  //   dsn: process.env.SENTRY_DSN,
+  //   // Performance Monitoring
+  //   tracesSampleRate: 1.0,
+  //   environment: process.env.NODE_ENV ?? 'production',
+  // });
 
+  // this will not work in v8
   // The request handler must be the first middleware on the app
-  app.use(Sentry.Handlers.requestHandler());
+  // app.use(Sentry.Handlers.requestHandler());
   // TracingHandler creates a trace for every incoming request
-  app.use(Sentry.Handlers.tracingHandler());
+  // app.use(Sentry.Handlers.tracingHandler());
   dotenv.config();
 
   app.set('trust proxy', true);
