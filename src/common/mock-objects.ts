@@ -635,6 +635,9 @@ export const mockMeasurementModel = [
     facility_type_id: null,
     registration_id: null,
     giga_id_health: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
   {
     id: toBigInt(2),
@@ -680,6 +683,9 @@ export const mockMeasurementModel = [
     facility_type_id: null,
     registration_id: null,
     giga_id_health: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
   {
     id: toBigInt(3),
@@ -725,6 +731,9 @@ export const mockMeasurementModel = [
     facility_type_id: null,
     registration_id: null,
     giga_id_health: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
 ];
 
@@ -762,6 +771,9 @@ export const mockMeasurementFailedModel = [
     facility_type_id: null,
     registration_id: null,
     giga_id_health: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
   {
     id: toBigInt(2),
@@ -796,6 +808,9 @@ export const mockMeasurementFailedModel = [
     facility_type_id: null,
     registration_id: null,
     giga_id_health: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
   {
     id: toBigInt(3),
@@ -830,6 +845,9 @@ export const mockMeasurementFailedModel = [
     facility_type_id: null,
     registration_id: null,
     giga_id_health: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
 ];
 

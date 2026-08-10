@@ -338,6 +338,9 @@ model measurements {
   facility_type_id             Int?
   registration_id              BigInt?
   giga_id_health               String?
+  upload_failed                Boolean? @default(false) // true = realtime upload failed, record arrived via offline sync
+  scheduled_slot               String?  @db.VarChar(16) // 'A' | 'B' | 'C' | 'startup'; null for manual runs
+  scheduled_at                 DateTime? @db.Timestamptz(6) // originally planned run time of the scheduled test
   facility_type                facility_type?  @relation(fields: [facility_type_id], references: [id])
   registration                 registration? @relation(fields: [registration_id], references: [id])
   @@index([giga_id_school])
