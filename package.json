@@ -25,12 +25,7 @@
     "test:cov": "jest --coverage",
     "test:covpip": "jest --coverage --silent --maxWorkers=2 -u",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
-    "infra:up": "docker compose -f docker-compose.pgbouncer.yml up -d pgbouncer",
-    "infra:down": "docker compose -f docker-compose.pgbouncer.yml down",
-    "infra:logs": "docker compose -f docker-compose.pgbouncer.yml logs -f pgbouncer",
-    "stack:up": "docker compose -f docker-compose.pgbouncer.yml up -d --build pgbouncer api",
-    "stack:down": "docker compose -f docker-compose.pgbouncer.yml down"
+    "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
     "@azure/storage-blob": "^12.17.0",
