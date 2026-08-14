@@ -463,6 +463,56 @@ describe('MeasurementService', () => {
       });
     });
 
+    it('should persist upload_failed and schedule context sent by the app', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const scheduledAt = new Date('2026-08-14T08:23:00.000Z');
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        upload_failed: true,
+        scheduled_slot: 'A',
+        scheduled_at: scheduledAt,
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          upload_failed: true,
+          scheduled_slot: 'A',
+          scheduled_at: scheduledAt,
+        }),
+      });
+    });
+
+    it('should default upload_failed and schedule context when the app omits them', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement(mockAddMeasurementDto[0]);
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          upload_failed: false,
+          scheduled_slot: null,
+          scheduled_at: null,
+        }),
+      });
+    });
+
     it('should persist cloudflare protocol and derived quality metrics', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
