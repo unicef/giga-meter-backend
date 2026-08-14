@@ -632,6 +632,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
   {
     id: toBigInt(2),
@@ -674,6 +677,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
   {
     id: toBigInt(3),
@@ -716,6 +722,9 @@ export const mockMeasurementModel = [
     jitter: null,
     packet_loss: null,
     network_quality_score: null,
+    upload_failed: false,
+    scheduled_slot: null,
+    scheduled_at: null,
   },
 ];
 

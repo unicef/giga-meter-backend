@@ -467,6 +467,9 @@ export class MeasurementService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
+      upload_failed: measurement.upload_failed,
+      scheduled_slot: measurement.scheduled_slot,
+      scheduled_at: measurement.scheduled_at,
       protocol: measurement.protocol,
       download_latency: measurement.download_latency ?? undefined,
       upload_latency: measurement.upload_latency ?? undefined,
@@ -617,6 +620,9 @@ export class MeasurementService {
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
+      upload_failed: measurement.upload_failed ?? false,
+      scheduled_slot: measurement.scheduled_slot ?? null,
+      scheduled_at: measurement.scheduled_at ?? null,
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
       upload_latency: measurement.upload_latency ?? null,
