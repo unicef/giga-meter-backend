@@ -12,6 +12,8 @@ import { SwaggerAuthMiddleware } from './common/swagger-auth.middleware';
 import { AuthGuard } from './auth/auth.guard';
 import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 
+dotenv.config();
+
 async function bootstrap() {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
@@ -107,7 +109,7 @@ async function bootstrap() {
   // app.use(Sentry.Handlers.requestHandler());
   // TracingHandler creates a trace for every incoming request
   // app.use(Sentry.Handlers.tracingHandler());
-  dotenv.config();
+
 
   app.set('trust proxy', true);
   await app.listen(3000, () => {
