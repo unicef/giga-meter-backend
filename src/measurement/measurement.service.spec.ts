@@ -56,6 +56,25 @@ describe('MeasurementService', () => {
       );
     });
 
+    it('should lowercase the giga_id_school filter', async () => {
+      // measurements.giga_id_school is always persisted lowercase, so the
+      // filter has to be normalised or the usage page stays empty for clients
+      // that hold the id in a different casing.
+      const findManySpy = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      await service.measurements(0, 5, 'timestamp', ' TZ-TEST-88001 ');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            giga_id_school: 'tz-test-88001',
+          }),
+        }),
+      );
+    });
+
     it('should return measurements with lt timestamp filter', async () => {
       jest
         .spyOn(prisma.dailycheckapp_country, 'findFirst')
@@ -401,6 +420,84 @@ describe('MeasurementService', () => {
         mockAddMeasurementDto[0],
       );
       expect(response).toEqual('PCDC school does not exist');
+    });
+
+    it('should match the school regardless of the casing sent by the client', async () => {
+      const schoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      const mappingSpy = jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      // The client sends the id with the casing the schools master returned,
+      // while dailycheckapp_school stores it lowercased.
+      const response = await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: 'TZ-TEST-88001',
+      });
+
+      expect(response).toEqual('');
+      expect(schoolSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school: { equals: 'TZ-TEST-88001', mode: 'insensitive' },
+        },
+      });
+      expect(mappingSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school_wrong: {
+            equals: 'TZ-TEST-88001',
+            mode: 'insensitive',
+          },
+        },
+      });
+    });
+
+    it('should trim the giga id before looking the school up', async () => {
+      const schoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: '  tz-test-88001  ',
+      });
+
+      expect(schoolSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school: { equals: 'tz-test-88001', mode: 'insensitive' },
+        },
+      });
+    });
+
+    it('should leave a missing giga id untouched in the lookup filter', async () => {
+      const schoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: undefined,
+      });
+
+      expect(schoolSpy).toHaveBeenCalledWith({
+        where: { giga_id_school: undefined },
+      });
     });
 
     it('should create failed measurement if wrong country code', async () => {
