@@ -372,6 +372,43 @@ describe('MeasurementService', () => {
       expect(response).toEqual('');
     });
 
+    it('should look up giga_id_school case-insensitively', async () => {
+      const findSchoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      const findMappingSpy = jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const mixedCaseGigaId =
+        mockAddMeasurementDto[0].giga_id_school.toUpperCase();
+      const response = await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: mixedCaseGigaId,
+      });
+
+      expect(response).toEqual('');
+      expect(findSchoolSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school: {
+            equals: mixedCaseGigaId.trim(),
+            mode: 'insensitive',
+          },
+        },
+      });
+      expect(findMappingSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school_wrong: {
+            equals: mixedCaseGigaId.trim(),
+            mode: 'insensitive',
+          },
+        },
+      });
+    });
+
     it('should create measurement with correct giga mapping', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')

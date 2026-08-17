@@ -319,7 +319,9 @@ export class MeasurementService {
     dto: AddMeasurementDto,
   ): Promise<string | null> {
     const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
-      where: { giga_id_school: dto.giga_id_school },
+      where: {
+        giga_id_school: this.caseInsensitiveGigaId(dto.giga_id_school),
+      },
     });
 
     if (existingRecord == null) {
@@ -328,7 +330,9 @@ export class MeasurementService {
 
     const gigaSchoolMapping =
       await this.prisma.giga_id_school_mapping_fix.findFirst({
-        where: { giga_id_school_wrong: dto.giga_id_school },
+        where: {
+          giga_id_school_wrong: this.caseInsensitiveGigaId(dto.giga_id_school),
+        },
       });
 
     if (gigaSchoolMapping != null) {
@@ -349,7 +353,7 @@ export class MeasurementService {
     countries?: string[],
   ): Record<string, any> {
     const filter: Record<string, any> = {
-      giga_id_school,
+      giga_id_school: this.caseInsensitiveGigaId(giga_id_school),
       country_code: {
         in: countries,
       },
@@ -626,6 +630,13 @@ export class MeasurementService {
       packet_loss: measurement.packet_loss ?? null,
       network_quality_score: measurement.network_quality_score ?? null,
     };
+  }
+
+  private caseInsensitiveGigaId(giga_id_school?: string) {
+    if (!giga_id_school) {
+      return giga_id_school;
+    }
+    return { equals: giga_id_school.trim(), mode: 'insensitive' as const };
   }
 
   private toFailedModel(measurement: AddMeasurementDto, reason: string): any {
