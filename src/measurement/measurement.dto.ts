@@ -729,6 +729,26 @@ export class MeasurementDto {
   @ApiProperty({ required: false })
   wifi_connections?: any[];
 
+  @ApiProperty({
+    required: false,
+    description:
+      'true = the realtime upload failed and the record arrived via offline sync',
+  })
+  upload_failed?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Planned slot: 'A' | 'B' | 'C' | 'startup'; null for manual runs",
+  })
+  scheduled_slot?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Originally planned run time of the scheduled test',
+  })
+  scheduled_at?: Date;
+
   @ApiPropertyOptional()
   protocol?: string;
 
