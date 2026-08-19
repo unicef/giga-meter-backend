@@ -749,14 +749,23 @@ export class MeasurementDto {
   })
   scheduled_at?: Date;
 
-  @ApiProperty({ required: false, description: 'Device name' })
-  device_name?: string;
+  @ApiProperty({ required: false, description: 'Device manufacturer' })
+  device_manufacturer?: string;
 
   @ApiProperty({ required: false, description: 'Device model' })
   device_model?: string;
 
-  @ApiProperty({ required: false, description: 'Device manufacturer' })
-  device_manufacturer?: string;
+  @ApiProperty({ required: false, description: 'Operating system version' })
+  os_version?: string;
+
+  @ApiProperty({ required: false, description: 'Device CPU identifier' })
+  device_cpu?: string;
+
+  @ApiProperty({ required: false, description: 'Total device RAM in MB' })
+  device_ram_mb?: number;
+
+  @ApiProperty({ required: false, description: 'Total device storage in MB' })
+  device_storage_mb?: number;
 
   @ApiProperty({ required: false, description: 'Client app build number' })
   app_build_number?: string;
