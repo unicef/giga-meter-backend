@@ -317,6 +317,14 @@ model measurements {
   upload_failed               Boolean?  @default(false) // true = realtime upload failed, record arrived via offline sync
   scheduled_slot              String?   @db.VarChar(16) // 'A' | 'B' | 'C' | 'startup'; null for manual runs
   scheduled_at                DateTime? @db.Timestamptz(6) // originally planned run time of the scheduled test
+  device_manufacturer         String?
+  device_model                String?
+  os_version                  String?
+  device_cpu                  String?
+  device_ram_mb               Int?
+  device_storage_mb           Int?
+  app_build_number            String?
+  sdk_version                 String?
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -353,6 +361,14 @@ model measurements_failed {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  device_manufacturer         String?
+  device_model                String?
+  os_version                  String?
+  device_cpu                  String?
+  device_ram_mb               Int?
+  device_storage_mb           Int?
+  app_build_number            String?
+  sdk_version                 String?
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
