@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  Prisma,
   measurements as Measurement,
   measurements_failed as MeasurementFailed,
 } from '@prisma/client';
@@ -36,7 +37,7 @@ export class MeasurementService {
     private facilityTypeService: FacilityTypeService,
     private healthService: HealthService,
     private registrationService: RegistrationService,
-  ) {}
+  ) { }
 
   async measurements(
     skip?: number,
@@ -335,8 +336,18 @@ export class MeasurementService {
   private async processMeasurement(
     dto: AddMeasurementDto,
   ): Promise<string | null> {
+    // giga_id_school is lowercased whenever a device registers through the API
+    // (SchoolService.toModel), but rows also land in these tables through
+    // hand-written SQL, so the stored casing cannot be trusted. The client
+    // sends the id exactly as the schools master returned it, which for the
+    // Android test schools is uppercase ("TZ-TEST-88001"); an exact match then
+    // rejected every upload with SCHOOL_DOESNT_EXIST_ERR.
+    // A null/undefined id is passed through unchanged to keep the previous
+    // behaviour for measurements submitted without a giga_id_school.
+    const gigaIdFilter = this.caseInsensitiveGigaId(dto.giga_id_school);
+
     const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
-      where: { giga_id_school: dto.giga_id_school },
+      where: { giga_id_school: gigaIdFilter },
     });
 
     if (existingRecord == null) {
@@ -345,7 +356,7 @@ export class MeasurementService {
 
     const gigaSchoolMapping =
       await this.prisma.giga_id_school_mapping_fix.findFirst({
-        where: { giga_id_school_wrong: dto.giga_id_school },
+        where: { giga_id_school_wrong: gigaIdFilter },
       });
 
     if (gigaSchoolMapping != null) {
@@ -357,287 +368,20 @@ export class MeasurementService {
     return null;
   }
 
-  // ---------------------------------------------------------------------------
-  // V2 entity-aware methods
-  // ---------------------------------------------------------------------------
-
   /**
-   * POST /api/v1/measurements/v2
-   * Entity-aware measurement submission for health (and school) devices.
-   */
-  async createMeasurementV2(dto: AddMeasurementV2Dto): Promise<string> {
-    // 1. Validate: at least one entity ID must be present
-    if (!dto.giga_id_school && !dto.giga_id_health) {
-      throw new BadRequestException(
-        'At least one of giga_id_school or giga_id_health must be provided',
-      );
-    }
-
-    // 2. Resolve entity_type_id
-    const facilityType = await this.facilityTypeService.getByCode(dto.entity_type);
-    if (!facilityType) {
-      throw new BadRequestException(
-        `Unknown entity_type "${dto.entity_type}"`,
-      );
-    }
-
-    // 3. If health entity: verify the health facility exists
-    if (dto.giga_id_health) {
-      const healthFacility = await this.healthService.findActiveById(
-        dto.giga_id_health,
-      );
-      if (!healthFacility) {
-        throw new BadRequestException(
-          `Health facility "${dto.giga_id_health}" not found`,
-        );
-      }
-    }
-
-    // 4. If registration_id provided: verify it exists and is not blocked
-    let registrationId: bigint | null =
-      dto.registration_id != null ? BigInt(dto.registration_id.toString()) : null;
-    if (registrationId != null) {
-      const registration = await this.prisma.registration.findFirst({
-        where: { id: registrationId },
-      });
-      if (!registration) {
-        throw new BadRequestException(
-          `Registration "${dto.registration_id}" not found`,
-        );
-      }
-      if (registration.is_blocked) {
-        throw new BadRequestException(
-          `Registration "${dto.registration_id}" is blocked`,
-        );
-      }
-    } else {
-      // Self-heal for legacy installs that never stored a registration_id
-      // (v1 never returned one) and whose reconciliation call failed: resolve
-      // it — or lazily create it from a valid giga_id — instead of rejecting.
-      // Best-effort — an unresolved registration stays null.
-      registrationId = await this.registrationService.resolveForIngest({
-        installation_id: dto.installation_id,
-        device_hardware_id: dto.device_hardware_id,
-        giga_id_school: dto.giga_id_school,
-        giga_id_health: dto.giga_id_health,
-        browser_id: dto.BrowserID,
-        country_code: dto.country_code,
-      });
-    }
-
-    // 5. Resolve the detected-location verdict (school only — see below)
-    const detectedLocation = await this.resolveDetectedLocationV2(dto);
-
-    // 6. Write the measurement
-    await this.prisma.measurements.create({
-      data: buildMeasurementV2Row(dto, {
-        facilityTypeId: facilityType.id,
-        registrationId,
-        detectedLocation,
-      }),
-    });
-
-    return '';
-  }
-
-  /**
-   * Distance/accuracy/flag for a v2 measurement.
+   * Builds a case-insensitive equality filter for a giga_id_school column.
    *
-   * Only resolvable for schools today: the geolocation utility looks the
-   * reference coordinates up from the school table. Health facilities carry
-   * lat/lng too, so this is where that support would slot in — until then a
-   * health measurement stores the reported coordinates with a null verdict
-   * rather than a misleading `is_flagged`.
+   * Returns the value untouched when it is null/undefined so Prisma keeps
+   * treating it the same way it did before (undefined drops the filter,
+   * null matches NULL rows).
    */
-  private async resolveDetectedLocationV2(
-    dto: AddMeasurementV2Dto,
-  ): Promise<{
-    distance: number | null;
-    accuracy: number | null;
-    isFlagged: boolean | null;
-  } | null> {
-    const location = dto.geolocation?.location;
-    const accuracy = dto.geolocation?.accuracy;
-    if (!location || !accuracy || !dto.giga_id_school) {
-      return null;
-    }
-
-    try {
-      return await this.geolocationUtility.calculateDistanceAndSetFlag(
-        dto.giga_id_school,
-        location,
-        accuracy,
-      );
-    } catch (error) {
-      console.error('Error processing geolocation data (v2):', error);
-      return null;
-    }
-  }
-
-  /** POST /api/v2/measurements — facility-aware measurement submission */
-  async createMeasurementFacilityV2(
-    dto: AddMeasurementFacilityV2Dto,
-  ): Promise<string> {
-    return this.createMeasurementV2({
-      ...dto,
-      entity_type: dto.facility_type,
-    });
-  }
-
-
-  /** GET /api/v2/measurements/facility — facility-aware measurement list */
-  async measurementsV2Facility(
-    skip: number,
-    take: number,
-    order_by: string,
-    facility_type?: string,
-    giga_id_health?: string,
+  private caseInsensitiveGigaId(
     giga_id_school?: string,
-    country_iso3_code?: string,
-    filter_by?: string,
-    filter_condition?: string,
-    filter_value?: Date,
-    write_access?: boolean,
-    countries?: string[],
-  ): Promise<MeasurementFacilityV2Dto[]> {
-    const rows = await this.measurementsV2Entity(
-      skip,
-      take,
-      order_by,
-      facility_type,
-      giga_id_health,
-      giga_id_school,
-      country_iso3_code,
-      filter_by,
-      filter_condition,
-      filter_value,
-      write_access,
-      countries,
-    );
-    return rows.map((row) => {
-      const { entity_type, ...rest } = row;
-      return { ...rest, facility_type: entity_type };
-    });
-  }
-
-  /**
-   * GET /api/v1/measurements/v2/entity
-   * Entity-aware measurement list — returns a plain array (no wrapper).
-   */
-  async measurementsV2Entity(
-    skip: number,
-    take: number,
-    order_by: string,
-    entity_type?: string,
-    giga_id_health?: string,
-    giga_id_school?: string,
-    country_iso3_code?: string,
-    filter_by?: string,
-    filter_condition?: string,
-    filter_value?: Date,
-    write_access?: boolean,
-    countries?: string[],
-  ): Promise<MeasurementEntityV2Dto[]> {
-    const filter: Record<string, any> = {};
-
-    // Country access filter
-    if (!write_access && countries?.length) {
-      filter.country_code = { in: countries };
+  ): Prisma.StringNullableFilter | string | null | undefined {
+    if (giga_id_school == null) {
+      return giga_id_school;
     }
-
-    if (country_iso3_code) {
-      const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
-        where: { code_iso3: country_iso3_code },
-      });
-      if (
-        !dbCountry?.code ||
-        (!write_access && !countries?.includes(dbCountry.code))
-      ) {
-        return [];
-      }
-      filter.country_code = { in: [dbCountry.code] };
-    }
-
-    if (giga_id_school) {
-      filter.giga_id_school = giga_id_school;
-    }
-    if (giga_id_health) {
-      filter.giga_id_health = giga_id_health;
-    }
-
-    // Resolve entity_type filter: string name → entity_type_id
-    if (entity_type) {
-      const ft = await this.facilityTypeService.getByCode(entity_type);
-      if (!ft) {
-        return [];
-      }
-      filter.facility_type_id = ft.id;
-    }
-
-    // Date filter
-    if (filter_by && filter_condition && filter_value != null) {
-      const parsedDate = new Date(filter_value);
-      const formattedDate = parsedDate.toISOString();
-      const hasTime =
-        parsedDate.getUTCHours() > 0 ||
-        parsedDate.getUTCMinutes() > 0 ||
-        parsedDate.getUTCSeconds() > 0 ||
-        parsedDate.getUTCMilliseconds() > 0;
-      const endOfDay = new Date(filter_value);
-      endOfDay.setUTCHours(23, 59, 59, 999);
-
-      switch (filter_condition) {
-        case 'lt': filter[filter_by] = { lt: hasTime ? formattedDate : parsedDate.toISOString() }; break;
-        case 'lte': filter[filter_by] = { lte: hasTime ? formattedDate : endOfDay.toISOString() }; break;
-        case 'gt': filter[filter_by] = { gt: hasTime ? formattedDate : endOfDay.toISOString() }; break;
-        case 'gte': filter[filter_by] = { gte: hasTime ? formattedDate : parsedDate.toISOString() }; break;
-        case 'eq':
-          filter[filter_by] = hasTime
-            ? { equals: formattedDate }
-            : { gte: parsedDate, lte: endOfDay };
-          break;
-      }
-    }
-
-    const orderField = order_by.replace('-', '');
-    const orderDir: 'asc' | 'desc' = order_by.startsWith('-') ? 'desc' : 'asc';
-
-    const rows = await this.prisma.measurements.findMany({
-      where: filter,
-      skip,
-      take,
-      orderBy: { [orderField]: orderDir },
-    });
-
-    return Promise.all(rows.map(async (m) => this.toEntityV2Dto(m)));
-  }
-
-  private async toEntityV2Dto(m: Measurement): Promise<MeasurementEntityV2Dto> {
-    // Resolve entity_type name (from cache — no extra DB round-trip)
-    let facilityTypeName = 'school';
-    if (m.facility_type_id != null) {
-      const ft = await this.facilityTypeService.getById(m.facility_type_id);
-      if (ft) facilityTypeName = ft.name;
-    }
-
-    return {
-      timestamp: m.timestamp,
-      browserId: m.browser_id,
-      download: m.download,
-      upload: m.upload,
-      latency: m.latency != null ? parseInt(m.latency.toString()) : null,
-      entity_type: facilityTypeName,
-      school_id: m.school_id ?? null,
-      giga_id_school: m.giga_id_school ?? null,
-      giga_id_health: m.giga_id_health ?? null,
-      registration_id: m.registration_id != null ? m.registration_id.toString() : null,
-      country_code: m.country_code,
-      ip_address: m.ip_address,
-      app_version: m.app_version,
-      source: m.source,
-      created_at: m.created_at,
-      device_hardware_id: m.device_hardware_id,
-    };
+    return { equals: giga_id_school.trim(), mode: 'insensitive' };
   }
 
   private applyFilter(
@@ -649,7 +393,11 @@ export class MeasurementService {
     countries?: string[],
   ): Record<string, any> {
     const filter: Record<string, any> = {
-      giga_id_school,
+      // measurements.giga_id_school is always persisted lowercase (toModel),
+      // so normalising the incoming value keeps the lookup on the plain
+      // b-tree index instead of falling back to an ILIKE scan of a table
+      // that is orders of magnitude larger than dailycheckapp_school.
+      giga_id_school: giga_id_school?.toLowerCase().trim(),
       country_code: {
         in: countries,
       },
@@ -696,12 +444,12 @@ export class MeasurementService {
         case 'eq':
           filter[filter_by] = hasTime
             ? {
-                equals: formattedDate,
-              }
+              equals: formattedDate,
+            }
             : {
-                gte: parsedDate,
-                lte: endOfDay,
-              };
+              gte: parsedDate,
+              lte: endOfDay,
+            };
           break;
         default:
           break;
@@ -767,6 +515,9 @@ export class MeasurementService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
+      upload_failed: measurement.upload_failed,
+      scheduled_slot: measurement.scheduled_slot,
+      scheduled_at: measurement.scheduled_at,
       protocol: measurement.protocol,
       download_latency: measurement.download_latency ?? undefined,
       upload_latency: measurement.upload_latency ?? undefined,
@@ -870,9 +621,9 @@ export class MeasurementService {
       Results: measurement.results
         ? this.removeConnectionInfo(measurement.results)
           ? plainToInstance(
-              ResultsDto,
-              this.removeConnectionInfo(measurement.results),
-            )
+            ResultsDto,
+            this.removeConnectionInfo(measurement.results),
+          )
           : undefined
         : undefined,
       giga_id_school: measurement.giga_id_school,
@@ -920,6 +671,9 @@ export class MeasurementService {
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
+      upload_failed: measurement.upload_failed ?? false,
+      scheduled_slot: measurement.scheduled_slot ?? null,
+      scheduled_at: measurement.scheduled_at ?? null,
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
       upload_latency: measurement.upload_latency ?? null,

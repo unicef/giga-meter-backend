@@ -321,24 +321,22 @@ model measurements {
   windows_username   String?
   installed_path     String?
   wifi_connections   Json?
-  detected_latitude            Float?   // Detected latitude from device
-  detected_longitude           Float?   // Detected longitude from device
-  detected_location_accuracy   Float?   // Accuracy from geolocation API in meters
-  detected_location_distance   Float?   // Distance between school location and detected location
-  detected_location_is_flagged Boolean? @default(false) // Flag if distance > X & accuracy > Y
-  protocol                     String   @default("mlab") @db.VarChar(32)
-  download_latency             Float?
-  upload_latency               Float?
-  download_jitter              Float?
-  upload_jitter                Float?
-  jitter                       Float?
-  packet_loss                  Float?
-  network_quality_score        Float?
-  facility_type_id             Int?
-  registration_id              BigInt?
-  giga_id_health               String?
-  facility_type                facility_type?  @relation(fields: [facility_type_id], references: [id])
-  registration                 registration? @relation(fields: [registration_id], references: [id])
+  detected_latitude           Float?    // Detected latitude from device
+  detected_longitude          Float?    // Detected longitude from device
+  detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
+  detected_location_distance  Float?    // Distance between school location and detected location
+  detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  protocol                    String    @default("mlab") @db.VarChar(32)
+  download_latency            Float?
+  upload_latency              Float?
+  download_jitter             Float?
+  upload_jitter               Float?
+  jitter                      Float?
+  packet_loss                 Float?
+  network_quality_score       Float?
+  upload_failed               Boolean?  @default(false) // true = realtime upload failed, record arrived via offline sync
+  scheduled_slot              String?   @db.VarChar(16) // 'A' | 'B' | 'C' | 'startup'; null for manual runs
+  scheduled_at                DateTime? @db.Timestamptz(6) // originally planned run time of the scheduled test
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
