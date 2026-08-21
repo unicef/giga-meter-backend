@@ -501,6 +501,11 @@ export class MeasurementService {
       upload_failed: measurement.upload_failed,
       scheduled_slot: measurement.scheduled_slot,
       scheduled_at: measurement.scheduled_at,
+      device_name: measurement.device_name,
+      device_model: measurement.device_model,
+      device_manufacturer: measurement.device_manufacturer,
+      app_build_number: measurement.app_build_number,
+      sdk_version: measurement.sdk_version,
       protocol: measurement.protocol,
       download_latency: measurement.download_latency ?? undefined,
       upload_latency: measurement.upload_latency ?? undefined,
@@ -654,6 +659,11 @@ export class MeasurementService {
       upload_failed: measurement.upload_failed ?? false,
       scheduled_slot: measurement.scheduled_slot ?? null,
       scheduled_at: measurement.scheduled_at ?? null,
+      device_name: measurement.device_name ?? null,
+      device_model: measurement.device_model ?? null,
+      device_manufacturer: measurement.device_manufacturer ?? null,
+      app_build_number: measurement.app_build_number ?? null,
+      sdk_version: measurement.sdk_version ?? null,
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
       upload_latency: measurement.upload_latency ?? null,
@@ -694,6 +704,11 @@ export class MeasurementService {
         measurement.detected_location_distance || null,
       detected_location_is_flagged:
         measurement.detected_location_is_flagged || false,
+      device_name: measurement.device_name ?? null,
+      device_model: measurement.device_model ?? null,
+      device_manufacturer: measurement.device_manufacturer ?? null,
+      app_build_number: measurement.app_build_number ?? null,
+      sdk_version: measurement.sdk_version ?? null,
     };
   }
 }

@@ -749,6 +749,21 @@ export class MeasurementDto {
   })
   scheduled_at?: Date;
 
+  @ApiProperty({ required: false, description: 'Device name' })
+  device_name?: string;
+
+  @ApiProperty({ required: false, description: 'Device model' })
+  device_model?: string;
+
+  @ApiProperty({ required: false, description: 'Device manufacturer' })
+  device_manufacturer?: string;
+
+  @ApiProperty({ required: false, description: 'Client app build number' })
+  app_build_number?: string;
+
+  @ApiProperty({ required: false, description: 'Measurement SDK version' })
+  sdk_version?: string;
+
   @ApiPropertyOptional()
   protocol?: string;
 
