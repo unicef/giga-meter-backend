@@ -317,6 +317,7 @@ model measurements {
   upload_failed               Boolean?  @default(false) // true = realtime upload failed, record arrived via offline sync
   scheduled_slot              String?   @db.VarChar(16) // 'A' | 'B' | 'C' | 'startup'; null for manual runs
   scheduled_at                DateTime? @db.Timestamptz(6) // originally planned run time of the scheduled test
+  server_timestamp            DateTime? @db.Timestamptz(6) // M-Lab's own clock, reported by ndt7; null when the client could not read it
   device_name                 String?
   device_model                String?
   device_manufacturer         String?
