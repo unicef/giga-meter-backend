@@ -560,7 +560,7 @@ describe('MeasurementService', () => {
       });
     });
 
-    it('should persist upload_failed and schedule context sent by the app', async () => {
+    it('should persist offline_synced and schedule context sent by the app', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
         .mockResolvedValue(mockSchoolModel[0]);
@@ -574,21 +574,21 @@ describe('MeasurementService', () => {
       const scheduledAt = new Date('2026-08-14T08:23:00.000Z');
       await service.createMeasurement({
         ...mockAddMeasurementDto[0],
-        upload_failed: true,
-        scheduled_slot: 'A',
+        offline_synced: true,
+        scheduled_slot: 'morning',
         scheduled_at: scheduledAt,
       });
 
       expect(createSpy).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          upload_failed: true,
-          scheduled_slot: 'A',
+          offline_synced: true,
+          scheduled_slot: 'morning',
           scheduled_at: scheduledAt,
         }),
       });
     });
 
-    it('should default upload_failed and schedule context when the app omits them', async () => {
+    it('should default offline_synced and schedule context when the app omits them', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
         .mockResolvedValue(mockSchoolModel[0]);
@@ -603,7 +603,7 @@ describe('MeasurementService', () => {
 
       expect(createSpy).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          upload_failed: false,
+          offline_synced: false,
           scheduled_slot: null,
           scheduled_at: null,
         }),

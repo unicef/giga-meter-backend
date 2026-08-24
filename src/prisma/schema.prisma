@@ -314,8 +314,8 @@ model measurements {
   jitter                      Float?
   packet_loss                 Float?
   network_quality_score       Float?
-  upload_failed               Boolean?  @default(false) // true = realtime upload failed, record arrived via offline sync
-  scheduled_slot              String?   @db.VarChar(16) // 'A' | 'B' | 'C' | 'startup'; null for manual runs
+  offline_synced              Boolean?  @default(false) // true = record arrived via offline sync queue instead of the realtime upload
+  scheduled_slot              String?   @db.VarChar(16) // 'morning' | 'afternoon' | 'evening' | 'startup'; null for manual runs
   scheduled_at                DateTime? @db.Timestamptz(6) // originally planned run time of the scheduled test
   device_name                 String?
   device_model                String?
