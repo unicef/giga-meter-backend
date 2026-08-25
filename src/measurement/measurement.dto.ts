@@ -732,14 +732,14 @@ export class MeasurementDto {
   @ApiProperty({
     required: false,
     description:
-      'true = the realtime upload failed and the record arrived via offline sync',
+      'true = the record arrived via the offline sync queue instead of the realtime upload',
   })
-  upload_failed?: boolean;
+  offline_synced?: boolean;
 
   @ApiProperty({
     required: false,
     description:
-      "Planned slot: 'A' | 'B' | 'C' | 'startup'; null for manual runs",
+      "Planned slot: 'morning' | 'afternoon' | 'evening' | 'startup'; null for manual runs",
   })
   scheduled_slot?: string;
 

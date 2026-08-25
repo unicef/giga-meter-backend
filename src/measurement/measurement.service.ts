@@ -498,7 +498,7 @@ export class MeasurementService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
-      upload_failed: measurement.upload_failed,
+      offline_synced: measurement.offline_synced,
       scheduled_slot: measurement.scheduled_slot,
       scheduled_at: measurement.scheduled_at,
       device_name: measurement.device_name,
@@ -656,7 +656,7 @@ export class MeasurementService {
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
-      upload_failed: measurement.upload_failed ?? false,
+      offline_synced: measurement.offline_synced ?? false,
       scheduled_slot: measurement.scheduled_slot ?? null,
       scheduled_at: measurement.scheduled_at ?? null,
       device_name: measurement.device_name ?? null,
