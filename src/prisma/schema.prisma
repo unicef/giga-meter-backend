@@ -321,7 +321,7 @@ model measurements {
   device_model                String?
   device_manufacturer         String?
   app_build_number            String?
-  sdk_version                 String?
+  os_version                  String?
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -362,7 +362,7 @@ model measurements_failed {
   device_model                String?
   device_manufacturer         String?
   app_build_number            String?
-  sdk_version                 String?
+  os_version                  String?
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
