@@ -17,6 +17,11 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import {
+  sanitizeDeviceNetworkInformation,
+  sanitizeSsidSource,
+  sanitizeWifiUnavailableReason,
+} from '../common/device-network-information.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 
 @Injectable()
@@ -506,6 +511,11 @@ export class MeasurementService {
       device_manufacturer: measurement.device_manufacturer,
       app_build_number: measurement.app_build_number,
       sdk_version: measurement.sdk_version,
+      wifi_unavailable_reason: measurement.wifi_unavailable_reason,
+      ssid_source: measurement.ssid_source,
+      device_network_information: measurement.device_network_information
+        ? JSON.parse(JSON.stringify(measurement.device_network_information))
+        : undefined,
       protocol: measurement.protocol,
       download_latency: measurement.download_latency ?? undefined,
       upload_latency: measurement.upload_latency ?? undefined,
@@ -664,6 +674,13 @@ export class MeasurementService {
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
       sdk_version: measurement.sdk_version ?? null,
+      wifi_unavailable_reason: sanitizeWifiUnavailableReason(
+        measurement.wifi_unavailable_reason,
+      ),
+      ssid_source: sanitizeSsidSource(measurement.ssid_source),
+      device_network_information: sanitizeDeviceNetworkInformation(
+        measurement.device_network_information,
+      ),
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
       upload_latency: measurement.upload_latency ?? null,
@@ -709,6 +726,13 @@ export class MeasurementService {
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
       sdk_version: measurement.sdk_version ?? null,
+      wifi_unavailable_reason: sanitizeWifiUnavailableReason(
+        measurement.wifi_unavailable_reason,
+      ),
+      ssid_source: sanitizeSsidSource(measurement.ssid_source),
+      device_network_information: sanitizeDeviceNetworkInformation(
+        measurement.device_network_information,
+      ),
     };
   }
 }
