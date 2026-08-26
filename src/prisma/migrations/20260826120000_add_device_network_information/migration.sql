@@ -1,6 +1,6 @@
--- Network/device context from the Windows client (research plan 0008).
+-- Network/device context from the Windows client.
 --
--- Two flat columns diagnose the Wi-Fi data that research 0008 found degraded in
+-- Two flat columns diagnose the Wi-Fi data found to be degraded in
 -- production: on Windows 11 24H2+ `netsh wlan` returns nothing while the Location
 -- services master toggle is off, so `wifi_connections` arrives empty even on a
 -- machine connected over Wi-Fi. `wifi_unavailable_reason` says which toggle blocked

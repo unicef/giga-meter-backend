@@ -1,14 +1,14 @@
 /**
  * Whitelist for the `device_network_information` Json uploaded with a measurement.
  *
- * Research plan 0008 measured which network and system attributes the Windows
- * client can read; this is the subset that is cheap enough to capture in the
- * measurement path and that the ticket actually asked for. The column is a Json
+ * A probe run on a real Windows machine measured which network and system
+ * attributes the client can read; this is the subset that is cheap enough to
+ * capture in the measurement path and that the ticket asked for. The column is a Json
  * because the shape is still being validated, but an unbounded Json from a client
  * is a data-quality and privacy hazard, so the backend keeps the shape: anything
  * outside this whitelist is dropped instead of stored.
  *
- * Deliberately absent (see the research findings and the UNICEF privacy criteria):
+ * Deliberately absent, on privacy grounds:
  * adapter MAC addresses, neighbour SSIDs/BSSIDs from the Wi-Fi scan — those only
  * feed geolocation in transit — and the active connection table, which is
  * privacy-heavy with no declared use.
