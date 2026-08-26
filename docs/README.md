@@ -7,6 +7,8 @@ This folder is the **single source of truth** for the **current** state of this 
 | [CURRENT_STATE.md](./CURRENT_STATE.md) | What exists now — start here |
 | [CHANGELOG.md](./CHANGELOG.md) | Append-only log (one line per merged PR) |
 | [adr/](./adr/) | Architecture Decision Records |
+| [health-master-data-sync-support.md](./health-master-data-sync-support.md) | Schema support for health master CDC (giga-maps jobs write `health`) |
+| [health-entity-v1-migration-status.md](./health-entity-v1-migration-status.md) | Health entity Prisma migration checklist |
 
 ## Conventions
 
