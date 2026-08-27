@@ -639,7 +639,7 @@ export const mockMeasurementModel = [
     device_model: null,
     device_manufacturer: null,
     app_build_number: null,
-    sdk_version: null,
+    os_version: null,
   },
   {
     id: toBigInt(2),
@@ -689,7 +689,7 @@ export const mockMeasurementModel = [
     device_model: null,
     device_manufacturer: null,
     app_build_number: null,
-    sdk_version: null,
+    os_version: null,
   },
   {
     id: toBigInt(3),
@@ -739,7 +739,7 @@ export const mockMeasurementModel = [
     device_model: null,
     device_manufacturer: null,
     app_build_number: null,
-    sdk_version: null,
+    os_version: null,
   },
 ];
 
@@ -778,7 +778,7 @@ export const mockMeasurementFailedModel = [
     device_model: null,
     device_manufacturer: null,
     app_build_number: null,
-    sdk_version: null,
+    os_version: null,
   },
   {
     id: toBigInt(2),
@@ -814,7 +814,7 @@ export const mockMeasurementFailedModel = [
     device_model: null,
     device_manufacturer: null,
     app_build_number: null,
-    sdk_version: null,
+    os_version: null,
   },
   {
     id: toBigInt(3),
@@ -850,7 +850,7 @@ export const mockMeasurementFailedModel = [
     device_model: null,
     device_manufacturer: null,
     app_build_number: null,
-    sdk_version: null,
+    os_version: null,
   },
 ];
 

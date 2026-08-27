@@ -505,7 +505,7 @@ export class MeasurementService {
       device_model: measurement.device_model,
       device_manufacturer: measurement.device_manufacturer,
       app_build_number: measurement.app_build_number,
-      sdk_version: measurement.sdk_version,
+      os_version: measurement.os_version,
       protocol: measurement.protocol,
       download_latency: measurement.download_latency ?? undefined,
       upload_latency: measurement.upload_latency ?? undefined,
@@ -663,7 +663,7 @@ export class MeasurementService {
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
-      sdk_version: measurement.sdk_version ?? null,
+      os_version: measurement.os_version ?? null,
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
       upload_latency: measurement.upload_latency ?? null,
@@ -708,7 +708,7 @@ export class MeasurementService {
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
-      sdk_version: measurement.sdk_version ?? null,
+      os_version: measurement.os_version ?? null,
     };
   }
 }

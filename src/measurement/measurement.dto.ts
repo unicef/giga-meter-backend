@@ -761,8 +761,8 @@ export class MeasurementDto {
   @ApiProperty({ required: false, description: 'Client app build number' })
   app_build_number?: string;
 
-  @ApiProperty({ required: false, description: 'Measurement SDK version' })
-  sdk_version?: string;
+  @ApiProperty({ required: false, description: 'Operating system version' })
+  os_version?: string;
 
   @ApiPropertyOptional()
   protocol?: string;
