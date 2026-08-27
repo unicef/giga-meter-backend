@@ -510,7 +510,7 @@ export class MeasurementService {
       device_model: measurement.device_model,
       device_manufacturer: measurement.device_manufacturer,
       app_build_number: measurement.app_build_number,
-      sdk_version: measurement.sdk_version,
+      os_version: measurement.os_version,
       wifi_unavailable_reason: measurement.wifi_unavailable_reason,
       ssid_source: measurement.ssid_source,
       device_network_information: measurement.device_network_information
@@ -673,7 +673,7 @@ export class MeasurementService {
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
-      sdk_version: measurement.sdk_version ?? null,
+      os_version: measurement.os_version ?? null,
       wifi_unavailable_reason: sanitizeWifiUnavailableReason(
         measurement.wifi_unavailable_reason,
       ),
@@ -725,7 +725,7 @@ export class MeasurementService {
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
-      sdk_version: measurement.sdk_version ?? null,
+      os_version: measurement.os_version ?? null,
       wifi_unavailable_reason: sanitizeWifiUnavailableReason(
         measurement.wifi_unavailable_reason,
       ),
