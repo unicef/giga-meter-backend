@@ -224,6 +224,60 @@ describe('SchoolService', () => {
         'Database error',
       );
     });
+
+    it('should return the existing registration instead of creating a duplicate', async () => {
+      // Same device, same school: a repeat POST (double tap, network retry)
+      // must not mint another user_id.
+      const existing = {
+        ...mockSchoolModel[0],
+        user_id: 'existing_user_id',
+        device_hardware_id: 'hardware-1',
+      };
+      const findFirstSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(existing);
+      const createSpy = jest.spyOn(prisma.dailycheckapp_school, 'create');
+
+      const response = await service.createSchool({
+        ...mockSchoolDto[0],
+        device_hardware_id: 'hardware-1',
+      });
+
+      expect(response).toEqual({
+        user_id: 'existing_user_id',
+        is_verified: false,
+      });
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(findFirstSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            device_hardware_id: 'hardware-1',
+            giga_id_school: { equals: 'gigaid1', mode: 'insensitive' },
+          }),
+        }),
+      );
+    });
+
+    it('should not deduplicate when the device has no usable hardware id', async () => {
+      // sanitizeHardwareId() nulls out the generic ids shared by hundreds of
+      // machines; without a hardware id the device cannot be identified, so a
+      // new row is the only safe answer.
+      const findFirstSpy = jest.spyOn(prisma.dailycheckapp_school, 'findFirst');
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'create')
+        .mockResolvedValue(mockSchoolModel[0]);
+
+      const response = await service.createSchool({
+        ...mockSchoolDto[0],
+        device_hardware_id: null,
+      });
+
+      expect(response).toEqual({
+        user_id: mockSchoolDto[0].user_id,
+        is_verified: false,
+      });
+      expect(findFirstSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('ResolveIsVerified', () => {

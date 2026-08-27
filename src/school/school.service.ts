@@ -140,6 +140,24 @@ export class SchoolService {
       }
     }
     const model = this.toModel(schoolDto);
+
+    // Registering the same device for the same school twice returns the row it
+    // already has instead of minting another user_id. The client used to send
+    // one POST per tap on the confirmation screen, and network retries or
+    // at-least-once delivery can still double-submit, so the insert cannot be
+    // unconditional.
+    const existing = await this.findExistingRegistration(model);
+    if (existing) {
+      console.warn(
+        `Duplicate registration absorbed for giga_id_school ${model.giga_id_school}, ` +
+          `device_hardware_id ${model.device_hardware_id}: returning user_id ${existing.user_id}`,
+      );
+      return {
+        user_id: existing.user_id,
+        is_verified: await this.resolveIsVerified(existing.giga_id_school),
+      };
+    }
+
     const school = await this.prisma.dailycheckapp_school.create({
       data: model,
     });
@@ -148,6 +166,38 @@ export class SchoolService {
       user_id: school.user_id,
       is_verified: await this.resolveIsVerified(school.giga_id_school),
     };
+  }
+
+  /**
+   * The active registration this device already has for this school, if any.
+   *
+   * Keyed on device_hardware_id: mac_address is not a hardware address but
+   * Capacitor's Device.getId(), which is regenerated on every app relaunch, so
+   * it cannot identify a device. toModel() has already nulled out the blocked
+   * generic ids, so a null here means "cannot be identified" and a new row is
+   * the only safe answer. Deactivated rows are ignored, matching
+   * checkExistingInstallation: logging out and registering again is a new
+   * installation.
+   */
+  private async findExistingRegistration(model: {
+    giga_id_school?: string;
+    device_hardware_id?: string;
+  }) {
+    if (!model.giga_id_school || !model.device_hardware_id) {
+      return null;
+    }
+
+    return this.prisma.dailycheckapp_school.findFirst({
+      where: {
+        // Rows also land in this table through hand-written SQL, so the stored
+        // casing cannot be trusted even though toModel() lowercases on write.
+        giga_id_school: { equals: model.giga_id_school, mode: 'insensitive' },
+        device_hardware_id: model.device_hardware_id,
+        OR: [{ is_active: null }, { is_active: true }],
+      },
+      // Oldest first: the identity the device has been reporting all along.
+      orderBy: { id: 'asc' },
+    });
   }
 
   async checkExistingInstallation(device_hardware_id: string): Promise<{
