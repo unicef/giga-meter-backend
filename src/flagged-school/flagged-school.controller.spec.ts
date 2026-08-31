@@ -4,18 +4,53 @@ import { FlaggedSchoolService } from './flagged-school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockFlaggedSchoolDto } from '../common/mock-objects';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { mockCategoryConfigProvider, mockFlaggedSchoolDto } from '../common/mock-objects';
+import { CategoryConfigProvider } from '../common/category-config.provider';
 
 describe('FlaggedSchoolController', () => {
   let controller: FlaggedSchoolController;
   let service: FlaggedSchoolService;
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      // Add any required PrismaService methods used in tests
+    };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [FlaggedSchoolController],
-      providers: [FlaggedSchoolService, PrismaService, AuthGuard],
-      imports: [HttpModule],
-    }).compile();
+      providers: [
+        FlaggedSchoolService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        {
+          provide: APP_GUARD,
+          useClass: AuthGuard,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: ThrottlerGuard,
+        },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
+        },
+      ],
+      imports: [
+        HttpModule,
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60,
+            limit: 10,
+          },
+        ]),
+      ],
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({
+        canActivate: () => Promise.resolve(true),
+      })
+      .compile();
 
     controller = app.get<FlaggedSchoolController>(FlaggedSchoolController);
     service = app.get<FlaggedSchoolService>(FlaggedSchoolService);

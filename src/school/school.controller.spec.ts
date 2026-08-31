@@ -4,19 +4,84 @@ import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockSchoolDto, mockSchoolEmailUpdateDto } from '../common/mock-objects';
+import {
+  mockCategoryConfigProvider,
+  mockSchoolDto,
+  mockSchoolEmailUpdateDto,
+} from '../common/mock-objects';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { CategoryConfigProvider } from '../common/category-config.provider';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 
 describe('SchoolController', () => {
   let controller: SchoolController;
   let service: SchoolService;
 
   beforeEach(async () => {
+    const mockPrismaService = {
+      // Add any required PrismaService methods used in tests
+    };
+
+    const mockConnectivityService = {
+      // Add any required ConnectivityService methods used in tests
+    };
+
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
+    };
+
+    const mockCacheManager = {
+      get: jest.fn(),
+      set: jest.fn(),
+      del: jest.fn(),
+      reset: jest.fn(),
+    };
+
     const app: TestingModule = await Test.createTestingModule({
       controllers: [SchoolController],
-      providers: [SchoolService, PrismaService, AuthGuard, ConnectivityService],
-      imports: [HttpModule],
-    }).compile();
+      providers: [
+        SchoolService,
+        { provide: PrismaService, useValue: mockPrismaService },
+        { provide: ConnectivityService, useValue: mockConnectivityService },
+        { provide: GeolocationUtility, useValue: mockGeolocationUtility },
+        {
+          provide: CACHE_MANAGER,
+          useValue: mockCacheManager,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: AuthGuard,
+        },
+        {
+          provide: APP_GUARD,
+          useClass: ThrottlerGuard,
+        },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
+        },
+      ],
+      imports: [
+        HttpModule,
+        ThrottlerModule.forRoot([
+          {
+            ttl: 60,
+            limit: 10,
+          },
+        ]),
+      ],
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({
+        canActivate: () => Promise.resolve(true),
+      })
+      .compile();
 
     controller = app.get<SchoolController>(SchoolController);
     service = app.get<SchoolService>(SchoolService);
@@ -157,10 +222,16 @@ describe('SchoolController', () => {
 
   describe('CreateSchool', () => {
     it('should create school', async () => {
-      jest.spyOn(service, 'createSchool').mockResolvedValue('1');
+      jest.spyOn(service, 'createSchool').mockResolvedValue({
+        user_id: '1',
+        is_verified: false,
+      });
 
       const response = await controller.createSchool(mockSchoolDto[0]);
-      expect(response.data).toStrictEqual({ user_id: '1' });
+      expect(response.data).toStrictEqual({
+        user_id: '1',
+        is_verified: false,
+      });
     });
 
     it('should handle database error', async () => {
@@ -175,14 +246,44 @@ describe('SchoolController', () => {
 
   describe('UpdateSchoolEmail', () => {
     it('should update school email and return user_id', async () => {
-      jest.spyOn(service, 'updateSchoolEmail').mockResolvedValue(mockSchoolEmailUpdateDto.user_id);
-      const response = await controller.updateSchoolEmail(mockSchoolEmailUpdateDto);
-      expect(response.data).toStrictEqual({ user_id: mockSchoolEmailUpdateDto.user_id });
+      jest
+        .spyOn(service, 'updateSchoolEmail')
+        .mockResolvedValue(mockSchoolEmailUpdateDto.user_id);
+      const response = await controller.updateSchoolEmail(
+        mockSchoolEmailUpdateDto,
+      );
+      expect(response.data).toStrictEqual({
+        user_id: mockSchoolEmailUpdateDto.user_id,
+      });
       expect(response.success).toBe(true);
     });
     it('should handle error from service', async () => {
-      jest.spyOn(service, 'updateSchoolEmail').mockRejectedValue(new Error('Update error'));
-      await expect(controller.updateSchoolEmail(mockSchoolEmailUpdateDto)).rejects.toThrow('Update error');
+      jest
+        .spyOn(service, 'updateSchoolEmail')
+        .mockRejectedValue(new Error('Update error'));
+      await expect(
+        controller.updateSchoolEmail(mockSchoolEmailUpdateDto),
+      ).rejects.toThrow('Update error');
+    });
+  });
+
+  describe('CheckExistingInstallation', () => {
+    it('should include is_verified in response', async () => {
+      jest.spyOn(service, 'checkExistingInstallation').mockResolvedValue({
+        exists: true,
+        user_id: '1',
+        giga_id_school: mockSchoolDto[0].giga_id_school,
+        is_verified: false,
+      });
+
+      const response = await controller.checkExistingInstallation('device-1');
+
+      expect(response.data).toStrictEqual({
+        exists: true,
+        user_id: '1',
+        giga_id_school: mockSchoolDto[0].giga_id_school,
+        is_verified: false,
+      });
     });
   });
 });

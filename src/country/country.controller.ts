@@ -9,6 +9,7 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,13 +29,46 @@ import {
   WriteAccess,
 } from '../common/common.decorator';
 import { ValidateSize } from '../common/validation.decorator';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { getRateLimitConfig } from '../config/rate-limit.config';
+import { CacheInterCeptorOptional } from 'src/config/cache.config';
+import { Public } from 'src/common/public.decorator';
 
 @ApiTags('Country')
 @Controller('api/v1/dailycheckapp_countries')
+@UseGuards(ThrottlerGuard)
+@Throttle(getRateLimitConfig('countries'))
 export class CountryController {
   constructor(private readonly countryService: CountryService) {}
 
+  @Public()
+  @Get('all')
+  @ApiOperation({
+    summary:
+      'Returns the list of registered countries on the Giga Meter database',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the list of countries',
+    type: CountryDto,
+    isArray: true,
+  })
+  async getAllCountries(): Promise<ApiSuccessResponseDto<CountryDto[]>> {
+    const records = await this.countryService.getAllCountries({
+      skip: 0,
+      take: 200,
+    });
+
+    return {
+      success: true,
+      data: records,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+
   @Get('')
+  @UseInterceptors(CacheInterCeptorOptional)
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
@@ -117,6 +151,7 @@ export class CountryController {
     if (!code || code.trim().length === 0)
       throw new HttpException('code is null/empty', HttpStatus.BAD_REQUEST);
 
+    // TODO:// remove this logic after adding countries to non expired api keys 
     if (!write_access && !countries?.includes(code.trim().toUpperCase())) {
       throw new HttpException(
         'not authorized to access',
@@ -169,6 +204,7 @@ export class CountryController {
         'code_iso3 is null/empty',
         HttpStatus.BAD_REQUEST,
       );
+    // TODO:// remove this logic after adding countries to non expired api keys 
     if (!write_access && !countries?.includes(code_iso3.trim().toUpperCase())) {
       throw new HttpException(
         'not authorized to access',
@@ -272,4 +308,5 @@ export class CountryController {
       message: 'success',
     };
   }
+  
 }

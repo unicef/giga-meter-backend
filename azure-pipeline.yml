@@ -1,6 +1,6 @@
 trigger:
   - main
-  - development
+  - develop
   - staging
 
 name: $(SourceBranchName).$(Build.BuildId).$(Date:yyyyMMdd).$(Rev:r)
@@ -24,7 +24,8 @@ stages:
       displayName: Unit Tests
       condition: or(
           eq(variables['Build.Reason'], 'PullRequest'),
-          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+          eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/staging')
         )
       continueOnError: false
       inputs:
@@ -37,7 +38,8 @@ stages:
       displayName: Sonar Scan
       condition: or(
           eq(variables['Build.Reason'], 'PullRequest'),
-          eq(variables['Build.SourceBranch'], 'refs/heads/main')
+          eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+          eq(variables['Build.SourceBranch'], 'refs/heads/staging')
         )
       inputs:
         targetType: 'inline'
@@ -55,18 +57,26 @@ stages:
             -Dsonar.host.url=$(SONAR_HOST) \
             -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info \
             -Dsonar.exclusions=**/*/*.spec.ts,**/prisma/**   
-  - job: Build
+  - job: BuildAndPush
     dependsOn: Test
     steps:
     - task: Docker@2
       displayName: Build image
       inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        dockerfile: $(dockerfilePath)
-        tags: |
-          $(tag)
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: '**/Dockerfile'
+        tags: '$(tag)'
+        arguments: 
+          --build-arg=SSH_PASSWD=$(SSH_PASSWD)
+    - task: Docker@2
+      displayName: Push image
+      inputs:
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)'
+        command: 'push'
+        tags: '$(tag)'
 - stage: dev_deploy
   displayName: Deploy To Development
   dependsOn: build_test
@@ -74,7 +84,7 @@ stages:
     vmImage: 'ubuntu-22.04'
   jobs:
   - job: Development
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/development')
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/develop')
     steps: 
     - task: AzureRmWebAppDeployment@4
       displayName: 'Azure App Service Deploy: uni-connect-services'

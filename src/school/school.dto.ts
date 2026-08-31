@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ArrayMaxSize, IsArray, IsString } from 'class-validator';
+import { GeoLocationDto } from '../measurement/measurement.dto';
+import { SchoolMasterDto } from '../school-master/school-master.dto';
 
 export class SchoolDto {
   @ApiProperty()
@@ -35,11 +37,51 @@ export class SchoolDto {
   @ApiProperty()
   is_blocked: boolean;
 
-  @ApiProperty()
-  email: string[];
+  @ApiProperty({ required: false })
+  email?: string[];
 
   @ApiProperty()
   created_at: Date;
+
+  @ApiProperty({
+    description: 'Geolocation data from device',
+    type: GeoLocationDto,
+  })
+  geolocation?: GeoLocationDto;
+
+  @ApiProperty({
+    description:
+      'Distance between school location and detected location in meters',
+  })
+  detected_location_distance?: number;
+
+  @ApiProperty({
+    description: 'Accuracy of the geolocation in meters',
+  })
+  detected_location_accuracy?: number;
+
+  @ApiProperty({
+    description: 'Flag if distance > X & accuracy > Y',
+  })
+  detected_location_is_flagged?: boolean;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  is_active?: boolean;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
+
+  @ApiProperty({ required: false })
+  is_verified?: boolean;
 }
 
 export class CheckNotifyDto {
@@ -63,4 +105,88 @@ export class SchoolEmailUpdateDto {
   @ApiProperty()
   @IsString()
   user_id: string;
+}
+
+export class CheckExistingInstallationDto {
+  @ApiProperty()
+  exists: boolean;
+
+  @ApiProperty({ required: false })
+  user_id?: string;
+
+  @ApiProperty({ required: false })
+  school_id?: string;
+
+  @ApiProperty({ required: false })
+  giga_id_school?: string;
+
+  @ApiProperty({ required: false })
+  mac_address?: string;
+
+  @ApiProperty({ required: false })
+  os?: string;
+
+  @ApiProperty({ required: false })
+  ip_address?: string;
+
+  @ApiProperty({ required: false })
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  source?: string; // 'dailycheckapp_school' or 'measurements'
+
+  @ApiProperty({ required: false, type: SchoolMasterDto })
+  schoolInfo?: SchoolMasterDto; // School record from the school table matched by giga_id_school
+
+  @ApiProperty({ required: false })
+  is_active?: boolean;
+
+  @ApiProperty({ required: false })
+  is_verified?: boolean;
+}
+
+export class CreateSchoolResponseDto {
+  @ApiProperty()
+  user_id: string;
+
+  @ApiProperty()
+  is_verified: boolean;
+}
+
+export class DeactivateDeviceDto {
+  @ApiProperty()
+  device_hardware_id: string;
+
+  @ApiProperty()
+  giga_id_school: string;
+}
+
+export class DeactivateDeviceResponseDto {
+  @ApiProperty()
+  deactivated: boolean;
+
+  @ApiProperty({ required: false })
+  message?: string;
+}
+
+export class CheckDeviceStatusDto {
+  @ApiProperty({
+    description:
+      'Whether the device is active. Only false if explicitly deactivated. Returns true for backward compatibility if device not found or is_active is null/undefined.',
+  })
+  is_active: boolean;
+
+  @ApiProperty({
+    description:
+      'Message indicating device status (e.g., "Device is active", "Device has been deactivated", "Device not found")',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: 'Whether the device exists in the database',
+  })
+  exists: boolean;
 }

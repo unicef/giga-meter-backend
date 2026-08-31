@@ -107,6 +107,7 @@ export class FlaggedSchoolController {
     @WriteAccess() write_access?: boolean,
     @Countries() countries?: string[],
   ): Promise<ApiSuccessResponseDto<FlaggedSchoolDto[]>> {
+    // TODO:// remove this logic after adding countries to non expired api keys 
     if (
       !write_access &&
       !countries?.includes(country_id.trim().toUpperCase())

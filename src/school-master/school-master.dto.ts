@@ -6,6 +6,9 @@ export class FeatureFlagDto {
 
   @ApiProperty()
   feature_flag_2?: boolean;
+
+  @ApiProperty()
+  pingService?: boolean;
 }
 
 export class SchoolMasterDto {
@@ -59,4 +62,8 @@ export class SchoolMasterDto {
 
   @ApiProperty()
   giga_id_school?: string;
+
+  @ApiProperty()
+  is_verified?: boolean;
+  is_active: boolean;
 }

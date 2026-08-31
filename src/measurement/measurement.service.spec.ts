@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MeasurementService } from './measurement.service';
+import { AddMeasurementDto } from './measurement.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   mockAddMeasurementDto,
   mockCountryModel,
@@ -18,8 +20,22 @@ describe('MeasurementService', () => {
   let prisma: PrismaService;
 
   beforeEach(async () => {
+    const mockGeolocationUtility = {
+      calculateDistanceAndSetFlag: jest.fn(),
+      updateLatLngColumns: jest.fn(),
+      getSchoolCoordinates: jest.fn(),
+      calculateDistance: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MeasurementService, PrismaService],
+      providers: [
+        MeasurementService, 
+        PrismaService,
+        {
+          provide: GeolocationUtility,
+          useValue: mockGeolocationUtility,
+        },
+      ],
     }).compile();
 
     service = module.get<MeasurementService>(MeasurementService);
@@ -37,6 +53,25 @@ describe('MeasurementService', () => {
         .mockResolvedValue(mockMeasurementModel);
       expect(await service.measurements(0, 5, 'timestamp')).toMatchObject(
         mockMeasurementDto(false),
+      );
+    });
+
+    it('should lowercase the giga_id_school filter', async () => {
+      // measurements.giga_id_school is always persisted lowercase, so the
+      // filter has to be normalised or the usage page stays empty for clients
+      // that hold the id in a different casing.
+      const findManySpy = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      await service.measurements(0, 5, 'timestamp', ' TZ-TEST-88001 ');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            giga_id_school: 'tz-test-88001',
+          }),
+        }),
       );
     });
 
@@ -387,6 +422,84 @@ describe('MeasurementService', () => {
       expect(response).toEqual('PCDC school does not exist');
     });
 
+    it('should match the school regardless of the casing sent by the client', async () => {
+      const schoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      const mappingSpy = jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      // The client sends the id with the casing the schools master returned,
+      // while dailycheckapp_school stores it lowercased.
+      const response = await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: 'TZ-TEST-88001',
+      });
+
+      expect(response).toEqual('');
+      expect(schoolSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school: { equals: 'TZ-TEST-88001', mode: 'insensitive' },
+        },
+      });
+      expect(mappingSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school_wrong: {
+            equals: 'TZ-TEST-88001',
+            mode: 'insensitive',
+          },
+        },
+      });
+    });
+
+    it('should trim the giga id before looking the school up', async () => {
+      const schoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: '  tz-test-88001  ',
+      });
+
+      expect(schoolSpy).toHaveBeenCalledWith({
+        where: {
+          giga_id_school: { equals: 'tz-test-88001', mode: 'insensitive' },
+        },
+      });
+    });
+
+    it('should leave a missing giga id untouched in the lookup filter', async () => {
+      const schoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: undefined,
+      });
+
+      expect(schoolSpy).toHaveBeenCalledWith({
+        where: { giga_id_school: undefined },
+      });
+    });
+
     it('should create failed measurement if wrong country code', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
@@ -418,6 +531,147 @@ describe('MeasurementService', () => {
       await expect(
         service.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
+    });
+
+    it('should persist mlab protocol with null quality metrics by default', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement(mockAddMeasurementDto[0]);
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          protocol: 'mlab',
+          download_latency: null,
+          upload_latency: null,
+          download_jitter: null,
+          upload_jitter: null,
+          jitter: null,
+          packet_loss: null,
+          network_quality_score: null,
+        }),
+      });
+    });
+
+    it('should persist offline_synced and schedule context sent by the app', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const scheduledAt = new Date('2026-08-14T08:23:00.000Z');
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        offline_synced: true,
+        scheduled_slot: 'morning',
+        scheduled_at: scheduledAt,
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          offline_synced: true,
+          scheduled_slot: 'morning',
+          scheduled_at: scheduledAt,
+        }),
+      });
+    });
+
+    it('should default offline_synced and schedule context when the app omits them', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement(mockAddMeasurementDto[0]);
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          offline_synced: false,
+          scheduled_slot: null,
+          scheduled_at: null,
+        }),
+      });
+    });
+
+    it('should persist cloudflare protocol and derived quality metrics', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement(
+        {
+          ...mockAddMeasurementDto[0],
+          Results: {
+            summary: {
+              downLoadedLatency: 10,
+              upLoadedLatency: 20,
+              downLoadedJitter: 1,
+              upLoadedJitter: 2,
+              jitter: 3,
+            },
+            scores: {
+              streaming: { points: 10 },
+              gaming: { points: 20 },
+              rtc: { points: 30 },
+            },
+          } as AddMeasurementDto['Results'],
+        },
+        'cloudflare',
+      );
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          protocol: 'cloudflare',
+          download_latency: 10,
+          upload_latency: 20,
+          download_jitter: 1,
+          upload_jitter: 2,
+          jitter: 3,
+          packet_loss: null,
+          network_quality_score: 20,
+        }),
+      });
+    });
+  });
+  describe('createMultipleMeasurement', () => {
+    it('should create multiple measurements', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const response = await service.createMultipleMeasurement([
+        { ...mockAddMeasurementDto[0], Results: {}, app_version: '1.0.9' },
+      ]);
+      expect(response.length).toBe(0);
     });
   });
 });

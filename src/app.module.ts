@@ -21,17 +21,62 @@ import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsController } from './metrics/metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { CategoryGuard } from './common/category.guard';
+import { CategoryResponseInterceptor } from './common/category.interceptor';
+import { AuthGuard } from './auth/auth.guard';
+import { CategoryConfigModule } from './category-config/category-config.module';
+import { CategoryConfigProvider } from './common/category-config.provider';
+import { AuthModule } from './auth/auth.module';
+import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { defaultRateLimitConfig } from './config/rate-limit.config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
+import { GeolocationModule } from './geolocation/geolocation.module';
+import { PublicController } from './public/public.controller';
+import { PublicService } from './public/public.service';
+import { SchoolRegistrationController } from './school-registration/school-registration.controller';
+import { SchoolRegistrationGuard } from './school-registration/school-registration.guard';
+import { SchoolRegistrationService } from './school-registration/school-registration.service';
+import * as redisStore from 'cache-manager-redis-store';
+import { AdminMeterModule } from './admin-meter/admin-meter.module';
+import { TranslateModule } from './translate';
+import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
+
+import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
+import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SchedulerService } from './scheduler/scheduler.service';
+import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
+import { ProtocolConfigService } from './protocol-config/protocol-config.service';
 
 @Module({
   imports: [
     HttpModule,
+    ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
+    CacheModule.register({
+      isGlobal: true,
+      store: redisStore,
+      url: process.env.REDIS_URL || 'redis://localhost:6379',
+      ttl: CACHE_TTL,
+      max: 5000,
+    }),
     PrometheusModule.register({
       defaultMetrics: {
         enabled: true, // Enable collection of default metrics like CPU, memory, etc.
       },
     }),
+    ScheduleModule.forRoot(),
+    CategoryConfigModule,
+    AuthModule,
+    IpMetadataModule,
+    GeolocationModule,
+    AdminMeterModule,
+    TranslateModule,
+    FeatureFlagModule,
   ],
   controllers: [
     AppController,
@@ -45,6 +90,10 @@ import { ConnectivityService } from './connectivity/connectivity.service';
     DataFixController,
     MetricsController,
     ConnectivityController,
+    PingAggregationController,
+    PublicController,
+    SchoolRegistrationController,
+    ProtocolConfigController,
   ],
   providers: [
     AppService,
@@ -57,7 +106,27 @@ import { ConnectivityService } from './connectivity/connectivity.service';
     MeasurementService,
     AdminService,
     MetricsService,
+    CategoryConfigProvider,
+    PingAggregationService,
     ConnectivityService,
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CategoryGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CategoryResponseInterceptor,
+    },
+    SchedulerService,
+    ConnectivityService,
+    PublicService,
+    SchoolRegistrationGuard,
+    SchoolRegistrationService,
+    ProtocolConfigService,
   ],
 })
-export class AppModule {}
+export class AppModule { }

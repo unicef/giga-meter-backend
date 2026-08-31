@@ -1,24 +1,55 @@
 import {
+  Injectable,
   CanActivate,
   ExecutionContext,
-  Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Category, DEFAULT_CATEGORY } from '../common/category.config';
+import { Reflector } from '@nestjs/core';
+import { IS_PUBLIC_KEY } from '../common/public.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
-import { PUBLIC_URLs_LIST } from './auth.util';
+import { CategoryConfigProvider } from '../common/category-config.provider';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { IS_ADMIN_KEY } from 'src/common/admin.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly httpService: HttpService) { }
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly categoryConfigProvider: CategoryConfigProvider,
+    private reflector: Reflector,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Check if the route is marked as public
+    const request = context.switchToHttp().getRequest();
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const isAdmin = this.reflector.getAllAndOverride<boolean>(IS_ADMIN_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const isMetrics = request.url === '/metrics';
     const useAuth = process.env.USE_AUTH === 'true';
 
-    if (!useAuth) return true;
+    if (!useAuth || isPublic || request.category || isMetrics || isAdmin) {
+      return true;
+    }
+    const authHeader = request.headers.authorization;
+    if (!authHeader) {
+      throw new UnauthorizedException('Missing authorization token');
+    }
+    // Check if it's a Bearer token or device token
+    const parts: string[] = authHeader.split(' ');
+    if (parts.length !== 2) {
+      throw new UnauthorizedException('Invalid authorization header format');
+    }
 
-    const request = context.switchToHttp().getRequest();
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -34,46 +65,59 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private async validateToken(token: string, request: any): Promise<boolean> {
+  public async validateToken(token: string, request: any): Promise<boolean> {
     try {
-      if (process.env.GIGA_METER_APP_KEY === token) {
-        request.has_write_access = true;
-        request.is_super_user = true;
-        return true;
-      } else {
-        const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
-        const response = await firstValueFrom(
-          this.httpService.get<ValidateApiKeyDto>(url, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        );
-
-        if (
-          !response.data.success ||
-          (!response.data.data.has_write_access &&
-            (request?.method != 'GET' ||
-              response.data.data.countries?.length === 0))
-        ) {
-          return false;
-        }
-
-        request.has_write_access = response.data.data.has_write_access;
-        const isPublicAccess = PUBLIC_URLs_LIST.includes(request.path); //request.path
-        if (!request.has_write_access && !isPublicAccess) {
-          return false;
-        }
-        if (request?.method == 'GET' && !response.data.data.has_write_access) {
-          request.allowed_countries = response.data.data.countries.map(
-            (c) => c.code,
-          );
-          request.allowed_countries_iso3 = response.data.data.countries.map(
-            (c) => c.iso3_format,
-          );
-        }
-        return true;
+      const url = `${process.env.PROJECT_CONNECT_SERVICE_URL}/api/v1/validate_api_key/${process.env.DAILY_CHECK_APP_API_CODE}`;
+      const response = await firstValueFrom(
+        this.httpService.get<ValidateApiKeyDto>(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      );
+      if (
+        !response.data.success ||
+        (!response.data.data.has_write_access /*request?.method != 'GET' ||*/ &&
+          response.data.data.countries?.length === 0)
+      ) {
+        return false;
       }
+
+      request.has_write_access = response.data.data.has_write_access;
+      const apiCategory = response?.data?.data?.apiCategory?.code;
+      // Extract and set the category from the response
+      //TODO:// remove this logic after swagger categories are added
+      request.category = (
+        apiCategory
+          ? apiCategory
+          : request.has_write_access
+            ? Category.GIGA_METER
+            : DEFAULT_CATEGORY
+      ).toLowerCase();
+
+      //TODO:// remove this logic after swagger categories are added
+      if (request?.method == 'GET' && !response.data.data.has_write_access) {
+        request.allowed_countries = response.data.data.countries.map(
+          (c) => c.code,
+        );
+        request.allowed_countries_iso3 = response.data.data.countries.map(
+          (c) => c.iso3_format,
+        );
+        request.allowed_countries_map = response.data.data.countries.reduce(
+          (acc, country) => {
+            acc[country.code] = country.iso3_format;
+            return acc;
+          },
+          {},
+        );
+      }
+      const config = await this.categoryConfigProvider.getCategoryConfig(
+        request.category,
+      );
+      request.category_allowed_countries = config?.allowedCountries ?? [];
+
+      return true;
     } catch (error) {
       console.error('Token validation failed:', error.message);
+      return false;
     }
   }
 }
