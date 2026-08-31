@@ -6,7 +6,8 @@
   "private": "false",
   "license": "AGPL-3.0-only",
   "prisma": {
-    "schema": "src/prisma/schema.prisma"
+    "schema": "src/prisma/schema.prisma",
+    "seed": "ts-node -r tsconfig-paths/register src/prisma/seed.ts"
   },
   "scripts": {
     "build": "nest build",

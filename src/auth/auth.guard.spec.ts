@@ -52,6 +52,21 @@ describe('AuthGuard', () => {
     expect(guard).toBeDefined();
   });
 
+  it('should treat the caller as fully trusted when USE_AUTH is not "true"', async () => {
+    process.env.USE_AUTH = 'false';
+    const request: any = { headers: {} };
+    const mockExecutionContext = {
+      switchToHttp: () => ({ getRequest: () => request }),
+      getHandler: jest.fn(),
+      getClass: jest.fn(),
+    } as unknown as ExecutionContext;
+
+    const result = await guard.canActivate(mockExecutionContext);
+
+    expect(result).toBe(true);
+    expect(request.has_write_access).toBe(true);
+  });
+
   it('should return unauthorized for no bearer token', () => {
     const mockExecutionContext = {
       switchToHttp: () => ({
