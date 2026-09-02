@@ -37,6 +37,10 @@ export class AuthGuard implements CanActivate {
     const isMetrics = request.url === '/metrics';
     const useAuth = process.env.USE_AUTH === 'true';
 
+    if (!useAuth) {
+      request.has_write_access = true;
+    }
+
     if (!useAuth || isPublic || request.category || isMetrics || isAdmin) {
       return true;
     }

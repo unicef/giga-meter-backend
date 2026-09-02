@@ -122,6 +122,42 @@ NODE_ENV="ENVIRONMENT"
   want to use in-built Giga Meter authentication and
   <i> USE_AUTH</i> is set "true" else you can skip them.
 
+#### Local Database (Docker)
+
+The fastest way to get a working local Postgres and Redis is via the included `docker-compose.yml`. Postgres is built from `docker/postgres.Dockerfile` (`postgres:15` + the `postgis` extension) to match staging's actual database (PostgreSQL 15 with PostGIS) rather than a plain Postgres image, which is missing the extension the schema requires. This is optional — if you already have your own Postgres 15+/Redis running with PostGIS available, skip to Database Setup below and just make sure `DATABASE_URL`/`REDIS_URL` point at them.
+
+1. Start Postgres and Redis:
+
+```
+docker compose up -d
+```
+
+2. Wait for Postgres to actually be ready to accept connections, then apply migrations and seed essential test data (countries, a master school record, and a couple of `dailycheckapp_school` test installations):
+
+```
+node scripts/wait-for-db.js
+npx prisma migrate dev
+npx prisma db seed
+```
+
+Don't rely on `migrate dev` to trigger seeding automatically — in testing, its built-in auto-seed didn't reliably fire, so run `npx prisma db seed` explicitly as its own step every time, right after migrating. `wait-for-db.js` exists because Docker's own healthcheck can briefly report "healthy" during Postgres's first-boot init-and-restart cycle, before it's actually ready for real connections — run it before `migrate dev`, especially right after `docker compose up -d` on a fresh volume.
+
+Re-run these steps any time you pull schema changes — they're safe to run repeatedly, the seed data upserts rather than duplicating.
+
+Other useful commands:
+
+```
+npx prisma migrate reset --force && npx prisma db seed   # wipe the local DB, reapply every migration, and reseed
+docker compose down                                        # stop the containers, keep the data volume
+docker compose down -v                                     # stop the containers and delete the data volume
+```
+
+By default Postgres listens on 5432 and Redis on 6379 (matching the `.env.example` defaults). If those ports are already in use locally, override them before starting: `POSTGRES_PORT=55432 REDIS_PORT=56380 docker compose up -d` (and pass the same env vars to `wait-for-db.js`), and update `DATABASE_URL`/`REDIS_URL` in your `.env` to match.
+
+**Viewing the data:** `npx prisma studio` opens a browser UI against whatever `DATABASE_URL` your `.env` points at — a convenient way to browse/edit tables (including the seeded data above) without writing SQL. There's also an `npm run studio` shortcut for the same command.
+
+**Note on auth:** `.env.example` ships `USE_AUTH="true"` by default, but for local development you'll often want `USE_AUTH="false"` — with it set that way, both read **and write** endpoints work with no token at all, since the app treats a disabled-auth caller as fully trusted (`category: giga_meter`), the same way it already skipped token validation entirely. This only applies when auth is disabled; with `USE_AUTH="true"` the real category-based access control applies exactly as in production, and you'll need a real API key with write access (see Authentication below).
+
 #### Database Setup
 
 Once the DATABASE_URL is set correctly in the .env file variables, generate prisma client to run the app locally.
@@ -142,6 +178,8 @@ Make the required changes in the prisma.schema file (present inside src/prisma f
 npx prisma migrate dev
 ```
 
+Seeding is configured via the `prisma.seed` entry in `package.json` (`src/prisma/seed.ts`), but don't rely on `migrate dev` to trigger it automatically — run it explicitly after migrating: `npx prisma db seed`. See Local Database (Docker) above for the full local setup sequence.
+
 #### Authentication
 
 You can use our default authentication or add your own custom one.
@@ -156,6 +194,8 @@ The default auth uses project connect service API to validate a Giga Maps genera
 
 2. To use custom auth, you can update the logic in auth.guard.ts file [here](https://github.com/unicef/giga-meter-backend/blob/58861714ffa21c4eff1ca8ec5e629aba16594dec/src/auth/auth.guard.ts#L15).
    You can refer [this](https://docs.nestjs.com/security/authentication#implementing-the-authentication-guard) NestJS documentation for reference.
+
+With `USE_AUTH="false"`, no token is required for any endpoint, including write endpoints (`POST`/`PUT`) — the request resolves to the `giga_meter` category (broad access) instead of falling through to `PUBLIC` (read-only). This only applies when auth is disabled; it has no effect once `USE_AUTH="true"`.
 
 #### Running API server
 
