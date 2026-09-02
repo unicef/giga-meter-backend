@@ -17,7 +17,7 @@ dotenv.config();
 async function bootstrap() {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
-    environment: process.env.APP_ENV,
+    environment: process.env.SENTRY_ENVIRONMENT,
     tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
   });
 
