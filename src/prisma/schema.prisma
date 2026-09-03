@@ -322,6 +322,9 @@ model measurements {
   device_manufacturer         String?
   app_build_number            String?
   os_version                  String?
+  wifi_unavailable_reason     String?   @db.VarChar(32) // why wifi_connections came back empty: no_adapter | wlan_service_off | location_disabled | unknown
+  ssid_source                 String?   @db.VarChar(16) // where the reported SSID came from: wlan (netsh) | nlm (Get-NetConnectionProfile fallback)
+  device_network_information  Json?     // volatile network/system context captured next to the test; keys are whitelisted on write
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -363,6 +366,9 @@ model measurements_failed {
   device_manufacturer         String?
   app_build_number            String?
   os_version                  String?
+  wifi_unavailable_reason     String?   @db.VarChar(32) // why wifi_connections came back empty: no_adapter | wlan_service_off | location_disabled | unknown
+  ssid_source                 String?   @db.VarChar(16) // where the reported SSID came from: wlan (netsh) | nlm (Get-NetConnectionProfile fallback)
+  device_network_information  Json?     // volatile network/system context captured next to the test; keys are whitelisted on write
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

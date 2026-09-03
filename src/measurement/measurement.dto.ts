@@ -764,6 +764,36 @@ export class MeasurementDto {
   @ApiProperty({ required: false, description: 'Operating system version' })
   os_version?: string;
 
+  @ApiProperty({
+    required: false,
+    description:
+      "Why wifi_connections came back empty: 'no_adapter' | 'wlan_service_off' | " +
+      "'location_disabled' | 'unknown'. Windows 11 24H2+ gates the WLAN stack " +
+      'behind the Location services toggle, so an empty list is not the same as ' +
+      'no Wi-Fi',
+  })
+  wifi_unavailable_reason?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Where the reported SSID came from: 'wlan' (netsh, the usual path) or " +
+      "'nlm' (Get-NetConnectionProfile fallback, used when Location services " +
+      'block the WLAN stack)',
+  })
+  ssid_source?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Volatile network/system context captured next to the test: ' +
+      'connection_type, default_gateway, dns_servers, ip_family, vpn_likely, ' +
+      'vpn_adapter, link_speed_mbps, net_bytes_rx, net_bytes_tx, ' +
+      'cpu_load_percent, memory_available_mb, disk_free_mb. Keys outside that ' +
+      'list are dropped on write',
+  })
+  device_network_information?: Record<string, any>;
+
   @ApiPropertyOptional()
   protocol?: string;
 
