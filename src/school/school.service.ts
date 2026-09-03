@@ -1,7 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { dailycheckapp_school as School } from '@prisma/client';
-import { CreateSchoolResponseDto, SchoolDto } from './school.dto';
+import {
+  CreateSchoolResponseDto,
+  SchoolDto,
+  SchoolEmailUpdateDto,
+} from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
@@ -11,7 +15,10 @@ import {
 
 @Injectable()
 export class SchoolService {
-  constructor(private prisma: PrismaService, private readonly geolocationUtility: GeolocationUtility) { }
+  constructor(
+    private prisma: PrismaService,
+    private readonly geolocationUtility: GeolocationUtility,
+  ) {}
 
   async schools(
     skip?: number,
@@ -117,18 +124,21 @@ export class SchoolService {
 
   async createSchool(schoolDto: SchoolDto): Promise<CreateSchoolResponseDto> {
     // Process geolocation data if available
-    if (schoolDto.geolocation &&
+    if (
+      schoolDto.geolocation &&
       schoolDto.geolocation.location &&
-      schoolDto.geolocation.accuracy) {
+      schoolDto.geolocation.accuracy
+    ) {
       try {
         // Get the school coordinates based on giga_id_school
         if (schoolDto.giga_id_school) {
           // Use the common utility to calculate distance and set flags
-          const geoResult = await this.geolocationUtility.calculateDistanceAndSetFlag(
-            schoolDto.giga_id_school,
-            schoolDto.geolocation.location,
-            schoolDto.geolocation.accuracy
-          );
+          const geoResult =
+            await this.geolocationUtility.calculateDistanceAndSetFlag(
+              schoolDto.giga_id_school,
+              schoolDto.geolocation.location,
+              schoolDto.geolocation.accuracy,
+            );
 
           // Store the results in the measurement DTO
           schoolDto.detected_location_accuracy = geoResult.accuracy;
@@ -148,6 +158,23 @@ export class SchoolService {
       user_id: school.user_id,
       is_verified: await this.resolveIsVerified(school.giga_id_school),
     };
+  }
+
+  async updateSchoolEmail(schoolDto: SchoolEmailUpdateDto): Promise<string> {
+    const existingSchool = await this.prisma.dailycheckapp_school.findFirst({
+      where: { mac_address: schoolDto.mac_address, user_id: schoolDto.user_id },
+    });
+    if (!existingSchool) {
+      throw new Error('School not found');
+    }
+    const school = await this.prisma.dailycheckapp_school.update({
+      where: {
+        mac_address: existingSchool.mac_address,
+        user_id: existingSchool.user_id,
+      },
+      data: { email: schoolDto.email },
+    });
+    return school.user_id;
   }
 
   async checkExistingInstallation(device_hardware_id: string): Promise<{
@@ -463,6 +490,7 @@ export class SchoolService {
       country_code: school.country_code,
       is_blocked: school.is_blocked,
       created_at: school.created_at,
+      email: school.email,
       device_hardware_id: school.device_hardware_id,
       is_active: school.is_active,
       windows_username: school.windows_username,
@@ -475,6 +503,12 @@ export class SchoolService {
   }
 
   private toModel(school: SchoolDto): any {
+    const emails = school.email
+      ? (Array.isArray(school.email) ? school.email : [school.email]).filter(
+          (email) => email,
+        )
+      : [];
+
     return {
       user_id: school?.user_id || uuidv4(),
       giga_id_school: school.giga_id_school?.toLowerCase().trim(),
@@ -484,6 +518,7 @@ export class SchoolService {
       created: school.created,
       ip_address: school.ip_address,
       country_code: school.country_code,
+      email: emails,
       detected_latitude: school.geolocation?.location?.lat || null,
       detected_longitude: school.geolocation?.location?.lng || null,
       detected_location_accuracy: school.detected_location_accuracy || null,

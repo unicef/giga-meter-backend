@@ -64,7 +64,7 @@ export const mockAdminSchoolDto: AdminSchoolDto[] = [
     id: 1,
     user_id: 'test_id1',
     giga_id_school: 'gigaid1',
-    mac_address: 'string',
+    mac_address: 'string3',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -72,13 +72,14 @@ export const mockAdminSchoolDto: AdminSchoolDto[] = [
     ip_address: 'string',
     country_code: 'string',
     is_blocked: false,
+    email: ['test@test.com'],
     created_at: new Date('2024-04-12T04:13:37.300Z'),
   },
   {
     id: 2,
     user_id: 'test_id',
     giga_id_school: 'gigaid2',
-    mac_address: 'string',
+    mac_address: 'string4',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -86,6 +87,7 @@ export const mockAdminSchoolDto: AdminSchoolDto[] = [
     ip_address: 'string',
     country_code: 'string',
     is_blocked: true,
+    email: ['test@test.com'],
     created_at: new Date('2024-04-12T04:14:03.650Z'),
   },
 ];
@@ -95,7 +97,7 @@ export const mockSchoolDto: SchoolDto[] = [
     id: '1',
     user_id: 'test_id1',
     giga_id_school: 'gigaid1',
-    mac_address: 'string',
+    mac_address: 'string3',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -103,6 +105,7 @@ export const mockSchoolDto: SchoolDto[] = [
     ip_address: 'string',
     country_code: 'string',
     is_blocked: false,
+    email: ['test@test.com'],
     created_at: new Date('2024-04-12T04:13:37.300Z'),
     device_hardware_id: null,
     is_active: null,
@@ -115,7 +118,7 @@ export const mockSchoolDto: SchoolDto[] = [
     id: '2',
     user_id: 'test_id',
     giga_id_school: 'gigaid2',
-    mac_address: 'string',
+    mac_address: 'string4',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -123,6 +126,7 @@ export const mockSchoolDto: SchoolDto[] = [
     ip_address: 'string',
     country_code: 'string',
     is_blocked: true,
+    email: ['test@test.com'],
     created_at: new Date('2024-04-12T04:14:03.650Z'),
     device_hardware_id: null,
     is_active: null,
@@ -138,7 +142,7 @@ export const mockSchoolModel = [
     id: toBigInt(1),
     user_id: 'test_id1',
     giga_id_school: 'gigaid1',
-    mac_address: 'string',
+    mac_address: 'string3',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -147,6 +151,7 @@ export const mockSchoolModel = [
     country_code: 'string',
     is_blocked: false,
     notify: true,
+    email: ['test@test.com'],
     created_at: new Date('2024-04-12T04:13:37.300Z'),
     detected_latitude: null,
     detected_longitude: null,
@@ -163,7 +168,7 @@ export const mockSchoolModel = [
     id: toBigInt(2),
     user_id: 'test_id',
     giga_id_school: 'gigaid2',
-    mac_address: 'string',
+    mac_address: 'string4',
     os: 'string',
     app_version: 'string',
     created: 'string',
@@ -172,6 +177,7 @@ export const mockSchoolModel = [
     country_code: 'string',
     is_blocked: true,
     notify: false,
+    email: ['test@test.com'],
     created_at: new Date('2024-04-12T04:14:03.650Z'),
     detected_latitude: null,
     detected_longitude: null,
@@ -292,7 +298,6 @@ export const mockFlaggedSchoolModel = [
     created_at: null,
   },
 ];
-
 
 export const mockMeasurementDto = (showAllMeasurement: boolean) => {
   const items = [
@@ -918,6 +923,12 @@ export const mockGigaSchoolMappingModel = [
     created_at: null,
   },
 ];
+
+export const mockSchoolEmailUpdateDto = {
+  mac_address: 'string3',
+  user_id: 'test_id1',
+  email: ['test1@test.com', 'test2@test.com', 'test3@test.com'],
+};
 
 export const mockCategoryConfigProvider = {
   getCategoryConfig: jest.fn().mockResolvedValue({

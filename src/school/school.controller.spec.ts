@@ -4,7 +4,11 @@ import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
-import { mockCategoryConfigProvider, mockSchoolDto } from '../common/mock-objects';
+import {
+  mockCategoryConfigProvider,
+  mockSchoolDto,
+  mockSchoolEmailUpdateDto,
+} from '../common/mock-objects';
 import { ConnectivityService } from 'src/connectivity/connectivity.service';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -237,6 +241,29 @@ describe('SchoolController', () => {
       await expect(controller.createSchool(mockSchoolDto[0])).rejects.toThrow(
         'Database error',
       );
+    });
+  });
+
+  describe('UpdateSchoolEmail', () => {
+    it('should update school email and return user_id', async () => {
+      jest
+        .spyOn(service, 'updateSchoolEmail')
+        .mockResolvedValue(mockSchoolEmailUpdateDto.user_id);
+      const response = await controller.updateSchoolEmail(
+        mockSchoolEmailUpdateDto,
+      );
+      expect(response.data).toStrictEqual({
+        user_id: mockSchoolEmailUpdateDto.user_id,
+      });
+      expect(response.success).toBe(true);
+    });
+    it('should handle error from service', async () => {
+      jest
+        .spyOn(service, 'updateSchoolEmail')
+        .mockRejectedValue(new Error('Update error'));
+      await expect(
+        controller.updateSchoolEmail(mockSchoolEmailUpdateDto),
+      ).rejects.toThrow('Update error');
     });
   });
 

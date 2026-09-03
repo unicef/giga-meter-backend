@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ArrayMaxSize, IsArray, IsString } from 'class-validator';
 import { GeoLocationDto } from '../measurement/measurement.dto';
 import { SchoolMasterDto } from '../school-master/school-master.dto';
 
@@ -36,27 +37,31 @@ export class SchoolDto {
   @ApiProperty()
   is_blocked: boolean;
 
+  @ApiProperty({ required: false })
+  email?: string[];
+
   @ApiProperty()
   created_at: Date;
-  
+
   @ApiProperty({
     description: 'Geolocation data from device',
-    type: GeoLocationDto
+    type: GeoLocationDto,
   })
   geolocation?: GeoLocationDto;
 
   @ApiProperty({
-    description: 'Distance between school location and detected location in meters'
+    description:
+      'Distance between school location and detected location in meters',
   })
   detected_location_distance?: number;
 
   @ApiProperty({
-    description: 'Accuracy of the geolocation in meters'
+    description: 'Accuracy of the geolocation in meters',
   })
   detected_location_accuracy?: number;
 
   @ApiProperty({
-    description: 'Flag if distance > X & accuracy > Y'
+    description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
 
@@ -85,6 +90,21 @@ export class CheckNotifyDto {
 
   @ApiProperty()
   download_url: string;
+}
+
+export class SchoolEmailUpdateDto {
+  @ApiProperty()
+  @IsString()
+  mac_address: string;
+
+  @ApiProperty({ type: [String], maxItems: 3 })
+  @IsArray()
+  @ArrayMaxSize(3)
+  email: string[];
+
+  @ApiProperty()
+  @IsString()
+  user_id: string;
 }
 
 export class CheckExistingInstallationDto {

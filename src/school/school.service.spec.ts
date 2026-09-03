@@ -7,6 +7,7 @@ import {
   mockSchoolDto,
   mockSchoolMasterModel,
   mockSchoolModel,
+  mockSchoolEmailUpdateDto,
 } from '../common/mock-objects';
 
 describe('SchoolService', () => {
@@ -23,7 +24,7 @@ describe('SchoolService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        SchoolService, 
+        SchoolService,
         PrismaService,
         {
           provide: GeolocationUtility,
@@ -166,12 +167,13 @@ describe('SchoolService', () => {
     it('should return notify', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirstOrThrow')
-        .mockResolvedValue({ ...mockSchoolModel[0], 
+        .mockResolvedValue({
+          ...mockSchoolModel[0],
           detected_latitude: null,
           detected_longitude: null,
           detected_location_accuracy: null,
           detected_location_distance: null,
-          detected_location_is_flagged: false
+          detected_location_is_flagged: false,
         });
       jest
         .spyOn(prisma.dailycheckapp_school, 'updateMany')
@@ -223,6 +225,32 @@ describe('SchoolService', () => {
       await expect(service.createSchool(mockSchoolDto[0])).rejects.toThrow(
         'Database error',
       );
+    });
+  });
+
+  describe('UpdateSchoolEmail', () => {
+    it('should update school email when mac_address and user_id match', async () => {
+      jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue({
+        ...mockSchoolModel[0],
+        mac_address: mockSchoolEmailUpdateDto.mac_address,
+        user_id: mockSchoolEmailUpdateDto.user_id,
+        email: [],
+      });
+      jest.spyOn(prisma.dailycheckapp_school, 'update').mockResolvedValue({
+        ...mockSchoolModel[0],
+        user_id: mockSchoolEmailUpdateDto.user_id,
+        email: mockSchoolEmailUpdateDto.email,
+      });
+      const result = await service.updateSchoolEmail(mockSchoolEmailUpdateDto);
+      expect(result).toEqual(mockSchoolEmailUpdateDto.user_id);
+    });
+    it('should throw error if school not found', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(null);
+      await expect(
+        service.updateSchoolEmail(mockSchoolEmailUpdateDto),
+      ).rejects.toThrow('School not found');
     });
   });
 
