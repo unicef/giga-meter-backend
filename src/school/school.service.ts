@@ -116,6 +116,38 @@ export class SchoolService {
   }
 
   async createSchool(schoolDto: SchoolDto): Promise<CreateSchoolResponseDto> {
+    // Registering the same device for the same school twice returns the row it
+    // already has instead of minting another user_id. The client used to send
+    // one POST per tap on the confirmation screen, and network retries or
+    // at-least-once delivery can still double-submit, so the insert cannot be
+    // unconditional.
+    //
+    // Resolved before the geolocation block below: on a repeat submission that
+    // block is a school lookup and a distance calculation whose result is
+    // thrown away.
+    //
+    // The stored row is returned as it stands, with none of the device context
+    // the payload carries copied onto it. Every measurement already reports its
+    // own app_version, ip_address, country_code, windows_username,
+    // installed_path and wifi_connections, so the live values are there and
+    // this row stays a record of the registration. The only two columns
+    // measurements do not carry are os and mac_address, and neither is worth
+    // writing: mac_address is Capacitor's Device.getId(), regenerated on every
+    // app relaunch, and an os that really changed under the same hardware id
+    // means a different machine, not a field to overwrite in place.
+    const key = this.registrationKey(schoolDto);
+    const existing = await this.findExistingRegistration(key);
+    if (existing) {
+      console.warn(
+        `Duplicate registration absorbed for giga_id_school ${key.giga_id_school}, ` +
+          `device_hardware_id ${key.device_hardware_id}: returning user_id ${existing.user_id}`,
+      );
+      return {
+        user_id: existing.user_id,
+        is_verified: await this.resolveIsVerified(existing.giga_id_school),
+      };
+    }
+
     // Process geolocation data if available
     if (schoolDto.geolocation &&
       schoolDto.geolocation.location &&
@@ -139,14 +171,59 @@ export class SchoolService {
         console.error('Error processing geolocation data:', error);
       }
     }
-    const model = this.toModel(schoolDto);
     const school = await this.prisma.dailycheckapp_school.create({
-      data: model,
+      data: this.toModel(schoolDto),
     });
 
     return {
       user_id: school.user_id,
       is_verified: await this.resolveIsVerified(school.giga_id_school),
+    };
+  }
+
+  /**
+   * The active registration this device already has for this school, if any.
+   *
+   * Keyed on device_hardware_id: mac_address is not a hardware address but
+   * Capacitor's Device.getId(), which is regenerated on every app relaunch, so
+   * it cannot identify a device. registrationKey() has already nulled out the
+   * blocked generic ids, so a null here means "cannot be identified" and a new
+   * row is the only safe answer. Deactivated rows are ignored, matching
+   * checkExistingInstallation: logging out and registering again is a new
+   * installation.
+   */
+  private async findExistingRegistration(key: {
+    giga_id_school?: string;
+    device_hardware_id?: string;
+  }) {
+    if (!key.giga_id_school || !key.device_hardware_id) {
+      return null;
+    }
+
+    return this.prisma.dailycheckapp_school.findFirst({
+      where: {
+        // Rows also land in this table through hand-written SQL, so the stored
+        // casing cannot be trusted even though we lowercase on write.
+        giga_id_school: { equals: key.giga_id_school, mode: 'insensitive' },
+        device_hardware_id: key.device_hardware_id,
+        OR: [{ is_active: null }, { is_active: true }],
+      },
+      // Oldest first: the identity the device has been reporting all along.
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  /**
+   * The (school, device) pair a payload identifies, normalized exactly the way
+   * toModel() stores it so the lookup and the insert cannot drift apart.
+   */
+  private registrationKey(school: SchoolDto): {
+    giga_id_school?: string;
+    device_hardware_id?: string;
+  } {
+    return {
+      giga_id_school: school.giga_id_school?.toLowerCase().trim(),
+      device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
     };
   }
 
@@ -477,7 +554,7 @@ export class SchoolService {
   private toModel(school: SchoolDto): any {
     return {
       user_id: school?.user_id || uuidv4(),
-      giga_id_school: school.giga_id_school?.toLowerCase().trim(),
+      ...this.registrationKey(school),
       mac_address: school.mac_address,
       os: school.os,
       app_version: school.app_version,
@@ -489,7 +566,6 @@ export class SchoolService {
       detected_location_accuracy: school.detected_location_accuracy || null,
       detected_location_distance: school.detected_location_distance || null,
       detected_location_is_flagged: school.detected_location_is_flagged || null,
-      device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
       is_active: school.is_active,
       windows_username: school.windows_username,
       installed_path: school.installed_path,
