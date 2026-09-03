@@ -238,6 +238,50 @@ export class MeasurementService {
           } catch (error) {
             console.error('Error processing geolocation data:', error);
           }
+        } else if (
+          measurementDto.app_version === '2.0.2' &&
+          measurementDto.giga_id_school &&
+          !measurementDto.geolocation?.location
+        ) {
+          // Legacy 2.0.2 uploads predate the geolocation feature, so they carry
+          // no coordinates of their own. Backfill by borrowing lat/long from an
+          // existing measurement at the same school that connected to the same
+          // Wi-Fi access point (BSSID). Distance/flag are recomputed against the
+          // school location exactly as for device-reported geolocation.
+          try {
+            const bssid = measurementDto.wifi_connections?.[0]?.bssid
+              ?.toString()
+              .toLowerCase()
+              .trim();
+            if (bssid) {
+              const donor =
+                await this.geolocationUtility.findDonorLocationByBssid(
+                  measurementDto.giga_id_school,
+                  bssid,
+                );
+              if (donor) {
+                const geoResult =
+                  await this.geolocationUtility.calculateDistanceAndSetFlag(
+                    measurementDto.giga_id_school,
+                    { lat: donor.latitude, lng: donor.longitude },
+                    donor.accuracy,
+                  );
+
+                // Feed the borrowed location through the same fields the
+                // device-reported path uses so toModel persists it identically.
+                measurementDto.geolocation = {
+                  location: { lat: donor.latitude, lng: donor.longitude },
+                  accuracy: donor.accuracy ?? undefined,
+                };
+                measurementDto.detected_location_accuracy = geoResult.accuracy;
+                measurementDto.detected_location_distance = geoResult.distance;
+                measurementDto.detected_location_is_flagged =
+                  geoResult.isFlagged;
+              }
+            }
+          } catch (error) {
+            console.error('Error backfilling geolocation from BSSID:', error);
+          }
         }
 
         enrichMeasurementForPersistence(measurementDto, uploadProtocol);
