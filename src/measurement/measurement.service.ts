@@ -18,10 +18,10 @@ import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
 import {
-  sanitizeDeviceNetworkInformation,
+  sanitizeDeviceContext,
   sanitizeSsidSource,
   sanitizeWifiUnavailableReason,
-} from '../common/device-network-information.utils';
+} from '../common/device-context.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 
 @Injectable()
@@ -513,8 +513,8 @@ export class MeasurementService {
       os_version: measurement.os_version,
       wifi_unavailable_reason: measurement.wifi_unavailable_reason,
       ssid_source: measurement.ssid_source,
-      device_network_information: measurement.device_network_information
-        ? JSON.parse(JSON.stringify(measurement.device_network_information))
+      device_context: measurement.device_context
+        ? JSON.parse(JSON.stringify(measurement.device_context))
         : undefined,
       protocol: measurement.protocol,
       download_latency: measurement.download_latency ?? undefined,
@@ -678,8 +678,8 @@ export class MeasurementService {
         measurement.wifi_unavailable_reason,
       ),
       ssid_source: sanitizeSsidSource(measurement.ssid_source),
-      device_network_information: sanitizeDeviceNetworkInformation(
-        measurement.device_network_information,
+      device_context: sanitizeDeviceContext(
+        measurement.device_context,
       ),
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
@@ -730,8 +730,8 @@ export class MeasurementService {
         measurement.wifi_unavailable_reason,
       ),
       ssid_source: sanitizeSsidSource(measurement.ssid_source),
-      device_network_information: sanitizeDeviceNetworkInformation(
-        measurement.device_network_information,
+      device_context: sanitizeDeviceContext(
+        measurement.device_context,
       ),
     };
   }

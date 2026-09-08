@@ -642,7 +642,7 @@ export const mockMeasurementModel = [
     os_version: null,
     wifi_unavailable_reason: null,
     ssid_source: null,
-    device_network_information: null,
+    device_context: null,
   },
   {
     id: toBigInt(2),
@@ -695,7 +695,7 @@ export const mockMeasurementModel = [
     os_version: null,
     wifi_unavailable_reason: null,
     ssid_source: null,
-    device_network_information: null,
+    device_context: null,
   },
   {
     id: toBigInt(3),
@@ -748,7 +748,7 @@ export const mockMeasurementModel = [
     os_version: null,
     wifi_unavailable_reason: null,
     ssid_source: null,
-    device_network_information: null,
+    device_context: null,
   },
 ];
 
@@ -790,7 +790,7 @@ export const mockMeasurementFailedModel = [
     os_version: null,
     wifi_unavailable_reason: null,
     ssid_source: null,
-    device_network_information: null,
+    device_context: null,
   },
   {
     id: toBigInt(2),
@@ -829,7 +829,7 @@ export const mockMeasurementFailedModel = [
     os_version: null,
     wifi_unavailable_reason: null,
     ssid_source: null,
-    device_network_information: null,
+    device_context: null,
   },
   {
     id: toBigInt(3),
@@ -868,7 +868,7 @@ export const mockMeasurementFailedModel = [
     os_version: null,
     wifi_unavailable_reason: null,
     ssid_source: null,
-    device_network_information: null,
+    device_context: null,
   },
 ];
 

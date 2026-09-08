@@ -7,12 +7,13 @@
 -- it, and `ssid_source` marks the rows whose SSID came from the ungated NLM
 -- fallback rather than from the WLAN stack.
 --
--- `device_network_information` carries the volatile per-measurement context the
+-- `device_context` carries the volatile per-measurement context the
 -- ticket asked for and no column covers: DNS servers, default gateway, connection
--- type, VPN inference, IP family and rx/tx byte counters, plus the cheap
--- performance context (CPU load, available memory, free disk). It is a Json for the
--- same reason `results` and `client_info` are: the shape is still being validated
--- and none of these are queried in SQL today. The DTO whitelists the keys.
+-- type, VPN inference, IP family and rx/tx byte counters, the cheap performance
+-- context (CPU load, available memory, free disk) and the boot context (uptime
+-- and start time). It is a Json for the same reason `results` and `client_info`
+-- are: the shape is still being validated and none of these are queried in SQL
+-- today. The DTO whitelists the keys.
 --
 -- All columns are nullable with no default: older clients keep uploading the
 -- current payload untouched.
@@ -20,9 +21,9 @@
 -- AlterTable
 ALTER TABLE "measurements" ADD COLUMN     "wifi_unavailable_reason" VARCHAR(32),
 ADD COLUMN     "ssid_source" VARCHAR(16),
-ADD COLUMN     "device_network_information" JSONB;
+ADD COLUMN     "device_context" JSONB;
 
 -- AlterTable
 ALTER TABLE "measurements_failed" ADD COLUMN     "wifi_unavailable_reason" VARCHAR(32),
 ADD COLUMN     "ssid_source" VARCHAR(16),
-ADD COLUMN     "device_network_information" JSONB;
+ADD COLUMN     "device_context" JSONB;
