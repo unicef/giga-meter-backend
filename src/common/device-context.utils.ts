@@ -1,5 +1,5 @@
 /**
- * Whitelist for the `device_network_information` Json uploaded with a measurement.
+ * Whitelist for the `device_context` Json uploaded with a measurement.
  *
  * A probe run on a real Windows machine measured which network and system
  * attributes the client can read; this is the subset that is cheap enough to
@@ -14,8 +14,8 @@
  * privacy-heavy with no declared use.
  */
 
-/** Keys accepted inside `device_network_information`, with their expected type. */
-export const DEVICE_NETWORK_INFORMATION_SCHEMA: Record<
+/** Keys accepted inside `device_context`, with their expected type. */
+export const DEVICE_CONTEXT_SCHEMA: Record<
   string,
   'string' | 'number' | 'boolean' | 'string[]'
 > = {
@@ -33,20 +33,30 @@ export const DEVICE_NETWORK_INFORMATION_SCHEMA: Record<
   cpu_load_percent: 'number',
   memory_available_mb: 'number',
   disk_free_mb: 'number',
+  // --- Boot context ---
+  // Seconds since the machine started, read from the kernel counter, plus the
+  // start time the client derived from it. The uptime is the reliable half: the
+  // start time is `now - uptime` on a device whose clock is often wrong, so it
+  // carries the same error -- prefer the uptime for anything analytical. Note
+  // that Windows fast startup and hibernation resume the counter rather than
+  // reset it, so a high uptime means "not restarted", not "powered on
+  // continuously".
+  device_uptime_seconds: 'number',
+  device_start_time: 'string',
 };
 
 /** Longest accepted string value; anything above is truncated. */
-export const DEVICE_NETWORK_INFORMATION_MAX_STRING = 128;
+export const DEVICE_CONTEXT_MAX_STRING = 128;
 
 /** Most DNS servers kept; a machine reporting more than this is misconfigured. */
-export const DEVICE_NETWORK_INFORMATION_MAX_LIST = 8;
+export const DEVICE_CONTEXT_MAX_LIST = 8;
 
 function sanitizeStringList(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const list = value
     .filter((item): item is string => typeof item === 'string' && item !== '')
-    .slice(0, DEVICE_NETWORK_INFORMATION_MAX_LIST)
-    .map((item) => item.trim().slice(0, DEVICE_NETWORK_INFORMATION_MAX_STRING));
+    .slice(0, DEVICE_CONTEXT_MAX_LIST)
+    .map((item) => item.trim().slice(0, DEVICE_CONTEXT_MAX_STRING));
   return list.length > 0 ? list : undefined;
 }
 
@@ -61,7 +71,7 @@ function sanitizeValue(
       const trimmed = value.trim();
       return trimmed === ''
         ? undefined
-        : trimmed.slice(0, DEVICE_NETWORK_INFORMATION_MAX_STRING);
+        : trimmed.slice(0, DEVICE_CONTEXT_MAX_STRING);
     case 'number':
       // Infinity/NaN survive JSON.parse as null, but a client can still send them
       // as strings; only finite numbers are stored.
@@ -76,13 +86,13 @@ function sanitizeValue(
 }
 
 /**
- * Keeps only the whitelisted keys of `device_network_information`, coercing each
+ * Keeps only the whitelisted keys of `device_context`, coercing each
  * to its expected type and dropping the rest.
  *
  * @returns the sanitized object, or null when nothing usable came through — so an
  *          all-junk payload stores NULL rather than an empty Json.
  */
-export function sanitizeDeviceNetworkInformation(
+export function sanitizeDeviceContext(
   raw: unknown,
 ): Record<string, unknown> | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -93,7 +103,7 @@ export function sanitizeDeviceNetworkInformation(
   const dropped: string[] = [];
 
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
-    const expected = DEVICE_NETWORK_INFORMATION_SCHEMA[key];
+    const expected = DEVICE_CONTEXT_SCHEMA[key];
     if (!expected) {
       dropped.push(key);
       continue;
@@ -106,7 +116,7 @@ export function sanitizeDeviceNetworkInformation(
 
   if (dropped.length > 0) {
     console.warn(
-      `Dropped unexpected device_network_information keys: ${dropped.join(', ')}`,
+      `Dropped unexpected device_context keys: ${dropped.join(', ')}`,
     );
   }
 

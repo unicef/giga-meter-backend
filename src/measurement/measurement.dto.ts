@@ -792,7 +792,7 @@ export class MeasurementDto {
       'cpu_load_percent, memory_available_mb, disk_free_mb. Keys outside that ' +
       'list are dropped on write',
   })
-  device_network_information?: Record<string, any>;
+  device_context?: Record<string, any>;
 
   @ApiPropertyOptional()
   protocol?: string;
