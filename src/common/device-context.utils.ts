@@ -43,6 +43,14 @@ export const DEVICE_CONTEXT_SCHEMA: Record<
   // continuously".
   device_uptime_seconds: 'number',
   device_start_time: 'string',
+  // --- Stable per-unit hardware identifiers ---
+  // Complement device_hardware_id (the SMBIOS UUID): when that goes generic on a
+  // cloned or batch-imaged machine, these per-unit serials still tell two
+  // physical devices apart. The client drops OEM placeholders before sending, so
+  // a value that arrives here is meant to identify the machine.
+  baseboard_serial: 'string', // motherboard serial, si.baseboard()
+  disk_serial: 'string', // boot-disk serial, si.diskLayout()
+  machine_guid: 'string', // Windows MachineGuid, si.uuid().os
 };
 
 /** Longest accepted string value; anything above is truncated. */
