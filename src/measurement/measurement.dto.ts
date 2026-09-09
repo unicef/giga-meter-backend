@@ -786,11 +786,13 @@ export class MeasurementDto {
   @ApiProperty({
     required: false,
     description:
-      'Volatile network/system context captured next to the test: ' +
+      'Network/system context captured next to the test: ' +
       'connection_type, default_gateway, dns_servers, ip_family, vpn_likely, ' +
       'vpn_adapter, link_speed_mbps, net_bytes_rx, net_bytes_tx, ' +
-      'cpu_load_percent, memory_available_mb, disk_free_mb. Keys outside that ' +
-      'list are dropped on write',
+      'cpu_load_percent, memory_available_mb, disk_free_mb, ' +
+      'device_uptime_seconds, device_start_time, plus the stable per-unit ' +
+      'hardware identifiers baseboard_serial, disk_serial and machine_guid. ' +
+      'Keys outside that list are dropped on write',
   })
   device_context?: Record<string, any>;
 

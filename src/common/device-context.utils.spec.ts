@@ -31,9 +31,27 @@ describe('sanitizeDeviceContext', () => {
       disk_free_mb: 256000,
       device_uptime_seconds: 86400,
       device_start_time: '2026-09-07T13:30:00.000Z',
+      baseboard_serial: 'MB-serial-0007',
+      disk_serial: 'S3Z9NX0M12345',
+      machine_guid: '4c4c4544-0043-3010-8054-b7c04f515233',
     };
 
     expect(sanitizeDeviceContext(input)).toEqual(input);
+  });
+
+  it('keeps the per-unit hardware identifiers as trimmed, truncated strings', () => {
+    const result = sanitizeDeviceContext({
+      baseboard_serial: '  MB-serial-0007  ',
+      disk_serial: 'x'.repeat(DEVICE_CONTEXT_MAX_STRING + 20),
+      machine_guid: '4C4C4544-0043-3010-8054-B7C04F515233',
+    });
+
+    expect(result?.baseboard_serial).toBe('MB-serial-0007');
+    expect(result?.disk_serial).toHaveLength(DEVICE_CONTEXT_MAX_STRING);
+    // Case is preserved on write; downstream matching is case-insensitive.
+    expect(result?.machine_guid).toBe(
+      '4C4C4544-0043-3010-8054-B7C04F515233',
+    );
   });
 
   it('drops keys outside the whitelist', () => {
