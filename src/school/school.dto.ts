@@ -74,6 +74,9 @@ export class SchoolDto {
 
   @ApiProperty({ required: false })
   wifi_connections?: any[];
+
+  @ApiProperty({ required: false })
+  is_verified?: boolean;
 }
 
 export class CheckNotifyDto {
@@ -120,6 +123,17 @@ export class CheckExistingInstallationDto {
 
   @ApiProperty({ required: false })
   is_active?: boolean;
+
+  @ApiProperty({ required: false })
+  is_verified?: boolean;
+}
+
+export class CreateSchoolResponseDto {
+  @ApiProperty()
+  user_id: string;
+
+  @ApiProperty()
+  is_verified: boolean;
 }
 
 export class DeactivateDeviceDto {

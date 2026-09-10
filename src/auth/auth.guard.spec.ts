@@ -7,6 +7,7 @@ import { ValidateApiKeyDto } from './auth.dto';
 import { Reflector } from '@nestjs/core';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { mockCategoryConfigProvider } from 'src/common/mock-objects';
+import { PrismaService } from '../prisma/prisma.service';
 
 const mockHttpService = () => ({
   get: jest.fn(),
@@ -34,6 +35,10 @@ describe('AuthGuard', () => {
         {
           provide: CategoryConfigProvider,
           useValue: mockCategoryConfigProvider,
+        },
+        {
+          provide: PrismaService,
+          useValue: {},
         },
       ],
       imports: [HttpModule],

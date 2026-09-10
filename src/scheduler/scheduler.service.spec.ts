@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulerService } from './scheduler.service';
 import { PingAggregationService } from 'src/ping-aggregation/ping-aggregation.service';
 import { Logger } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import redisClient from 'src/utils/redis.client';
 
 jest.mock('src/utils/redis.client', () => ({
@@ -20,6 +21,7 @@ describe('SchedulerService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SchedulerService,
+        PrismaService,
         {
           provide: PingAggregationService,
           useValue: {

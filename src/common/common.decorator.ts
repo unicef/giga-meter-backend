@@ -1,4 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { Users } from '@prisma/client';
 
 export const Countries = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
@@ -38,5 +39,12 @@ export const Category = createParamDecorator(
   (data: unknown, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
     return request.category?.toLowerCase();
+  },
+);
+
+export const AdminLoggedInUser = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): Users => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.user;
   },
 );

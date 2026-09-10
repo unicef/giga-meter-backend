@@ -27,6 +27,8 @@ export const schoolMasterSelect = {
     feature_flags: true,
     created_at: true,
     country_code: true,
+    is_active: true,
+    not_verified: true,
     deleted: true,
     last_school_static_id: true,
-  };
+};

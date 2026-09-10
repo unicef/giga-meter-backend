@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  Prisma,
   measurements as Measurement,
   measurements_failed as MeasurementFailed,
 } from '@prisma/client';
@@ -16,6 +17,12 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import {
+  sanitizeDeviceContext,
+  sanitizeSsidSource,
+  sanitizeWifiUnavailableReason,
+} from '../common/device-context.utils';
+import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 
 @Injectable()
 export class MeasurementService {
@@ -35,6 +42,7 @@ export class MeasurementService {
     write_access?: boolean,
     countries?: string[],
     isSuperUser?: boolean,
+    protocol?: string,
   ): Promise<MeasurementDto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -44,6 +52,10 @@ export class MeasurementService {
       write_access,
       countries,
     );
+
+    if (protocol) {
+      filter.protocol = protocol;
+    }
 
     if (country_iso3_code) {
       const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
@@ -82,6 +94,7 @@ export class MeasurementService {
     filter_value?: Date,
     write_access?: boolean,
     countries?: string[],
+    protocol?: string,
   ): Promise<MeasurementV2Dto[]> {
     const filter = this.applyFilter(
       giga_id_school,
@@ -91,6 +104,10 @@ export class MeasurementService {
       write_access,
       countries,
     );
+
+    if (protocol) {
+      filter.protocol = protocol;
+    }
 
     if (!giga_id_school) {
       delete filter.giga_id_school;
@@ -186,7 +203,10 @@ export class MeasurementService {
     );
   }
 
-  async createMeasurement(measurementDto: AddMeasurementDto): Promise<string> {
+  async createMeasurement(
+    measurementDto: AddMeasurementDto,
+    uploadProtocol?: string,
+  ): Promise<string> {
     const processedResponse = await this.processMeasurement(measurementDto);
 
     switch (processedResponse) {
@@ -225,6 +245,7 @@ export class MeasurementService {
           }
         }
 
+        enrichMeasurementForPersistence(measurementDto, uploadProtocol);
         const model = this.toModel(measurementDto);
         await this.prisma.measurements.create({
           data: model,
@@ -303,8 +324,18 @@ export class MeasurementService {
   private async processMeasurement(
     dto: AddMeasurementDto,
   ): Promise<string | null> {
+    // giga_id_school is lowercased whenever a device registers through the API
+    // (SchoolService.toModel), but rows also land in these tables through
+    // hand-written SQL, so the stored casing cannot be trusted. The client
+    // sends the id exactly as the schools master returned it, which for the
+    // Android test schools is uppercase ("TZ-TEST-88001"); an exact match then
+    // rejected every upload with SCHOOL_DOESNT_EXIST_ERR.
+    // A null/undefined id is passed through unchanged to keep the previous
+    // behaviour for measurements submitted without a giga_id_school.
+    const gigaIdFilter = this.caseInsensitiveGigaId(dto.giga_id_school);
+
     const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
-      where: { giga_id_school: dto.giga_id_school },
+      where: { giga_id_school: gigaIdFilter },
     });
 
     if (existingRecord == null) {
@@ -313,7 +344,7 @@ export class MeasurementService {
 
     const gigaSchoolMapping =
       await this.prisma.giga_id_school_mapping_fix.findFirst({
-        where: { giga_id_school_wrong: dto.giga_id_school },
+        where: { giga_id_school_wrong: gigaIdFilter },
       });
 
     if (gigaSchoolMapping != null) {
@@ -325,6 +356,22 @@ export class MeasurementService {
     return null;
   }
 
+  /**
+   * Builds a case-insensitive equality filter for a giga_id_school column.
+   *
+   * Returns the value untouched when it is null/undefined so Prisma keeps
+   * treating it the same way it did before (undefined drops the filter,
+   * null matches NULL rows).
+   */
+  private caseInsensitiveGigaId(
+    giga_id_school?: string,
+  ): Prisma.StringNullableFilter | string | null | undefined {
+    if (giga_id_school == null) {
+      return giga_id_school;
+    }
+    return { equals: giga_id_school.trim(), mode: 'insensitive' };
+  }
+
   private applyFilter(
     giga_id_school?: string,
     filter_by?: string,
@@ -334,7 +381,11 @@ export class MeasurementService {
     countries?: string[],
   ): Record<string, any> {
     const filter: Record<string, any> = {
-      giga_id_school,
+      // measurements.giga_id_school is always persisted lowercase (toModel),
+      // so normalising the incoming value keeps the lookup on the plain
+      // b-tree index instead of falling back to an ILIKE scan of a table
+      // that is orders of magnitude larger than dailycheckapp_school.
+      giga_id_school: giga_id_school?.toLowerCase().trim(),
       country_code: {
         in: countries,
       },
@@ -452,6 +503,27 @@ export class MeasurementService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
+      offline_synced: measurement.offline_synced,
+      scheduled_slot: measurement.scheduled_slot,
+      scheduled_at: measurement.scheduled_at,
+      device_name: measurement.device_name,
+      device_model: measurement.device_model,
+      device_manufacturer: measurement.device_manufacturer,
+      app_build_number: measurement.app_build_number,
+      os_version: measurement.os_version,
+      wifi_unavailable_reason: measurement.wifi_unavailable_reason,
+      ssid_source: measurement.ssid_source,
+      device_context: measurement.device_context
+        ? JSON.parse(JSON.stringify(measurement.device_context))
+        : undefined,
+      protocol: measurement.protocol,
+      download_latency: measurement.download_latency ?? undefined,
+      upload_latency: measurement.upload_latency ?? undefined,
+      download_jitter: measurement.download_jitter ?? undefined,
+      upload_jitter: measurement.upload_jitter ?? undefined,
+      jitter: measurement.jitter ?? undefined,
+      packet_loss: measurement.packet_loss ?? undefined,
+      network_quality_score: measurement.network_quality_score ?? undefined,
     };
     // if (isSuperUser) {
     filterMeasurementData['UUID'] = measurement.uuid;
@@ -509,6 +581,14 @@ export class MeasurementService {
       app_version: measurement.app_version,
       source: measurement.source,
       created_at: measurement.created_at,
+      protocol: measurement.protocol,
+      download_latency: measurement.download_latency ?? undefined,
+      upload_latency: measurement.upload_latency ?? undefined,
+      download_jitter: measurement.download_jitter ?? undefined,
+      upload_jitter: measurement.upload_jitter ?? undefined,
+      jitter: measurement.jitter ?? undefined,
+      packet_loss: measurement.packet_loss ?? undefined,
+      network_quality_score: measurement.network_quality_score ?? undefined,
     };
   }
 
@@ -586,6 +666,29 @@ export class MeasurementService {
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
+      offline_synced: measurement.offline_synced ?? false,
+      scheduled_slot: measurement.scheduled_slot ?? null,
+      scheduled_at: measurement.scheduled_at ?? null,
+      device_name: measurement.device_name ?? null,
+      device_model: measurement.device_model ?? null,
+      device_manufacturer: measurement.device_manufacturer ?? null,
+      app_build_number: measurement.app_build_number ?? null,
+      os_version: measurement.os_version ?? null,
+      wifi_unavailable_reason: sanitizeWifiUnavailableReason(
+        measurement.wifi_unavailable_reason,
+      ),
+      ssid_source: sanitizeSsidSource(measurement.ssid_source),
+      device_context: sanitizeDeviceContext(
+        measurement.device_context,
+      ),
+      protocol: measurement.protocol ?? 'mlab',
+      download_latency: measurement.download_latency ?? null,
+      upload_latency: measurement.upload_latency ?? null,
+      download_jitter: measurement.download_jitter ?? null,
+      upload_jitter: measurement.upload_jitter ?? null,
+      jitter: measurement.jitter ?? null,
+      packet_loss: measurement.packet_loss ?? null,
+      network_quality_score: measurement.network_quality_score ?? null,
     };
   }
 
@@ -618,6 +721,18 @@ export class MeasurementService {
         measurement.detected_location_distance || null,
       detected_location_is_flagged:
         measurement.detected_location_is_flagged || false,
+      device_name: measurement.device_name ?? null,
+      device_model: measurement.device_model ?? null,
+      device_manufacturer: measurement.device_manufacturer ?? null,
+      app_build_number: measurement.app_build_number ?? null,
+      os_version: measurement.os_version ?? null,
+      wifi_unavailable_reason: sanitizeWifiUnavailableReason(
+        measurement.wifi_unavailable_reason,
+      ),
+      ssid_source: sanitizeSsidSource(measurement.ssid_source),
+      device_context: sanitizeDeviceContext(
+        measurement.device_context,
+      ),
     };
   }
 }
