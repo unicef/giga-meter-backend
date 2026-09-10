@@ -3,6 +3,12 @@ import { HttpService } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
 import { GeolocationController } from './geolocation.controller';
+import { AuthGuard } from '../auth/auth.guard';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { IS_PUBLIC_KEY } from '../common/public.decorator';
+import { PrismaService } from '../prisma/prisma.service';
+import { CategoryConfigProvider } from '../common/category-config.provider';
+import { mockCategoryConfigProvider } from '../common/mock-objects';
 
 describe('GeolocationController', () => {
   let controller: GeolocationController;
@@ -19,8 +25,18 @@ describe('GeolocationController', () => {
             post: jest.fn(),
           },
         },
+        { provide: PrismaService, useValue: {} },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({
+        canActivate: () => Promise.resolve(true),
+      })
+      .compile();
 
     controller = module.get<GeolocationController>(GeolocationController);
     httpService = module.get<HttpService>(HttpService);
@@ -186,6 +202,38 @@ describe('GeolocationController', () => {
       state: 'Delhi',
       city: 'New Delhi',
       postalCode: '110001',
+    });
+  });
+
+  // The Google proxies are billed per call against a shared API key, so they
+  // must never be reachable without the same bearer token the measurement
+  // endpoints require. Guard against a `@Public()` decorator creeping back in.
+  describe('authentication', () => {
+    const routes = ['geolocate', 'geocode', 'geocodeFlexible'] as const;
+
+    it.each(routes)('does not expose %s publicly', (route) => {
+      const isPublic = Reflect.getMetadata(
+        IS_PUBLIC_KEY,
+        GeolocationController.prototype[route],
+      );
+
+      expect(isPublic).toBeUndefined();
+    });
+
+    it.each(routes)('protects %s with the AuthGuard', (route) => {
+      const guards =
+        Reflect.getMetadata(
+          GUARDS_METADATA,
+          GeolocationController.prototype[route],
+        ) ?? [];
+
+      expect(guards).toContain(AuthGuard);
+    });
+
+    it('is not marked public at the controller level', () => {
+      expect(
+        Reflect.getMetadata(IS_PUBLIC_KEY, GeolocationController),
+      ).toBeUndefined();
     });
   });
 });

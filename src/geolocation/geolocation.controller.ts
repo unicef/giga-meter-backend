@@ -6,13 +6,19 @@ import {
   HttpStatus,
   Post,
   Query,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Public } from 'src/common/public.decorator';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
+import { AuthGuard } from '../auth/auth.guard';
 import { GeocodeQueryDto } from './geolocation.dto';
 
 @ApiTags('geolocation')
@@ -24,11 +30,16 @@ export class GeolocationController {
 
   constructor(private readonly httpService: HttpService) {}
 
-  @Public()
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Post('geolocate')
   @ApiOperation({ summary: 'Proxy for Google Geolocation API' })
   @ApiResponse({ status: 200, description: 'Location data retrieved successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async geolocate(@Body() payload: any) {
     try {
@@ -62,7 +73,8 @@ export class GeolocationController {
     }
   }
 
-  @Public()
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Get('geocode')
   @UsePipes(
     new ValidationPipe({
@@ -74,6 +86,10 @@ export class GeolocationController {
   @ApiOperation({ summary: 'Proxy for Google Geocoding API' })
   @ApiResponse({ status: 200, description: 'Geocode data retrieved successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async geocode(@Query() query: GeocodeQueryDto) {
     try {
@@ -83,7 +99,8 @@ export class GeolocationController {
     }
   }
 
-  @Public()
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Get('geocode/flexible')
   @UsePipes(
     new ValidationPipe({
@@ -98,6 +115,10 @@ export class GeolocationController {
     description: 'Flexible address data retrieved successfully',
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async geocodeFlexible(@Query() query: GeocodeQueryDto) {
     try {
