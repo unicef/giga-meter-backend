@@ -463,6 +463,81 @@ export class MeasurementDto {
 
   @ApiProperty({ required: false })
   wifi_connections?: any[];
+
+  @ApiProperty({
+    required: false,
+    description:
+      'true = the record arrived via the offline sync queue instead of the realtime upload',
+  })
+  offline_synced?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Planned slot: 'morning' | 'afternoon' | 'evening' | 'startup'; null for manual runs",
+  })
+  scheduled_slot?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Originally planned run time of the scheduled test',
+  })
+  scheduled_at?: Date;
+
+  @ApiProperty({ required: false, description: 'Device name' })
+  device_name?: string;
+
+  @ApiProperty({ required: false, description: 'Device model' })
+  device_model?: string;
+
+  @ApiProperty({ required: false, description: 'Device manufacturer' })
+  device_manufacturer?: string;
+
+  @ApiProperty({ required: false, description: 'Client app build number' })
+  app_build_number?: string;
+
+  @ApiProperty({ required: false, description: 'Operating system version' })
+  os_version?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Why wifi_connections came back empty: 'no_adapter' | 'wlan_service_off' | " +
+      "'location_disabled' | 'unknown'. Windows 11 24H2+ gates the WLAN stack " +
+      'behind the Location services toggle, so an empty list is not the same as ' +
+      'no Wi-Fi',
+  })
+  wifi_unavailable_reason?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Where the reported SSID came from: 'wlan' (netsh, the usual path) or " +
+      "'nlm' (Get-NetConnectionProfile fallback, used when Location services " +
+      'block the WLAN stack)',
+  })
+  ssid_source?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Network/system context captured next to the test: ' +
+      'connection_type, default_gateway, dns_servers, ip_family, vpn_likely, ' +
+      'vpn_adapter, link_speed_mbps, net_bytes_rx, net_bytes_tx, ' +
+      'cpu_load_percent, memory_available_mb, disk_free_mb, ' +
+      'device_uptime_seconds, device_start_time, plus the stable per-unit ' +
+      'hardware identifiers baseboard_serial, disk_serial and machine_guid. ' +
+      'Keys outside that list are dropped on write',
+  })
+  device_context?: Record<string, any>;
+
+
+
+
+
+
+
+
 }
 
 export class MeasurementV2Dto {
