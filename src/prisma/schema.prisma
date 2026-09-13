@@ -240,6 +240,18 @@ model measurements {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  offline_synced              Boolean?  @default(false) // true = record arrived via offline sync queue instead of the realtime upload
+  scheduled_slot              String?   @db.VarChar(16) // 'morning' | 'afternoon' | 'evening' | 'startup'; null for manual runs
+  scheduled_at                DateTime? @db.Timestamptz(6) // originally planned run time of the scheduled test
+  device_name                 String?
+  device_model                String?
+  device_manufacturer         String?
+  app_build_number            String?
+  os_version                  String?
+  wifi_unavailable_reason     String?   @db.VarChar(32) // why wifi_connections came back empty: no_adapter | wlan_service_off | location_disabled | unknown
+  ssid_source                 String?   @db.VarChar(16) // where the reported SSID came from: wlan (netsh) | nlm (Get-NetConnectionProfile fallback)
+  device_context              Json?     // volatile network/system context captured next to the test; keys are whitelisted on write
+
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
@@ -275,6 +287,14 @@ model measurements_failed {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  device_name                 String?
+  device_model                String?
+  device_manufacturer         String?
+  app_build_number            String?
+  os_version                  String?
+  wifi_unavailable_reason     String?   @db.VarChar(32) // why wifi_connections came back empty: no_adapter | wlan_service_off | location_disabled | unknown
+  ssid_source                 String?   @db.VarChar(16) // where the reported SSID came from: wlan (netsh) | nlm (Get-NetConnectionProfile fallback)
+  device_context              Json?     // volatile network/system context captured next to the test; keys are whitelisted on write
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
