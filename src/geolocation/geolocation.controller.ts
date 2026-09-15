@@ -17,6 +17,7 @@ export class GeolocationController {
   @ApiResponse({ status: 200, description: 'Location data retrieved successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiResponse({ status: 504, description: 'Google did not answer in time' })
   async geolocate(@Body() payload: any) {
     try {
       const apiKey = process.env.GOOGLE_GEOLOCATION_API_KEY;
@@ -41,7 +42,16 @@ export class GeolocationController {
           error.response.status
         );
       }
-      
+
+      // No answer from Google within the HttpModule timeout. Report it as a
+      // gateway timeout so the client can tell it apart from a server error.
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        throw new HttpException(
+          'Geolocation provider timed out',
+          HttpStatus.GATEWAY_TIMEOUT
+        );
+      }
+
       throw new HttpException(
         'Failed to fetch geolocation data',
         HttpStatus.INTERNAL_SERVER_ERROR
