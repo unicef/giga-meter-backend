@@ -13,9 +13,15 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, Observable } from 'rxjs';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { Public } from 'src/common/public.decorator';
+import { AuthGuard } from '../auth/auth.guard';
+import { Public } from '../common/public.decorator';
 import { getRateLimitConfig } from '../config/rate-limit.config';
 import { GeocodeQueryDto, GeolocateBodyDto } from './geolocation.dto';
 import { GeolocationCircuit } from './geolocation.circuit';
@@ -34,7 +40,8 @@ export class GeolocationController {
     private readonly circuit: GeolocationCircuit,
   ) {}
 
-  @Public()
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
   @Throttle(getRateLimitConfig('geolocation'))
   @Post('geolocate')
   @UsePipes(
@@ -47,6 +54,10 @@ export class GeolocationController {
   @ApiOperation({ summary: 'Proxy for Google Geolocation API' })
   @ApiResponse({ status: 200, description: 'Location data retrieved successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
   @ApiResponse({
     status: 422,
     description: 'The access points given do not resolve to a location',

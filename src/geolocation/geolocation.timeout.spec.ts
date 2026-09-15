@@ -5,6 +5,9 @@ import { HttpModule, HttpService } from '@nestjs/axios';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { GeolocationCircuit } from './geolocation.circuit';
+import { AuthGuard } from '../auth/auth.guard';
+import { CategoryConfigProvider } from '../common/category-config.provider';
+import { mockCategoryConfigProvider } from '../common/mock-objects';
 import { GeolocationController } from './geolocation.controller';
 import { GeolocationModule, GOOGLE_API_TIMEOUT_MS } from './geolocation.module';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,6 +23,8 @@ describe('Geolocation upstream timeout', () => {
     })
       .overrideProvider(PrismaService)
       .useValue({})
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => Promise.resolve(true) })
       .overrideGuard(ThrottlerGuard)
       .useValue({ canActivate: () => true })
       .compile();
@@ -57,8 +62,17 @@ describe('Geolocation upstream timeout', () => {
       const moduleRef = await Test.createTestingModule({
         imports: [HttpModule.register({ timeout: 200 })],
         controllers: [GeolocationController],
-        providers: [GeolocationCircuit],
+        providers: [
+          GeolocationCircuit,
+          { provide: PrismaService, useValue: {} },
+          {
+            provide: CategoryConfigProvider,
+            useValue: mockCategoryConfigProvider,
+          },
+        ],
       })
+        .overrideGuard(AuthGuard)
+        .useValue({ canActivate: () => Promise.resolve(true) })
         .overrideGuard(ThrottlerGuard)
         .useValue({ canActivate: () => true })
         .compile();

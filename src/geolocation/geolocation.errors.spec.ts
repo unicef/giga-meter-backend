@@ -8,6 +8,10 @@ import {
   CIRCUIT_FAILURE_THRESHOLD,
   GeolocationCircuit,
 } from './geolocation.circuit';
+import { AuthGuard } from '../auth/auth.guard';
+import { PrismaService } from '../prisma/prisma.service';
+import { CategoryConfigProvider } from '../common/category-config.provider';
+import { mockCategoryConfigProvider } from '../common/mock-objects';
 
 /** Minimal valid body, so these tests exercise the error mapping and nothing else. */
 const BODY = {
@@ -29,8 +33,15 @@ describe('Geolocation upstream error mapping', () => {
           provide: HttpService,
           useValue: { get: jest.fn(), post: jest.fn() },
         },
+        { provide: PrismaService, useValue: {} },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
+        },
       ],
     })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => Promise.resolve(true) })
       .overrideGuard(ThrottlerGuard)
       .useValue({ canActivate: () => true })
       .compile();
