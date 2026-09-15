@@ -1,8 +1,10 @@
 import { HttpException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { of, throwError } from 'rxjs';
 import { GeolocationController } from './geolocation.controller';
+import { GeolocationCircuit } from './geolocation.circuit';
 
 describe('GeolocationController', () => {
   let controller: GeolocationController;
@@ -12,6 +14,7 @@ describe('GeolocationController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [GeolocationController],
       providers: [
+        GeolocationCircuit,
         {
           provide: HttpService,
           useValue: {
@@ -20,7 +23,10 @@ describe('GeolocationController', () => {
           },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<GeolocationController>(GeolocationController);
     httpService = module.get<HttpService>(HttpService);
