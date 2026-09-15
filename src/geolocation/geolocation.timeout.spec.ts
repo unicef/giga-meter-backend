@@ -3,6 +3,8 @@ import { AddressInfo } from 'net';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { Test } from '@nestjs/testing';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import { GeolocationCircuit } from './geolocation.circuit';
 import { GeolocationController } from './geolocation.controller';
 import { GeolocationModule, GOOGLE_API_TIMEOUT_MS } from './geolocation.module';
 import { PrismaService } from '../prisma/prisma.service';
@@ -18,12 +20,15 @@ describe('Geolocation upstream timeout', () => {
     })
       .overrideProvider(PrismaService)
       .useValue({})
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
       .compile();
 
     const httpService = moduleRef.get(HttpService);
 
     expect(httpService.axiosRef.defaults.timeout).toBe(GOOGLE_API_TIMEOUT_MS);
-    // The Windows client stops waiting after 10 s: the backend must answer first.
+    // The Windows client gives up on one geolocate request after 10 s: the
+    // backend must answer before that.
     expect(GOOGLE_API_TIMEOUT_MS).toBeLessThan(10_000);
   });
 
@@ -52,13 +57,17 @@ describe('Geolocation upstream timeout', () => {
       const moduleRef = await Test.createTestingModule({
         imports: [HttpModule.register({ timeout: 200 })],
         controllers: [GeolocationController],
-      }).compile();
+        providers: [GeolocationCircuit],
+      })
+        .overrideGuard(ThrottlerGuard)
+        .useValue({ canActivate: () => true })
+        .compile();
       const controller = moduleRef.get(GeolocationController);
       Object.defineProperty(controller, 'googleApiUrl', { value: url });
 
       const startedAt = Date.now();
       const error = await controller
-        .geolocate({ considerIp: false, wifiAccessPoints: [] })
+        .geolocate({ considerIp: false, wifiAccessPoints: [] } as any)
         .catch((e) => e);
 
       expect(error).toBeInstanceOf(HttpException);
