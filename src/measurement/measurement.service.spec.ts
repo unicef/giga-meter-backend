@@ -610,6 +610,50 @@ describe('MeasurementService', () => {
       });
     });
 
+    it('should persist the server timestamp reported by ndt7', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const serverTimestamp = new Date('2026-08-24T10:30:00.000Z');
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        server_timestamp: serverTimestamp,
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          server_timestamp: serverTimestamp,
+        }),
+      });
+    });
+
+    it('should store a null server timestamp when the app omits it', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement(mockAddMeasurementDto[0]);
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          server_timestamp: null,
+        }),
+      });
+    });
+
     it('should persist cloudflare protocol and derived quality metrics', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
