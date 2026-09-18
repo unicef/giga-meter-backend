@@ -1,13 +1,22 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import {
   CreateConnectivityDto,
   GetConnectivityRecordsWithSchoolDto,
 } from './connectivity.dto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { existSchool } from 'src/utility/utility';
 
+const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
+
+const isDuplicateRecord = (error: unknown) =>
+  error instanceof Prisma.PrismaClientKnownRequestError &&
+  error.code === UNIQUE_CONSTRAINT_VIOLATION;
+
 @Injectable()
 export class ConnectivityService {
+  private readonly logger = new Logger(ConnectivityService.name);
+
   constructor(private prisma: PrismaService) {}
   async create(createConnectivityDto: CreateConnectivityDto) {
     if (
@@ -23,8 +32,14 @@ export class ConnectivityService {
       });
       return createConnectivityDto;
     } catch (error) {
-      console.log(error);
-      throw new BadRequestException('School does not exist');
+      // The client re-sends its offline queue until the server acknowledges it,
+      // so a record we already stored is a success, not a failure.
+      if (isDuplicateRecord(error)) return createConnectivityDto;
+      this.logger.error(
+        `Failed to store connectivity check for ${createConnectivityDto.giga_id_school}`,
+        error,
+      );
+      throw error;
     }
   }
 
@@ -40,11 +55,17 @@ export class ConnectivityService {
           ...record,
           giga_id_school,
         })),
+        // A batch the client already delivered would otherwise fail as a whole
+        // on app_local_uuid and stay queued on the device forever.
+        skipDuplicates: true,
       });
       return createConnectivityDto;
     } catch (error) {
-      console.log(error);
-      throw new BadRequestException('School does not exist');
+      this.logger.error(
+        `Failed to store connectivity checks for ${giga_id_school}`,
+        error,
+      );
+      throw error;
     }
   }
   async findAll(query: GetConnectivityRecordsWithSchoolDto) {
@@ -76,8 +97,11 @@ export class ConnectivityService {
         records: data,
       };
     } catch (error) {
-      console.log(error);
-      throw new BadRequestException('School does not exist');
+      this.logger.error(
+        `Failed to read connectivity checks for ${giga_id_school}`,
+        error,
+      );
+      throw error;
     }
   }
 
