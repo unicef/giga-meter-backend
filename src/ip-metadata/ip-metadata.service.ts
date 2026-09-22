@@ -18,7 +18,13 @@ export interface IpMetadata {
   hostname?: string;
   source?: string;
   new?: boolean; // Indicates if this is a new record
+  created_at?: Date;
+  updated_at?: Date;
 }
+
+// Cached IPInfo records older than this are fetched again.
+const DEFAULT_CACHE_MAX_AGE_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class IpMetadataService {
@@ -115,36 +121,59 @@ export class IpMetadataService {
     };
   }
 
+  private isStale(updatedAt: Date): boolean {
+    const maxAgeDays =
+      Number(process.env.IPINFO_CACHE_MAX_AGE_DAYS) || DEFAULT_CACHE_MAX_AGE_DAYS;
+    return Date.now() - updatedAt.getTime() > maxAgeDays * DAY_MS;
+  }
+
+  // Keep the response shape the clients already know: no source, no timestamps.
+  private toResponse(record: IpMetadata): IpMetadata {
+    const response = { ...record };
+    delete response.source;
+    delete response.created_at;
+    delete response.updated_at;
+    return response;
+  }
+
   async getIpInfo(ip: string): Promise<IpMetadata> {
     console.log('IP Address:', ip);
-    let ipInfo:IpMetadata = await this.prisma.ipMetadata.findUnique({
+    const cached = await this.prisma.ipMetadata.findUnique({
       where: { ip_source: { ip, source: 'ipinfo' } },
     });
-
-    if (!ipInfo) {
-      const ipData = await this.fetchIpInfoFromAPI(ip);
-      console.log('IP Data:', ipData);
-      if (ipData && ipData.new) {
-        ipInfo = await this.prisma.ipMetadata.create({
-          data: {
-            ip: ipData.ip,
-            city: ipData.city,
-            region: ipData.region,
-            country: ipData.country,
-            loc: ipData.loc,
-            org: ipData.org,
-            postal: ipData.postal,
-            timezone: ipData.timezone,
-            asn: ipData.asn,
-            hostname: ipData.hostname,
-            source: ipData.source,
-          },
-        });
-      }else
-        ipInfo = ipData;
+    if (cached && !this.isStale(cached.updated_at)) {
+      return this.toResponse(cached);
     }
-    if (ipInfo.source) delete ipInfo.source;
-    
-    return ipInfo;
+
+    const ipData = await this.fetchIpInfoFromAPI(ip);
+    console.log('IP Data:', ipData);
+
+    // IPInfo could not be reached: a stale IPInfo record beats GeoJS or an error.
+    if (cached && ipData.source !== 'ipinfo') {
+      return this.toResponse(cached);
+    }
+    if (!ipData.new) {
+      return this.toResponse(ipData);
+    }
+
+    const data = {
+      ip: ipData.ip,
+      city: ipData.city,
+      region: ipData.region,
+      country: ipData.country,
+      loc: ipData.loc,
+      org: ipData.org,
+      postal: ipData.postal,
+      timezone: ipData.timezone,
+      asn: ipData.asn,
+      hostname: ipData.hostname,
+      source: ipData.source,
+    };
+    const saved = await this.prisma.ipMetadata.upsert({
+      where: { ip_source: { ip: ipData.ip, source: ipData.source } },
+      create: data,
+      update: data,
+    });
+    return this.toResponse(saved);
   }
 }
