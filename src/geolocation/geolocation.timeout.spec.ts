@@ -9,6 +9,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { mockCategoryConfigProvider } from '../common/mock-objects';
 import { GeolocationController } from './geolocation.controller';
+import { GeolocationCache, GEOLOCATION_REDIS } from './geolocation.cache';
 import { GeolocationModule, GOOGLE_API_TIMEOUT_MS } from './geolocation.module';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -22,6 +23,8 @@ describe('Geolocation upstream timeout', () => {
       imports: [GeolocationModule],
     })
       .overrideProvider(PrismaService)
+      .useValue({})
+      .overrideProvider(GEOLOCATION_REDIS)
       .useValue({})
       .overrideGuard(AuthGuard)
       .useValue({ canActivate: () => Promise.resolve(true) })
@@ -64,6 +67,14 @@ describe('Geolocation upstream timeout', () => {
         controllers: [GeolocationController],
         providers: [
           GeolocationCircuit,
+          {
+            provide: GeolocationCache,
+            useValue: {
+              get: async () => ({ kind: 'miss' }),
+              set: async () => undefined,
+              count: () => undefined,
+            },
+          },
           { provide: PrismaService, useValue: {} },
           {
             provide: CategoryConfigProvider,
@@ -81,7 +92,13 @@ describe('Geolocation upstream timeout', () => {
 
       const startedAt = Date.now();
       const error = await controller
-        .geolocate({ considerIp: false, wifiAccessPoints: [] } as any)
+        .geolocate({
+          considerIp: false,
+          wifiAccessPoints: [
+            { macAddress: '00:11:22:33:44:55' },
+            { macAddress: '00:11:22:33:44:66' },
+          ],
+        } as any)
         .catch((e) => e);
 
       expect(error).toBeInstanceOf(HttpException);
