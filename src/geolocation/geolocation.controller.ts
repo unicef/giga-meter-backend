@@ -23,8 +23,21 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthGuard } from '../auth/auth.guard';
 import { Public } from '../common/public.decorator';
 import { getRateLimitConfig } from '../config/rate-limit.config';
-import { GeocodeQueryDto, GeolocateBodyDto } from './geolocation.dto';
+import {
+  GeocodeQueryDto,
+  GeolocateBodyDto,
+  WifiAccessPointDto,
+} from './geolocation.dto';
 import { GeolocationCircuit } from './geolocation.circuit';
+import {
+  GeolocateResult,
+  GeolocationCache,
+  MIN_ACCESS_POINTS,
+  normalizeMac,
+} from './geolocation.cache';
+
+/** Provider 403 reasons that mean "over quota", not "bad key". */
+const QUOTA_REASONS = ['dailyLimitExceeded', 'userRateLimitExceeded', 'rateLimitExceeded'];
 
 @ApiTags('geolocation')
 @Controller('api/v1/geolocation')
@@ -38,7 +51,15 @@ export class GeolocationController {
   constructor(
     private readonly httpService: HttpService,
     private readonly circuit: GeolocationCircuit,
+    private readonly cache: GeolocationCache,
   ) {}
+
+  /**
+   * Provider calls in flight, by access point set. The client schedules tests
+   * at fixed slots, so every machine in a lab can ask about the same room at
+   * the same moment; they share one call instead of each paying for it.
+   */
+  private readonly inFlight = new Map<string, Promise<GeolocateResult>>();
 
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
@@ -66,10 +87,75 @@ export class GeolocationController {
   @ApiResponse({ status: 502, description: 'The provider rejected the call or failed' })
   @ApiResponse({ status: 503, description: 'The provider is rate limiting or unreachable' })
   @ApiResponse({ status: 504, description: 'The provider did not answer in time' })
-  async geolocate(@Body() payload: GeolocateBodyDto) {
+  async geolocate(@Body() payload: GeolocateBodyDto): Promise<GeolocateResult> {
     const apiKey = this.requireApiKey();
-    return this.callUpstream('geolocate', () =>
-      this.httpService.post(`${this.googleApiUrl}?key=${apiKey}`, payload),
+
+    // One entry per locatable access point. Signal strength is kept for the
+    // provider but is not part of the cache key: it changes every scan.
+    const accessPoints = new Map<string, WifiAccessPointDto>();
+    for (const ap of payload.wifiAccessPoints) {
+      const mac = normalizeMac(ap.macAddress);
+      if (mac && !accessPoints.has(mac)) {
+        accessPoints.set(mac, { ...ap, macAddress: mac });
+      }
+    }
+    const macs = [...accessPoints.keys()].sort();
+
+    // The provider needs two distinct access points and answers 404 below
+    // that: skip the call, and the answer is the same one it would give.
+    if (macs.length < MIN_ACCESS_POINTS) {
+      this.cache.count('too_few_aps');
+      throw this.notFound();
+    }
+
+    const cached = await this.cache.get(macs);
+    if (cached.kind === 'hit') {
+      return cached.result;
+    }
+    if (cached.kind === 'notFound') {
+      throw this.notFound();
+    }
+
+    const flightKey = macs.join(',');
+    let flight = this.inFlight.get(flightKey);
+    if (!flight) {
+      flight = this.resolveAndCache(apiKey, macs, [...accessPoints.values()]).finally(
+        () => this.inFlight.delete(flightKey),
+      );
+      this.inFlight.set(flightKey, flight);
+    }
+    return flight;
+  }
+
+  private async resolveAndCache(
+    apiKey: string,
+    macs: string[],
+    wifiAccessPoints: WifiAccessPointDto[],
+  ): Promise<GeolocateResult> {
+    try {
+      const result = await this.callUpstream<GeolocateResult>('geolocate', () =>
+        this.httpService.post(`${this.googleApiUrl}?key=${apiKey}`, {
+          considerIp: false,
+          wifiAccessPoints,
+        }),
+      );
+      await this.cache.set(macs, result);
+      return result;
+    } catch (error) {
+      if (
+        error instanceof HttpException &&
+        error.getStatus() === HttpStatus.UNPROCESSABLE_ENTITY
+      ) {
+        await this.cache.set(macs, null);
+      }
+      throw error;
+    }
+  }
+
+  private notFound(): HttpException {
+    return new HttpException(
+      'No location matches the data provided',
+      HttpStatus.UNPROCESSABLE_ENTITY,
     );
   }
 
@@ -148,9 +234,20 @@ export class GeolocationController {
       // The provider answered, so it is alive: this says nothing about whether
       // the next call will work, and must not open the circuit.
       if (upstreamStatus === HttpStatus.NOT_FOUND) {
+        return this.notFound();
+      }
+
+      // Google reports quota exhaustion as a 403 with a reason, not as a 429.
+      // Every call until the quota resets will fail the same way, so it counts
+      // towards the circuit, which spares the calls in between.
+      const reason: string | undefined =
+        error?.response?.data?.error?.errors?.[0]?.reason;
+      if (upstreamStatus === HttpStatus.FORBIDDEN && QUOTA_REASONS.includes(reason)) {
+        this.logger.error(`${operation}: provider quota exhausted (${reason})`);
+        this.circuit.recordFailure();
         return new HttpException(
-          'No location matches the data provided',
-          HttpStatus.UNPROCESSABLE_ENTITY,
+          'Geolocation provider is rate limiting this deployment',
+          HttpStatus.SERVICE_UNAVAILABLE,
         );
       }
 
