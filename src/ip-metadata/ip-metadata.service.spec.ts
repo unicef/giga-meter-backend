@@ -11,6 +11,7 @@ describe('IpMetadataService', () => {
     ipMetadata: {
       findUnique: jest.Mock;
       upsert: jest.Mock;
+      update: jest.Mock;
     };
   };
 
@@ -23,6 +24,7 @@ describe('IpMetadataService', () => {
       ipMetadata: {
         findUnique: jest.fn(),
         upsert: jest.fn(),
+        update: jest.fn(),
       },
     };
     const module: TestingModule = await Test.createTestingModule({
@@ -103,6 +105,8 @@ describe('IpMetadataService', () => {
       asn: 'AS99999',
       source: 'ipinfo',
       hostname: undefined,
+      updated_at: expect.any(Date),
+      retry_after: null,
     };
     prismaMock.ipMetadata.upsert.mockResolvedValue({ ...expectedCreateData });
 
@@ -122,6 +126,8 @@ describe('IpMetadataService', () => {
       update: expectedCreateData,
     });
     delete expectedCreateData.source; // remove source for comparison
+    delete expectedCreateData.updated_at;
+    delete expectedCreateData.retry_after;
     expect(result).toEqual(expectedCreateData);
   });
 
@@ -155,6 +161,8 @@ describe('IpMetadataService', () => {
       asn: 'AS123',
       hostname: undefined,
       source: 'ipinfo',
+      updated_at: expect.any(Date),
+      retry_after: null,
     };
     prismaMock.ipMetadata.upsert.mockResolvedValue({ ...expectedCreateData });
 
@@ -173,6 +181,8 @@ describe('IpMetadataService', () => {
     });
     expect(result.asn).toBe('AS123');
     delete expectedCreateData.source; // remove source for comparison
+    delete expectedCreateData.updated_at;
+    delete expectedCreateData.retry_after;
     expect(result).toEqual(expectedCreateData);
   });
 
@@ -212,6 +222,8 @@ describe('IpMetadataService', () => {
       asn: 'AS00000',
       hostname: '',
       source: 'geojs',
+      updated_at: expect.any(Date),
+      retry_after: null,
     };
     prismaMock.ipMetadata.upsert.mockResolvedValue({ ...expectedCreateData });
 
@@ -232,6 +244,8 @@ describe('IpMetadataService', () => {
       update: expectedCreateData,
     });
     delete expectedCreateData.source; // remove source for comparison
+    delete expectedCreateData.updated_at;
+    delete expectedCreateData.retry_after;
     expect(result).toEqual(expectedCreateData);
   });
 
@@ -263,7 +277,7 @@ describe('IpMetadataService', () => {
     const DAY_MS = 24 * 60 * 60 * 1000;
     const daysAgo = (days: number) => new Date(Date.now() - days * DAY_MS);
 
-    const cachedRecord = (updatedDaysAgo: number) => ({
+    const cachedRecord = (updatedDaysAgo: number, retryAfter: Date = null) => ({
       id: 7,
       ip: '1.2.3.4',
       city: 'Old City',
@@ -278,6 +292,7 @@ describe('IpMetadataService', () => {
       source: 'ipinfo',
       created_at: daysAgo(400),
       updated_at: daysAgo(updatedDaysAgo),
+      retry_after: retryAfter,
     });
 
     const freshApiResponse = {
@@ -306,6 +321,8 @@ describe('IpMetadataService', () => {
       asn: 'AS22222',
       hostname: undefined,
       source: 'ipinfo',
+      updated_at: expect.any(Date),
+      retry_after: null,
     };
 
     it('should keep using a record younger than the default 30 days', async () => {
@@ -374,12 +391,21 @@ describe('IpMetadataService', () => {
           }),
         );
 
+      const before = Date.now();
       const result = await service.getIpInfo('1.2.3.4');
 
       expect(prismaMock.ipMetadata.upsert).not.toHaveBeenCalled();
+      expect(prismaMock.ipMetadata.update).toHaveBeenCalledWith({
+        where: { ip_source: { ip: '1.2.3.4', source: 'ipinfo' } },
+        data: { retry_after: expect.any(Date) },
+      });
+      const retryAfter: Date =
+        prismaMock.ipMetadata.update.mock.calls[0][0].data.retry_after;
+      expect(retryAfter.getTime()).toBeGreaterThanOrEqual(before + DAY_MS);
       expect(result.city).toBe('Old City');
       expect(result).not.toHaveProperty('source');
       expect(result).not.toHaveProperty('updated_at');
+      expect(result).not.toHaveProperty('retry_after');
     });
 
     it('should return the stale record when both APIs fail', async () => {
@@ -393,8 +419,42 @@ describe('IpMetadataService', () => {
       const result = await service.getIpInfo('1.2.3.4');
 
       expect(prismaMock.ipMetadata.upsert).not.toHaveBeenCalled();
+      expect(prismaMock.ipMetadata.update).toHaveBeenCalled();
       expect(result.city).toBe('Old City');
       expect(result).not.toHaveProperty('error');
+    });
+
+    it('should not retry a stale record while its retry_after is in the future', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(
+        cachedRecord(45, new Date(Date.now() + DAY_MS / 2)),
+      );
+
+      const result = await service.getIpInfo('1.2.3.4');
+
+      expect(httpService.get).not.toHaveBeenCalled();
+      expect(prismaMock.ipMetadata.update).not.toHaveBeenCalled();
+      expect(result.city).toBe('Old City');
+      expect(result).not.toHaveProperty('retry_after');
+    });
+
+    it('should retry a stale record once its retry_after has passed', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(
+        cachedRecord(45, daysAgo(1)),
+      );
+      (httpService.get as jest.Mock).mockReturnValue(of(freshApiResponse));
+      prismaMock.ipMetadata.upsert.mockResolvedValue({
+        ...cachedRecord(0),
+        ...freshData,
+      });
+
+      const result = await service.getIpInfo('1.2.3.4');
+
+      expect(prismaMock.ipMetadata.upsert).toHaveBeenCalledWith({
+        where: { ip_source: { ip: '1.2.3.4', source: 'ipinfo' } },
+        create: freshData,
+        update: freshData,
+      });
+      expect(result.city).toBe('New City');
     });
   });
 });

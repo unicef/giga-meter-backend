@@ -486,22 +486,26 @@ model connectivity_ping_checks {
 }
 
 model IpMetadata {
-  id         Int      @id @default(autoincrement())
-  ip         String
-  hostname   String?
-  city       String?
-  region     String?
-  country    String?
-  loc        String?
-  org        String?
-  postal     String?
-  timezone   String?
-  asn        String?
-  source     String?
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  id          Int       @id @default(autoincrement())
+  ip          String
+  hostname    String?
+  city        String?
+  region      String?
+  country     String?
+  loc         String?
+  org         String?
+  postal      String?
+  timezone    String?
+  asn         String?
+  source      String?
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  // Last successful fetch. Set by the service rather than @updatedAt, so that
+  // recording a failed refresh in retry_after doesn't make the record look fresh.
+  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
+  retry_after DateTime? @db.Timestamptz(6)
 
   @@unique([ip, source])
+  @@map("ip_metadata")
 }
 
 model Users {

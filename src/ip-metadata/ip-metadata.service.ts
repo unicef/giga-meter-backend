@@ -20,11 +20,14 @@ export interface IpMetadata {
   new?: boolean; // Indicates if this is a new record
   created_at?: Date;
   updated_at?: Date;
+  retry_after?: Date | null;
 }
 
 // Cached IPInfo records older than this are fetched again.
 const DEFAULT_CACHE_MAX_AGE_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
+// After a failed refresh, keep serving the cached record this long before trying again.
+const REFRESH_RETRY_DELAY_MS = DAY_MS;
 
 @Injectable()
 export class IpMetadataService {
@@ -121,10 +124,13 @@ export class IpMetadataService {
     };
   }
 
-  private isStale(updatedAt: Date): boolean {
+  private isStale(record: IpMetadata): boolean {
+    if (record.retry_after && record.retry_after.getTime() > Date.now()) {
+      return false;
+    }
     const maxAgeDays =
       Number(process.env.IPINFO_CACHE_MAX_AGE_DAYS) || DEFAULT_CACHE_MAX_AGE_DAYS;
-    return Date.now() - updatedAt.getTime() > maxAgeDays * DAY_MS;
+    return Date.now() - record.updated_at.getTime() > maxAgeDays * DAY_MS;
   }
 
   // Keep the response shape the clients already know: no source, no timestamps.
@@ -133,6 +139,7 @@ export class IpMetadataService {
     delete response.source;
     delete response.created_at;
     delete response.updated_at;
+    delete response.retry_after;
     return response;
   }
 
@@ -141,7 +148,7 @@ export class IpMetadataService {
     const cached = await this.prisma.ipMetadata.findUnique({
       where: { ip_source: { ip, source: 'ipinfo' } },
     });
-    if (cached && !this.isStale(cached.updated_at)) {
+    if (cached && !this.isStale(cached)) {
       return this.toResponse(cached);
     }
 
@@ -149,7 +156,12 @@ export class IpMetadataService {
     console.log('IP Data:', ipData);
 
     // IPInfo could not be reached: a stale IPInfo record beats GeoJS or an error.
+    // Hold off the next attempt so an outage doesn't cost two upstream calls per request.
     if (cached && ipData.source !== 'ipinfo') {
+      await this.prisma.ipMetadata.update({
+        where: { ip_source: { ip, source: 'ipinfo' } },
+        data: { retry_after: new Date(Date.now() + REFRESH_RETRY_DELAY_MS) },
+      });
       return this.toResponse(cached);
     }
     if (!ipData.new) {
@@ -168,6 +180,8 @@ export class IpMetadataService {
       asn: ipData.asn,
       hostname: ipData.hostname,
       source: ipData.source,
+      updated_at: new Date(),
+      retry_after: null,
     };
     const saved = await this.prisma.ipMetadata.upsert({
       where: { ip_source: { ip: ipData.ip, source: ipData.source } },
