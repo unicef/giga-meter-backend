@@ -1,8 +1,15 @@
 import { HttpException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { of, throwError } from 'rxjs';
 import { GeolocationController } from './geolocation.controller';
+import { GeolocationCache } from './geolocation.cache';
+import { GeolocationCircuit } from './geolocation.circuit';
+import { AuthGuard } from '../auth/auth.guard';
+import { PrismaService } from '../prisma/prisma.service';
+import { CategoryConfigProvider } from '../common/category-config.provider';
+import { mockCategoryConfigProvider } from '../common/mock-objects';
 
 describe('GeolocationController', () => {
   let controller: GeolocationController;
@@ -12,6 +19,8 @@ describe('GeolocationController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [GeolocationController],
       providers: [
+        GeolocationCircuit,
+        { provide: GeolocationCache, useValue: {} },
         {
           provide: HttpService,
           useValue: {
@@ -19,8 +28,18 @@ describe('GeolocationController', () => {
             post: jest.fn(),
           },
         },
+        { provide: PrismaService, useValue: {} },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
+        },
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => Promise.resolve(true) })
+      .overrideGuard(ThrottlerGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<GeolocationController>(GeolocationController);
     httpService = module.get<HttpService>(HttpService);
