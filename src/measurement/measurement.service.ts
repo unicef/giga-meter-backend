@@ -23,6 +23,7 @@ import {
   sanitizeWifiUnavailableReason,
 } from '../common/device-context.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
+import { normalizeClientElapsedTime } from './measurement-elapsed-time';
 
 @Injectable()
 export class MeasurementService {
@@ -207,6 +208,8 @@ export class MeasurementService {
     measurementDto: AddMeasurementDto,
     uploadProtocol?: string,
   ): Promise<string> {
+    // Older Android builds send ElapsedTime in milliseconds; store seconds.
+    normalizeClientElapsedTime(measurementDto.Results);
     const processedResponse = await this.processMeasurement(measurementDto);
 
     switch (processedResponse) {

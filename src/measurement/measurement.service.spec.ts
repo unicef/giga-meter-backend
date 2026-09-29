@@ -655,6 +655,36 @@ describe('MeasurementService', () => {
         }),
       });
     });
+
+    it('should store a millisecond client ElapsedTime from older Android builds in seconds', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        // Only the fields this test is about; the DTO types the rest as required.
+        Results: {
+          'NDTResult.S2C': { LastClientMeasurement: { ElapsedTime: 10_234 } },
+          'NDTResult.C2S': { LastClientMeasurement: { ElapsedTime: 10.1 } },
+        } as unknown as AddMeasurementDto['Results'],
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          results: {
+            'NDTResult.S2C': { LastClientMeasurement: { ElapsedTime: 10.234 } },
+            'NDTResult.C2S': { LastClientMeasurement: { ElapsedTime: 10.1 } },
+          },
+        }),
+      });
+    });
   });
   describe('createMultipleMeasurement', () => {
     it('should create multiple measurements', async () => {
