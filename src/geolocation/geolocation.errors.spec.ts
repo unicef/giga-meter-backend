@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { of, throwError } from 'rxjs';
 import { GeolocationController } from './geolocation.controller';
+import { GeolocationCache } from './geolocation.cache';
 import {
   CIRCUIT_FAILURE_THRESHOLD,
   GeolocationCircuit,
@@ -16,7 +17,17 @@ import { mockCategoryConfigProvider } from '../common/mock-objects';
 /** Minimal valid body, so these tests exercise the error mapping and nothing else. */
 const BODY = {
   considerIp: false,
-  wifiAccessPoints: [{ macAddress: '00:11:22:33:44:55', signalStrength: -60 }],
+  wifiAccessPoints: [
+    { macAddress: '00:11:22:33:44:55', signalStrength: -60 },
+    { macAddress: '00:11:22:33:44:66', signalStrength: -70 },
+  ],
+};
+
+/** A cache that always misses, so every call reaches the (mocked) provider. */
+const missingCache = {
+  get: jest.fn().mockResolvedValue({ kind: 'miss' }),
+  set: jest.fn().mockResolvedValue(undefined),
+  count: jest.fn(),
 };
 
 describe('Geolocation upstream error mapping', () => {
@@ -29,6 +40,7 @@ describe('Geolocation upstream error mapping', () => {
       controllers: [GeolocationController],
       providers: [
         GeolocationCircuit,
+        { provide: GeolocationCache, useValue: missingCache },
         {
           provide: HttpService,
           useValue: { get: jest.fn(), post: jest.fn() },
@@ -97,6 +109,23 @@ describe('Geolocation upstream error mapping', () => {
       HttpStatus.BAD_GATEWAY,
     );
   });
+
+  it.each(['dailyLimitExceeded', 'userRateLimitExceeded'])(
+    'answers 503, not 502, when the provider says the quota is spent (%s)',
+    async (reason) => {
+      // Google reports quota exhaustion as a 403, not a 429.
+      rejectPostWith({
+        response: {
+          status: 403,
+          data: { error: { code: 403, errors: [{ domain: 'usageLimits', reason }] } },
+        },
+      });
+
+      expect(await statusOf(controller.geolocate(BODY as any))).toBe(
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    },
+  );
 
   it('answers 503 when the provider rate limits us', async () => {
     rejectPostWith({ response: { status: 429, data: {} } });
