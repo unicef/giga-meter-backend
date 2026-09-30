@@ -4,7 +4,6 @@ import { Reflector } from '@nestjs/core';
 import { CategoryConfigProvider } from './category-config.provider';
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { IS_PUBLIC_KEY } from './public.decorator';
-import { CATEGORY_KEY } from './category.decorator';
 
 // Mocks
 const mockReflector = {
@@ -18,25 +17,42 @@ const mockCategoryConfigProvider = {
   hasApiAccess: jest.fn(),
 };
 
-const mockExecutionContext = (request: any): ExecutionContext => ({
-  switchToHttp: () => ({
-    getRequest: () => request,
-  }),
-  getHandler: () => { function a() {} return a },
-  getClass: () => { class A {} return A },
-} as any);
+const mockExecutionContext = (request: any): ExecutionContext =>
+  ({
+    switchToHttp: () => ({
+      getRequest: () => request,
+    }),
+    getHandler: () => {
+      function a() {}
+      return a;
+    },
+    getClass: () => {
+      class A {}
+      return A;
+    },
+  }) as any;
 
 describe('CategoryGuard', () => {
   let guard: CategoryGuard;
   let reflector: typeof mockReflector;
   let configProvider: typeof mockCategoryConfigProvider;
 
+  const originalUseAuth = process.env.USE_AUTH;
+
   beforeEach(async () => {
+    // These tests exercise the real category-resolution path, which is
+    // skipped when auth is disabled (see the dedicated describe block below
+    // for that behavior) — keep USE_AUTH=true here to match.
+    process.env.USE_AUTH = 'true';
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CategoryGuard,
         { provide: Reflector, useValue: mockReflector },
-        { provide: CategoryConfigProvider, useValue: mockCategoryConfigProvider },
+        {
+          provide: CategoryConfigProvider,
+          useValue: mockCategoryConfigProvider,
+        },
       ],
     }).compile();
 
@@ -44,6 +60,10 @@ describe('CategoryGuard', () => {
     reflector = module.get(Reflector);
     configProvider = module.get(CategoryConfigProvider);
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    process.env.USE_AUTH = originalUseAuth;
   });
 
   it('should be defined', () => {
@@ -61,7 +81,10 @@ describe('CategoryGuard', () => {
     const context = mockExecutionContext({ url: '/public/route' });
     const result = await guard.canActivate(context);
     expect(result).toBe(true);
-    expect(reflector.getAllAndOverride).toHaveBeenCalledWith(IS_PUBLIC_KEY, [expect.any(Function), expect.any(Function)]);
+    expect(reflector.getAllAndOverride).toHaveBeenCalledWith(IS_PUBLIC_KEY, [
+      expect.any(Function),
+      expect.any(Function),
+    ]);
   });
 
   it('should throw ForbiddenException if category config does not exist', async () => {
@@ -80,51 +103,75 @@ describe('CategoryGuard', () => {
       reflector.getAllAndOverride.mockReturnValue(false);
       reflector.get.mockReturnValue(['admin', 'super']);
       configProvider.getCategoryConfig.mockResolvedValue({ name: 'admin' });
-      const context = mockExecutionContext({ path: '/admin/path', method: 'GET', category: 'admin' });
+      const context = mockExecutionContext({
+        path: '/admin/path',
+        method: 'GET',
+        category: 'admin',
+      });
 
       const result = await guard.canActivate(context);
       expect(result).toBe(true);
     });
 
     it('should deny access if category is not in the required list', async () => {
-        reflector.getAllAndOverride.mockReturnValue(false);
-        reflector.get.mockReturnValue(['admin']);
-        configProvider.getCategoryConfig.mockResolvedValue({ name: 'user' });
-        const context = mockExecutionContext({ path: '/admin/path', method: 'GET', category: 'user' });
-  
-        await expect(guard.canActivate(context)).rejects.toThrow(
-          new ForbiddenException('This endpoint requires one of these categories: admin'),
-        );
+      reflector.getAllAndOverride.mockReturnValue(false);
+      reflector.get.mockReturnValue(['admin']);
+      configProvider.getCategoryConfig.mockResolvedValue({ name: 'user' });
+      const context = mockExecutionContext({
+        path: '/admin/path',
+        method: 'GET',
+        category: 'user',
       });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        new ForbiddenException(
+          'This endpoint requires one of these categories: admin',
+        ),
+      );
+    });
   });
 
   describe('With General API Access', () => {
     const mockConfig = { name: 'test' };
     beforeEach(() => {
-        reflector.getAllAndOverride.mockReturnValue(false);
-        reflector.get.mockReturnValue(undefined); // No specific categories required
-        configProvider.getCategoryConfig.mockResolvedValue(mockConfig);
-        configProvider.getDefaultCategory.mockResolvedValue('test');
+      reflector.getAllAndOverride.mockReturnValue(false);
+      reflector.get.mockReturnValue(undefined); // No specific categories required
+      configProvider.getCategoryConfig.mockResolvedValue(mockConfig);
+      configProvider.getDefaultCategory.mockResolvedValue('test');
     });
 
     it('should allow access if hasApiAccess returns true', async () => {
-        configProvider.hasApiAccess.mockResolvedValue(true);
-        const context = mockExecutionContext({ path: '/allowed/path', method: 'GET' });
-  
-        const result = await guard.canActivate(context);
-        expect(result).toBe(true);
-        expect(configProvider.hasApiAccess).toHaveBeenCalledWith(mockConfig, '/allowed/path', 'GET');
+      configProvider.hasApiAccess.mockResolvedValue(true);
+      const context = mockExecutionContext({
+        path: '/allowed/path',
+        method: 'GET',
       });
-  
-      it('should deny access if hasApiAccess returns false', async () => {
-        configProvider.hasApiAccess.mockResolvedValue(false);
-        const context = mockExecutionContext({ path: '/forbidden/path', method: 'POST' });
-  
-        await expect(guard.canActivate(context)).rejects.toThrow(
-          new ForbiddenException('Unauthorized to access POST /forbidden/path'),
-        );
-        expect(configProvider.hasApiAccess).toHaveBeenCalledWith(mockConfig, '/forbidden/path', 'POST');
+
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
+      expect(configProvider.hasApiAccess).toHaveBeenCalledWith(
+        mockConfig,
+        '/allowed/path',
+        'GET',
+      );
+    });
+
+    it('should deny access if hasApiAccess returns false', async () => {
+      configProvider.hasApiAccess.mockResolvedValue(false);
+      const context = mockExecutionContext({
+        path: '/forbidden/path',
+        method: 'POST',
       });
+
+      await expect(guard.canActivate(context)).rejects.toThrow(
+        new ForbiddenException('Unauthorized to access POST /forbidden/path'),
+      );
+      expect(configProvider.hasApiAccess).toHaveBeenCalledWith(
+        mockConfig,
+        '/forbidden/path',
+        'POST',
+      );
+    });
   });
 
   it('should attach the category to the request object', async () => {
@@ -139,5 +186,44 @@ describe('CategoryGuard', () => {
     await guard.canActivate(context);
 
     expect(request['category']).toBe('default');
+  });
+
+  describe('When auth is disabled (USE_AUTH !== "true")', () => {
+    beforeEach(() => {
+      process.env.USE_AUTH = 'false';
+      reflector.getAllAndOverride.mockReturnValue(false);
+    });
+
+    it('allows the request without consulting category config, and attaches giga_meter', async () => {
+      const request = { path: '/api/v1/dailycheckapp_schools', method: 'POST' };
+      const context = mockExecutionContext(request);
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(request['category']).toBe('giga_meter');
+      expect(configProvider.getCategoryConfig).not.toHaveBeenCalled();
+      expect(configProvider.hasApiAccess).not.toHaveBeenCalled();
+    });
+
+    it('does not affect isPublic/isMetrics/isAdmin short-circuits', async () => {
+      const context = mockExecutionContext({ url: '/metrics' });
+      const result = await guard.canActivate(context);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('When USE_AUTH is unset entirely', () => {
+    it('is treated the same as USE_AUTH=false (fails closed toward local-trusted, not toward PUBLIC)', async () => {
+      delete process.env.USE_AUTH;
+      reflector.getAllAndOverride.mockReturnValue(false);
+      const request = { path: '/api/v1/dailycheckapp_schools', method: 'POST' };
+      const context = mockExecutionContext(request);
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(request['category']).toBe('giga_meter');
+    });
   });
 });

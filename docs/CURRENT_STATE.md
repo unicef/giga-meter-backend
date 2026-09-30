@@ -1,6 +1,6 @@
 # Current state — giga-meter-backend
 
-_Last reviewed: 2026-06-02_
+_Last reviewed: 2026-08-31_
 
 > **Maintainers:** update this file when merging PRs. Do not store PR narratives here — use `/prs/{number}-{slug}.md`. This file is a link-first index, not a full narrative — see [How to keep this current](#how-to-keep-this-current).
 
@@ -42,7 +42,9 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 ## Local data
 
 - Migrations: `npx prisma migrate deploy` / `migrate dev`
-- Optional seed SQL: `src/prisma/scripts/local-dev-seed.sql` (run via `src/prisma/seed.ts` when configured)
+- `docker-compose.yml` at repo root spins up local Postgres + Redis: `docker compose up -d`, then `node scripts/wait-for-db.js && npx prisma migrate dev && npx prisma db seed` (see README's Local Database (Docker) section for the full sequence — no `npm run db:*` shortcuts, run these directly). Postgres is a custom build (`docker/postgres.Dockerfile`, `FROM postgres:15` + the `postgis` extension package) — matches staging's actual server (confirmed via a staging `pg_dump` header: PostgreSQL 15.16 with `postgis`); the plain `postgres:15` image has no PostGIS extension files and can't run the `school_geopoint_geographqy` migration. See [ADR 002](./adr/002-local-dev-db-tooling.md).
+- Seeding is wired: `package.json`'s `prisma.seed` runs `src/prisma/seed.ts`, which applies `src/prisma/scripts/country-insert-script.sql` and `local-dev-seed.sql` (countries, a master `school` row, and `dailycheckapp_school` test installations — one active, one deactivated, for testing both paths). `prisma migrate dev`'s own auto-seed did not reliably fire in testing — always run `npx prisma db seed` explicitly as its own step after migrating. All seed SQL upserts (`ON CONFLICT`), safe to re-run.
+- `USE_AUTH="false"` now grants full local access, including write endpoints (`POST`/`PUT`) — `auth.guard.ts`/`category.guard.ts` treat a disabled-auth caller as fully trusted (`category: giga_meter`) rather than falling through to the read-only `PUBLIC` default. Scoped strictly to `!useAuth`, same trust boundary `AuthGuard` already used to skip token validation entirely — does not change behavior when `USE_AUTH="true"` (real category-based access control, matching production, still applies). See [ADR 002](./adr/002-local-dev-db-tooling.md).
 
 ## TODO (populate as needed)
 
