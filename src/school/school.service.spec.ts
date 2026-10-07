@@ -243,7 +243,38 @@ describe('SchoolService', () => {
       // that merges, restore the object assertion here.
       expect(response).toBe('existing_user_id');
       expect(createSpy).not.toHaveBeenCalled();
+      // Lowercased exact match first: it can use the giga_id_school index.
       expect(findFirstSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            device_hardware_id: 'hardware-1',
+            giga_id_school: 'gigaid1',
+          }),
+        }),
+      );
+    });
+
+    it('should fall back to a case-insensitive match for a registration stored with another casing', async () => {
+      const existing = {
+        ...mockSchoolModel[0],
+        user_id: 'existing_user_id',
+        device_hardware_id: 'hardware-1',
+      };
+      const findFirstSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(existing);
+      const createSpy = jest.spyOn(prisma.dailycheckapp_school, 'create');
+
+      const response = await service.createSchool({
+        ...mockSchoolDto[0],
+        device_hardware_id: 'hardware-1',
+      });
+
+      expect(response).toEqual('existing_user_id');
+      expect(createSpy).not.toHaveBeenCalled();
+      expect(findFirstSpy).toHaveBeenNthCalledWith(
+        2,
         expect.objectContaining({
           where: expect.objectContaining({
             device_hardware_id: 'hardware-1',
