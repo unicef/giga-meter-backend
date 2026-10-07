@@ -4,13 +4,14 @@ import { CategoryConfigService } from './category-config.service';
 import { CategoryConfigController } from './category-config.controller';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
+import { PrismaModule } from '../prisma/prisma.module';
 
 describe('CategoryConfigModule', () => {
   let module: TestingModule;
 
   beforeEach(async () => {
     module = await Test.createTestingModule({
-      imports: [CategoryConfigModule],
+      imports: [PrismaModule, CategoryConfigModule],
     })
     .overrideProvider(PrismaService).useValue({})
     .compile();
