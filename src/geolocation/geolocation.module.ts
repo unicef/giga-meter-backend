@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { GeolocationController } from './geolocation.controller';
 import { GeolocationUtility } from './geolocation.utility';
-import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationCircuit } from './geolocation.circuit';
 import { GeolocationCache, GEOLOCATION_REDIS } from './geolocation.cache';
 
@@ -19,7 +18,6 @@ export const GOOGLE_API_TIMEOUT_MS = 8_000;
   controllers: [GeolocationController],
   providers: [
     GeolocationUtility,
-    PrismaService,
     GeolocationCircuit,
     GeolocationCache,
     {
