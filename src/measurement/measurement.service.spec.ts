@@ -441,10 +441,10 @@ describe('MeasurementService', () => {
       });
 
       expect(response).toEqual('');
+      // Lowercased exact match first: it can use the giga_id_school index.
+      expect(schoolSpy).toHaveBeenCalledTimes(1);
       expect(schoolSpy).toHaveBeenCalledWith({
-        where: {
-          giga_id_school: { equals: 'TZ-TEST-88001', mode: 'insensitive' },
-        },
+        where: { giga_id_school: 'tz-test-88001' },
       });
       expect(mappingSpy).toHaveBeenCalledWith({
         where: {
@@ -473,8 +473,35 @@ describe('MeasurementService', () => {
       });
 
       expect(schoolSpy).toHaveBeenCalledWith({
+        where: { giga_id_school: 'tz-test-88001' },
+      });
+    });
+
+    it('should fall back to a case-insensitive match when the exact match misses', async () => {
+      // A row inserted by hand keeps its original casing.
+      const schoolSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      const response = await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        giga_id_school: 'TZ-TEST-88001',
+      });
+
+      expect(response).toEqual('');
+      expect(schoolSpy).toHaveBeenNthCalledWith(1, {
+        where: { giga_id_school: 'tz-test-88001' },
+      });
+      expect(schoolSpy).toHaveBeenNthCalledWith(2, {
         where: {
-          giga_id_school: { equals: 'tz-test-88001', mode: 'insensitive' },
+          giga_id_school: { equals: 'TZ-TEST-88001', mode: 'insensitive' },
         },
       });
     });

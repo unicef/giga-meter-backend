@@ -334,9 +334,10 @@ export class MeasurementService {
     // behaviour for measurements submitted without a giga_id_school.
     const gigaIdFilter = this.caseInsensitiveGigaId(dto.giga_id_school);
 
-    const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
-      where: { giga_id_school: gigaIdFilter },
-    });
+    const existingRecord = await this.findRegisteredSchool(
+      dto.giga_id_school,
+      gigaIdFilter,
+    );
 
     if (existingRecord == null) {
       return this.SCHOOL_DOESNT_EXIST_ERR;
@@ -354,6 +355,34 @@ export class MeasurementService {
         : this.WRONG_COUNTRY_CODE_ERR;
     }
     return null;
+  }
+
+  /**
+   * Finds the device registration for a giga_id_school.
+   *
+   * The case-insensitive filter becomes an ILIKE, which cannot use the
+   * giga_id_school index and scans the whole table on every measurement. The
+   * API stores ids lowercased, so an exact match on the lowercased id finds
+   * almost every row through the index; the case-insensitive match only runs
+   * when that misses (rows inserted by hand with another casing, or a school
+   * that is not registered).
+   */
+  private async findRegisteredSchool(
+    giga_id_school: string | null | undefined,
+    gigaIdFilter: ReturnType<MeasurementService['caseInsensitiveGigaId']>,
+  ) {
+    if (giga_id_school != null) {
+      const exact = await this.prisma.dailycheckapp_school.findFirst({
+        where: { giga_id_school: giga_id_school.trim().toLowerCase() },
+      });
+      if (exact != null) {
+        return exact;
+      }
+    }
+
+    return this.prisma.dailycheckapp_school.findFirst({
+      where: { giga_id_school: gigaIdFilter },
+    });
   }
 
   /**
