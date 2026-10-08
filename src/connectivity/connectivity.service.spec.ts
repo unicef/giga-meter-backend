@@ -58,6 +58,27 @@ describe('ConnectivityService', () => {
       ).rejects.toThrow(new BadRequestException('School does not exist'));
     });
 
+    it('matches the school ignoring case and stores the id lowercase', async () => {
+      schoolExists(true);
+      const createMany = jest
+        .spyOn(prisma.connectivity_ping_checks, 'createMany')
+        .mockResolvedValue({ count: 1 });
+
+      await service.createMany([record('a')], 'TZ-TEST-88001');
+
+      expect(prisma.dailycheckapp_school.findFirst).toHaveBeenCalledWith({
+        where: {
+          giga_id_school: { equals: 'TZ-TEST-88001', mode: 'insensitive' },
+        },
+      });
+      expect(createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skipDuplicates: true,
+          data: [expect.objectContaining({ giga_id_school: 'tz-test-88001' })],
+        }),
+      );
+    });
+
     it('skips records the client already delivered', async () => {
       schoolExists(true);
       const createMany = jest
@@ -88,6 +109,21 @@ describe('ConnectivityService', () => {
   });
 
   describe('create', () => {
+    it('stores a single check under the lowercase school id', async () => {
+      schoolExists(true);
+      const create = jest
+        .spyOn(prisma.connectivity_ping_checks, 'create')
+        .mockResolvedValue({} as any);
+
+      const single = record('a');
+      single.giga_id_school = 'TZ-TEST-88001';
+      await service.create(single);
+
+      expect(create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ giga_id_school: 'tz-test-88001' }),
+      });
+    });
+
     it('treats a re-sent record as stored', async () => {
       schoolExists(true);
       jest

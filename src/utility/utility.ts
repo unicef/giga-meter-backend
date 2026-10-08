@@ -4,11 +4,21 @@ import { PrismaService } from 'src/prisma/prisma.service';
 
 export const existSchool = async (
   prisma: PrismaService,
-  giga_id_school: string,
+  giga_id_school?: string | null,
 ) => {
+  const gigaId = giga_id_school?.trim();
+  if (!gigaId) {
+    return false;
+  }
+  // Registration lowercases giga_id_school, but rows also arrive through
+  // hand-written SQL and the app sends the school-master casing. An exact
+  // match rejected those pings with "School does not exist".
   const school = await prisma.dailycheckapp_school.findFirst({
     where: {
-      giga_id_school: giga_id_school,
+      giga_id_school: {
+        equals: gigaId,
+        mode: 'insensitive',
+      },
     },
   });
   return school ? true : false;

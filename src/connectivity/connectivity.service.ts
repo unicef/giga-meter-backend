@@ -18,6 +18,12 @@ export class ConnectivityService {
   private readonly logger = new Logger(ConnectivityService.name);
 
   constructor(private prisma: PrismaService) {}
+
+  /** Matches dailycheckapp_school, which stores giga_id_school lowercased. */
+  private storedSchoolId(giga_id_school?: string | null): string {
+    return giga_id_school?.trim().toLowerCase() ?? '';
+  }
+
   async create(createConnectivityDto: CreateConnectivityDto) {
     if (
       (await existSchool(this.prisma, createConnectivityDto.giga_id_school)) ===
@@ -28,6 +34,9 @@ export class ConnectivityService {
       await this.prisma.connectivity_ping_checks.create({
         data: {
           ...createConnectivityDto,
+          giga_id_school: this.storedSchoolId(
+            createConnectivityDto.giga_id_school,
+          ),
         },
       });
       return createConnectivityDto;
@@ -49,11 +58,12 @@ export class ConnectivityService {
   ) {
     if ((await existSchool(this.prisma, giga_id_school)) === false)
       throw new BadRequestException('School does not exist');
+    const storedSchoolId = this.storedSchoolId(giga_id_school);
     try {
       await this.prisma.connectivity_ping_checks.createMany({
         data: createConnectivityDto.map((record) => ({
           ...record,
-          giga_id_school,
+          giga_id_school: storedSchoolId,
         })),
         // A batch the client already delivered would otherwise fail as a whole
         // on app_local_uuid and stay queued on the device forever.
@@ -79,7 +89,9 @@ export class ConnectivityService {
     try {
       const data = await this.prisma.connectivity_ping_checks.findMany({
         where: {
-          giga_id_school,
+          giga_id_school: giga_id_school
+            ? { equals: giga_id_school.trim(), mode: 'insensitive' }
+            : giga_id_school,
           timestamp: {
             gte: start_time,
             lte: end_time,

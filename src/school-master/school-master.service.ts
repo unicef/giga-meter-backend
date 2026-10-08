@@ -39,14 +39,15 @@ export class SchoolMasterService {
   }
 
   async flagsByGigaId(giga_id_school: string): Promise<FeatureFlagDto> {
-    const query = {
+    const school = await this.prisma.school.findFirstOrThrow({
       where: {
-        giga_id_school,
+        giga_id_school: {
+          equals: giga_id_school.trim(),
+          mode: 'insensitive',
+        },
       },
-      select: schoolMasterSelect
-    };
-
-    const school = await this.prisma.school.findFirstOrThrow(query);
+      select: schoolMasterSelect,
+    });
     let flags = plainToInstance(FeatureFlagDto, school?.feature_flags);
 
     // If flags is null/undefined, initialize with default pingService: true
