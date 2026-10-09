@@ -58,6 +58,41 @@ describe('ConnectivityService', () => {
       ).rejects.toThrow(new BadRequestException('School does not exist'));
     });
 
+    it('matches the normalized school id and stores it lowercase', async () => {
+      schoolExists(true);
+      const createMany = jest
+        .spyOn(prisma.connectivity_ping_checks, 'createMany')
+        .mockResolvedValue({ count: 1 });
+
+      await service.createMany([record('a')], ' TZ-TEST-88001 ');
+
+      expect(prisma.dailycheckapp_school.findFirst).toHaveBeenCalledWith({
+        where: { giga_id_school: 'tz-test-88001' },
+        select: { id: true },
+      });
+      expect(createMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          skipDuplicates: true,
+          data: [expect.objectContaining({ giga_id_school: 'tz-test-88001' })],
+        }),
+      );
+    });
+
+    it('looks up percent and underscore as literal characters', async () => {
+      const findFirst = jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(null);
+
+      await expect(service.createMany([record('a')], '%_\\')).rejects.toThrow(
+        new BadRequestException('School does not exist'),
+      );
+
+      expect(findFirst).toHaveBeenCalledWith({
+        where: { giga_id_school: '%_\\' },
+        select: { id: true },
+      });
+    });
+
     it('skips records the client already delivered', async () => {
       schoolExists(true);
       const createMany = jest
@@ -88,6 +123,21 @@ describe('ConnectivityService', () => {
   });
 
   describe('create', () => {
+    it('stores a single check under the lowercase school id', async () => {
+      schoolExists(true);
+      const create = jest
+        .spyOn(prisma.connectivity_ping_checks, 'create')
+        .mockResolvedValue({} as any);
+
+      const single = record('a');
+      single.giga_id_school = 'TZ-TEST-88001';
+      await service.create(single);
+
+      expect(create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ giga_id_school: 'tz-test-88001' }),
+      });
+    });
+
     it('treats a re-sent record as stored', async () => {
       schoolExists(true);
       jest

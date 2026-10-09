@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeGigaId } from '../utility/utility';
 import {
-  Prisma,
   measurements as Measurement,
   measurements_failed as MeasurementFailed,
 } from '@prisma/client';
@@ -324,20 +324,13 @@ export class MeasurementService {
   private async processMeasurement(
     dto: AddMeasurementDto,
   ): Promise<string | null> {
-    // giga_id_school is lowercased whenever a device registers through the API
-    // (SchoolService.toModel), but rows also land in these tables through
-    // hand-written SQL, so the stored casing cannot be trusted. The client
-    // sends the id exactly as the schools master returned it, which for the
-    // Android test schools is uppercase ("TZ-TEST-88001"); an exact match then
-    // rejected every upload with SCHOOL_DOESNT_EXIST_ERR.
-    // A null/undefined id is passed through unchanged to keep the previous
-    // behaviour for measurements submitted without a giga_id_school.
-    const gigaIdFilter = this.caseInsensitiveGigaId(dto.giga_id_school);
+    // Stored giga ids are lowercase. A null/undefined id is passed through
+    // unchanged so a measurement submitted without one keeps the previous filter.
+    const gigaIdFilter = this.normalizedGigaId(dto.giga_id_school);
 
-    const existingRecord = await this.findRegisteredSchool(
-      dto.giga_id_school,
-      gigaIdFilter,
-    );
+    const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
+      where: { giga_id_school: gigaIdFilter },
+    });
 
     if (existingRecord == null) {
       return this.SCHOOL_DOESNT_EXIST_ERR;
@@ -358,47 +351,17 @@ export class MeasurementService {
   }
 
   /**
-   * Finds the device registration for a giga_id_school.
-   *
-   * The case-insensitive filter becomes an ILIKE, which cannot use the
-   * giga_id_school index and scans the whole table on every measurement. The
-   * API stores ids lowercased, so an exact match on the lowercased id finds
-   * almost every row through the index; the case-insensitive match only runs
-   * when that misses (rows inserted by hand with another casing, or a school
-   * that is not registered).
-   */
-  private async findRegisteredSchool(
-    giga_id_school: string | null | undefined,
-    gigaIdFilter: ReturnType<MeasurementService['caseInsensitiveGigaId']>,
-  ) {
-    if (giga_id_school != null) {
-      const exact = await this.prisma.dailycheckapp_school.findFirst({
-        where: { giga_id_school: giga_id_school.trim().toLowerCase() },
-      });
-      if (exact != null) {
-        return exact;
-      }
-    }
-
-    return this.prisma.dailycheckapp_school.findFirst({
-      where: { giga_id_school: gigaIdFilter },
-    });
-  }
-
-  /**
-   * Builds a case-insensitive equality filter for a giga_id_school column.
-   *
    * Returns the value untouched when it is null/undefined so Prisma keeps
    * treating it the same way it did before (undefined drops the filter,
    * null matches NULL rows).
    */
-  private caseInsensitiveGigaId(
+  private normalizedGigaId(
     giga_id_school?: string,
-  ): Prisma.StringNullableFilter | string | null | undefined {
+  ): string | null | undefined {
     if (giga_id_school == null) {
       return giga_id_school;
     }
-    return { equals: giga_id_school.trim(), mode: 'insensitive' };
+    return normalizeGigaId(giga_id_school);
   }
 
   private applyFilter(
@@ -414,7 +377,7 @@ export class MeasurementService {
       // so normalising the incoming value keeps the lookup on the plain
       // b-tree index instead of falling back to an ILIKE scan of a table
       // that is orders of magnitude larger than dailycheckapp_school.
-      giga_id_school: giga_id_school?.toLowerCase().trim(),
+      giga_id_school: giga_id_school == null ? giga_id_school : normalizeGigaId(giga_id_school),
       country_code: {
         in: countries,
       },
@@ -681,7 +644,10 @@ export class MeasurementService {
       data_usage: measurement?.DataUsage,
       latency: measurement.Latency,
       results: measurement.Results,
-      giga_id_school: measurement.giga_id_school?.toLowerCase().trim(),
+      giga_id_school:
+        measurement.giga_id_school == null
+          ? measurement.giga_id_school
+          : normalizeGigaId(measurement.giga_id_school),
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
@@ -736,7 +702,10 @@ export class MeasurementService {
       upload: measurement.Upload,
       latency: measurement.Latency,
       results: measurement.Results,
-      giga_id_school: measurement.giga_id_school?.toLowerCase().trim(),
+      giga_id_school:
+        measurement.giga_id_school == null
+          ? measurement.giga_id_school
+          : normalizeGigaId(measurement.giga_id_school),
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,

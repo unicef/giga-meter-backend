@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeGigaId } from '../utility/utility';
 import { UpsertCountryProtocolConfigDto } from './protocol-config-upsert-country.dto';
 import { UpsertSchoolProtocolConfigDto } from './protocol-config-upsert-school.dto';
 import {
@@ -50,7 +51,7 @@ export class ProtocolConfigService {
     gigaIdSchool?: string | null,
     countryCode?: string | null,
   ): Promise<ResolvedProtocolConfig> {
-    const giga = gigaIdSchool?.trim() || undefined;
+    const giga = normalizeGigaId(gigaIdSchool) || undefined;
     const country = countryCode?.trim() || undefined;
 
     const [schoolRow, countryRow] = await Promise.all([
@@ -164,7 +165,7 @@ export class ProtocolConfigService {
     gigaIdSchool: string,
     dto: UpsertSchoolProtocolConfigDto,
   ): Promise<SchoolProtocolConfigRecord> {
-    const gigaId = gigaIdSchool?.trim();
+    const gigaId = normalizeGigaId(gigaIdSchool);
     if (!gigaId) {
       throw new BadRequestException('gigaIdSchool is required');
     }
@@ -202,7 +203,7 @@ export class ProtocolConfigService {
   }
 
   async deleteSchool(gigaIdSchool: string): Promise<void> {
-    const gigaId = gigaIdSchool?.trim();
+    const gigaId = normalizeGigaId(gigaIdSchool);
     if (!gigaId) {
       throw new BadRequestException('gigaIdSchool is required');
     }

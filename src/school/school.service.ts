@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, dailycheckapp_school as School } from '@prisma/client';
+import { dailycheckapp_school as School } from '@prisma/client';
 import { CreateSchoolResponseDto, SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
@@ -8,6 +8,7 @@ import {
   sanitizeHardwareId,
   isHardwareIdBlocked,
 } from '../common/hardware-id.utils';
+import { normalizeGigaId } from '../utility/utility';
 
 @Injectable()
 export class SchoolService {
@@ -200,26 +201,15 @@ export class SchoolService {
       return null;
     }
 
-    const findOldest = (giga_id_school: Prisma.StringNullableFilter | string) =>
-      this.prisma.dailycheckapp_school.findFirst({
-        where: {
-          giga_id_school,
-          device_hardware_id: key.device_hardware_id,
-          OR: [{ is_active: null }, { is_active: true }],
-        },
-        // Oldest first: the identity the device has been reporting all along.
-        orderBy: { id: 'asc' },
-      });
-
-    // The exact match on the lowercased id uses the giga_id_school index and
-    // finds every row registered through the API, which lowercases on write.
-    // Rows also land in this table through hand-written SQL, so the stored
-    // casing cannot be trusted: on a miss, fall back to the case-insensitive
-    // match (an ILIKE that scans the table).
-    return (
-      (await findOldest(key.giga_id_school.trim().toLowerCase())) ??
-      findOldest({ equals: key.giga_id_school, mode: 'insensitive' })
-    );
+    return this.prisma.dailycheckapp_school.findFirst({
+      where: {
+        giga_id_school: key.giga_id_school,
+        device_hardware_id: key.device_hardware_id,
+        OR: [{ is_active: null }, { is_active: true }],
+      },
+      // Oldest first: the identity the device has been reporting all along.
+      orderBy: { id: 'asc' },
+    });
   }
 
   /**
@@ -231,7 +221,10 @@ export class SchoolService {
     device_hardware_id?: string;
   } {
     return {
-      giga_id_school: school.giga_id_school?.toLowerCase().trim(),
+      giga_id_school:
+        school.giga_id_school == null
+          ? school.giga_id_school
+          : normalizeGigaId(school.giga_id_school),
       device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
     };
   }
@@ -422,7 +415,10 @@ export class SchoolService {
     const school = await this.prisma.dailycheckapp_school.findFirst({
       where: {
         device_hardware_id,
-        giga_id_school: giga_id_school?.toLowerCase().trim(),
+        giga_id_school:
+          giga_id_school == null
+            ? giga_id_school
+            : normalizeGigaId(giga_id_school),
       },
       orderBy: {
         created_at: 'desc',
@@ -475,7 +471,10 @@ export class SchoolService {
     const result = await this.prisma.dailycheckapp_school.updateMany({
       where: {
         device_hardware_id,
-        giga_id_school: giga_id_school?.toLowerCase().trim(),
+        giga_id_school:
+          giga_id_school == null
+            ? giga_id_school
+            : normalizeGigaId(giga_id_school),
         OR: [{ is_active: null }, { is_active: true }],
       },
       data: {
@@ -498,7 +497,8 @@ export class SchoolService {
   }
 
   async resolveIsVerified(giga_id_school?: string | null): Promise<boolean> {
-    const normalizedGigaId = giga_id_school?.toLowerCase().trim();
+    const normalizedGigaId =
+      giga_id_school == null ? giga_id_school : normalizeGigaId(giga_id_school);
 
     if (!normalizedGigaId) {
       return false;

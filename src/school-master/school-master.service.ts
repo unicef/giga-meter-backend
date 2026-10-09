@@ -4,6 +4,7 @@ import { FeatureFlagDto, SchoolMasterDto } from './school-master.dto';
 import { plainToInstance } from 'class-transformer';
 import { school, school_new_registration } from '@prisma/client';
 import { schoolMasterSelect } from './school-master.constant';
+import { normalizeGigaId } from '../utility/utility';
 
 @Injectable()
 export class SchoolMasterService {
@@ -39,14 +40,14 @@ export class SchoolMasterService {
   }
 
   async flagsByGigaId(giga_id_school: string): Promise<FeatureFlagDto> {
-    const query = {
-      where: {
-        giga_id_school,
-      },
-      select: schoolMasterSelect
-    };
-
-    const school = await this.prisma.school.findFirstOrThrow(query);
+    const gigaId = normalizeGigaId(giga_id_school);
+    // Oldest row when two schools were stored under casings that collapse
+    // to the same id. GET and PUT use this same key and order.
+    const school = await this.prisma.school.findFirstOrThrow({
+      where: { giga_id_school: gigaId },
+      select: schoolMasterSelect,
+      orderBy: { id: 'asc' },
+    });
     let flags = plainToInstance(FeatureFlagDto, school?.feature_flags);
 
     // If flags is null/undefined, initialize with default pingService: true
@@ -68,8 +69,9 @@ export class SchoolMasterService {
     flagDto: FeatureFlagDto,
   ): Promise<boolean> {
     const school = await this.prisma.school.findFirstOrThrow({
-      where: { giga_id_school },
-      select: schoolMasterSelect
+      where: { giga_id_school: normalizeGigaId(giga_id_school) },
+      select: schoolMasterSelect,
+      orderBy: { id: 'asc' },
     });
     if (school) {
       const updatedSchool = this.updateFlags(school, flagDto);

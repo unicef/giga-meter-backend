@@ -12,6 +12,7 @@ import {
 } from './ping-aggregation.dto';
 import { plainToInstance } from 'class-transformer';
 import redisClient from 'src/utils/redis.client';
+import { normalizeGigaId } from 'src/utility/utility';
 
 @Injectable()
 export class PingAggregationService {
@@ -29,7 +30,7 @@ export class PingAggregationService {
           : 'completed';
 
       const where: Prisma.ConnectivityPingChecksDailyAggrWhereInput = {};
-      if (giga_id_school) where.giga_id_school = giga_id_school;
+      if (giga_id_school) where.giga_id_school = normalizeGigaId(giga_id_school);
 
       if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime()))
         where.timestamp_date = {
@@ -184,7 +185,7 @@ export class PingAggregationService {
       );
 
       const where: Prisma.connectivity_ping_checksWhereInput = {};
-      if (giga_id_school) where.giga_id_school = giga_id_school;
+      if (giga_id_school) where.giga_id_school = normalizeGigaId(giga_id_school);
 
       if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime())) {
         const fromDate = new Date(from);

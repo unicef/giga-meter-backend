@@ -2,16 +2,29 @@
 
 import { PrismaService } from 'src/prisma/prisma.service';
 
+/**
+ * The form stored for a giga id: trimmed and lowercased.
+ * An empty or missing id stays empty so callers can treat it as absent.
+ */
+export const normalizeGigaId = (giga_id_school?: string | null): string =>
+  giga_id_school?.trim().toLowerCase() ?? '';
+
 export const existSchool = async (
   prisma: PrismaService,
-  giga_id_school: string,
+  giga_id_school?: string | null,
 ) => {
+  const gigaId = normalizeGigaId(giga_id_school);
+  if (!gigaId) {
+    return false;
+  }
+  // Exact match on the normalized id. `mode: 'insensitive'` is an unescaped
+  // ILIKE, which cannot use the giga_id_school index and treats % and _ as
+  // wildcards. Existing rows are lowercased by migration.
   const school = await prisma.dailycheckapp_school.findFirst({
-    where: {
-      giga_id_school: giga_id_school,
-    },
+    where: { giga_id_school: gigaId },
+    select: { id: true },
   });
-  return school ? true : false;
+  return !!school;
 };
 
 export function serializeBigInt(value: any): any {
