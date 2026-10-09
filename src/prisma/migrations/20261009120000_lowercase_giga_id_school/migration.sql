@@ -93,7 +93,7 @@ USING (
     SELECT
       id,
       ROW_NUMBER() OVER (
-        PARTITION BY timestamp_date, giga_id_school, browser_id
+        PARTITION BY timestamp_date, lower(btrim(giga_id_school)), browser_id
         ORDER BY id
       ) AS rn
     FROM "connectivity_ping_checks_daily_aggr"
