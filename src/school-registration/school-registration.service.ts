@@ -9,6 +9,7 @@ import {
 } from './school-registration.dto';
 import { firstValueFrom } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
+import { normalizeGigaId } from '../utility/utility';
 
 @Injectable()
 export class SchoolRegistrationService {
@@ -65,7 +66,7 @@ export class SchoolRegistrationService {
   async rejectRegistration(
     rejectionDto: RejectSchoolRegistrationDto,
   ): Promise<SchoolRegistrationResponseDto> {
-    const gigaId = this.normalizeGigaId(rejectionDto.giga_id_school);
+    const gigaId = normalizeGigaId(rejectionDto.giga_id_school);
     const now = new Date();
 
     const activeRegistration =
@@ -195,10 +196,6 @@ export class SchoolRegistrationService {
     }
 
     return 'Failed to dispatch registration to giga_sync';
-  }
-
-  private normalizeGigaId(gigaId: string): string {
-    return gigaId.toLowerCase().trim();
   }
 
   private normalizeSchoolId(schoolId: string): string {

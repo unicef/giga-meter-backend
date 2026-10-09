@@ -254,7 +254,7 @@ describe('SchoolService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             device_hardware_id: 'hardware-1',
-            giga_id_school: { equals: 'gigaid1', mode: 'insensitive' },
+            giga_id_school: 'gigaid1',
           }),
         }),
       );

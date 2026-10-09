@@ -8,6 +8,7 @@ import {
   sanitizeHardwareId,
   isHardwareIdBlocked,
 } from '../common/hardware-id.utils';
+import { normalizeGigaId } from '../utility/utility';
 
 @Injectable()
 export class SchoolService {
@@ -202,9 +203,7 @@ export class SchoolService {
 
     return this.prisma.dailycheckapp_school.findFirst({
       where: {
-        // Rows also land in this table through hand-written SQL, so the stored
-        // casing cannot be trusted even though we lowercase on write.
-        giga_id_school: { equals: key.giga_id_school, mode: 'insensitive' },
+        giga_id_school: key.giga_id_school,
         device_hardware_id: key.device_hardware_id,
         OR: [{ is_active: null }, { is_active: true }],
       },
@@ -222,7 +221,10 @@ export class SchoolService {
     device_hardware_id?: string;
   } {
     return {
-      giga_id_school: school.giga_id_school?.toLowerCase().trim(),
+      giga_id_school:
+        school.giga_id_school == null
+          ? school.giga_id_school
+          : normalizeGigaId(school.giga_id_school),
       device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
     };
   }
@@ -413,7 +415,10 @@ export class SchoolService {
     const school = await this.prisma.dailycheckapp_school.findFirst({
       where: {
         device_hardware_id,
-        giga_id_school: giga_id_school?.toLowerCase().trim(),
+        giga_id_school:
+          giga_id_school == null
+            ? giga_id_school
+            : normalizeGigaId(giga_id_school),
       },
       orderBy: {
         created_at: 'desc',
@@ -466,7 +471,10 @@ export class SchoolService {
     const result = await this.prisma.dailycheckapp_school.updateMany({
       where: {
         device_hardware_id,
-        giga_id_school: giga_id_school?.toLowerCase().trim(),
+        giga_id_school:
+          giga_id_school == null
+            ? giga_id_school
+            : normalizeGigaId(giga_id_school),
         OR: [{ is_active: null }, { is_active: true }],
       },
       data: {
@@ -489,7 +497,8 @@ export class SchoolService {
   }
 
   async resolveIsVerified(giga_id_school?: string | null): Promise<boolean> {
-    const normalizedGigaId = giga_id_school?.toLowerCase().trim();
+    const normalizedGigaId =
+      giga_id_school == null ? giga_id_school : normalizeGigaId(giga_id_school);
 
     if (!normalizedGigaId) {
       return false;

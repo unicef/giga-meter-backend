@@ -119,19 +119,19 @@ describe('SchoolMasterService', () => {
       expect(flags).toEqual(mockFeatureFlagsDto);
     });
 
-    it('should look up the school ignoring giga id case', async () => {
+    it('should look the school up by the normalized giga id', async () => {
       const findFirstOrThrow = jest
         .spyOn(prisma.school, 'findFirstOrThrow')
         .mockResolvedValue(mockSchoolMasterModel);
 
-      await service.flagsByGigaId('GigaId1');
+      const flags = await service.flagsByGigaId(' GigaId_1% ');
 
       expect(findFirstOrThrow).toHaveBeenCalledWith({
-        where: {
-          giga_id_school: { equals: 'GigaId1', mode: 'insensitive' },
-        },
+        where: { giga_id_school: 'gigaid_1%' },
         select: expect.any(Object),
+        orderBy: { id: 'asc' },
       });
+      expect(flags).toEqual(mockFeatureFlagsDto);
     });
 
     it('should default pingService to true when not present in DB', async () => {
@@ -211,13 +211,21 @@ describe('SchoolMasterService', () => {
 
   describe('setFlagsByGigaId', () => {
     it('should set flags', async () => {
-      jest
+      const findFirstOrThrow = jest
         .spyOn(prisma.school, 'findFirstOrThrow')
         .mockResolvedValue(mockSchoolMasterModel);
       jest.spyOn(prisma.school, 'update').mockResolvedValue(null);
 
-      const result = await service.setFlagsByGigaId('11', mockFeatureFlagsDto);
+      const result = await service.setFlagsByGigaId(
+        ' GIGAID1 ',
+        mockFeatureFlagsDto,
+      );
       expect(result).toEqual(true);
+      expect(findFirstOrThrow).toHaveBeenCalledWith({
+        where: { giga_id_school: 'gigaid1' },
+        select: expect.any(Object),
+        orderBy: { id: 'asc' },
+      });
     });
 
     it('should handle database error while finding school', async () => {

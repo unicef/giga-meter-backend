@@ -5,7 +5,7 @@ import {
 } from './connectivity.dto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { existSchool } from 'src/utility/utility';
+import { existSchool, normalizeGigaId } from 'src/utility/utility';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 
@@ -21,7 +21,7 @@ export class ConnectivityService {
 
   /** Matches dailycheckapp_school, which stores giga_id_school lowercased. */
   private storedSchoolId(giga_id_school?: string | null): string {
-    return giga_id_school?.trim().toLowerCase() ?? '';
+    return normalizeGigaId(giga_id_school);
   }
 
   async create(createConnectivityDto: CreateConnectivityDto) {
@@ -90,7 +90,7 @@ export class ConnectivityService {
       const data = await this.prisma.connectivity_ping_checks.findMany({
         where: {
           giga_id_school: giga_id_school
-            ? { equals: giga_id_school.trim(), mode: 'insensitive' }
+            ? normalizeGigaId(giga_id_school)
             : giga_id_school,
           timestamp: {
             gte: start_time,

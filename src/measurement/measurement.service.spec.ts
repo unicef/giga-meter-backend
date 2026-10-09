@@ -442,17 +442,10 @@ describe('MeasurementService', () => {
 
       expect(response).toEqual('');
       expect(schoolSpy).toHaveBeenCalledWith({
-        where: {
-          giga_id_school: { equals: 'TZ-TEST-88001', mode: 'insensitive' },
-        },
+        where: { giga_id_school: 'tz-test-88001' },
       });
       expect(mappingSpy).toHaveBeenCalledWith({
-        where: {
-          giga_id_school_wrong: {
-            equals: 'TZ-TEST-88001',
-            mode: 'insensitive',
-          },
-        },
+        where: { giga_id_school_wrong: 'tz-test-88001' },
       });
     });
 
@@ -473,9 +466,7 @@ describe('MeasurementService', () => {
       });
 
       expect(schoolSpy).toHaveBeenCalledWith({
-        where: {
-          giga_id_school: { equals: 'tz-test-88001', mode: 'insensitive' },
-        },
+        where: { giga_id_school: 'tz-test-88001' },
       });
     });
 
