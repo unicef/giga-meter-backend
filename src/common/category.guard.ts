@@ -10,6 +10,7 @@ import { CATEGORY_KEY } from './category.decorator';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { CategoryConfigProvider } from './category-config.provider';
 import { IS_ADMIN_KEY } from './admin.decorator';
+import { Category } from './category.config';
 
 @Injectable()
 export class CategoryGuard implements CanActivate {
@@ -35,7 +36,15 @@ export class CategoryGuard implements CanActivate {
     if (isPublic || isMetrics || isAdmin) {
       return true;
     }
-    
+    if (process.env.USE_AUTH !== 'true') {
+      console.warn(
+        'CategoryGuard: USE_AUTH is not "true" — granting full local-dev access (category=giga_meter). ' +
+          'This should only ever happen in local development.',
+      );
+      request.category = Category.GIGA_METER.toLowerCase();
+      return true;
+    }
+
     // Extract category from request
     const category = await this.extractCategory(request);
     
