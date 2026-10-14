@@ -1,7 +1,7 @@
 # Health Facility V1/V2 — Backend Refactor Plan
 
 > **Context:** The Prisma migrations in `health-entity-v1-migration-status.md` are complete, including
-> `20260624120000_rename_entity_type_to_facility_type` (entity → facility naming).
+> the facility naming (`facility_type`, `facility_type_id`).
 > This document describes the application-layer work needed to expose and use those schema changes.
 >
 > **Goal:** Support health facilities alongside schools. **V2** (`/api/v2/*`) is the canonical API with

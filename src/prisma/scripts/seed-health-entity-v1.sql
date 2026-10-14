@@ -23,7 +23,7 @@ BEGIN;
 -- ============================================================
 -- 0.  facility_type — normalise codes
 -- ============================================================
--- The migration seed (20260521135124) inserted code='SCHL'/'HLTH'.
+-- Older migration seeds inserted code='SCHL'/'HLTH'.
 -- Application code calls FacilityTypeService.getByCode('school'/'health'),
 -- so the codes must match.  This UPDATE is a no-op if already correct.
 -- ============================================================

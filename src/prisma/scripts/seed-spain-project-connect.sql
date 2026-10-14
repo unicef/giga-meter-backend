@@ -44,7 +44,7 @@ BEGIN;
 -- ============================================================
 -- 0.  facility_type — ensure 'school' / 'health' with correct codes
 -- ============================================================
--- The migration seed (20260521135124) inserted code='SCHL'/'HLTH';
+-- Older migration seeds inserted code='SCHL'/'HLTH';
 -- the v2 API contract keys on code = 'school'/'health'. Normalise, and
 -- insert as a fallback for DBs where the seed never ran.
 UPDATE facility_type SET code = 'school' WHERE name = 'school' AND code <> 'school';

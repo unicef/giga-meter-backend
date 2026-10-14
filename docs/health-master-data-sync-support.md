@@ -51,7 +51,7 @@ sync is owned by giga-maps Celery.
 | Item | Detail |
 | ---- | ------ |
 | Prisma | `country.latest_health_master_data_version Int?` |
-| Migration | `20260805180000_add_country_latest_health_master_data_version` |
+| Migration | `20261014114248_add_health_facilities` |
 | Purpose | Per-country incremental version of the health master feed (same role as `latest_school_master_data_version` for schools) |
 | Writer | giga-maps-backend health master sync (not Nest API handlers) |
 | Reader | That same sync job on the next run |

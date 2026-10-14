@@ -1,18 +1,23 @@
 # Health Entity V1 — Migration Status
 
-> Tracks which items from the design doc (`health-entity-v1-prisma-migration.md`) have been addressed by the three Prisma migrations applied in this branch.
+> Tracks which items from the design doc (`health-entity-v1-prisma-migration.md`) have been addressed by the health Prisma migration.
 
 ---
 
 ## Migrations Applied
 
-| # | Migration | What it does |
-|---|---|---|
-| Phase 1 | `20260518232740_add_health_entity_tables` | Creates all 6 new tables with indexes and FKs. Adds back-relations to `country` and `school`. |
-| Phase 2 | `20260521120332_add_health_columns_to_existing_tables` | Adds `entity_type_id`, `registration_id`, `giga_id_health` to `measurements` and `connectivity_ping_checks` with indexes and FKs. |
-| Phase 3 | `20260521124932_add_health_make_school_id_giga_id_nullable` | Makes `measurements.school_id` and `connectivity_ping_checks.giga_id_school` nullable. |
-| Phase 4 | `20260624120000_rename_entity_type_to_facility_type` | Renames `entity_type` → `facility_type`, `entity_type_id` → `facility_type_id`, `country_entity_type_whitelist` → `country_facility_type_whitelist`. |
-| Phase 5 | `20260805180000_add_country_latest_health_master_data_version` | Adds `country.latest_health_master_data_version` for health master CDC (parallel to school watermark). See [health-master-data-sync-support.md](./health-master-data-sync-support.md). |
+All of the health schema ships in one migration, `20261014114248_add_health_facilities`. Every statement in it
+is guarded (`IF NOT EXISTS`, or a `pg_constraint` check for foreign keys), so it is a
+no-op for whatever already exists and can run on a database that already has part or
+all of this schema.
+
+| Part | What it does |
+|---|---|
+| Phase 1 | Creates all 6 new tables with indexes and FKs. Adds back-relations to `country` and `school`. |
+| Phase 2 | Adds `facility_type_id`, `registration_id`, `giga_id_health` to `measurements` and `connectivity_ping_checks` with indexes and FKs. |
+| Phase 3 | Makes `measurements.school_id` and `connectivity_ping_checks.giga_id_school` nullable. |
+| Phase 4 | Uses the `facility_type` naming from the start (`facility_type`, `facility_type_id`, `country_facility_type_whitelist`). |
+| Phase 5 | Adds `country.latest_health_master_data_version` for health master CDC (parallel to school watermark). See [health-master-data-sync-support.md](./health-master-data-sync-support.md). |
 
 ---
 
@@ -20,7 +25,7 @@
 
 | Model | Table | Status |
 |---|---|---|
-| `facility_type` | `facility_type` | ✅ Created (renamed from `entity_type` in Phase 4) |
+| `facility_type` | `facility_type` | ✅ Created |
 | `health` | `health` | ✅ Created — all columns, indexes, FKs including circular FK with `master_sync_health_static` |
 | `registration` | `registration` | ✅ Created — FKs to `facility_type`, `school`, `health` |
 | `country_facility_type_whitelist` | `country_facility_type_whitelist` | ✅ Created (renamed from `country_entity_type_whitelist` in Phase 4) |
@@ -53,7 +58,7 @@
 
 | Item | Status | Notes |
 |---|---|---|
-| Seed `entity_type` / `facility_type` rows: `{ name: "school" }`, `{ name: "health" }` | ✅ Done later | Seeded in `20260521135124` (codes SCHL/HLTH); normalized to `school`/`health` in `20260727120500_normalize_facility_type_codes`. |
+| Seed `entity_type` / `facility_type` rows: `{ name: "school" }`, `{ name: "health" }` | ✅ Done later | Seeded with codes `school`/`health` in `20261014114248_add_health_facilities`, which also normalises rows left with the older `SCHL`/`HLTH` codes. |
 | `country.latest_health_master_data_version` for master sync watermark | ✅ Phase 5 | Required by giga-maps health master CDC jobs (must not reuse school watermark). |
 | Make `measurements.school_id` nullable | ✅ Phase 3 | |
 | Write `registration` population script from `dailycheckapp_school` | ⏳ Out of scope for migrations | Separate Python script task — not a Prisma migration concern. |
@@ -76,7 +81,7 @@ The design doc originally described `code` as a future addition (*"add a code va
 The design doc and checklist confirm `country.code` is the correct V1 target. Our implementation is aligned. The design doc notes `master_sync_intermediate` and `master_sync_intermediate_health` still use `country.id` — those are marked as V2 updates and are not changed here.
 
 ### 4. Seed data gap (resolved)
-The design doc checklist required `entity_type` seed rows in Phase 1. They landed later (`20260521135124`) and codes were normalized to `school`/`health` (`20260727120500`). No further seed migration is required for V1 facility types.
+The design doc checklist required `entity_type` seed rows in Phase 1. They are seeded in `20261014114248_add_health_facilities` with the codes `school`/`health`. No further seed migration is required for V1 facility types.
 
 ### 5. Health master CDC watermark (Phase 5)
 School master sync uses `country.latest_school_master_data_version`. Health master sync needs a **separate** column so the two pipelines do not overwrite each other. Phase 5 adds `latest_health_master_data_version`. Application writers are giga-maps Celery jobs, not Nest request handlers.

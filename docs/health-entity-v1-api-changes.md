@@ -68,7 +68,7 @@ the client sends the user through the normal registration flow.
 | JSON field | `entity_type` | `facility_type` |
 | Internal service | `EntityTypeService` | `FacilityTypeService` |
 
-Apply migration `20260624120000_rename_entity_type_to_facility_type` and run `npx prisma generate` after pulling.
+Apply migration `20261014114248_add_health_facilities` and run `npx prisma generate` after pulling.
 
 ---
 
