@@ -15,6 +15,13 @@ import redisClient from 'src/utils/redis.client';
 import { normalizeGigaId } from 'src/utility/utility';
 import { v1SchoolScope, V1_SCHOOL_SCOPE_SQL } from '../common/facility-scope';
 
+/**
+ * Device key for the daily aggregate. v1 pings carry the app's browser_id;
+ * v2 pings do not, so they are grouped by their registration instead of all
+ * collapsing into one (school, NULL) bucket.
+ */
+const DEVICE_ID_SQL = Prisma.sql`COALESCE(browser_id, 'registration:' || registration_id::text)`;
+
 @Injectable()
 export class PingAggregationService {
   private readonly logger = new Logger(PingAggregationService.name);
@@ -101,11 +108,12 @@ export class PingAggregationService {
       do {
         data = await this.prisma.$queryRaw<
           any[]
-        >`SELECT giga_id_school, browser_id as device_id, 
+        >`SELECT giga_id_school, ${DEVICE_ID_SQL} as device_id, 
       SUM( CASE WHEN is_connected = TRUE THEN 1 ELSE 0 END ) AS isConnectedTrueSum,
        count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg 
-       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} 
-       GROUP BY giga_id_school, browser_id order by giga_id_school asc LIMIT ${limit} OFFSET ${offset}`;
+       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`}
+       AND giga_id_school IS NOT NULL AND ${V1_SCHOOL_SCOPE_SQL}
+       GROUP BY giga_id_school, device_id order by giga_id_school asc LIMIT ${limit} OFFSET ${offset}`;
 
         if (data.length === 0) break;
 
