@@ -5,6 +5,17 @@
 -- Every statement is guarded so the migration is a no-op for anything that
 -- already exists (tables, columns, indexes, constraints, seed rows). It can
 -- run on a database that already has some or all of this schema.
+--
+-- measurements and connectivity_ping_checks are large on production. This file
+-- runs in one transaction, so it only does cheap work on them: nullable
+-- columns, DROP NOT NULL and NOT VALID foreign keys (all metadata changes).
+-- Their indexes are meant to be built beforehand with CREATE INDEX
+-- CONCURRENTLY (src/prisma/scripts/pre-deploy-health-indexes.sql); the
+-- IF NOT EXISTS lines below then skip them, and still create them on fresh
+-- and dev databases.
+
+-- Fail fast instead of queueing behind a long-running query on these tables.
+SET lock_timeout = '5s';
 
 -- AlterTable
 ALTER TABLE "country" ADD COLUMN IF NOT EXISTS "latest_health_master_data_version" INTEGER;
@@ -299,16 +310,10 @@ CREATE INDEX IF NOT EXISTS "master_sync_intermediate_health_health_id_govt" ON "
 CREATE INDEX IF NOT EXISTS "master_sync_intermediate_health_status" ON "master_sync_intermediate_health"("status");
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "measurements_facility_type_id_idx" ON "measurements"("facility_type_id");
-
--- CreateIndex
 CREATE INDEX IF NOT EXISTS "measurements_registration_id_idx" ON "measurements"("registration_id");
 
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "measurements_giga_id_health_idx" ON "measurements"("giga_id_health");
-
--- CreateIndex
-CREATE INDEX IF NOT EXISTS "connectivity_ping_checks_facility_type_id_idx" ON "connectivity_ping_checks"("facility_type_id");
 
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "connectivity_ping_checks_registration_id_idx" ON "connectivity_ping_checks"("registration_id");
@@ -317,30 +322,33 @@ CREATE INDEX IF NOT EXISTS "connectivity_ping_checks_registration_id_idx" ON "co
 CREATE INDEX IF NOT EXISTS "connectivity_ping_checks_giga_id_health_idx" ON "connectivity_ping_checks"("giga_id_health");
 
 -- AddForeignKey
+-- NOT VALID on the two large tables: every existing row is NULL in these
+-- columns, and new writes are still checked. Validate later with
+-- ALTER TABLE ... VALIDATE CONSTRAINT, which does not block reads or writes.
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'measurements_facility_type_id_fkey') THEN
-    ALTER TABLE "measurements" ADD CONSTRAINT "measurements_facility_type_id_fkey" FOREIGN KEY ("facility_type_id") REFERENCES "facility_type"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    ALTER TABLE "measurements" ADD CONSTRAINT "measurements_facility_type_id_fkey" FOREIGN KEY ("facility_type_id") REFERENCES "facility_type"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
   END IF;
 END $$;
 
 -- AddForeignKey
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'measurements_registration_id_fkey') THEN
-    ALTER TABLE "measurements" ADD CONSTRAINT "measurements_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "registration"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    ALTER TABLE "measurements" ADD CONSTRAINT "measurements_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "registration"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
   END IF;
 END $$;
 
 -- AddForeignKey
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'connectivity_ping_checks_facility_type_id_fkey') THEN
-    ALTER TABLE "connectivity_ping_checks" ADD CONSTRAINT "connectivity_ping_checks_facility_type_id_fkey" FOREIGN KEY ("facility_type_id") REFERENCES "facility_type"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    ALTER TABLE "connectivity_ping_checks" ADD CONSTRAINT "connectivity_ping_checks_facility_type_id_fkey" FOREIGN KEY ("facility_type_id") REFERENCES "facility_type"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
   END IF;
 END $$;
 
 -- AddForeignKey
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'connectivity_ping_checks_registration_id_fkey') THEN
-    ALTER TABLE "connectivity_ping_checks" ADD CONSTRAINT "connectivity_ping_checks_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "registration"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    ALTER TABLE "connectivity_ping_checks" ADD CONSTRAINT "connectivity_ping_checks_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "registration"("id") ON DELETE SET NULL ON UPDATE CASCADE NOT VALID;
   END IF;
 END $$;
 
@@ -409,8 +417,14 @@ END $$;
 
 -- Seed facility types. Older seeds used the codes 'SCHL'/'HLTH'; the API keys
 -- on 'school'/'health', so normalise those rows before inserting.
-UPDATE "facility_type" SET "code" = 'school' WHERE "code" = 'SCHL';
-UPDATE "facility_type" SET "code" = 'health' WHERE "code" = 'HLTH';
+-- Skipped when the normalised row already exists, which would violate
+-- facility_type_code_key.
+UPDATE "facility_type" SET "code" = 'school'
+WHERE "code" = 'SCHL'
+  AND NOT EXISTS (SELECT 1 FROM "facility_type" WHERE "code" = 'school');
+UPDATE "facility_type" SET "code" = 'health'
+WHERE "code" = 'HLTH'
+  AND NOT EXISTS (SELECT 1 FROM "facility_type" WHERE "code" = 'health');
 
 INSERT INTO "facility_type" ("name", "code")
 VALUES ('school', 'school'), ('health', 'health')

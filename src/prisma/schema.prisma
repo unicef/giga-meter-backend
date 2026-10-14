@@ -340,7 +340,6 @@ model measurements {
   @@index([country_code])
   @@index([timestamp])
   @@index([protocol])
-  @@index([facility_type_id])
   @@index([registration_id])
   @@index([giga_id_health])
 }
@@ -503,7 +502,6 @@ model connectivity_ping_checks {
   facility_type   facility_type?  @relation(fields: [facility_type_id], references: [id])
   registration    registration? @relation(fields: [registration_id], references: [id])
 
-  @@index([facility_type_id])
   @@index([registration_id])
   @@index([giga_id_health])
 }
