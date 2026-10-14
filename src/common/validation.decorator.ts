@@ -7,7 +7,7 @@ export const ValidateSize = createParamDecorator(
     const min = data.min ?? 1;
     const max = data.max ?? 100;
 
-    if (size < min || size > max) {
+    if (Number.isNaN(size) || size < min || size > max) {
       throw new HttpException(
         `Size parameter must be between ${min} and ${max}`,
         HttpStatus.BAD_REQUEST,
