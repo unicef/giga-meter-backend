@@ -37,6 +37,8 @@ describe('ConnectivityService — createManyV2', () => {
     prisma = module.get<PrismaService>(PrismaService);
     facilityTypeService = module.get<FacilityTypeService>(FacilityTypeService);
     registrationService = module.get<RegistrationService>(RegistrationService);
+    jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({ id: 1 } as any);
+    jest.spyOn(prisma.health, 'findFirst').mockResolvedValue({ id: 2 } as any);
   });
 
   it('rejects an unknown facility_type', async () => {
@@ -172,5 +174,34 @@ describe('ConnectivityService — createManyV2', () => {
         data: [expect.objectContaining({ giga_id_school: 'giga-1' })],
       }),
     );
+  });
+
+  it('rejects ids that do not match the facility type', async () => {
+    jest
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue({ id: 2, name: 'health', code: 'health' } as any);
+
+    await expect(
+      service.createManyV2({
+        facility_type: 'health',
+        giga_id_school: 'giga-1',
+        records: [baseRecord],
+      } as any),
+    ).rejects.toThrow('needs giga_id_health');
+  });
+
+  it('rejects a facility that does not exist', async () => {
+    jest
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue({ id: 2, name: 'health', code: 'health' } as any);
+    jest.spyOn(prisma.health, 'findFirst').mockResolvedValue(null);
+
+    await expect(
+      service.createManyV2({
+        facility_type: 'health',
+        giga_id_health: 'HF-404',
+        records: [baseRecord],
+      } as any),
+    ).rejects.toThrow('Health facility "HF-404" not found');
   });
 });

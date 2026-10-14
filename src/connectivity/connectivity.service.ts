@@ -16,6 +16,7 @@ import {
   normalizeGigaId,
   normalizeHealthId,
 } from 'src/utility/utility';
+import { facilityGigaId } from 'src/facility-type/facility-ids';
 import { parseRegistrationId } from 'src/registration/registration-id';
 import { v1SchoolScope } from 'src/common/facility-scope';
 
@@ -112,8 +113,24 @@ export class ConnectivityService {
       );
     }
 
-    const gigaIdSchool = this.storedSchoolId(dto.giga_id_school) || null;
-    const gigaIdHealth = normalizeHealthId(dto.giga_id_health) || null;
+    // The id must match the facility type and point at an existing facility.
+    const gigaId = facilityGigaId(facilityType.code, dto);
+    const gigaIdSchool = facilityType.code === 'school' ? gigaId : null;
+    const gigaIdHealth = facilityType.code === 'health' ? gigaId : null;
+    const facilityExists = gigaIdSchool
+      ? await this.prisma.school.findFirst({
+          where: { giga_id_school: gigaIdSchool, deleted: null },
+          select: { id: true },
+        })
+      : await this.prisma.health.findFirst({
+          where: { health_id_giga: gigaIdHealth, deleted: null },
+          select: { id: true },
+        });
+    if (!facilityExists) {
+      throw new BadRequestException(
+        `${facilityType.code === 'school' ? 'School' : 'Health facility'} "${gigaId}" not found`,
+      );
+    }
 
     let registrationId: bigint | null = null;
     if (dto.registration_id != null && dto.registration_id !== '') {

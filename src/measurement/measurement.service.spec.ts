@@ -385,6 +385,49 @@ describe('MeasurementService', () => {
     });
   });
 
+  describe('createMeasurementV2 — validation', () => {
+    const school = { id: 1, name: 'school', code: 'school' };
+    const health = { id: 2, name: 'health', code: 'health' };
+
+    it.each([
+      ['school', { giga_id_health: 'hf-1' }],
+      ['school', { giga_id_school: 'es-1', giga_id_health: 'hf-1' }],
+      ['health', { giga_id_school: 'es-1' }],
+    ])('rejects facility_type %s with ids %p', async (type, ids) => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue(
+        type === 'school' ? school : health,
+      );
+      await expect(
+        service.createMeasurementV2({ entity_type: type, ...ids } as any),
+      ).rejects.toThrow('needs giga_id_');
+    });
+
+    it('rejects a school that is not in the school master', async () => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue(school);
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(null);
+
+      await expect(
+        service.createMeasurementV2({ entity_type: 'school', giga_id_school: 'nope' } as any),
+      ).rejects.toThrow(service.SCHOOL_DOESNT_EXIST_ERR);
+    });
+
+    it('rejects a remapped school id sent with another country, as v1 does', async () => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue(school);
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({ id: 1 } as any);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue({ correct_country: 'KE' } as any);
+
+      await expect(
+        service.createMeasurementV2({
+          entity_type: 'school',
+          giga_id_school: 'es-1',
+          country_code: 'ES',
+        } as any),
+      ).rejects.toThrow(service.WRONG_COUNTRY_CODE_ERR);
+    });
+  });
+
   describe('createMeasurementV2 — registration self-heal', () => {
     beforeEach(() => {
       (facilityTypeService.getByCode as jest.Mock).mockResolvedValue({
@@ -392,6 +435,10 @@ describe('MeasurementService', () => {
         name: 'school',
         code: 'school',
       });
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({ id: 1 } as any);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
     });
 
     it('delegates the self-heal to RegistrationService.resolveForIngest', async () => {

@@ -31,6 +31,7 @@ import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { RegistrationService } from '../registration/registration.service';
 import { HealthService } from '../health/health.service';
+import { facilityGigaId } from '../facility-type/facility-ids';
 import { parseRegistrationId } from '../registration/registration-id';
 import { buildMeasurementV2Row } from './measurement-v2.mapper';
 
@@ -406,16 +407,18 @@ export class MeasurementService {
       );
     }
 
-    // 3. If health entity: verify the health facility exists
-    if (dto.giga_id_health) {
-      const healthFacility = await this.healthService.findActiveById(
-        dto.giga_id_health,
-      );
+    // 3. The id must match the facility type, and the facility must exist.
+    //    Schools also get the v1 wrong-id/country check.
+    const gigaId = facilityGigaId(facilityType.code, dto);
+    if (facilityType.code === 'health') {
+      const healthFacility = await this.healthService.findActiveById(gigaId);
       if (!healthFacility) {
         throw new BadRequestException(
           `Health facility "${dto.giga_id_health}" not found`,
         );
       }
+    } else {
+      await this.assertSchoolForIngest(gigaId, dto.country_code);
     }
 
     // 4. If registration_id provided: verify it exists and is not blocked
@@ -501,6 +504,35 @@ export class MeasurementService {
     } catch (error) {
       console.error('Error processing geolocation data (v2):', error);
       return null;
+    }
+  }
+
+  /**
+   * v2 counterpart of the v1 checks in processMeasurement. The school must be
+   * in the school master (v2 installs register against it, not against
+   * dailycheckapp_school), and an id listed in giga_id_school_mapping_fix is
+   * rejected when the country does not match, as in v1.
+   */
+  private async assertSchoolForIngest(
+    gigaIdSchool: string,
+    countryCode?: string,
+  ): Promise<void> {
+    const school = await this.prisma.school.findFirst({
+      where: { giga_id_school: gigaIdSchool, deleted: null },
+      select: { id: true },
+    });
+    if (!school) {
+      throw new BadRequestException(this.SCHOOL_DOESNT_EXIST_ERR);
+    }
+
+    const mapping = await this.prisma.giga_id_school_mapping_fix.findFirst({
+      where: { giga_id_school_wrong: gigaIdSchool },
+    });
+    if (
+      mapping &&
+      mapping.correct_country?.toLowerCase() !== countryCode?.toLowerCase()
+    ) {
+      throw new BadRequestException(this.WRONG_COUNTRY_CODE_ERR);
     }
   }
 
