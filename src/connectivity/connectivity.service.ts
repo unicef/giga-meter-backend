@@ -12,6 +12,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { FacilityTypeService } from 'src/facility-type/facility-type.service';
 import { RegistrationService } from 'src/registration/registration.service';
 import { existSchool, normalizeGigaId } from 'src/utility/utility';
+import { v1SchoolScope } from 'src/common/facility-scope';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 
@@ -177,6 +178,7 @@ export class ConnectivityService {
             gte: start_time,
             lte: end_time,
           },
+          AND: [v1SchoolScope()],
         },
         skip: (page - 1) * per_page,
         take: per_page * 1,
@@ -199,9 +201,10 @@ export class ConnectivityService {
   }
 
   async findOne(id: number) {
-    return await this.prisma.connectivity_ping_checks.findUnique({
+    return await this.prisma.connectivity_ping_checks.findFirst({
       where: {
         id,
+        AND: [v1SchoolScope()],
       },
     });
   }

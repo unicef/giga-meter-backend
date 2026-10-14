@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetricsDto } from './metrics.dto';
+import { v1SchoolScope } from '../common/facility-scope';
 
 @Injectable()
 export class MetricsService {
@@ -22,6 +23,7 @@ export class MetricsService {
     const measurements = await this.prisma.measurements.count({
       where: {
         source: 'DailyCheckApp',
+        AND: [v1SchoolScope()],
       },
     });
 

@@ -7,6 +7,8 @@ import { CreateConnectivityDto } from './connectivity.dto';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { RegistrationService } from '../registration/registration.service';
 
+import { v1SchoolScope } from '../common/facility-scope';
+
 const giga_id_school = '4c6ca5b2-eaea-3a3e-8087-a4f61dda7664';
 
 const record = (app_local_uuid: string): CreateConnectivityDto => ({
@@ -163,6 +165,27 @@ describe('ConnectivityService', () => {
         .mockRejectedValue(failure);
 
       await expect(service.create(record('a'))).rejects.toThrow(failure);
+    });
+  });
+
+  describe('v1 reads', () => {
+    it('only return school checks', async () => {
+      const findMany = jest
+        .spyOn(prisma.connectivity_ping_checks, 'findMany')
+        .mockResolvedValue([]);
+      const findFirst = jest
+        .spyOn(prisma.connectivity_ping_checks, 'findFirst')
+        .mockResolvedValue(null);
+
+      await service.findAll({ giga_id_school } as any);
+      await service.findOne(7);
+
+      expect(findMany.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({ AND: [v1SchoolScope()] }),
+      );
+      expect(findFirst).toHaveBeenCalledWith({
+        where: { id: 7, AND: [v1SchoolScope()] },
+      });
     });
   });
 });

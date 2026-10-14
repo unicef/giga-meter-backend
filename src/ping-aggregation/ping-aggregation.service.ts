@@ -13,6 +13,7 @@ import {
 import { plainToInstance } from 'class-transformer';
 import redisClient from 'src/utils/redis.client';
 import { normalizeGigaId } from 'src/utility/utility';
+import { v1SchoolScope, V1_SCHOOL_SCOPE_SQL } from '../common/facility-scope';
 
 @Injectable()
 export class PingAggregationService {
@@ -184,7 +185,9 @@ export class PingAggregationService {
         query,
       );
 
-      const where: Prisma.connectivity_ping_checksWhereInput = {};
+      const where: Prisma.connectivity_ping_checksWhereInput = {
+        AND: [v1SchoolScope()],
+      };
       if (giga_id_school) where.giga_id_school = normalizeGigaId(giga_id_school);
 
       if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime())) {

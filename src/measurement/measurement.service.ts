@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeGigaId } from '../utility/utility';
+import { v1SchoolScope } from '../common/facility-scope';
 import {
   measurements as Measurement,
   measurements_failed as MeasurementFailed,
@@ -184,6 +185,7 @@ export class MeasurementService {
       where: {
         id,
         country_code: { in: countries },
+        AND: [v1SchoolScope()],
       },
     };
     if (write_access) {
@@ -205,6 +207,7 @@ export class MeasurementService {
       where: {
         school_id,
         country_code: { in: countries },
+        AND: [v1SchoolScope()],
       },
     };
     if (write_access) {
@@ -678,6 +681,7 @@ export class MeasurementService {
       country_code: {
         in: countries,
       },
+      AND: [v1SchoolScope()],
     };
 
     if (!giga_id_school) {

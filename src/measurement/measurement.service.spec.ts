@@ -18,6 +18,8 @@ import {
   mockSchoolModel,
 } from '../common/mock-objects';
 
+import { v1SchoolScope } from '../common/facility-scope';
+
 describe('MeasurementService', () => {
   let service: MeasurementService;
   let prisma: PrismaService;
@@ -108,6 +110,35 @@ describe('MeasurementService', () => {
           }),
         }),
       );
+    });
+
+    it('keeps the v1 list to schools (legacy and v2 school rows)', async () => {
+      const findManySpy = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      await service.measurements(0, 5, 'timestamp');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ AND: [v1SchoolScope()] }),
+        }),
+      );
+    });
+
+    it('keeps the by-id and by-school lookups to schools', async () => {
+      const findManySpy = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      await service.measurementsById(1, true);
+      await service.measurementsBySchoolId('ES-1', true);
+
+      for (const call of findManySpy.mock.calls) {
+        expect(call[0].where).toEqual(
+          expect.objectContaining({ AND: [v1SchoolScope()] }),
+        );
+      }
     });
 
     it('should return measurements with lt timestamp filter', async () => {
