@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
+  IsDate,
   IsIn,
   IsOptional,
   IsString,
@@ -10,7 +11,12 @@ import {
 } from 'class-validator';
 
 export class ConnectivityRecordV2Dto {
+  // Needs a validator: the controller's ValidationPipe runs with
+  // whitelist: true, which strips undecorated properties.
   @ApiProperty({ description: 'The timestamp of the connectivity check' })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
   timestamp: Date;
 
   @ApiProperty({ description: 'The connection status of the connectivity check' })
