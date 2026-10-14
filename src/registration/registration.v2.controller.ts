@@ -6,17 +6,19 @@ import {
   HttpStatus,
   Post,
   Query,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Public } from '../common/public.decorator';
+import { AuthGuard } from '../auth/auth.guard';
 import {
   CreateRegistrationDto,
   DeactivateRegistrationDto,
@@ -26,12 +28,15 @@ import {
 } from './registration.v2.dto';
 import { RegistrationService } from './registration.service';
 
+// Same protection as the v1 registration routes: these create, expose and
+// deactivate device registrations, so they need the app key.
 @ApiTags('Registration V2')
 @Controller('api/v2/registration')
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 export class RegistrationV2Controller {
   constructor(private readonly registrationService: RegistrationService) {}
 
-  @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(
@@ -59,7 +64,6 @@ export class RegistrationV2Controller {
     return this.registrationService.createRegistration(dto);
   }
 
-  @Public()
   @Get('existing')
   @ApiOperation({
     summary: 'Resolve an existing registration from legacy/partial identifiers',
@@ -89,7 +93,6 @@ export class RegistrationV2Controller {
     });
   }
 
-  @Public()
   @Get('status')
   @ApiOperation({
     summary: 'Device status by installation_id (facility-agnostic)',
@@ -102,7 +105,6 @@ export class RegistrationV2Controller {
     return this.registrationService.getStatus(installation_id);
   }
 
-  @Public()
   @Post('deactivate')
   @HttpCode(HttpStatus.OK)
   @UsePipes(

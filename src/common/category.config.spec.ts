@@ -111,6 +111,10 @@ describe('GIGA_METER_APP category', () => {
       ['POST', '/api/v2/measurements'],
       ['POST', '/api/v2/measurements/batch'],
       ['POST', '/api/v2/connectivity'],
+      ['POST', '/api/v2/registration'],
+      ['GET', '/api/v2/registration/existing'],
+      ['GET', '/api/v2/registration/status'],
+      ['POST', '/api/v2/registration/deactivate'],
     ])('allows %s %s', async (method, path) => {
       expect(await canCall(method, path)).toBe(true);
     });
@@ -143,6 +147,7 @@ describe('GIGA_METER_APP category', () => {
       ['GET', '/api/v1/messages'],
       ['GET', '/api/v2/measurements/facility'],
       ['GET', '/api/v2/connectivity'],
+      ['POST', '/api/v1/registration'],
     ])('denies %s %s', async (method, path) => {
       expect(await canCall(method, path)).toBe(false);
     });

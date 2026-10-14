@@ -35,7 +35,8 @@ export enum Category {
 
 // Category for the Giga Meter Windows app's key: the routes released versions of
 // the app call (v1.0.0 to v2.0.4), plus the authenticated /api/v2 routes the
-// multi-facility app calls. The other /api/v2 routes it uses are public.
+// multi-facility app calls. /api/v2/countries and /api/v2/feature-flags are
+// public.
 // Owned by code, see CODE_OWNED_CATEGORY_CONFIG.
 export const GIGA_METER_APP_ALLOWED_APIS: CategoryApiEndpoint[] = [
   { url: '/api/v1/dailycheckapp_countries/{code}', methods: ['GET'] },
@@ -59,6 +60,10 @@ export const GIGA_METER_APP_ALLOWED_APIS: CategoryApiEndpoint[] = [
   { url: '/api/v2/measurements', methods: ['POST'] },
   { url: '/api/v2/measurements/batch', methods: ['POST'] },
   { url: '/api/v2/connectivity', methods: ['POST'] },
+  { url: '/api/v2/registration', methods: ['POST'] },
+  { url: '/api/v2/registration/existing', methods: ['GET'] },
+  { url: '/api/v2/registration/status', methods: ['GET'] },
+  { url: '/api/v2/registration/deactivate', methods: ['POST'] },
 ];
 
 export const GIGA_METER_APP_RESPONSE_FILTERS: CategoryResponseFilters = {

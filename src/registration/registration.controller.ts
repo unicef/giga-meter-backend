@@ -4,16 +4,18 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Public } from '../common/public.decorator';
+import { AuthGuard } from '../auth/auth.guard';
 import {
   CreateRegistrationDto,
   RegistrationResponseDto,
@@ -22,6 +24,8 @@ import { RegistrationService } from './registration.service';
 
 @ApiTags('Registration')
 @Controller('api/v1/registration')
+@UseGuards(AuthGuard)
+@ApiBearerAuth()
 export class RegistrationController {
   constructor(private readonly registrationService: RegistrationService) {}
 
@@ -35,9 +39,8 @@ export class RegistrationController {
    * Returns a `registration_id` the device must include in all subsequent
    * measurement submissions.
    *
-   * Auth: Public (no token required).
+   * Auth: app key, like the other registration routes.
    */
-  @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(
