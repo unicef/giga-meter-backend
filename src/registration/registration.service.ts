@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { HealthService } from '../health/health.service';
-import { normalizeGigaId } from '../utility/utility';
+import { normalizeGigaId, normalizeHealthId } from '../utility/utility';
 import { parseRegistrationId } from './registration-id';
 import {
   CreateRegistrationDto,
@@ -166,7 +166,7 @@ export class RegistrationService {
       const byGiga: Record<string, any> = {
         OR: [
           { giga_id_school: schoolGigaId(giga_id) },
-          { giga_id_health: giga_id },
+          { giga_id_health: normalizeHealthId(giga_id) },
         ],
       };
       if (browser_id) {
@@ -320,7 +320,11 @@ export class RegistrationService {
     country_code?: string;
   }): Promise<bigint | null> {
     try {
-      keys = { ...keys, giga_id_school: schoolGigaId(keys.giga_id_school) };
+      keys = {
+        ...keys,
+        giga_id_school: schoolGigaId(keys.giga_id_school),
+        giga_id_health: normalizeHealthId(keys.giga_id_health) || undefined,
+      };
       const gigaId = keys.giga_id_school ?? keys.giga_id_health;
       const chain: Record<string, any>[] = [];
       if (keys.installation_id) {

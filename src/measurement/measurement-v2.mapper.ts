@@ -6,6 +6,7 @@ import {
   extractCloudflareQualityMetrics,
   resolveMeasurementProtocol,
 } from './measurement-quality-metrics';
+import { normalizeHealthId } from '../utility/utility';
 import {
   sanitizeDeviceContext,
   sanitizeSsidSource,
@@ -118,7 +119,7 @@ export function buildIdentityV2(
   return {
     school_id: dto.school_id ?? null,
     giga_id_school: dto.giga_id_school?.toLowerCase().trim() ?? null,
-    giga_id_health: dto.giga_id_health?.toLowerCase().trim() ?? null,
+    giga_id_health: dto.giga_id_health ? normalizeHealthId(dto.giga_id_health) : null,
     facility_type_id: ctx.facilityTypeId,
     registration_id: ctx.registrationId,
     // Legacy linking key only — v2 clients no longer mint or echo it.

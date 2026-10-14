@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { health } from '@prisma/client';
+import { normalizeHealthId } from '../utility/utility';
 import { HealthDetailDto, HealthListItemDto } from './health.dto';
 
 @Injectable()
@@ -69,7 +70,7 @@ export class HealthService {
     allowed_countries?: string[],
   ): Promise<HealthDetailDto> {
     const where: Record<string, any> = {
-      health_id_giga: giga_id,
+      health_id_giga: normalizeHealthId(giga_id),
       deleted: null,
     };
 
@@ -94,7 +95,7 @@ export class HealthService {
 
   async findActiveById(health_id_giga: string): Promise<health | null> {
     return this.prisma.health.findFirst({
-      where: { health_id_giga, deleted: null },
+      where: { health_id_giga: normalizeHealthId(health_id_giga), deleted: null },
     });
   }
 

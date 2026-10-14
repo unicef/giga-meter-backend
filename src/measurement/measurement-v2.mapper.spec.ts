@@ -118,7 +118,8 @@ describe('buildMeasurementV2Row', () => {
       CTX,
     );
 
-    expect(row.giga_id_health).toBe('abc-123');
+    // Health ids keep the master data's casing; only school ids are lowercased.
+    expect(row.giga_id_health).toBe('ABC-123');
     expect(row.giga_id_school).toBe('xyz-9');
     expect(row.facility_type_id).toBe(2);
     expect(row.registration_id).toBe(BigInt(77));

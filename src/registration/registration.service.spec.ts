@@ -539,6 +539,22 @@ describe('RegistrationService — legacy backfill & ingest self-heal', () => {
       );
     });
 
+    it('matches health giga ids trimmed, keeping their casing', async () => {
+      const findFirst = jest
+        .spyOn(prisma.registration, 'findFirst')
+        .mockResolvedValue({ id: BigInt(79) } as any);
+
+      await service.resolveForIngest({ giga_id_health: ' HF-AbC ' });
+
+      expect(findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [{ giga_id_school: 'HF-AbC' }, { giga_id_health: 'HF-AbC' }],
+          }),
+        }),
+      );
+    });
+
     it('lazy-creates from a VALID school giga when nothing else matches', async () => {
       jest.spyOn(prisma.registration, 'findFirst').mockResolvedValue(null);
       jest

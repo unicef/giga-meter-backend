@@ -11,7 +11,11 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FacilityTypeService } from 'src/facility-type/facility-type.service';
 import { RegistrationService } from 'src/registration/registration.service';
-import { existSchool, normalizeGigaId } from 'src/utility/utility';
+import {
+  existSchool,
+  normalizeGigaId,
+  normalizeHealthId,
+} from 'src/utility/utility';
 import { parseRegistrationId } from 'src/registration/registration-id';
 import { v1SchoolScope } from 'src/common/facility-scope';
 
@@ -109,7 +113,7 @@ export class ConnectivityService {
     }
 
     const gigaIdSchool = this.storedSchoolId(dto.giga_id_school) || null;
-    const gigaIdHealth = dto.giga_id_health?.trim() || null;
+    const gigaIdHealth = normalizeHealthId(dto.giga_id_health) || null;
 
     let registrationId: bigint | null = null;
     if (dto.registration_id != null && dto.registration_id !== '') {
