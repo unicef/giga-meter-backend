@@ -36,7 +36,7 @@ export class PingAggregationService {
           ...(from && { gte: new Date(from) }),
           ...(to && { lte: new Date(to) }),
         };
-      else throw new Error('from and to both are required');
+      else throw new BadRequestException('from and to both are required');
       const total = await this.prisma.connectivityPingChecksDailyAggr.count({
         where,
       });

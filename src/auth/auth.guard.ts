@@ -6,6 +6,8 @@ import { firstValueFrom } from 'rxjs';
 import { ValidateApiKeyDto } from './auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import * as Sentry from '@sentry/node';
+import { isClientError } from '../common/error-reporting';
 
 
 
@@ -88,6 +90,12 @@ export class AuthGuard implements CanActivate {
       return true;
     } catch (error) {
       console.error('Token validation failed:', error.message);
+      // Project Connect answering 4xx means a bad key. Anything else (it is
+      // down, timed out, changed its response shape, or the category lookup
+      // failed) still ends as a 401 to the caller, so report it here.
+      if (!isClientError(error?.response?.status)) {
+        Sentry.captureException(error);
+      }
       return false;
     }
   }
