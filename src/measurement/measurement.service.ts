@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { normalizeGigaId } from '../utility/utility';
+import { normalizeGigaId, normalizeHealthId } from '../utility/utility';
 import { v1SchoolScope } from '../common/facility-scope';
 import {
   measurements as Measurement,
@@ -570,9 +570,10 @@ export class MeasurementService {
   ): Promise<MeasurementEntityV2Dto[]> {
     const filter: Record<string, any> = {};
 
-    // Country access filter
-    if (!write_access && countries?.length) {
-      filter.country_code = { in: countries };
+    // Country access filter. Same rule as the v1 lists: a key without write
+    // access sees only its countries, and none when it has none.
+    if (!write_access) {
+      filter.country_code = { in: countries ?? [] };
     }
 
     if (country_iso3_code) {
@@ -589,10 +590,10 @@ export class MeasurementService {
     }
 
     if (giga_id_school) {
-      filter.giga_id_school = giga_id_school;
+      filter.giga_id_school = normalizeGigaId(giga_id_school);
     }
     if (giga_id_health) {
-      filter.giga_id_health = giga_id_health;
+      filter.giga_id_health = normalizeHealthId(giga_id_health);
     }
 
     // Resolve entity_type filter: string name → entity_type_id

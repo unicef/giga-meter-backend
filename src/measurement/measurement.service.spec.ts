@@ -356,6 +356,35 @@ describe('MeasurementService', () => {
     });
   });
 
+  describe('measurementsV2Facility', () => {
+    it('returns no country to a read-only key with no countries', async () => {
+      const findMany = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue([]);
+
+      await service.measurementsV2Facility(0, 10, '-timestamp', undefined, undefined, undefined, undefined, '', '', null, false, []);
+
+      expect(findMany.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({ country_code: { in: [] } }),
+      );
+    });
+
+    it('matches school ids in lowercase and health ids trimmed', async () => {
+      const findMany = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue([]);
+
+      await service.measurementsV2Facility(0, 10, '-timestamp', undefined, ' HF-AbC ', ' ES-School ', undefined, '', '', null, true);
+
+      expect(findMany.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({
+          giga_id_school: 'es-school',
+          giga_id_health: 'HF-AbC',
+        }),
+      );
+    });
+  });
+
   describe('createMeasurementV2 — registration self-heal', () => {
     beforeEach(() => {
       (facilityTypeService.getByCode as jest.Mock).mockResolvedValue({

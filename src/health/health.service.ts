@@ -24,10 +24,16 @@ export class HealthService {
       deleted: null,
     };
 
-    if (country_code) {
+    // A key without write access sees only its countries, and none when it
+    // has none (same rule as the v1 lists).
+    if (!write_access) {
+      const allowed = allowed_countries ?? [];
+      if (country_code && !allowed.includes(country_code)) {
+        return [];
+      }
+      where.country_code = country_code ? country_code : { in: allowed };
+    } else if (country_code) {
       where.country_code = country_code;
-    } else if (!write_access && allowed_countries?.length) {
-      where.country_code = { in: allowed_countries };
     }
 
     // The "government ID" a user types can live in any of the three
@@ -67,8 +73,8 @@ export class HealthService {
       deleted: null,
     };
 
-    if (!write_access && allowed_countries?.length) {
-      where.country_code = { in: allowed_countries };
+    if (!write_access) {
+      where.country_code = { in: allowed_countries ?? [] };
     }
 
     const row = await this.prisma.health.findFirst({ where });

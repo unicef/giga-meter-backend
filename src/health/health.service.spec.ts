@@ -73,7 +73,7 @@ describe('HealthService', () => {
         .spyOn(prisma.health, 'findMany')
         .mockResolvedValue([mockHealthRow]);
 
-      await service.findAll(0, 10, 'facility_name', 'KE');
+      await service.findAll(0, 10, 'facility_name', 'KE', true);
 
       expect(findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -92,7 +92,7 @@ describe('HealthService', () => {
         10,
         'facility_name',
         'KE',
-        undefined,
+        true,
         undefined,
         'DHIS2-KE-40001',
       );
@@ -107,6 +107,29 @@ describe('HealthService', () => {
               { hfml_id: 'DHIS2-KE-40001' },
             ],
           }),
+        }),
+      );
+    });
+
+    it('returns nothing to a read-only key for a country outside its list', async () => {
+      const findMany = jest.spyOn(prisma.health, 'findMany');
+
+      await expect(
+        service.findAll(0, 10, 'facility_name', 'KE', false, ['UG']),
+      ).resolves.toEqual([]);
+      expect(findMany).not.toHaveBeenCalled();
+    });
+
+    it('returns nothing to a read-only key with no countries', async () => {
+      const findMany = jest
+        .spyOn(prisma.health, 'findMany')
+        .mockResolvedValue([]);
+
+      await service.findAll(0, 10, 'facility_name', undefined, false, []);
+
+      expect(findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ country_code: { in: [] } }),
         }),
       );
     });
