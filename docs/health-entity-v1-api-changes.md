@@ -27,8 +27,7 @@
 
 ### Frontend-driven V2 additions (2026-07-16)
 
-Endpoints added for the multi-facility desktop client (see the workspace's
-`project-memory/plans/0003-multi-facility-frontend.md`, backend deps B2–B8):
+Endpoints added for the multi-facility desktop client:
 
 | Method | Path | Notes |
 |--------|------|-------|
