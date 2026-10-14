@@ -58,6 +58,7 @@ describe('HealthService', () => {
           latitude: mockHealthRow.latitude,
           longitude: mockHealthRow.longitude,
           country_code: mockHealthRow.country_code,
+          dhis2_id: mockHealthRow.dhis2_id,
           admin1: mockHealthRow.admin1,
           admin2: mockHealthRow.admin2,
           is_facility_open: mockHealthRow.is_facility_open,
