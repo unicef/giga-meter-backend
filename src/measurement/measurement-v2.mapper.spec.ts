@@ -1,5 +1,6 @@
 import {
   buildDataUsageV2,
+  buildDeviceInfoV2,
   buildDiagnosticsV2,
   buildMeasurementV2Row,
   buildQualityMetricsV2,
@@ -168,5 +169,73 @@ describe('buildMeasurementV2Row', () => {
     expect(row.detected_location_distance).toBe(999);
     expect(row.detected_location_accuracy).toBe(55);
     expect(row.detected_location_is_flagged).toBeNull();
+  });
+});
+
+describe('buildDeviceInfoV2', () => {
+  it('maps the scheduling and device fields the client sends', () => {
+    const scheduledAt = new Date('2026-10-14T08:00:00Z');
+    expect(
+      buildDeviceInfoV2(
+        dto({
+          offline_synced: true,
+          scheduled_slot: 'morning',
+          scheduled_at: scheduledAt,
+          device_name: 'LAB-PC-01',
+          device_model: 'OptiPlex 7090',
+          device_manufacturer: 'Dell Inc.',
+          app_build_number: '2.0.4',
+          os_version: '10.0.22631',
+          wifi_unavailable_reason: 'location_disabled',
+          ssid_source: 'nlm',
+          device_context: { connection_type: 'wifi', not_allowed: 'x' },
+        }),
+      ),
+    ).toEqual({
+      offline_synced: true,
+      scheduled_slot: 'morning',
+      scheduled_at: scheduledAt,
+      device_name: 'LAB-PC-01',
+      device_model: 'OptiPlex 7090',
+      device_manufacturer: 'Dell Inc.',
+      app_build_number: '2.0.4',
+      os_version: '10.0.22631',
+      wifi_unavailable_reason: 'location_disabled',
+      ssid_source: 'nlm',
+      device_context: { connection_type: 'wifi' },
+    });
+  });
+
+  it('defaults like the v1 path when the client omits them', () => {
+    expect(buildDeviceInfoV2(dto())).toEqual({
+      offline_synced: false,
+      scheduled_slot: null,
+      scheduled_at: null,
+      device_name: null,
+      device_model: null,
+      device_manufacturer: null,
+      app_build_number: null,
+      os_version: null,
+      wifi_unavailable_reason: null,
+      ssid_source: null,
+      device_context: undefined,
+    });
+  });
+
+  it('drops values outside the allowed sets', () => {
+    const info = buildDeviceInfoV2(
+      dto({ wifi_unavailable_reason: 'bogus', ssid_source: 'bogus' }),
+    );
+    expect(info.wifi_unavailable_reason).toBeNull();
+    expect(info.ssid_source).toBeNull();
+  });
+
+  it('is part of the composed row', () => {
+    const row = buildMeasurementV2Row(
+      dto({ offline_synced: true, device_name: 'LAB-PC-01' }),
+      CTX,
+    );
+    expect(row.offline_synced).toBe(true);
+    expect(row.device_name).toBe('LAB-PC-01');
   });
 });

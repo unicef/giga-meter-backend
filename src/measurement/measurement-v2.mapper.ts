@@ -6,6 +6,11 @@ import {
   extractCloudflareQualityMetrics,
   resolveMeasurementProtocol,
 } from './measurement-quality-metrics';
+import {
+  sanitizeDeviceContext,
+  sanitizeSsidSource,
+  sanitizeWifiUnavailableReason,
+} from '../common/device-context.utils';
 
 /**
  * Row-building aggregates for the v2 ingest path.
@@ -127,6 +132,30 @@ export function buildIdentityV2(
   };
 }
 
+/**
+ * Scheduling and device fields. Sanitised exactly like the v1 path so a record
+ * stores the same values whichever endpoint it arrives on.
+ */
+export function buildDeviceInfoV2(dto: AddMeasurementV2Dto) {
+  return {
+    offline_synced: dto.offline_synced ?? false,
+    scheduled_slot: dto.scheduled_slot ?? null,
+    scheduled_at: dto.scheduled_at ?? null,
+    device_name: dto.device_name ?? null,
+    device_model: dto.device_model ?? null,
+    device_manufacturer: dto.device_manufacturer ?? null,
+    app_build_number: dto.app_build_number ?? null,
+    os_version: dto.os_version ?? null,
+    wifi_unavailable_reason: sanitizeWifiUnavailableReason(
+      dto.wifi_unavailable_reason,
+    ),
+    ssid_source: sanitizeSsidSource(dto.ssid_source),
+    // undefined (not null) leaves the Json column NULL; Prisma rejects a bare null.
+    device_context: (sanitizeDeviceContext(dto.device_context) ??
+      undefined) as Prisma.InputJsonValue | undefined,
+  };
+}
+
 /** Composes every aggregate into the row handed to Prisma. */
 export function buildMeasurementV2Row(
   dto: AddMeasurementV2Dto,
@@ -147,5 +176,6 @@ export function buildMeasurementV2Row(
     ...buildQualityMetricsV2(dto),
     ...buildDiagnosticsV2(dto),
     ...buildDetectedLocationV2(dto, ctx),
+    ...buildDeviceInfoV2(dto),
   };
 }

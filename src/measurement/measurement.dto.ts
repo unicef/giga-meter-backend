@@ -1046,6 +1046,84 @@ export class MeasurementV2TelemetryDto {
   @IsOptional()
   @IsBoolean()
   detected_location_is_flagged?: boolean;
+
+  // Scheduling and device fields, same meaning as on POST /api/v1/measurements.
+
+  @ApiProperty({
+    required: false,
+    description:
+      'true = the record arrived via the offline sync queue instead of the realtime upload',
+  })
+  @IsOptional()
+  @IsBoolean()
+  offline_synced?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Planned slot: 'morning' | 'afternoon' | 'evening' | 'startup'; null for manual runs",
+  })
+  @IsOptional()
+  @IsString()
+  scheduled_slot?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Originally planned run time of the scheduled test',
+  })
+  @IsOptional()
+  scheduled_at?: Date;
+
+  @ApiProperty({ required: false, description: 'Device name' })
+  @IsOptional()
+  @IsString()
+  device_name?: string;
+
+  @ApiProperty({ required: false, description: 'Device model' })
+  @IsOptional()
+  @IsString()
+  device_model?: string;
+
+  @ApiProperty({ required: false, description: 'Device manufacturer' })
+  @IsOptional()
+  @IsString()
+  device_manufacturer?: string;
+
+  @ApiProperty({ required: false, description: 'Client app build number' })
+  @IsOptional()
+  @IsString()
+  app_build_number?: string;
+
+  @ApiProperty({ required: false, description: 'Operating system version' })
+  @IsOptional()
+  @IsString()
+  os_version?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Why wifi_connections came back empty: 'no_adapter' | 'wlan_service_off' | " +
+      "'location_disabled' | 'unknown'. Unknown values are stored as null",
+  })
+  @IsOptional()
+  wifi_unavailable_reason?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Where the reported SSID came from: 'wlan' or 'nlm'. Unknown values are stored as null",
+  })
+  @IsOptional()
+  ssid_source?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Network/system context captured next to the test. Keys outside the ' +
+      'allowed list are dropped on write, as on POST /api/v1/measurements',
+  })
+  @IsOptional()
+  device_context?: Record<string, any>;
 }
 
 export class AddMeasurementV2Dto extends MeasurementV2TelemetryDto {
