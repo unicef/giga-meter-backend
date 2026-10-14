@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { HealthService } from '../health/health.service';
 import { normalizeGigaId } from '../utility/utility';
+import { parseRegistrationId } from './registration-id';
 import {
   CreateRegistrationDto,
   DeactivateRegistrationDto,
@@ -463,7 +464,7 @@ export class RegistrationService {
     }
 
     const where: Record<string, any> = dto.registration_id
-      ? { id: BigInt(dto.registration_id) }
+      ? { id: parseRegistrationId(dto.registration_id) }
       : { installation_id: dto.installation_id };
 
     const registration = await this.prisma.registration.findFirst({

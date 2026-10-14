@@ -31,6 +31,7 @@ import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { RegistrationService } from '../registration/registration.service';
 import { HealthService } from '../health/health.service';
+import { parseRegistrationId } from '../registration/registration-id';
 import { buildMeasurementV2Row } from './measurement-v2.mapper';
 
 @Injectable()
@@ -418,8 +419,13 @@ export class MeasurementService {
     }
 
     // 4. If registration_id provided: verify it exists and is not blocked
+    // Typed as a number, but it arrives as JSON: a string, or '' from clients
+    // that have no registration yet.
+    const rawRegistrationId: unknown = dto.registration_id;
     let registrationId: bigint | null =
-      dto.registration_id != null ? BigInt(dto.registration_id.toString()) : null;
+      rawRegistrationId != null && rawRegistrationId !== ''
+        ? parseRegistrationId(rawRegistrationId)
+        : null;
     if (registrationId != null) {
       const registration = await this.prisma.registration.findFirst({
         where: { id: registrationId },

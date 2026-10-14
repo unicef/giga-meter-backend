@@ -12,6 +12,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { FacilityTypeService } from 'src/facility-type/facility-type.service';
 import { RegistrationService } from 'src/registration/registration.service';
 import { existSchool, normalizeGigaId } from 'src/utility/utility';
+import { parseRegistrationId } from 'src/registration/registration-id';
 import { v1SchoolScope } from 'src/common/facility-scope';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
@@ -112,7 +113,7 @@ export class ConnectivityService {
 
     let registrationId: bigint | null = null;
     if (dto.registration_id != null && dto.registration_id !== '') {
-      registrationId = BigInt(dto.registration_id.toString());
+      registrationId = parseRegistrationId(dto.registration_id);
       const registration = await this.prisma.registration.findFirst({
         where: { id: registrationId },
       });
