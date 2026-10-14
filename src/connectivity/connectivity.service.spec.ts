@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client';
 import { ConnectivityService } from './connectivity.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateConnectivityDto } from './connectivity.dto';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
+import { RegistrationService } from '../registration/registration.service';
 
 const giga_id_school = '4c6ca5b2-eaea-3a3e-8087-a4f61dda7664';
 
@@ -33,7 +35,12 @@ describe('ConnectivityService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ConnectivityService, PrismaService],
+      providers: [
+        ConnectivityService,
+        PrismaService,
+        { provide: FacilityTypeService, useValue: { getByCode: jest.fn() } },
+        { provide: RegistrationService, useValue: { resolveForIngest: jest.fn() } },
+      ],
     }).compile();
 
     service = module.get<ConnectivityService>(ConnectivityService);

@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { HealthService } from '../health/health.service';
+import { normalizeGigaId } from '../utility/utility';
 import {
   CreateRegistrationDto,
   DeactivateRegistrationDto,
@@ -14,6 +15,14 @@ import {
   RegistrationStatusResponseDto,
   RegistrationV2ResponseDto,
 } from './registration.v2.dto';
+
+/**
+ * School giga ids are stored trimmed and lowercase (school,
+ * dailycheckapp_school, registration), so every school-side lookup and write
+ * goes through this. Empty values pass through untouched.
+ */
+const schoolGigaId = (id?: string | null): string | undefined =>
+  id ? normalizeGigaId(id) : undefined;
 
 @Injectable()
 export class RegistrationService {
@@ -63,14 +72,14 @@ export class RegistrationService {
       healthDbId = facility.id;
     } else {
       const school = await this.prisma.school.findFirst({
-        where: { giga_id_school: dto.giga_id_school, deleted: null },
+        where: { giga_id_school: schoolGigaId(dto.giga_id_school), deleted: null },
       });
       if (!school) {
         throw new NotFoundException(
           `School "${dto.giga_id_school}" not found or is deleted`,
         );
       }
-      gigaId = school.giga_id_school ?? dto.giga_id_school;
+      gigaId = school.giga_id_school ?? schoolGigaId(dto.giga_id_school);
       schoolDbId = school.id;
     }
 
@@ -154,7 +163,10 @@ export class RegistrationService {
     }
     if (giga_id) {
       const byGiga: Record<string, any> = {
-        OR: [{ giga_id_school: giga_id }, { giga_id_health: giga_id }],
+        OR: [
+          { giga_id_school: schoolGigaId(giga_id) },
+          { giga_id_health: giga_id },
+        ],
       };
       if (browser_id) {
         byGiga.user_id = browser_id;
@@ -214,11 +226,12 @@ export class RegistrationService {
     if (keys.device_hardware_id) {
       chain.push({ device_hardware_id: keys.device_hardware_id });
     }
-    if (keys.giga_id && keys.browser_id) {
-      chain.push({ giga_id_school: keys.giga_id, user_id: keys.browser_id });
+    const gigaIdSchool = schoolGigaId(keys.giga_id);
+    if (gigaIdSchool && keys.browser_id) {
+      chain.push({ giga_id_school: gigaIdSchool, user_id: keys.browser_id });
     }
-    if (keys.giga_id) {
-      chain.push({ giga_id_school: keys.giga_id });
+    if (gigaIdSchool) {
+      chain.push({ giga_id_school: gigaIdSchool });
     }
 
     let legacy: any = null;
@@ -306,6 +319,7 @@ export class RegistrationService {
     country_code?: string;
   }): Promise<bigint | null> {
     try {
+      keys = { ...keys, giga_id_school: schoolGigaId(keys.giga_id_school) };
       const gigaId = keys.giga_id_school ?? keys.giga_id_health;
       const chain: Record<string, any>[] = [];
       if (keys.installation_id) {

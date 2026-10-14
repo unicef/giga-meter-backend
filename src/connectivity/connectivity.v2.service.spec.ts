@@ -150,4 +150,27 @@ describe('ConnectivityService — createManyV2', () => {
 
     expect(result).toEqual({ success: true, accepted: 2 });
   });
+  it('stores the school giga id lowercase, like the v1 path', async () => {
+    jest
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue(mockFacilityTypeSchool);
+    jest
+      .spyOn(registrationService, 'resolveForIngest')
+      .mockResolvedValue(BigInt(5));
+    const createMany = jest
+      .spyOn(prisma.connectivity_ping_checks, 'createMany')
+      .mockResolvedValue({ count: 1 });
+
+    await service.createManyV2({
+      facility_type: 'school',
+      giga_id_school: '  GIGA-1 ',
+      records: [baseRecord],
+    } as any);
+
+    expect(createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: [expect.objectContaining({ giga_id_school: 'giga-1' })],
+      }),
+    );
+  });
 });

@@ -206,6 +206,28 @@ describe('RegistrationService', () => {
       }),
     );
   });
+
+  it('looks the school up by its lowercase giga id', async () => {
+    jest
+      .spyOn(facilityTypeService, 'getByCode')
+      .mockResolvedValue(mockFacilityTypeSchool);
+    jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(mockSchool);
+    jest
+      .spyOn(prisma.country_facility_type_whitelist, 'findFirst')
+      .mockResolvedValue({ id: 2 } as any);
+    jest.spyOn(prisma.registration, 'create').mockResolvedValue({
+      id: BigInt(2003),
+    } as any);
+
+    await service.createRegistration({
+      giga_id_school: `  ${mockSchool.giga_id_school.toUpperCase()} `,
+      country_code: 'KE',
+    });
+
+    expect(prisma.school.findFirst).toHaveBeenCalledWith({
+      where: { giga_id_school: mockSchool.giga_id_school, deleted: null },
+    });
+  });
 });
 
 describe('RegistrationService — v2 recovery & lifecycle', () => {
@@ -499,6 +521,22 @@ describe('RegistrationService — legacy backfill & ingest self-heal', () => {
         giga_id_school: 'giga-1',
       });
       expect(id).toEqual(BigInt(77));
+    });
+
+    it('matches school giga ids in lowercase', async () => {
+      const findFirst = jest
+        .spyOn(prisma.registration, 'findFirst')
+        .mockResolvedValue({ id: BigInt(78) } as any);
+
+      await service.resolveForIngest({ giga_id_school: 'GIGA-1' });
+
+      expect(findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [{ giga_id_school: 'giga-1' }, { giga_id_health: 'giga-1' }],
+          }),
+        }),
+      );
     });
 
     it('lazy-creates from a VALID school giga when nothing else matches', async () => {

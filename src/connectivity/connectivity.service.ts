@@ -106,7 +106,7 @@ export class ConnectivityService {
       );
     }
 
-    const gigaIdSchool = dto.giga_id_school?.trim() || null;
+    const gigaIdSchool = this.storedSchoolId(dto.giga_id_school) || null;
     const gigaIdHealth = dto.giga_id_health?.trim() || null;
 
     let registrationId: bigint | null = null;
