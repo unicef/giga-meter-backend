@@ -173,6 +173,27 @@ describe('buildMeasurementV2Row', () => {
   });
 });
 
+describe('buildIdentityV2', () => {
+  it.each(['', '   ', undefined, null])(
+    'stores giga_id_school %p as NULL',
+    (value) => {
+      const row = buildMeasurementV2Row(
+        dto({ giga_id_school: value as any, giga_id_health: 'HF-1' }),
+        CTX,
+      );
+      expect(row.giga_id_school).toBeNull();
+    },
+  );
+
+  it('stores an empty giga_id_health as NULL', () => {
+    const row = buildMeasurementV2Row(
+      dto({ giga_id_school: 'ES-1', giga_id_health: '' }),
+      CTX,
+    );
+    expect(row.giga_id_health).toBeNull();
+  });
+});
+
 describe('buildDeviceInfoV2', () => {
   it('maps the scheduling and device fields the client sends', () => {
     const scheduledAt = new Date('2026-10-14T08:00:00Z');
