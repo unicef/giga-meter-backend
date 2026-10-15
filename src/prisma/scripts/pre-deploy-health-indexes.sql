@@ -17,6 +17,12 @@
 -- Usage:
 --   psql "$DATABASE_URL" -f src/prisma/scripts/pre-deploy-health-indexes.sql
 
+-- Fail fast instead of queueing behind a long-running query: a queued
+-- ADD COLUMN holds its place in the lock queue and blocks the traffic behind
+-- it. If a statement times out, just run the script again. An index build cut
+-- short this way is caught by the invalid-index check at the end.
+SET lock_timeout = '5s';
+
 ALTER TABLE "measurements" ADD COLUMN IF NOT EXISTS "giga_id_health" TEXT;
 ALTER TABLE "measurements" ADD COLUMN IF NOT EXISTS "registration_id" BIGINT;
 ALTER TABLE "connectivity_ping_checks" ADD COLUMN IF NOT EXISTS "giga_id_health" TEXT;
