@@ -17,3 +17,22 @@ export const v1SchoolScope = () => ({
 
 /** Same scope as {@link v1SchoolScope}, for raw SQL on either table. */
 export const V1_SCHOOL_SCOPE_SQL = Prisma.sql`(facility_type_id IS NULL OR facility_type_id IN (SELECT id FROM facility_type WHERE code = 'school'))`;
+
+/**
+ * A v1 ping row keeps the shape v1 always returned. The facility columns
+ * (facility_type_id, registration_id, giga_id_health) are v2 data, and
+ * registration_id is a BigInt that JSON serialisation cannot handle.
+ */
+export const toV1PingRecord = <
+  T extends {
+    facility_type_id?: unknown;
+    registration_id?: unknown;
+    giga_id_health?: unknown;
+  },
+>(
+  row: T,
+): Omit<T, 'facility_type_id' | 'registration_id' | 'giga_id_health'> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { facility_type_id, registration_id, giga_id_health, ...v1 } = row;
+  return v1;
+};

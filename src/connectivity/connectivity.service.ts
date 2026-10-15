@@ -18,7 +18,7 @@ import {
 } from 'src/utility/utility';
 import { facilityGigaId } from 'src/facility-type/facility-ids';
 import { parseRegistrationId } from 'src/registration/registration-id';
-import { v1SchoolScope } from 'src/common/facility-scope';
+import { toV1PingRecord, v1SchoolScope } from 'src/common/facility-scope';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 
@@ -211,7 +211,7 @@ export class ConnectivityService {
           start_time,
           end_time,
         },
-        records: data,
+        records: data.map(toV1PingRecord),
       };
     } catch (error) {
       this.logger.error(
@@ -223,11 +223,12 @@ export class ConnectivityService {
   }
 
   async findOne(id: number) {
-    return await this.prisma.connectivity_ping_checks.findFirst({
+    const record = await this.prisma.connectivity_ping_checks.findFirst({
       where: {
         id,
         AND: [v1SchoolScope()],
       },
     });
+    return record ? toV1PingRecord(record) : record;
   }
 }

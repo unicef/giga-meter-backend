@@ -187,5 +187,30 @@ describe('ConnectivityService', () => {
         where: { id: 7, AND: [v1SchoolScope()] },
       });
     });
+
+    it('return the v1 shape, without the facility columns', async () => {
+      const row = {
+        id: 1,
+        giga_id_school,
+        app_local_uuid: 'a',
+        facility_type_id: 1,
+        registration_id: BigInt(42),
+        giga_id_health: null,
+      };
+      jest
+        .spyOn(prisma.connectivity_ping_checks, 'findMany')
+        .mockResolvedValue([row] as any);
+      jest
+        .spyOn(prisma.connectivity_ping_checks, 'findFirst')
+        .mockResolvedValue(row as any);
+
+      const list = await service.findAll({ giga_id_school } as any);
+      const one = await service.findOne(1);
+
+      for (const record of [list.records[0], one]) {
+        expect(record).toEqual({ id: 1, giga_id_school, app_local_uuid: 'a' });
+        expect(() => JSON.stringify(record)).not.toThrow();
+      }
+    });
   });
 });

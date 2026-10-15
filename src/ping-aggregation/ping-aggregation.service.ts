@@ -13,7 +13,11 @@ import {
 import { plainToInstance } from 'class-transformer';
 import redisClient from 'src/utils/redis.client';
 import { normalizeGigaId } from 'src/utility/utility';
-import { v1SchoolScope, V1_SCHOOL_SCOPE_SQL } from '../common/facility-scope';
+import {
+  toV1PingRecord,
+  v1SchoolScope,
+  V1_SCHOOL_SCOPE_SQL,
+} from '../common/facility-scope';
 
 /**
  * Device key for the daily aggregate. v1 pings carry the app's browser_id;
@@ -219,7 +223,10 @@ export class PingAggregationService {
         skip: (page - 1) * size,
       });
 
-      return { meta: { page, pageSize: size, total }, data };
+      return {
+        meta: { page, pageSize: size, total },
+        data: data.map(toV1PingRecord),
+      };
     } catch (error) {
       this.logger.log(error);
       if (error instanceof BadRequestException) throw error;
