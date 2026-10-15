@@ -112,6 +112,7 @@ model school {
   @@index([country_code])
   @@index([deleted])
   @@index([last_school_static_id])
+  @@index([giga_id_school])
 }
 
 model country {
