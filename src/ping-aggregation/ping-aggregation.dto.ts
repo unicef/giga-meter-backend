@@ -61,19 +61,33 @@ export class SyncQueryDto {
   syncDate?: string;
 }
 
+/** One row of connectivity_ping_checks_daily_aggr, as GET /records returns it. */
 class PingCheckDto {
   @ApiProperty()
-  id: bigint;
-  @ApiProperty()
-  timestamp: Date;
+  id: number;
+  @ApiProperty({ description: 'Day the pings were aggregated for (UTC)' })
+  timestamp_date: Date;
   @ApiProperty()
   giga_id_school: string;
+  @ApiProperty({
+    nullable: true,
+    description:
+      'Device the pings came from. For installs that report a browser id ' +
+      '(app releases before the facility registration) it is that id. For ' +
+      'installs registered through /api/v2 it is "registration:<registration_id>".',
+    example: 'registration:42',
+  })
+  browser_id: string | null;
+  @ApiProperty({ description: 'Pings that were connected' })
+  is_connected_true: number;
+  @ApiProperty({ description: 'All pings of the day' })
+  is_connected_all: number;
+  @ApiProperty({ description: 'is_connected_true / is_connected_all, in %' })
+  uptime: number;
+  @ApiProperty({ nullable: true, description: 'Average latency in ms' })
+  unloaded_latency_avg: number | null;
   @ApiProperty()
-  device_id: string;
-  @ApiProperty()
-  is_connected: boolean;
-  @ApiProperty()
-  latency: number;
+  created_at: Date;
 }
 
 class MetaDto {
