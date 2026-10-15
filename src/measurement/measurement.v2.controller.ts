@@ -8,6 +8,7 @@ import {
   Post,
   Query,
   UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -56,7 +57,9 @@ export class MeasurementV2Controller {
     type: ApiSuccessResponseDto<AddRecordResponseDto>,
   })
   async createMeasurementFacilityV2(
-    @Body() dto: AddMeasurementFacilityV2Dto,
+    // Same validation as /batch gets from ParseArrayPipe.
+    @Body(new ValidationPipe({ transform: true, validateCustomDecorators: true }))
+    dto: AddMeasurementFacilityV2Dto,
   ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
     const response =
       await this.measurementService.createMeasurementFacilityV2(dto);

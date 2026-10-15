@@ -12,6 +12,12 @@ export function facilityGigaId(
   facilityCode: string,
   ids: { giga_id_school?: string | null; giga_id_health?: string | null },
 ): string {
+  for (const key of ['giga_id_school', 'giga_id_health'] as const) {
+    const value = ids[key];
+    if (value != null && typeof value !== 'string') {
+      throw new BadRequestException(`${key} must be a string`);
+    }
+  }
   const school = normalizeGigaId(ids.giga_id_school);
   const health = normalizeHealthId(ids.giga_id_health);
 
