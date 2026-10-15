@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetricsDto } from './metrics.dto';
-import { v1SchoolScope } from '../common/facility-scope';
+import { v1SchoolScope, V1_SCHOOL_SCOPE_SQL } from '../common/facility-scope';
 
 @Injectable()
 export class MetricsService {
@@ -12,7 +12,7 @@ export class MetricsService {
       SELECT COUNT(DISTINCT c.country_id) as count
       FROM dailycheckapp_country c
       JOIN measurements m ON c.code = m.country_code
-      WHERE m.source = 'DailyCheckApp'
+      WHERE m.source = 'DailyCheckApp' AND ${V1_SCHOOL_SCOPE_SQL}
     `;
     const schools = await this.prisma.dailycheckapp_school.groupBy({
       by: 'giga_id_school',
