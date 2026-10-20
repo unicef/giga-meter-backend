@@ -9,7 +9,6 @@ import {
 import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
 import jwksRsa = require('jwks-rsa');
-import * as Sentry from '@sentry/node';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { ROLES_KEY } from '../roles/roles.decorator';
 
@@ -150,15 +149,7 @@ export class AdminAuthGuard implements CanActivate {
 
   private getSigningKey(header: any, callback: any) {
     this.jwksClient.getSigningKey(header.kid, (err, key) => {
-      if (err) {
-        // A kid B2C does not publish means a bad token. Anything else (the
-        // keys endpoint down or unreachable) still ends as a 401 to the
-        // caller, so report it here.
-        if (err.name !== 'SigningKeyNotFoundError') {
-          Sentry.captureException(err);
-        }
-        return callback(err, null);
-      }
+      if (err) return callback(err, null);
       callback(null, key.getPublicKey());
     });
   }

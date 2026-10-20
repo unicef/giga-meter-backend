@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { StorageService } from './storage.service';
-import { reportUnexpectedError } from '../../../common/error-reporting';
 import sharp from 'sharp';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -236,7 +235,6 @@ export class MediaService {
         } else {
           // If storage is unable to delete it for another reason, we give an error in API
           this.logger.error(`Unable to delete file from storage: ${storageError.message}`);
-          reportUnexpectedError(storageError);
           throw new BadRequestException(`Unable to delete file. Please try again later.`);
         }
       }
