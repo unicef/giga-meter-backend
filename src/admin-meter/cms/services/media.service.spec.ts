@@ -3,9 +3,6 @@ import { MediaService } from './media.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { StorageService } from './storage.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import * as Sentry from '@sentry/node';
-
-jest.mock('@sentry/node', () => ({ captureException: jest.fn() }));
 
 describe('MediaService', () => {
   let service: MediaService;
@@ -354,14 +351,11 @@ describe('MediaService', () => {
       };
 
       mockPrismaService.cmsMedia.findUnique.mockResolvedValue(mockMedia);
-      const storageDown = new Error('Storage down');
-      mockStorageService.deleteFile.mockRejectedValue(storageDown);
+      mockStorageService.deleteFile.mockRejectedValue(new Error('Storage down'));
 
       await expect(service.deleteFile('file_1')).rejects.toThrow(
         BadRequestException,
       );
-      // The caller gets a 400, so the real cause is reported here.
-      expect(Sentry.captureException).toHaveBeenCalledWith(storageDown);
     });
 
     it('should throw NotFoundException for non-existent file', async () => {

@@ -1,111 +1,81 @@
 import {
-  ArgumentsHost,
-  BadGatewayException,
-  HttpException,
-  HttpStatus,
+  Controller,
+  Get,
+  INestApplication,
   NotFoundException,
 } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
 import * as Sentry from '@sentry/node';
-import { Prisma } from '@prisma/client';
+import * as request from 'supertest';
 import { AllExceptionFilter } from './common.filter';
+import { LocationNotFoundException } from '../geolocation/location-not-found.exception';
 
 jest.mock('@sentry/node', () => ({ captureException: jest.fn() }));
 
-const mockHost = () => {
-  const response = { status: jest.fn(), json: jest.fn() };
-  response.status.mockReturnValue(response);
-  const host = {
-    switchToHttp: () => ({ getResponse: () => response }),
-  } as unknown as ArgumentsHost;
-  return { host, response };
-};
+@Controller('things')
+class ThingsController {
+  @Get('missing')
+  missing() {
+    throw new NotFoundException('Thing not found');
+  }
 
+  @Get('unplaceable')
+  unplaceable() {
+    throw new LocationNotFoundException();
+  }
+
+  @Get('broken')
+  broken() {
+    throw new Error('Database connection lost');
+  }
+}
+
+// Through a real app, because whether a route matched is something only
+// Express knows.
 describe('AllExceptionFilter', () => {
-  const filter = new AllExceptionFilter();
+  let app: INestApplication;
+
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      controllers: [ThingsController],
+    }).compile();
+    app = module.createNestApplication();
+    app.useGlobalFilters(new AllExceptionFilter());
+    await app.init();
+  });
+
+  afterAll(() => app.close());
 
   beforeEach(() => jest.clearAllMocks());
 
-  it('does not report client errors to Sentry', () => {
-    const { host, response } = mockHost();
-
-    filter.catch(new NotFoundException('Cannot GET /'), host);
-    filter.catch(
-      new HttpException(
-        'No location matches the data provided',
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      ),
-      host,
-    );
+  it('does not report a request for a path no route serves', async () => {
+    await request(app.getHttpServer())
+      .get('/')
+      .expect(404, { statusCode: 404, message: 'Cannot GET /' });
 
     expect(Sentry.captureException).not.toHaveBeenCalled();
-    expect(response.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
-    expect(response.status).toHaveBeenCalledWith(
-      HttpStatus.UNPROCESSABLE_ENTITY,
+  });
+
+  it('still reports a 404 thrown by a handler', async () => {
+    await request(app.getHttpServer()).get('/things/missing').expect(404);
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(
+      expect.any(NotFoundException),
     );
   });
 
-  it('answers a Prisma record-not-found as a 404 without reporting it', () => {
-    const { host, response } = mockHost();
-    // What findFirstOrThrow throws for a giga_id_school nobody has.
-    const exception = new Prisma.PrismaClientKnownRequestError(
-      'No school found',
-      { code: 'P2025', clientVersion: '5.14.0' },
-    );
-
-    filter.catch(exception, host);
-
-    expect(Sentry.captureException).not.toHaveBeenCalled();
-    expect(response.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
-  });
-
-  it('still reports other Prisma errors as 500s', () => {
-    const { host, response } = mockHost();
-    const exception = new Prisma.PrismaClientKnownRequestError(
-      'Unique constraint failed',
-      { code: 'P2002', clientVersion: '5.14.0' },
-    );
-
-    filter.catch(exception, host);
-
-    expect(Sentry.captureException).toHaveBeenCalledWith(exception);
-    expect(response.status).toHaveBeenCalledWith(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
-  });
-
-  it('reports server errors to Sentry', () => {
-    const { host, response } = mockHost();
-    const exception = new BadGatewayException();
-
-    filter.catch(exception, host);
-
-    expect(Sentry.captureException).toHaveBeenCalledWith(exception);
-    expect(response.status).toHaveBeenCalledWith(HttpStatus.BAD_GATEWAY);
-  });
-
-  it('reports an HttpException built without a status', () => {
-    const { host } = mockHost();
-    // As ping-aggregation.service does with `error.status` from a Prisma error.
-    const exception = new HttpException('Internal server error', undefined);
-
-    filter.catch(exception, host);
-
-    expect(Sentry.captureException).toHaveBeenCalledWith(exception);
-  });
-
-  it('reports unexpected non-HTTP errors to Sentry as 500s', () => {
-    const { host, response } = mockHost();
-    const exception = new Error('boom');
-
-    filter.catch(exception, host);
-
-    expect(Sentry.captureException).toHaveBeenCalledWith(exception);
-    expect(response.status).toHaveBeenCalledWith(
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
-    expect(response.json).toHaveBeenCalledWith({
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'boom',
+  it('does not report access points the provider cannot place', async () => {
+    await request(app.getHttpServer()).get('/things/unplaceable').expect(422, {
+      statusCode: 422,
+      message: 'No location matches the data provided',
     });
+
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it('reports server errors', async () => {
+    await request(app.getHttpServer()).get('/things/broken').expect(500);
+
+    expect(Sentry.captureException).toHaveBeenCalledWith(expect.any(Error));
   });
 });

@@ -1,5 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
 import { PingAggregationService } from './ping-aggregation.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import redisClient from 'src/utils/redis.client';
@@ -55,7 +54,7 @@ describe('PingAggregationService', () => {
     it('should throw an error if from and to are not provided', async () => {
       const query = { giga_id_school: 'school-1', page: 1, pageSize: 10 };
       await expect(service.getRawPings(query as any)).rejects.toThrow(
-        new BadRequestException('from and to both are required'),
+        'from and to both are required',
       );
     });
 

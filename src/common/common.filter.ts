@@ -4,10 +4,10 @@ import {
   ExceptionFilter,
   HttpException,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
-import { Prisma } from '@prisma/client';
-import { isClientError } from './error-reporting';
+import { LocationNotFoundException } from '../geolocation/location-not-found.exception';
 @Catch()
 export class AllExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost): void {
@@ -16,13 +16,9 @@ export class AllExceptionFilter implements ExceptionFilter {
     const httpStatus =
       exception instanceof HttpException
         ? exception.getStatus()
-        : isRecordNotFound(exception)
-          ? HttpStatus.NOT_FOUND
-          : HttpStatus.INTERNAL_SERVER_ERROR;
+        : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    // 4xx responses are not faults of ours. Anything else is reported,
-    // including an exception built with a missing or odd status.
-    if (!isClientError(httpStatus)) {
+    if (!isExpected(exception, ctx.getRequest())) {
       Sentry.captureException(exception);
     }
     response.status(httpStatus).json({
@@ -32,11 +28,13 @@ export class AllExceptionFilter implements ExceptionFilter {
   }
 }
 
-/**
- * Prisma's P2025: a findFirstOrThrow (or an update/delete) on a record that
- * does not exist. The services lean on it for ids that come from the caller,
- * so it means "no such school/country/user", not a fault of ours.
- */
-const isRecordNotFound = (exception: unknown): boolean =>
-  exception instanceof Prisma.PrismaClientKnownRequestError &&
-  exception.code === 'P2025';
+/** Answers given on purpose, which are not failures and stay out of Sentry. */
+function isExpected(exception: unknown, request: { route?: unknown }): boolean {
+  return (
+    // Nest's "Cannot GET /" for a path no route serves: probes and scanners.
+    // Express sets request.route only once a route matched, so a 404 thrown by
+    // one of our handlers is still reported.
+    (exception instanceof NotFoundException && !request.route) ||
+    exception instanceof LocationNotFoundException
+  );
+}

@@ -2,7 +2,6 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryConfigDto, UpdateCategoryConfigDto } from './category-config.dto';
 import { CategoryConfig } from '@prisma/client';
-import { reportUnexpectedError } from '../common/error-reporting';
 
 
 @Injectable()
@@ -32,7 +31,6 @@ export class CategoryConfigService {
     return this.mapPrismaModelToInterface(result);
   } catch (error) {
     console.error('Error fetching category config:', error.message);
-    reportUnexpectedError(error);
     throw new NotFoundException(`Category config with ID ${id} not found`);
   }
   }
@@ -50,7 +48,6 @@ export class CategoryConfigService {
     return this.mapPrismaModelToInterface(result);
   } catch (error) {
     console.error('Error fetching category config:', error.message);
-    reportUnexpectedError(error);
     throw new NotFoundException(`Category config with name ${name} not found`);
   }
   }
@@ -68,7 +65,6 @@ export class CategoryConfigService {
     return this.mapPrismaModelToInterface(result);
   } catch (error) {
     console.error('Error fetching default category config:', error.message);
-    reportUnexpectedError(error);
     throw new NotFoundException('No default category config found');
   }
   }
@@ -145,7 +141,6 @@ export class CategoryConfigService {
       if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
-      reportUnexpectedError(error);
       throw new BadRequestException(`Failed to update category config`);
     }
   }
@@ -163,7 +158,6 @@ export class CategoryConfigService {
         throw error;
       }
       console.error('Error deleting category config:', error.message);
-      reportUnexpectedError(error);
       throw new BadRequestException(`Failed to delete category config: ${error.message}`);
     }
   }

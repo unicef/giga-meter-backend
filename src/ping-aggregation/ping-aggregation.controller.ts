@@ -24,7 +24,6 @@ import {
 import { PingAggregationService } from './ping-aggregation.service';
 import { getDateFromString } from 'src/utility/utility';
 import { ValidateSize } from 'src/common/validation.decorator';
-import { reportUnexpectedError } from 'src/common/error-reporting';
 
 @ApiTags('Ping Aggregation')
 @Controller('api/v1/ping-aggregation')
@@ -65,7 +64,6 @@ export class PingAggregationController {
       return { success: true, totalDevicesProcessed };
     } catch (error) {
       this.logger.error(error);
-      reportUnexpectedError(error);
       throw new HttpException(error, HttpStatus.BAD_REQUEST);
     }
   }

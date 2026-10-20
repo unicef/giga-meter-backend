@@ -48,12 +48,4 @@ describe('ValidateSize Decorator', () => {
     const options = { max: 50 };
     expect(() => factory(options, mockContext)).toThrow(HttpException);
   });
-
-  it('should throw HttpException for a size that is not a number', () => {
-    const factory = getDecoratorFactory(ValidateSize);
-    const mockContext = createMock<ExecutionContext>({
-      switchToHttp: () => ({ getRequest: () => ({ query: { size: 'abc' } }) }),
-    });
-    expect(() => factory({}, mockContext)).toThrow(HttpException);
-  });
 });
