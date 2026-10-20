@@ -28,6 +28,7 @@ import {
   MIN_ACCESS_POINTS,
   normalizeMac,
 } from './geolocation.cache';
+import { LocationNotFoundException } from './location-not-found.exception';
 
 /** Provider 403 reasons that mean "over quota", not "bad key". */
 const QUOTA_REASONS = ['dailyLimitExceeded', 'userRateLimitExceeded', 'rateLimitExceeded'];
@@ -144,10 +145,7 @@ export class GeolocationController {
   }
 
   private notFound(): HttpException {
-    return new HttpException(
-      'No location matches the data provided',
-      HttpStatus.UNPROCESSABLE_ENTITY,
-    );
+    return new LocationNotFoundException();
   }
 
   private requireApiKey(): string {
