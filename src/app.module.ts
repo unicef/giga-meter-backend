@@ -10,10 +10,12 @@ import { FlaggedSchoolController } from './flagged-school/flagged-school.control
 import { SchoolController } from './school/school.controller';
 import { SchoolService } from './school/school.service';
 import { CountryController } from './country/country.controller';
+import { CountryV2Controller } from './country/country.v2.controller';
 import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { MeasurementController } from './measurement/measurement.controller';
+import { MeasurementV2Controller } from './measurement/measurement.v2.controller';
 import { MeasurementService } from './measurement/measurement.service';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
@@ -34,6 +36,7 @@ import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CACHE_TTL } from './config/cache.config';
 import { ConnectivityController } from './connectivity/connectivity.controller';
+import { ConnectivityV2Controller } from './connectivity/connectivity.v2.controller';
 import { ConnectivityService } from './connectivity/connectivity.service';
 import { GeolocationModule } from './geolocation/geolocation.module';
 import { PublicController } from './public/public.controller';
@@ -52,6 +55,10 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { SchedulerService } from './scheduler/scheduler.service';
 import { ProtocolConfigController } from './protocol-config/protocol-config.controller';
 import { ProtocolConfigService } from './protocol-config/protocol-config.service';
+import { FacilityTypeModule } from './facility-type/facility-type.module';
+import { HealthModule } from './health/health.module';
+import { RegistrationModule } from './registration/registration.module';
+import { NearestFacilityModule } from './nearest-facility/nearest-facility.module';
 
 @Module({
   imports: [
@@ -78,6 +85,10 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     AdminMeterModule,
     TranslateModule,
     FeatureFlagModule,
+    FacilityTypeModule,
+    HealthModule,
+    RegistrationModule,
+    NearestFacilityModule,
   ],
   controllers: [
     AppController,
@@ -86,11 +97,14 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
     SchoolController,
     SchoolMasterController,
     CountryController,
+    CountryV2Controller,
     MeasurementController,
+    MeasurementV2Controller,
     AdminController,
     DataFixController,
     MetricsController,
     ConnectivityController,
+    ConnectivityV2Controller,
     PingAggregationController,
     PublicController,
     SchoolRegistrationController,
