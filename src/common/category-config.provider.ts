@@ -1,6 +1,9 @@
 import { forwardRef, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { CategoryConfigService } from '../category-config/category-config.service';
-import { CATEGORIES, DEFAULT_CATEGORY, CATEGORY_CONFIG, CategoryConfigType} from './category.config';
+import { CATEGORIES, DEFAULT_CATEGORY, CATEGORY_CONFIG, CODE_OWNED_CATEGORY_CONFIG, CategoryConfigType} from './category.config';
+
+const isCodeOwned = (name: string) =>
+  CODE_OWNED_CATEGORY_CONFIG.some(config => config.name.toLowerCase() === name?.toLowerCase());
 
 /**
  * This service provides access to category configurations, either from the database
@@ -25,17 +28,19 @@ export class CategoryConfigProvider implements OnModuleInit {
   async initialize() {
     try {
       // Try to load configurations from the database
-      const configs = await this.categoryConfigService.findAll() as unknown as CategoryConfigType[];
+      const allConfigs = await this.categoryConfigService.findAll() as unknown as CategoryConfigType[];
+      // Code-owned categories never come from the table, see CODE_OWNED_CATEGORY_CONFIG
+      const configs = allConfigs.filter(config => !isCodeOwned(config.name));
       
       if (configs.length > 0) {
-        this.categories = configs.map(config => config.name);
+        this.categories = [...configs, ...CODE_OWNED_CATEGORY_CONFIG].map(config => config.name);
         
         // Find the default category
         const defaultConfig = configs.find(config => config.isDefault);
         this.defaultCategory = defaultConfig ? defaultConfig.name : configs[0].name;
         
         // Build the category config map
-        this.categoryConfigs = configs;
+        this.categoryConfigs = [...configs, ...CODE_OWNED_CATEGORY_CONFIG];
         
         this.isInitialized = true;
       } else {
