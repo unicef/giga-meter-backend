@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CategoryConfigProvider } from './category-config.provider';
 import { CategoryConfigService } from '../category-config/category-config.service';
-import { CATEGORIES, DEFAULT_CATEGORY, CATEGORY_CONFIG, CategoryConfigType } from './category.config';
+import { CATEGORIES, DEFAULT_CATEGORY, CATEGORY_CONFIG, CODE_OWNED_CATEGORY_CONFIG, CategoryConfigType } from './category.config';
 
 // Mock CategoryConfigService
 const mockCategoryConfigService = {
@@ -34,6 +34,11 @@ const dbConfigs: CategoryConfigType[] = [
     updatedAt: new Date(),
   },
 ];
+
+// What the provider serves when the table holds dbConfigs: those rows plus the
+// categories owned by code.
+const loadedConfigs = [...dbConfigs, ...CODE_OWNED_CATEGORY_CONFIG];
+const loadedNames = loadedConfigs.map((config) => config.name);
 
 describe('CategoryConfigProvider', () => {
   let provider: CategoryConfigProvider;
@@ -69,9 +74,9 @@ describe('CategoryConfigProvider', () => {
       const allConfigs = await provider.getAllCategoryConfigs();
 
       expect(configService.findAll).toHaveBeenCalled();
-      expect(categories).toEqual(['db_cat_1', 'db_cat_2']);
+      expect(categories).toEqual(loadedNames);
       expect(defaultCategory).toBe('db_cat_2');
-      expect(allConfigs).toEqual(dbConfigs);
+      expect(allConfigs).toEqual(loadedConfigs);
     });
 
     it('should fall back to static configuration if database fetch fails', async () => {
@@ -102,7 +107,7 @@ describe('CategoryConfigProvider', () => {
         await provider.initialize();
       });
     it('getCategories should return the list of categories', async () => {
-        expect(await provider.getCategories()).toEqual(['db_cat_1', 'db_cat_2']);
+        expect(await provider.getCategories()).toEqual(loadedNames);
     });
 
     it('getDefaultCategory should return the default category name', async () => {
@@ -114,7 +119,7 @@ describe('CategoryConfigProvider', () => {
     });
 
     it('getAllCategoryConfigs should return all configs', async () => {
-        expect(await provider.getAllCategoryConfigs()).toEqual(dbConfigs);
+        expect(await provider.getAllCategoryConfigs()).toEqual(loadedConfigs);
     });
   });
 
