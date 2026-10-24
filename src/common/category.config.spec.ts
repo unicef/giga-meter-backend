@@ -142,14 +142,25 @@ describe('GIGA_METER_APP category', () => {
   });
 
   describe('school lookup by giga id', () => {
-    it('returns only whether the school has registrations', async () => {
+    // The interceptor matches filters against the route pattern of the handler.
+    const intercept = async (routePath: string, response: any) => {
       const provider = staticProvider();
       await provider.initialize();
       const interceptor = new CategoryResponseInterceptor(provider);
       const request = {
         category: Category.GIGA_METER_APP.toLowerCase(),
-        route: { path: '/api/v1/dailycheckapp_schools/:giga_id_school' },
+        route: { path: routePath },
       };
+
+      return await (await firstValueFrom(
+        interceptor.intercept(
+          { switchToHttp: () => ({ getRequest: () => request }) } as any,
+          { handle: () => of(response) },
+        ),
+      ));
+    };
+
+    it('returns only whether the school has registrations', async () => {
       const response = {
         success: true,
         data: [
@@ -165,14 +176,23 @@ describe('GIGA_METER_APP category', () => {
         ],
       };
 
-      const result = await (await firstValueFrom(
-        interceptor.intercept(
-          { switchToHttp: () => ({ getRequest: () => request }) } as any,
-          { handle: () => of(response) },
-        ),
-      ));
+      const result = await intercept('/api/v1/dailycheckapp_schools/:giga_id_school', response);
 
       expect(result.data).toEqual([{ id: '1', giga_id_school: 'giga-1' }]);
+    });
+
+    it('leaves the deactivate response, one segment under the same path, as it is', async () => {
+      const response = {
+        success: true,
+        data: { deactivated: true, message: 'Device deactivated successfully' },
+      };
+
+      const result = await intercept('/api/v1/dailycheckapp_schools/deactivate', response);
+
+      expect(result.data).toEqual({
+        deactivated: true,
+        message: 'Device deactivated successfully',
+      });
     });
   });
 });

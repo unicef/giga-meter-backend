@@ -58,8 +58,9 @@ export const GIGA_METER_APP_RESPONSE_FILTERS: CategoryResponseFilters = {
   exclude: [],
   include: [],
   endpoints: {
-    // The app only checks whether the list is empty.
-    '/api/v1/dailycheckapp_schools/{giga_id_school}': {
+    // The app only checks whether the list is empty. Keyed by the route pattern the
+    // interceptor matches against: {giga_id_school} would also match PUT .../deactivate.
+    '/api/v1/dailycheckapp_schools/:giga_id_school': {
       include: ['id', 'giga_id_school'],
     },
   },
