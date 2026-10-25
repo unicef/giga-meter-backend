@@ -3,6 +3,9 @@ import { MeasurementService } from './measurement.service';
 import { AddMeasurementDto } from './measurement.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
+import { RegistrationService } from '../registration/registration.service';
+import { HealthService } from '../health/health.service';
 import {
   mockAddMeasurementDto,
   mockCountryModel,
@@ -15,9 +18,13 @@ import {
   mockSchoolModel,
 } from '../common/mock-objects';
 
+import { v1SchoolScope } from '../common/facility-scope';
+
 describe('MeasurementService', () => {
   let service: MeasurementService;
   let prisma: PrismaService;
+  let facilityTypeService: FacilityTypeService;
+  let registrationService: RegistrationService;
 
   beforeEach(async () => {
     const mockGeolocationUtility = {
@@ -25,6 +32,22 @@ describe('MeasurementService', () => {
       updateLatLngColumns: jest.fn(),
       getSchoolCoordinates: jest.fn(),
       calculateDistance: jest.fn(),
+    };
+
+    const mockFacilityTypeService = {
+      getByCode: jest.fn(),
+      getById: jest.fn(),
+      resolveIdByCode: jest.fn(),
+    };
+
+    const mockHealthService = {
+      findActiveById: jest.fn(),
+      findAll: jest.fn(),
+      findByGigaId: jest.fn(),
+    };
+
+    const mockRegistrationService = {
+      resolveForIngest: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -35,11 +58,25 @@ describe('MeasurementService', () => {
           provide: GeolocationUtility,
           useValue: mockGeolocationUtility,
         },
+        {
+          provide: FacilityTypeService,
+          useValue: mockFacilityTypeService,
+        },
+        {
+          provide: HealthService,
+          useValue: mockHealthService,
+        },
+        {
+          provide: RegistrationService,
+          useValue: mockRegistrationService,
+        },
       ],
     }).compile();
 
     service = module.get<MeasurementService>(MeasurementService);
     prisma = module.get<PrismaService>(PrismaService);
+    facilityTypeService = module.get<FacilityTypeService>(FacilityTypeService);
+    registrationService = module.get<RegistrationService>(RegistrationService);
   });
 
   it('should be defined', () => {
@@ -73,6 +110,35 @@ describe('MeasurementService', () => {
           }),
         }),
       );
+    });
+
+    it('keeps the v1 list to schools (legacy and v2 school rows)', async () => {
+      const findManySpy = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      await service.measurements(0, 5, 'timestamp');
+
+      expect(findManySpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ AND: [v1SchoolScope()] }),
+        }),
+      );
+    });
+
+    it('keeps the by-id and by-school lookups to schools', async () => {
+      const findManySpy = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue(mockMeasurementModel);
+
+      await service.measurementsById(1, true);
+      await service.measurementsBySchoolId('ES-1', true);
+
+      for (const call of findManySpy.mock.calls) {
+        expect(call[0].where).toEqual(
+          expect.objectContaining({ AND: [v1SchoolScope()] }),
+        );
+      }
     });
 
     it('should return measurements with lt timestamp filter', async () => {
@@ -286,6 +352,141 @@ describe('MeasurementService', () => {
 
       await expect(service.measurementsV2(0, 5, 'timestamp')).rejects.toThrow(
         'Database error',
+      );
+    });
+  });
+
+  describe('measurementsV2Facility', () => {
+    it('returns no country to a read-only key with no countries', async () => {
+      const findMany = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue([]);
+
+      await service.measurementsV2Facility(0, 10, '-timestamp', undefined, undefined, undefined, undefined, '', '', null, false, []);
+
+      expect(findMany.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({ country_code: { in: [] } }),
+      );
+    });
+
+    it('matches school ids in lowercase and health ids trimmed', async () => {
+      const findMany = jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue([]);
+
+      await service.measurementsV2Facility(0, 10, '-timestamp', undefined, ' HF-AbC ', ' ES-School ', undefined, '', '', null, true);
+
+      expect(findMany.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({
+          giga_id_school: 'es-school',
+          giga_id_health: 'HF-AbC',
+        }),
+      );
+    });
+  });
+
+  describe('createMeasurementV2 — validation', () => {
+    const school = { id: 1, name: 'school', code: 'school' };
+    const health = { id: 2, name: 'health', code: 'health' };
+
+    it.each([
+      ['school', { giga_id_health: 'hf-1' }],
+      ['school', { giga_id_school: 'es-1', giga_id_health: 'hf-1' }],
+      ['health', { giga_id_school: 'es-1' }],
+    ])('rejects facility_type %s with ids %p', async (type, ids) => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue(
+        type === 'school' ? school : health,
+      );
+      await expect(
+        service.createMeasurementV2({ entity_type: type, ...ids } as any),
+      ).rejects.toThrow('needs giga_id_');
+    });
+
+    it('rejects a school that is not in the school master', async () => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue(school);
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(null);
+
+      await expect(
+        service.createMeasurementV2({ entity_type: 'school', giga_id_school: 'nope' } as any),
+      ).rejects.toThrow(service.SCHOOL_DOESNT_EXIST_ERR);
+    });
+
+    it('rejects a remapped school id sent with another country, as v1 does', async () => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue(school);
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({ id: 1 } as any);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue({ correct_country: 'KE' } as any);
+
+      await expect(
+        service.createMeasurementV2({
+          entity_type: 'school',
+          giga_id_school: 'es-1',
+          country_code: 'ES',
+        } as any),
+      ).rejects.toThrow(service.WRONG_COUNTRY_CODE_ERR);
+    });
+  });
+
+  describe('createMeasurementV2 — registration self-heal', () => {
+    beforeEach(() => {
+      (facilityTypeService.getByCode as jest.Mock).mockResolvedValue({
+        id: 1,
+        name: 'school',
+        code: 'school',
+      });
+      jest.spyOn(prisma.school, 'findFirst').mockResolvedValue({ id: 1 } as any);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+    });
+
+    it('delegates the self-heal to RegistrationService.resolveForIngest', async () => {
+      (registrationService.resolveForIngest as jest.Mock).mockResolvedValue(
+        BigInt(555),
+      );
+      const create = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue({} as any);
+
+      const result = await service.createMeasurementV2({
+        entity_type: 'school',
+        giga_id_school: 'giga-1',
+        installation_id: 'inst-7',
+      } as any);
+
+      expect(result).toBe('');
+      expect(registrationService.resolveForIngest).toHaveBeenCalledWith(
+        expect.objectContaining({
+          installation_id: 'inst-7',
+          giga_id_school: 'giga-1',
+        }),
+      );
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ registration_id: BigInt(555) }),
+        }),
+      );
+    });
+
+    it('stores the measurement with null registration when nothing resolves', async () => {
+      (registrationService.resolveForIngest as jest.Mock).mockResolvedValue(
+        null,
+      );
+      const create = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue({} as any);
+
+      const result = await service.createMeasurementV2({
+        entity_type: 'school',
+        giga_id_school: 'giga-1',
+      } as any);
+
+      expect(result).toBe('');
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ registration_id: null }),
+        }),
       );
     });
   });
