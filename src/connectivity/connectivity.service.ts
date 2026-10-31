@@ -13,6 +13,16 @@ const isDuplicateRecord = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError &&
   error.code === UNIQUE_CONSTRAINT_VIOLATION;
 
+/**
+ * The app builds the upload URL from the school id it holds at upload time.
+ * Some start-up paths clear that id but keep the queue of pings not yet
+ * uploaded, so the queue arrives with the id as the text "undefined".
+ */
+const isMissingSchoolId = (giga_id_school?: string | null) =>
+  ['', 'undefined', 'null'].includes(
+    (giga_id_school ?? '').trim().toLowerCase(),
+  );
+
 @Injectable()
 export class ConnectivityService {
   private readonly logger = new Logger(ConnectivityService.name);
@@ -56,9 +66,17 @@ export class ConnectivityService {
     createConnectivityDto: CreateConnectivityDto[],
     giga_id_school: string,
   ) {
-    if ((await existSchool(this.prisma, giga_id_school)) === false)
+    const schoolId = isMissingSchoolId(giga_id_school)
+      ? await this.schoolOfDevice(createConnectivityDto)
+      : giga_id_school;
+    if (!schoolId || (await existSchool(this.prisma, schoolId)) === false)
       throw new BadRequestException('School does not exist');
-    const storedSchoolId = this.storedSchoolId(giga_id_school);
+    if (schoolId !== giga_id_school)
+      this.logger.warn(
+        `${createConnectivityDto.length} connectivity checks sent without a school id; ` +
+          `storing them under ${schoolId}, the school their browserId is registered to`,
+      );
+    const storedSchoolId = this.storedSchoolId(schoolId);
     try {
       await this.prisma.connectivity_ping_checks.createMany({
         data: createConnectivityDto.map((record) => ({
@@ -72,12 +90,39 @@ export class ConnectivityService {
       return createConnectivityDto;
     } catch (error) {
       this.logger.error(
-        `Failed to store connectivity checks for ${giga_id_school}`,
+        `Failed to store connectivity checks for ${schoolId}`,
         error,
       );
       throw error;
     }
   }
+
+  /**
+   * The school the batch's device is registered to. Each ping carries the
+   * device's registration id as browserId (the app's schoolUserId, stored as
+   * dailycheckapp_school.user_id). A logged-out registration still counts: the
+   * pings were taken before the logout. Null unless the whole batch comes from
+   * one device registered to exactly one school.
+   */
+  private async schoolOfDevice(
+    records: CreateConnectivityDto[] = [],
+  ): Promise<string | null> {
+    const browserIds = new Set(
+      records.map((record) => record.browserId?.trim()),
+    );
+    const [browserId] = browserIds;
+    if (browserIds.size !== 1 || !browserId) return null;
+
+    const registrations = await this.prisma.dailycheckapp_school.findMany({
+      where: { user_id: browserId },
+      select: { giga_id_school: true },
+    });
+    const schools = new Set(
+      registrations.map((r) => r.giga_id_school).filter(Boolean),
+    );
+    return schools.size === 1 ? [...schools][0] : null;
+  }
+
   async findAll(query: GetConnectivityRecordsWithSchoolDto) {
     const {
       giga_id_school,
