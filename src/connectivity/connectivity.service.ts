@@ -23,6 +23,25 @@ const isMissingSchoolId = (giga_id_school?: string | null) =>
     (giga_id_school ?? '').trim().toLowerCase(),
   );
 
+/** How long the app keeps a queued ping before deleting it (cleanupOldRecords). */
+const APP_PING_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * The app only runs that cleanup after every batch uploads, and it uploads the
+ * oldest batch first and stops at the first failure. A batch we reject is
+ * therefore never cleaned up, and it blocks every newer ping on the device.
+ */
+const isPastAppRetention = (records: CreateConnectivityDto[] = []) => {
+  const cutoff = Date.now() - APP_PING_RETENTION_MS;
+  return (
+    records.length > 0 &&
+    records.every(
+      (record) =>
+        !!record.timestamp && new Date(record.timestamp).getTime() < cutoff,
+    )
+  );
+};
+
 @Injectable()
 export class ConnectivityService {
   private readonly logger = new Logger(ConnectivityService.name);
@@ -69,6 +88,16 @@ export class ConnectivityService {
     const schoolId = isMissingSchoolId(giga_id_school)
       ? await this.schoolOfDevice(createConnectivityDto)
       : giga_id_school;
+    // Only reachable without a school id: a given id is used as it is.
+    if (!schoolId && isPastAppRetention(createConnectivityDto)) {
+      const browserIds = new Set(createConnectivityDto.map((r) => r.browserId));
+      this.logger.warn(
+        `Dropped ${createConnectivityDto.length} connectivity checks sent without a school id: ` +
+          `browserId ${[...browserIds].join(', ')} is not registered to one school, ` +
+          `and all are older than the app keeps them`,
+      );
+      return createConnectivityDto;
+    }
     if (!schoolId || (await existSchool(this.prisma, schoolId)) === false)
       throw new BadRequestException('School does not exist');
     if (schoolId !== giga_id_school)
