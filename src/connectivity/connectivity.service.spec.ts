@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ConnectivityService } from './connectivity.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -84,6 +84,100 @@ describe('ConnectivityService', () => {
       await expect(
         service.createMany([record('a')], giga_id_school),
       ).rejects.toThrow(failure);
+    });
+
+    describe('without a school id', () => {
+      const browserId = record('a').browserId;
+
+      const deviceRegisteredTo = (...schools: (string | null)[]) =>
+        jest
+          .spyOn(prisma.dailycheckapp_school, 'findMany')
+          .mockResolvedValue(
+            schools.map((school) => ({ giga_id_school: school })) as any,
+          );
+
+      it.each(['undefined', 'null', '', ' Undefined '])(
+        'stores the batch under the school its device is registered to (%p)',
+        async (missingId) => {
+          schoolExists(true);
+          deviceRegisteredTo(giga_id_school);
+          jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+          const createMany = jest
+            .spyOn(prisma.connectivity_ping_checks, 'createMany')
+            .mockResolvedValue({ count: 2 });
+
+          const records = [record('a'), record('b')];
+          await expect(service.createMany(records, missingId)).resolves.toEqual(
+            records,
+          );
+
+          expect(prisma.dailycheckapp_school.findMany).toHaveBeenCalledWith({
+            where: { user_id: browserId },
+            select: { giga_id_school: true },
+          });
+          expect(createMany).toHaveBeenCalledWith({
+            data: [
+              expect.objectContaining({ app_local_uuid: 'a', giga_id_school }),
+              expect.objectContaining({ app_local_uuid: 'b', giga_id_school }),
+            ],
+            skipDuplicates: true,
+          });
+        },
+      );
+
+      it('rejects a batch whose device is not registered', async () => {
+        schoolExists(true);
+        deviceRegisteredTo();
+
+        await expect(
+          service.createMany([record('a')], 'undefined'),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+      });
+
+      it('rejects a batch whose device is registered to two schools', async () => {
+        schoolExists(true);
+        deviceRegisteredTo(giga_id_school, 'another-school');
+
+        await expect(
+          service.createMany([record('a')], 'undefined'),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+      });
+
+      it('rejects a batch from more than one device without looking them up', async () => {
+        schoolExists(true);
+        const findMany = deviceRegisteredTo(giga_id_school);
+        const other = { ...record('b'), browserId: 'another-device' };
+
+        await expect(
+          service.createMany([record('a'), other], 'undefined'),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+        expect(findMany).not.toHaveBeenCalled();
+      });
+
+      it('rejects a batch with no browserId without looking it up', async () => {
+        schoolExists(true);
+        const findMany = deviceRegisteredTo(giga_id_school);
+
+        await expect(
+          service.createMany(
+            [{ ...record('a'), browserId: null }],
+            'undefined',
+          ),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+        expect(findMany).not.toHaveBeenCalled();
+      });
+    });
+
+    it('does not look up the device when the school id is given but unknown', async () => {
+      schoolExists(false);
+      const findMany = jest.spyOn(prisma.dailycheckapp_school, 'findMany');
+
+      await expect(
+        service.createMany([record('a')], giga_id_school),
+      ).rejects.toThrow(new BadRequestException('School does not exist'));
+      expect(findMany).not.toHaveBeenCalled();
     });
   });
 
