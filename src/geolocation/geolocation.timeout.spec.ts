@@ -12,6 +12,7 @@ import { GeolocationController } from './geolocation.controller';
 import { GeolocationCache, GEOLOCATION_REDIS } from './geolocation.cache';
 import { GeolocationModule, GOOGLE_API_TIMEOUT_MS } from './geolocation.module';
 import { PrismaService } from '../prisma/prisma.service';
+import { PrismaModule } from '../prisma/prisma.module';
 
 describe('Geolocation upstream timeout', () => {
   afterEach(() => {
@@ -20,7 +21,7 @@ describe('Geolocation upstream timeout', () => {
 
   it('configures a timeout on the HttpService the module provides', async () => {
     const moduleRef = await Test.createTestingModule({
-      imports: [GeolocationModule],
+      imports: [PrismaModule, GeolocationModule],
     })
       .overrideProvider(PrismaService)
       .useValue({})
