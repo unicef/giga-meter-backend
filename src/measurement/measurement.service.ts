@@ -465,7 +465,10 @@ export class MeasurementService {
       annotation: measurement.annotation,
       Download: measurement.download,
       Upload: measurement.upload,
-      Latency: parseInt(measurement.latency.toString()),
+      Latency:
+        measurement.latency == null
+          ? null
+          : parseInt(measurement.latency.toString()),
       Results: cleanResults
         ? plainToInstance(ResultsDto, cleanResults)
         : undefined,
@@ -563,7 +566,10 @@ export class MeasurementService {
       school_id: measurement.school_id,
       download: measurement.download,
       upload: measurement.upload,
-      latency: parseInt(measurement.latency.toString()),
+      latency:
+        measurement.latency == null
+          ? null
+          : parseInt(measurement.latency.toString()),
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
@@ -598,7 +604,10 @@ export class MeasurementService {
       annotation: measurement.annotation,
       Download: measurement.download,
       Upload: measurement.upload,
-      Latency: parseInt(measurement.latency.toString()),
+      Latency:
+        measurement.latency == null
+          ? null
+          : parseInt(measurement.latency.toString()),
       DataDownloaded: measurement.data_downloaded
         ? parseInt(measurement.data_downloaded.toString())
         : undefined,
