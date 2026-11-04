@@ -42,10 +42,6 @@ export const GIGA_METER_APP_ALLOWED_APIS: CategoryApiEndpoint[] = [
   { url: '/api/v1/dailycheckapp_schools/{giga_id_school}', methods: ['GET'] },
   { url: '/api/v1/dailycheckapp_schools/checkExistingInstallation/{device_hardware_id}', methods: ['GET'] },
   { url: '/api/v1/dailycheckapp_schools/checkDeviceStatus/{device_hardware_id}/{giga_id_school}', methods: ['GET'] },
-  // 2.0.4: automatic registration adds its own row, and the start-up check reads
-  // the app's own registration (TECH-8828).
-  { url: '/api/v1/dailycheckapp_schools/autoRegister', methods: ['POST'] },
-  { url: '/api/v1/dailycheckapp_schools/checkRegistrationStatus/{user_id}', methods: ['GET'] },
   { url: '/api/v1/dailycheckapp_data_fix/{giga_id}', methods: ['GET'] },
   { url: '/api/v1/flagged_dailycheckapp_schools', methods: ['POST'] },
   { url: '/api/v1/schools/country_code_school_id/{country_code}/{school_id}', methods: ['GET'] },

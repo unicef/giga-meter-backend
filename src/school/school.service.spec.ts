@@ -268,12 +268,11 @@ describe('SchoolService', () => {
         is_verified: false,
       });
       expect(createSpy).not.toHaveBeenCalled();
-      // Same school, same Windows user, active, and this PC: its device ID,
-      // or its firmware UUID on a registration from before 2.0.4.
+      // Same school, active, and this PC: its device ID, or its hardware ID
+      // on a registration from before 2.0.4.
       expect(findFirstSpy).toHaveBeenCalledWith({
         where: {
           giga_id_school: 'gigaid1',
-          windows_username: null,
           AND: [
             { OR: [{ is_active: null }, { is_active: true }] },
             {
@@ -542,7 +541,7 @@ describe('SchoolService', () => {
         );
 
     describe('createSchool', () => {
-      it('stores the hardware values, the device ID and the registration type', async () => {
+      it('stores the hardware values and the device ID', async () => {
         const createSpy = createdRow();
 
         await service.createSchool({
@@ -569,7 +568,6 @@ describe('SchoolService', () => {
             machine_guid: 'guid-m',
             device_id: 'device-1',
             device_id_flags: [],
-            registration_type: 'manual',
           }),
         });
       });
@@ -593,30 +591,37 @@ describe('SchoolService', () => {
         });
       });
 
-      it('registers a second Windows user on the same PC separately', async () => {
-        // The repeat-submission check is per Windows user, so another user's
-        // active registration for this school isn't returned.
-        const findFirstSpy = jest.spyOn(
-          prisma.dailycheckapp_school,
-          'findFirst',
-        );
+      it("gives a second Windows user the PC's registration, as before", async () => {
+        // One registration per PC and school, shared by its Windows users, as
+        // automatic registration does: the Windows user isn't part of the check.
+        const findFirstSpy = jest
+          .spyOn(prisma.dailycheckapp_school, 'findFirst')
+          .mockResolvedValue({
+            ...mockSchoolModel[0],
+            user_id: 'first-user-registration',
+            windows_username: 'first-user',
+            device_id: 'device-1',
+            disk_serial: 'disk-c',
+          });
         const createSpy = createdRow();
 
-        await service.createSchool({
+        const response = await service.createSchool({
           ...mockSchoolDto[0],
           device_hardware_id: 'uuid-a',
+          disk_serial: 'disk-c',
           windows_username: 'second-user',
         });
 
-        expect(findFirstSpy.mock.calls[0][0].where.windows_username).toBe(
-          'second-user',
+        expect(findFirstSpy.mock.calls[0][0].where).not.toHaveProperty(
+          'windows_username',
         );
-        expect(createSpy).toHaveBeenCalled();
+        expect(createSpy).not.toHaveBeenCalled();
+        expect(response.user_id).toBe('first-user-registration');
       });
 
-      it('treats another PC with the same firmware UUID and account name as a new registration', async () => {
-        // PCs copied from one disk image: same placeholder UUID, same Windows
-        // account name, different serials, so a different device ID. The
+      it('treats another PC with the same firmware UUID as a new registration', async () => {
+        // PCs copied from one disk image: same placeholder UUID, different
+        // serials, so a different device ID. The
         // repeat must have this PC's device ID; the real-database run checks
         // the other PC's row isn't returned.
         mockDeviceIdService.assign.mockResolvedValueOnce({
@@ -673,261 +678,8 @@ describe('SchoolService', () => {
       });
     });
 
-    describe('autoRegister', () => {
-      const source = {
-        ...mockSchoolModel[0],
-        user_id: 'first-user-registration',
-        giga_id_school: 'gigaid1',
-        country_code: 'MZ',
-        device_hardware_id: 'uuid-a',
-        windows_username: 'first-user',
-      };
-      const request = {
-        device_hardware_id: 'uuid-a',
-        baseboard_serial: 'board-b',
-        disk_serial: 'disk-c',
-        machine_guid: 'guid-m',
-        windows_username: 'second-user',
-        app_version: '2.0.4',
-        os: 'windows',
-      };
-
-      it('adds a registration of its own for the same school', async () => {
-        jest
-          .spyOn(prisma.dailycheckapp_school, 'findFirst')
-          .mockResolvedValueOnce(source) // the PC's latest active registration
-          .mockResolvedValueOnce(null); // nothing for this Windows user yet
-        const createSpy = createdRow();
-
-        const result = await service.autoRegister(request);
-
-        const data = createSpy.mock.calls[0][0].data as any;
-        expect(data).toEqual(
-          expect.objectContaining({
-            giga_id_school: 'gigaid1',
-            country_code: 'MZ',
-            device_hardware_id: 'uuid-a',
-            windows_username: 'second-user',
-            app_version: '2.0.4',
-            registration_type: 'auto',
-            baseboard_serial: 'board-b',
-            disk_serial: 'disk-c',
-            machine_guid: 'guid-m',
-            device_id: 'device-1',
-          }),
-        );
-        expect(data.user_id).toMatch(/^[0-9a-f-]{36}$/);
-        expect(data.user_id).not.toBe('first-user-registration');
-        expect(result).toEqual(
-          expect.objectContaining({
-            exists: true,
-            user_id: data.user_id,
-            giga_id_school: 'gigaid1',
-            source: 'auto_registration',
-          }),
-        );
-      });
-
-      it('finds the school from the latest active registration', async () => {
-        const findFirstSpy = jest
-          .spyOn(prisma.dailycheckapp_school, 'findFirst')
-          .mockResolvedValueOnce(source);
-        createdRow();
-
-        await service.autoRegister(request);
-
-        expect(findFirstSpy.mock.calls[0][0]).toEqual({
-          where: {
-            device_hardware_id: 'uuid-a',
-            OR: [{ is_active: null }, { is_active: true }],
-          },
-          orderBy: { id: 'desc' },
-        });
-      });
-
-      it('registers a Windows user again once someone registered the PC again after a logout', async () => {
-        // Logging out logs out every registration on the PC. When someone
-        // registers it again, the others' logged-out registrations are skipped
-        // and each Windows user gets a new one, as before.
-        const findFirstSpy = jest
-          .spyOn(prisma.dailycheckapp_school, 'findFirst')
-          .mockResolvedValueOnce(source) // the new registration after the logout
-          .mockResolvedValueOnce(null); // no active one for this Windows user
-        const createSpy = createdRow();
-
-        const result = await service.autoRegister(request);
-
-        expect(findFirstSpy.mock.calls[1][0].where.AND[0]).toEqual({
-          OR: [{ is_active: null }, { is_active: true }],
-        });
-        expect(createSpy).toHaveBeenCalled();
-        expect(result).toEqual(
-          expect.objectContaining({ exists: true, source: 'auto_registration' }),
-        );
-      });
-
-      it("gives a Windows user their active registration back instead of a new one", async () => {
-        const findFirstSpy = jest
-          .spyOn(prisma.dailycheckapp_school, 'findFirst')
-          .mockResolvedValueOnce(source)
-          .mockResolvedValueOnce({
-            ...source,
-            user_id: 'second-user-registration',
-            windows_username: 'second-user',
-            is_active: null,
-            device_id: 'device-1',
-            disk_serial: 'disk-c',
-          });
-        const createSpy = createdRow();
-        const updateSpy = jest.spyOn(prisma.dailycheckapp_school, 'update');
-
-        const result = await service.autoRegister(request);
-
-        expect(createSpy).not.toHaveBeenCalled();
-        expect(updateSpy).not.toHaveBeenCalled();
-        expect(result.user_id).toBe('second-user-registration');
-        // This Windows user on this PC: its device ID, or its firmware UUID
-        // on a registration from before 2.0.4. Looked up under the lock.
-        expect(findFirstSpy.mock.calls[1][0]).toEqual({
-          where: {
-            windows_username: 'second-user',
-            AND: [
-              { OR: [{ is_active: null }, { is_active: true }] },
-              {
-                OR: [
-                  { device_id: 'device-1' },
-                  { device_id: null, device_hardware_id: 'uuid-a' },
-                ],
-              },
-            ],
-          },
-          orderBy: { id: 'desc' },
-        });
-        expect(mockDeviceIdService.lock.mock.invocationCallOrder[0]).toBeLessThan(
-          findFirstSpy.mock.invocationCallOrder[1],
-        );
-      });
-
-      it('fills in a registration from before 2.0.4 that the user gets back', async () => {
-        jest
-          .spyOn(prisma.dailycheckapp_school, 'findFirst')
-          .mockResolvedValueOnce(source)
-          .mockResolvedValueOnce({
-            ...source,
-            id: BigInt(77),
-            user_id: 'second-user-registration',
-            windows_username: 'second-user',
-            is_active: true,
-            device_id: null,
-          });
-        const updateSpy = jest
-          .spyOn(prisma.dailycheckapp_school, 'update')
-          .mockImplementation(
-            ({ data }: any) =>
-              ({
-                ...source,
-                user_id: 'second-user-registration',
-                ...data,
-              }) as any,
-          );
-
-        const result = await service.autoRegister(request);
-
-        expect(result.user_id).toBe('second-user-registration');
-        expect(updateSpy).toHaveBeenCalledWith({
-          where: { id: BigInt(77) },
-          data: {
-            baseboard_serial: 'board-b',
-            disk_serial: 'disk-c',
-            machine_guid: 'guid-m',
-            device_id: 'device-1',
-            device_id_flags: [],
-          },
-        });
-      });
-
-      it('returns exists false when the PC has no active registration', async () => {
-        jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue(null);
-        jest.spyOn(prisma.measurements, 'findFirst').mockResolvedValue(null);
-        const createSpy = createdRow();
-
-        expect(await service.autoRegister(request)).toEqual({ exists: false });
-        expect(createSpy).not.toHaveBeenCalled();
-      });
-
-      it('returns exists false for a blocked generic firmware UUID', async () => {
-        const findFirstSpy = jest.spyOn(prisma.dailycheckapp_school, 'findFirst');
-
-        expect(
-          await service.autoRegister({
-            ...request,
-            device_hardware_id: '03000200-0400-0500-0006-000700080009',
-          }),
-        ).toEqual({ exists: false });
-        expect(findFirstSpy).not.toHaveBeenCalled();
-      });
-    });
-
-    describe('checkRegistrationStatus', () => {
-      it('is active while the registration is', async () => {
-        jest
-          .spyOn(prisma.dailycheckapp_school, 'findFirst')
-          .mockResolvedValue({ ...mockSchoolModel[0], is_active: null });
-
-        expect(await service.checkRegistrationStatus('test_id1')).toEqual({
-          is_active: true,
-          message: 'Registration is active',
-          exists: true,
-        });
-      });
-
-      it('is inactive once the registration was logged out', async () => {
-        jest
-          .spyOn(prisma.dailycheckapp_school, 'findFirst')
-          .mockResolvedValue({ ...mockSchoolModel[0], is_active: false });
-
-        expect(await service.checkRegistrationStatus('test_id1')).toEqual({
-          is_active: false,
-          message: 'Registration has been deactivated',
-          exists: true,
-        });
-      });
-
-      it('treats an unknown registration as not deactivated', async () => {
-        jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue(null);
-
-        expect(await service.checkRegistrationStatus('unknown')).toEqual({
-          is_active: true,
-          message: 'Registration not found',
-          exists: false,
-        });
-      });
-    });
-
     describe('deactivateDevice', () => {
-      it('with a user_id, logs out only that registration', async () => {
-        const updateSpy = jest
-          .spyOn(prisma.dailycheckapp_school, 'updateMany')
-          .mockResolvedValue({ count: 1 });
-
-        const result = await service.deactivateDevice(
-          'uuid-a',
-          ' GIGAID1 ',
-          'second-user-registration',
-        );
-
-        expect(updateSpy).toHaveBeenCalledWith({
-          where: {
-            user_id: 'second-user-registration',
-            giga_id_school: 'gigaid1',
-            OR: [{ is_active: null }, { is_active: true }],
-          },
-          data: { is_active: false },
-        });
-        expect(result.deactivated).toBe(true);
-      });
-
-      it('without a user_id, logs out by hardware ID as before', async () => {
+      it('logs out every registration of the PC at the school, as before', async () => {
         const updateSpy = jest
           .spyOn(prisma.dailycheckapp_school, 'updateMany')
           .mockResolvedValue({ count: 2 });

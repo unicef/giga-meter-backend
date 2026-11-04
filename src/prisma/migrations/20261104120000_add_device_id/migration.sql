@@ -7,7 +7,6 @@ ALTER TABLE "dailycheckapp_school"
   ADD COLUMN IF NOT EXISTS "disk_serial" TEXT,
   ADD COLUMN IF NOT EXISTS "machine_guid" TEXT,
   ADD COLUMN IF NOT EXISTS "device_id" TEXT,
-  ADD COLUMN IF NOT EXISTS "registration_type" TEXT,
   ADD COLUMN IF NOT EXISTS "device_id_flags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
 
 -- Lookups by each hardware value, by device ID, and by user_id (the app's

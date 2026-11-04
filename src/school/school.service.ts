@@ -1,13 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, dailycheckapp_school as School } from '@prisma/client';
-import {
-  AutoRegisterDto,
-  CheckDeviceStatusDto,
-  CheckExistingInstallationDto,
-  CreateSchoolResponseDto,
-  SchoolDto,
-} from './school.dto';
+import { CreateSchoolResponseDto, SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
@@ -39,8 +33,8 @@ interface RegistrationDevice extends DeviceAssignment {
 
 /**
  * This PC's registrations: those with its device ID, and those from before
- * 2.0.4 (no device ID yet) with its firmware UUID. Null when the PC can't be
- * recognised (no device ID and no firmware UUID): then no registration is
+ * 2.0.4 (no device ID yet) with its hardware ID. Null when the PC can't be
+ * recognised (no device ID and no usable hardware ID): then no registration is
  * this PC's.
  */
 function samePc(
@@ -192,9 +186,11 @@ export class SchoolService {
     // exception is a registration from before 2.0.4, which gets the hardware
     // values and device ID (fillInDevice).
     //
-    // A repeat is the same Windows user on the same PC (TECH-8828: same device
-    // ID) for the same school, while that registration is active. Another
-    // Windows user is a registration of its own.
+    // A repeat is the same PC for the same school while that registration is
+    // active, as before, but the PC is now recognised by its device ID
+    // (TECH-8828), so PCs copied from one disk image that share a firmware UUID
+    // are no longer taken for one. Every Windows user on a PC shares its
+    // registration, as automatic registration does.
     const key = this.registrationKey(schoolDto);
     const { school, repeat } = await this.withDevice(
       schoolDto,
@@ -205,7 +201,6 @@ export class SchoolService {
             ? await tx.dailycheckapp_school.findFirst({
                 where: {
                   giga_id_school: key.giga_id_school,
-                  windows_username: schoolDto.windows_username ?? null,
                   AND: [{ OR: ACTIVE }, pc],
                 },
                 // Oldest first: the identity the device has been reporting all along.
@@ -223,7 +218,7 @@ export class SchoolService {
         return {
           school: await this.insertRegistration(
             tx,
-            { ...this.toModel(schoolDto), registration_type: 'manual' },
+            this.toModel(schoolDto),
             device,
           ),
           repeat: false,
@@ -275,8 +270,8 @@ export class SchoolService {
   /**
    * Runs a registration in one transaction, under a lock on its hardware
    * values: works out the device ID first, then hands it to `register`, which
-   * looks for this Windows user's registration on this PC or stores a new one.
-   * Two requests for the same PC therefore can't both decide there is none.
+   * looks for this PC's registration or stores a new one. Two requests for the
+   * same PC therefore can't both decide there is none.
    */
   private async withDevice<T>(
     values: HardwareValues,
@@ -392,9 +387,41 @@ export class SchoolService {
       },
     });
     if (school) {
-      const { schoolInfo, externalSchoolId } = await this.schoolInfoFor(
-        school.giga_id_school,
-      );
+      // Fetch school information from the school table
+      let schoolInfo = null;
+      let externalSchoolId = null;
+      if (school.giga_id_school) {
+        const schoolData = await this.prisma.school.findFirst({
+          where: {
+            giga_id_school: school.giga_id_school,
+            deleted: null,
+          },
+        });
+
+        // Format school data to DTO structure
+        if (schoolData) {
+          externalSchoolId = schoolData.external_id;
+          schoolInfo = {
+            id: parseInt(schoolData.id.toString()),
+            school_id: schoolData.external_id,
+            code: '',
+            name: schoolData.name,
+            country_id: schoolData.country_id,
+            country: schoolData.country_code,
+            location_id: schoolData.location_id,
+            address: schoolData.address,
+            email: schoolData.email,
+            postal_code: schoolData.postal_code,
+            education_level: schoolData.education_level,
+            environment: schoolData.environment,
+            admin_1_name: schoolData.admin_1_name,
+            admin_2_name: schoolData.admin_2_name,
+            admin_3_name: schoolData.admin_3_name,
+            admin_4_name: schoolData.admin_4_name,
+            giga_id_school: schoolData.giga_id_school,
+          };
+        }
+      }
 
       return {
         exists: true,
@@ -430,9 +457,41 @@ export class SchoolService {
         });
 
       if (schoolByBrowserId) {
-        const { schoolInfo, externalSchoolId } = await this.schoolInfoFor(
-          schoolByBrowserId.giga_id_school,
-        );
+        // Fetch school information from the school table
+        let schoolInfo = null;
+        let externalSchoolId = null;
+        if (schoolByBrowserId.giga_id_school) {
+          const schoolData = await this.prisma.school.findFirst({
+            where: {
+              giga_id_school: schoolByBrowserId.giga_id_school,
+              deleted: null,
+            },
+          });
+
+          // Format school data to DTO structure
+          if (schoolData) {
+            externalSchoolId = schoolData.external_id;
+            schoolInfo = {
+              id: parseInt(schoolData.id.toString()),
+              school_id: schoolData.external_id,
+              code: '',
+              name: schoolData.name,
+              country_id: schoolData.country_id,
+              country: schoolData.country_code,
+              location_id: schoolData.location_id,
+              address: schoolData.address,
+              email: schoolData.email,
+              postal_code: schoolData.postal_code,
+              education_level: schoolData.education_level,
+              environment: schoolData.environment,
+              admin_1_name: schoolData.admin_1_name,
+              admin_2_name: schoolData.admin_2_name,
+              admin_3_name: schoolData.admin_3_name,
+              admin_4_name: schoolData.admin_4_name,
+              giga_id_school: schoolData.giga_id_school,
+            };
+          }
+        }
 
         return {
           exists: true,
@@ -457,207 +516,6 @@ export class SchoolService {
     // No installation found
     return {
       exists: false,
-    };
-  }
-
-  /** The school's master record in the shape the app stores as schoolInfo. */
-  private async schoolInfoFor(
-    giga_id_school?: string | null,
-  ): Promise<{ schoolInfo: any; externalSchoolId: string | null }> {
-    if (!giga_id_school) {
-      return { schoolInfo: null, externalSchoolId: null };
-    }
-    const schoolData = await this.prisma.school.findFirst({
-      where: {
-        giga_id_school,
-        deleted: null,
-      },
-    });
-    if (!schoolData) {
-      return { schoolInfo: null, externalSchoolId: null };
-    }
-    return {
-      externalSchoolId: schoolData.external_id,
-      schoolInfo: {
-        id: parseInt(schoolData.id.toString()),
-        school_id: schoolData.external_id,
-        code: '',
-        name: schoolData.name,
-        country_id: schoolData.country_id,
-        country: schoolData.country_code,
-        location_id: schoolData.location_id,
-        address: schoolData.address,
-        email: schoolData.email,
-        postal_code: schoolData.postal_code,
-        education_level: schoolData.education_level,
-        environment: schoolData.environment,
-        admin_1_name: schoolData.admin_1_name,
-        admin_2_name: schoolData.admin_2_name,
-        admin_3_name: schoolData.admin_3_name,
-        admin_4_name: schoolData.admin_4_name,
-        giga_id_school: schoolData.giga_id_school,
-      },
-    };
-  }
-
-  /**
-   * Automatic registration (TECH-8828): a PC whose firmware UUID already has an
-   * active registration gets a registration of its own for the same school, for
-   * example after a reinstall or for a second Windows user. Older apps instead
-   * reuse the existing row through checkExistingInstallation.
-   *
-   * The school is found the way checkExistingInstallation finds it, by firmware
-   * UUID, but from the latest active registration rather than whichever comes
-   * first. A Windows user who already has an active registration on this PC
-   * gets that one back instead of a new row.
-   *
-   * Logging out still logs out every registration on the PC, so once someone
-   * registers the PC again, the other Windows users are registered
-   * automatically again too, as before.
-   */
-  async autoRegister(
-    dto: AutoRegisterDto,
-  ): Promise<CheckExistingInstallationDto> {
-    const firmware = sanitizeHardwareId(dto?.device_hardware_id);
-    if (!firmware) {
-      return { exists: false };
-    }
-
-    const source = await this.findActiveRegistrationByHardwareId(firmware);
-    if (!source) {
-      return { exists: false };
-    }
-
-    const windowsUsername = dto.windows_username ?? null;
-    const result = await this.withDevice(dto, async (tx, device) => {
-      const pc = samePc(device);
-      if (windowsUsername && pc) {
-        // This Windows user's active registration on this PC, if any.
-        const own = await tx.dailycheckapp_school.findFirst({
-          where: {
-            windows_username: windowsUsername,
-            AND: [{ OR: ACTIVE }, pc],
-          },
-          orderBy: { id: 'desc' },
-        });
-        if (own) {
-          return {
-            school: await this.fillInDevice(tx, own, device),
-            source: 'dailycheckapp_school',
-          };
-        }
-      }
-
-      const school = await this.insertRegistration(
-        tx,
-        {
-          user_id: uuidv4(),
-          giga_id_school: source.giga_id_school,
-          country_code: source.country_code,
-          device_hardware_id: firmware,
-          mac_address: dto.mac_address,
-          os: dto.os,
-          app_version: dto.app_version,
-          created: dto.created,
-          ip_address: dto.ip_address,
-          windows_username: windowsUsername,
-          installed_path: dto.installed_path,
-          wifi_connections: dto.wifi_connections,
-          registration_type: 'auto',
-        },
-        device,
-      );
-      return { school, source: 'auto_registration' };
-    });
-
-    return this.installationResponse(result.school, result.source);
-  }
-
-  /**
-   * The latest active registration for a firmware UUID, falling back to the
-   * registration of the latest test that carried it, as checkExistingInstallation
-   * does.
-   */
-  private async findActiveRegistrationByHardwareId(
-    device_hardware_id: string,
-  ): Promise<School | null> {
-    const school = await this.prisma.dailycheckapp_school.findFirst({
-      where: { device_hardware_id, OR: ACTIVE },
-      orderBy: { id: 'desc' },
-    });
-    if (school) {
-      return school;
-    }
-
-    const measurement = await this.prisma.measurements.findFirst({
-      where: { device_hardware_id },
-      orderBy: { timestamp: 'desc' },
-    });
-    if (!measurement?.browser_id) {
-      return null;
-    }
-    return this.prisma.dailycheckapp_school.findFirst({
-      where: { user_id: measurement.browser_id, OR: ACTIVE },
-      orderBy: { id: 'desc' },
-    });
-  }
-
-  private async installationResponse(
-    school: School,
-    source: string,
-  ): Promise<CheckExistingInstallationDto> {
-    const { schoolInfo, externalSchoolId } = await this.schoolInfoFor(
-      school.giga_id_school,
-    );
-    return {
-      exists: true,
-      user_id: school.user_id,
-      school_id: externalSchoolId,
-      giga_id_school: school.giga_id_school,
-      mac_address: school.mac_address,
-      os: school.os,
-      ip_address: school.ip_address,
-      app_version: school.app_version,
-      country_code: school.country_code,
-      source,
-      schoolInfo,
-      is_active: school.is_active,
-      is_verified: await this.resolveIsVerified(school.giga_id_school),
-    };
-  }
-
-  /**
-   * Whether the app's own registration (its schoolUserId) is still active.
-   * Unlike checkDeviceStatus this needs no hardware ID, and another Windows
-   * user logging out doesn't affect it.
-   */
-  async checkRegistrationStatus(user_id: string): Promise<CheckDeviceStatusDto> {
-    const school = await this.prisma.dailycheckapp_school.findFirst({
-      where: { user_id },
-      orderBy: { id: 'desc' },
-    });
-
-    if (!school) {
-      // Same as checkDeviceStatus: unknown means not deactivated.
-      return {
-        is_active: true,
-        message: 'Registration not found',
-        exists: false,
-      };
-    }
-
-    if (school.is_active === false) {
-      return {
-        is_active: false,
-        message: 'Registration has been deactivated',
-        exists: true,
-      };
-    }
-
-    return {
-      is_active: true,
-      message: 'Registration is active',
-      exists: true,
     };
   }
 
@@ -721,32 +579,7 @@ export class SchoolService {
   async deactivateDevice(
     device_hardware_id: string,
     giga_id_school: string,
-    user_id?: string,
   ): Promise<{ deactivated: boolean; message?: string }> {
-    // 2.0.4 sends its own registration when the PC has no firmware UUID: such a
-    // registration has no hardware ID to log out by (TECH-8828).
-    if (user_id) {
-      const own = await this.prisma.dailycheckapp_school.updateMany({
-        where: {
-          user_id,
-          ...(giga_id_school
-            ? { giga_id_school: normalizeGigaId(giga_id_school) }
-            : {}),
-          OR: ACTIVE,
-        },
-        data: { is_active: false },
-      });
-      return own.count > 0
-        ? {
-            deactivated: true,
-            message: `Successfully deactivated ${own.count} registration(s)`,
-          }
-        : {
-            deactivated: false,
-            message: 'No active registration found with the provided user_id',
-          };
-    }
-
     // If the hardware ID is blocked/generic, don't perform deactivation
     // if (isHardwareIdBlocked(device_hardware_id)) {
     //   console.warn(
@@ -850,7 +683,6 @@ export class SchoolService {
       is_verified: await this.resolveIsVerified(school.giga_id_school),
       // The serials and the Windows install ID are never returned.
       device_id: school.device_id ?? undefined,
-      registration_type: school.registration_type ?? undefined,
     };
   }
 

@@ -11,7 +11,9 @@ import {
  * registrations (reinstalls, Windows users, logouts).
  *
  * A PC is recognised by three hardware values: the firmware UUID (stored in
- * device_hardware_id), the motherboard serial and the disk serial. The Windows
+ * device_hardware_id, which on a PC without one holds the Windows install ID or
+ * the PC serial instead, as before), the motherboard serial and the disk
+ * serial. The Windows
  * install ID (MachineGuid) is used only when none of the three can be used:
  * none can be read, or each one that can is shared with other PCs.
  *

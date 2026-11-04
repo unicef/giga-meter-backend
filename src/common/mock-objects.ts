@@ -162,7 +162,6 @@ export const mockSchoolModel = [
     disk_serial: null,
     machine_guid: null,
     device_id: null,
-    registration_type: null,
     device_id_flags: [],
   },
   {
@@ -193,7 +192,6 @@ export const mockSchoolModel = [
     disk_serial: null,
     machine_guid: null,
     device_id: null,
-    registration_type: null,
     device_id_flags: [],
   },
 ];
