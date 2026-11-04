@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { dailycheckapp_school as School } from '@prisma/client';
+import { Prisma, dailycheckapp_school as School } from '@prisma/client';
 import {
   AutoRegisterDto,
   CheckDeviceStatusDto,
@@ -17,28 +17,46 @@ import {
 import { normalizeGigaId } from '../utility/utility';
 import {
   cleanSignals,
-  decideDevice,
+  DeviceAssignment,
   DeviceIdService,
   DeviceSignals,
 } from './device-id.service';
 
 const ACTIVE = [{ is_active: null }, { is_active: true }];
 
+/** The hardware values a registration request carries. */
+interface HardwareValues {
+  device_hardware_id?: string | null;
+  baseboard_serial?: string | null;
+  disk_serial?: string | null;
+  machine_guid?: string | null;
+}
+
+/** A registration's cleaned values and the device ID worked out from them. */
+interface RegistrationDevice extends DeviceAssignment {
+  signals: DeviceSignals;
+}
+
 /**
- * Whether a stored registration, found by the same firmware UUID, is this
- * machine by the device ID rules. When one side has no values to compare (for
- * example a registration from before 2.0.4), it is, as before.
+ * This PC's registrations: those with its device ID, and those from before
+ * 2.0.4 (no device ID yet) with its firmware UUID. Null when the PC can't be
+ * recognised (no device ID and no firmware UUID): then no registration is
+ * this PC's.
  */
-function isSameMachine(row: School, signals: DeviceSignals): boolean {
-  const stored = cleanSignals(row);
-  const nothingToCompare = [signals, stored].some((values) =>
-    Object.values(values).every((value) => value == null),
-  );
-  return (
-    nothingToCompare ||
-    decideDevice(signals, [{ device_id: 'same', ...stored }], new Set())
-      .device_id === 'same'
-  );
+function samePc(
+  device: RegistrationDevice,
+): Prisma.dailycheckapp_schoolWhereInput | null {
+  const rows: Prisma.dailycheckapp_schoolWhereInput[] = [];
+  if (device.device_id) {
+    rows.push({ device_id: device.device_id });
+  }
+  if (device.signals.firmware_uuid) {
+    rows.push({
+      device_id: null,
+      device_hardware_id: device.signals.firmware_uuid,
+    });
+  }
+  return rows.length > 0 ? { OR: rows } : null;
 }
 
 @Injectable()
@@ -170,30 +188,66 @@ export class SchoolService {
     // measurements do not carry are os and mac_address, and neither is worth
     // writing: mac_address is Capacitor's Device.getId(), regenerated on every
     // app relaunch, and an os that really changed under the same hardware id
-    // means a different machine, not a field to overwrite in place.
+    // means a different machine, not a field to overwrite in place. The one
+    // exception is a registration from before 2.0.4, which gets the hardware
+    // values and device ID (fillInDevice).
     //
-    // A different Windows user on the same PC is a registration of its own
-    // (TECH-8828), so the Windows user is part of the key.
+    // A repeat is the same Windows user on the same PC (TECH-8828: same device
+    // ID) for the same school, while that registration is active. Another
+    // Windows user is a registration of its own.
     const key = this.registrationKey(schoolDto);
-    const existing = await this.findExistingRegistration(
-      {
-        ...key,
-        windows_username: schoolDto.windows_username ?? null,
+    const { school, repeat } = await this.withDevice(
+      schoolDto,
+      async (tx, device) => {
+        const pc = samePc(device);
+        const existing =
+          key.giga_id_school && pc
+            ? await tx.dailycheckapp_school.findFirst({
+                where: {
+                  giga_id_school: key.giga_id_school,
+                  windows_username: schoolDto.windows_username ?? null,
+                  AND: [{ OR: ACTIVE }, pc],
+                },
+                // Oldest first: the identity the device has been reporting all along.
+                orderBy: { id: 'asc' },
+              })
+            : null;
+        if (existing) {
+          return {
+            school: await this.fillInDevice(tx, existing, device),
+            repeat: true,
+          };
+        }
+
+        await this.addGeolocation(schoolDto);
+        return {
+          school: await this.insertRegistration(
+            tx,
+            { ...this.toModel(schoolDto), registration_type: 'manual' },
+            device,
+          ),
+          repeat: false,
+        };
       },
-      cleanSignals(schoolDto),
     );
-    if (existing) {
+    if (repeat) {
       console.warn(
         `Duplicate registration absorbed for giga_id_school ${key.giga_id_school}, ` +
-          `device_hardware_id ${key.device_hardware_id}: returning user_id ${existing.user_id}`,
+          `device_hardware_id ${key.device_hardware_id}: returning user_id ${school.user_id}`,
       );
-      return {
-        user_id: existing.user_id,
-        is_verified: await this.resolveIsVerified(existing.giga_id_school),
-      };
     }
 
-    // Process geolocation data if available
+    return {
+      user_id: school.user_id,
+      is_verified: await this.resolveIsVerified(school.giga_id_school),
+    };
+  }
+
+  /**
+   * Adds the distance between the PC and the school to a new registration.
+   * Only for new registrations: on a repeat the result would be thrown away.
+   */
+  private async addGeolocation(schoolDto: SchoolDto): Promise<void> {
     if (schoolDto.geolocation &&
       schoolDto.geolocation.location &&
       schoolDto.geolocation.accuracy) {
@@ -216,90 +270,75 @@ export class SchoolService {
         console.error('Error processing geolocation data:', error);
       }
     }
-    const school = await this.createWithDeviceId(
-      {
-        ...this.toModel(schoolDto),
-        registration_type: 'manual',
-      },
-      schoolDto,
-    );
-
-    return {
-      user_id: school.user_id,
-      is_verified: await this.resolveIsVerified(school.giga_id_school),
-    };
   }
 
   /**
-   * Stores a registration with its hardware values and device ID. The device ID
-   * is worked out under a lock, in the same transaction as the insert.
+   * Runs a registration in one transaction, under a lock on its hardware
+   * values: works out the device ID first, then hands it to `register`, which
+   * looks for this Windows user's registration on this PC or stores a new one.
+   * Two requests for the same PC therefore can't both decide there is none.
    */
-  private async createWithDeviceId(
-    data: any,
-    values: {
-      device_hardware_id?: string | null;
-      baseboard_serial?: string | null;
-      disk_serial?: string | null;
-      machine_guid?: string | null;
-    },
-  ): Promise<School> {
+  private async withDevice<T>(
+    values: HardwareValues,
+    register: (
+      tx: Prisma.TransactionClient,
+      device: RegistrationDevice,
+    ) => Promise<T>,
+  ): Promise<T> {
     const signals = cleanSignals(values);
     return this.prisma.$transaction(async (tx) => {
-      await this.deviceIdService.lock(tx);
+      await this.deviceIdService.lock(tx, signals);
       const device = await this.deviceIdService.assign(tx, signals);
-      return tx.dailycheckapp_school.create({
-        data: {
-          ...data,
-          baseboard_serial: signals.baseboard_serial,
-          disk_serial: signals.disk_serial,
-          machine_guid: signals.machine_guid,
-          device_id: device.device_id,
-          device_id_flags: device.device_id_flags,
-        },
-      });
+      return register(tx, { ...device, signals });
+    });
+  }
+
+  /** Stores a new registration with its hardware values and device ID. */
+  private insertRegistration(
+    tx: Prisma.TransactionClient,
+    data: any,
+    device: RegistrationDevice,
+  ): Promise<School> {
+    return tx.dailycheckapp_school.create({
+      data: {
+        ...data,
+        baseboard_serial: device.signals.baseboard_serial,
+        disk_serial: device.signals.disk_serial,
+        machine_guid: device.signals.machine_guid,
+        device_id: device.device_id,
+        device_id_flags: device.device_id_flags,
+      },
     });
   }
 
   /**
-   * The active registration this Windows user already has on this device for
-   * this school, if any.
-   *
-   * Keyed on device_hardware_id: mac_address is not a hardware address but
-   * Capacitor's Device.getId(), which is regenerated on every app relaunch, so
-   * it cannot identify a device. registrationKey() has already nulled out the
-   * blocked generic ids, so a null here means "cannot be identified" and a new
-   * row is the only safe answer. Deactivated rows are ignored, matching
-   * checkExistingInstallation: logging out and registering again is a new
-   * installation.
-   *
-   * PCs copied from one disk image can share a firmware UUID that isn't on the
-   * blocklist, and the same Windows account name. A row whose serials show it's
-   * another of those PCs is not a repeat (TECH-8828).
+   * A registration from before 2.0.4 that this PC is using again gets the
+   * hardware values and device ID it now sends, so its tests and pings count
+   * under the device ID from now on. Any other registration is returned as it
+   * stands.
    */
-  private async findExistingRegistration(
-    key: {
-      giga_id_school?: string;
-      device_hardware_id?: string;
-      windows_username?: string | null;
-    },
-    signals: DeviceSignals,
-  ) {
-    if (!key.giga_id_school || !key.device_hardware_id) {
-      return null;
+  private async fillInDevice(
+    tx: Prisma.TransactionClient,
+    row: School,
+    device: RegistrationDevice,
+  ): Promise<School> {
+    const hasValues =
+      row.baseboard_serial != null ||
+      row.disk_serial != null ||
+      row.machine_guid != null;
+    if (row.device_id != null && hasValues) {
+      return row;
     }
-
-    const rows = await this.prisma.dailycheckapp_school.findMany({
-      where: {
-        giga_id_school: key.giga_id_school,
-        device_hardware_id: key.device_hardware_id,
-        windows_username: key.windows_username ?? null,
-        OR: ACTIVE,
+    return tx.dailycheckapp_school.update({
+      where: { id: row.id },
+      data: {
+        baseboard_serial: device.signals.baseboard_serial,
+        disk_serial: device.signals.disk_serial,
+        machine_guid: device.signals.machine_guid,
+        device_id: device.device_id,
+        device_id_flags: device.device_id_flags,
       },
-      // Oldest first: the identity the device has been reporting all along.
-      orderBy: { id: 'asc' },
-      take: 20,
     });
-    return rows?.find((row) => isSameMachine(row, signals)) ?? null;
   }
 
   /**
@@ -469,11 +508,12 @@ export class SchoolService {
    *
    * The school is found the way checkExistingInstallation finds it, by firmware
    * UUID, but from the latest active registration rather than whichever comes
-   * first. Not registered automatically:
-   * - a Windows user whose own last registration on this PC was logged out
-   *   (they register by hand), and
-   * - a Windows user who already has an active registration on this PC, who
-   *   gets that one back instead of a new row.
+   * first. A Windows user who already has an active registration on this PC
+   * gets that one back instead of a new row.
+   *
+   * Logging out still logs out every registration on the PC, so once someone
+   * registers the PC again, the other Windows users are registered
+   * automatically again too, as before.
    */
   async autoRegister(
     dto: AutoRegisterDto,
@@ -489,47 +529,48 @@ export class SchoolService {
     }
 
     const windowsUsername = dto.windows_username ?? null;
-    if (windowsUsername) {
-      // This Windows user's latest registration on this PC, skipping rows that
-      // belong to another PC with the same firmware UUID and account name.
-      const signals = cleanSignals(dto);
-      const ownRows = await this.prisma.dailycheckapp_school.findMany({
-        where: {
+    const result = await this.withDevice(dto, async (tx, device) => {
+      const pc = samePc(device);
+      if (windowsUsername && pc) {
+        // This Windows user's active registration on this PC, if any.
+        const own = await tx.dailycheckapp_school.findFirst({
+          where: {
+            windows_username: windowsUsername,
+            AND: [{ OR: ACTIVE }, pc],
+          },
+          orderBy: { id: 'desc' },
+        });
+        if (own) {
+          return {
+            school: await this.fillInDevice(tx, own, device),
+            source: 'dailycheckapp_school',
+          };
+        }
+      }
+
+      const school = await this.insertRegistration(
+        tx,
+        {
+          user_id: uuidv4(),
+          giga_id_school: source.giga_id_school,
+          country_code: source.country_code,
           device_hardware_id: firmware,
+          mac_address: dto.mac_address,
+          os: dto.os,
+          app_version: dto.app_version,
+          created: dto.created,
+          ip_address: dto.ip_address,
           windows_username: windowsUsername,
+          installed_path: dto.installed_path,
+          wifi_connections: dto.wifi_connections,
+          registration_type: 'auto',
         },
-        orderBy: { id: 'desc' },
-        take: 20,
-      });
-      const own = ownRows?.find((row) => isSameMachine(row, signals));
-      if (own?.is_active === false) {
-        return { exists: false };
-      }
-      if (own) {
-        return this.installationResponse(own, 'dailycheckapp_school');
-      }
-    }
+        device,
+      );
+      return { school, source: 'auto_registration' };
+    });
 
-    const school = await this.createWithDeviceId(
-      {
-        user_id: uuidv4(),
-        giga_id_school: source.giga_id_school,
-        country_code: source.country_code,
-        device_hardware_id: firmware,
-        mac_address: dto.mac_address,
-        os: dto.os,
-        app_version: dto.app_version,
-        created: dto.created,
-        ip_address: dto.ip_address,
-        windows_username: windowsUsername,
-        installed_path: dto.installed_path,
-        wifi_connections: dto.wifi_connections,
-        registration_type: 'auto',
-      },
-      dto,
-    );
-
-    return this.installationResponse(school, 'auto_registration');
+    return this.installationResponse(result.school, result.source);
   }
 
   /**
@@ -682,8 +723,8 @@ export class SchoolService {
     giga_id_school: string,
     user_id?: string,
   ): Promise<{ deactivated: boolean; message?: string }> {
-    // 2.0.4 and later send their own registration, so only that one is logged
-    // out and other Windows users on the PC stay registered (TECH-8828).
+    // 2.0.4 sends its own registration when the PC has no firmware UUID: such a
+    // registration has no hardware ID to log out by (TECH-8828).
     if (user_id) {
       const own = await this.prisma.dailycheckapp_school.updateMany({
         where: {

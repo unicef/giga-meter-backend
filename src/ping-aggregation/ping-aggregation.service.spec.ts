@@ -323,6 +323,31 @@ describe('PingAggregationService', () => {
       });
     });
 
+    it('should keep the existing summary when the device ID lookup fails', async () => {
+      const targetDate = new Date('2025-01-01T00:00:00.000Z');
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          giga_id_school: 'school-1',
+          device_id: 'device-1',
+          isconnectedtruesum: 80,
+          isconnectedallsum: 100,
+          latencyavg: 50,
+        },
+      ]);
+      mockPrismaService.connectivityPingChecksDailyAggr.findMany.mockResolvedValue(
+        [{ id: 'existing-id' }],
+      );
+      mockPrismaService.dailycheckapp_school.findMany.mockRejectedValue(
+        new Error('connection lost'),
+      );
+
+      await service.aggregateDailyPingData(targetDate).catch(() => undefined);
+
+      expect(
+        prisma.connectivityPingChecksDailyAggr.deleteMany,
+      ).not.toHaveBeenCalled();
+    });
+
     it('should handle aggregation for the previous day if no date is provided', async () => {
       const queryResult = [
         {

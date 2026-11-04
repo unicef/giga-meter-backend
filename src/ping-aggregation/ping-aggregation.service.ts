@@ -108,6 +108,12 @@ export class PingAggregationService {
 
         if (data.length === 0) break;
 
+        // Looked up before the delete below, so a failure here leaves the
+        // existing summary rows in place.
+        const deviceIds = await this.deviceIdsFor(
+          data.map((item) => item.device_id),
+        );
+
         // To ensure idempotency, we check for and delete any existing aggregated data
         // for the target date and the specific school/device combinations before inserting
         // the new aggregations. This prevents duplicate records if the job is run multiple times.
@@ -135,9 +141,6 @@ export class PingAggregationService {
             },
           });
         }
-        const deviceIds = await this.deviceIdsFor(
-          data.map((item) => item.device_id),
-        );
         const insertData: any[] = [];
         for (const record of data) {
           const is_connected_true = Number(record.isconnectedtruesum) || 0;

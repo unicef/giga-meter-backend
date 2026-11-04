@@ -6,6 +6,7 @@ import {
   DeviceSignals,
   matchFields,
   SignalField,
+  valueLockKey,
 } from './device-id.service';
 
 const signals = (
@@ -80,8 +81,10 @@ describe('decideDevice', () => {
     });
   });
 
-  it('compares values without regard to case', () => {
-    expect(decideDevice(signals('a', 'b', 'c'), [X], none).device_id).toBe('X');
+  it('compares values exactly, as the database lookups do', () => {
+    expect(
+      decideDevice(signals('a', 'b', 'c'), [X], none).device_id,
+    ).toBeNull();
   });
 
   describe('nothing readable', () => {
@@ -141,6 +144,29 @@ describe('decideDevice', () => {
         ),
       ).toEqual({ device_id: 'X', flags: ['firmware_uuid_shared'] });
     });
+
+    it('fall back to the Windows install ID when every readable value is shared', () => {
+      expect(
+        decideDevice(
+          signals('A', null, null, 'M1'),
+          [X],
+          new Set<SignalField>(['firmware_uuid']),
+        ),
+      ).toEqual({ device_id: 'X', flags: ['firmware_uuid_shared'] });
+    });
+
+    it('give a new ID when the Windows install ID is shared too', () => {
+      expect(
+        decideDevice(
+          signals('A', null, null, 'M1'),
+          [X],
+          new Set<SignalField>(['firmware_uuid', 'machine_guid']),
+        ),
+      ).toEqual({
+        device_id: null,
+        flags: ['firmware_uuid_shared', 'machine_guid_shared'],
+      });
+    });
   });
 
   describe('values pointing to two PCs', () => {
@@ -179,6 +205,22 @@ describe('matchFields', () => {
       'machine_guid',
     ]);
     expect(matchFields(signals(null, null, null, null))).toEqual([]);
+  });
+
+  it('leaves out shared values, and uses the Windows install ID when none is left', () => {
+    const shared = new Set<SignalField>(['firmware_uuid']);
+    expect(matchFields(signals('A', 'B', null, 'M'), shared)).toEqual([
+      'baseboard_serial',
+    ]);
+    expect(matchFields(signals('A', null, null, 'M'), shared)).toEqual([
+      'machine_guid',
+    ]);
+    expect(
+      matchFields(
+        signals('A', null, null, 'M'),
+        new Set<SignalField>(['firmware_uuid', 'machine_guid']),
+      ),
+    ).toEqual([]);
   });
 });
 
@@ -314,12 +356,84 @@ describe('DeviceIdService.assign', () => {
     );
   });
 
-  it('takes a transaction-wide lock', async () => {
-    await service.lock(tx);
+  it('falls back to the Windows install ID when the hardware values are shared', async () => {
+    // A placeholder firmware UUID on two PCs, nothing else readable.
+    tx.$queryRaw.mockImplementation(
+      async (strings: TemplateStringsArray, ...values: any[]) =>
+        values.includes('A')
+          ? [{ devices: 2, old_schools: 0 }]
+          : [{ devices: 1, old_schools: 0 }],
+    );
+    tx.dailycheckapp_school.findMany
+      .mockResolvedValueOnce([{ device_id: 'X' }])
+      .mockResolvedValueOnce([
+        {
+          device_id: 'X',
+          device_hardware_id: 'A',
+          baseboard_serial: null,
+          disk_serial: null,
+          machine_guid: 'M1',
+        },
+      ]);
 
-    expect(tx.$executeRaw).toHaveBeenCalled();
-    const [strings, key] = tx.$executeRaw.mock.calls[0];
-    expect(strings.join('?')).toContain('pg_advisory_xact_lock');
-    expect(key).toBe(8828);
+    const result = await service.assign(tx, signals('A', null, null, 'M1'));
+
+    expect(result).toEqual({
+      device_id: 'X',
+      device_id_flags: ['firmware_uuid_shared'],
+    });
+    expect(tx.dailycheckapp_school.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { device_id: { not: null }, OR: [{ machine_guid: 'M1' }] },
+      }),
+    );
+  });
+
+  it("doesn't look at the Windows install ID when a hardware value counts", async () => {
+    await service.assign(tx, signals('A', 'B', null, 'M1'));
+
+    const looked = tx.$queryRaw.mock.calls.map((call: any[]) => call.slice(1));
+    expect(looked.flat()).not.toContain('M1');
+  });
+
+  describe('lock', () => {
+    const lockKeys = () =>
+      tx.$executeRaw.mock.calls.map(([strings, ...values]: any[]) => {
+        expect(strings.join('?')).toContain('pg_advisory_xact_lock');
+        expect(values[0]).toBe(8828);
+        return values[1];
+      });
+
+    it('locks each value, in sorted order', async () => {
+      await service.lock(tx, signals('A', 'B', null, 'M1'));
+
+      const keys = lockKeys();
+      expect(keys).toHaveLength(3);
+      expect(keys).toEqual([...keys].sort((a, b) => a - b));
+      expect(keys).toContain(valueLockKey('firmware_uuid', 'A'));
+      expect(keys).toContain(valueLockKey('machine_guid', 'M1'));
+    });
+
+    it('gives the same value the same key, and different values different keys', () => {
+      expect(valueLockKey('disk_serial', 'D1')).toBe(
+        valueLockKey('disk_serial', 'D1'),
+      );
+      expect(valueLockKey('disk_serial', 'D1')).not.toBe(
+        valueLockKey('disk_serial', 'D2'),
+      );
+      expect(valueLockKey('disk_serial', 'D1')).not.toBe(
+        valueLockKey('baseboard_serial', 'D1'),
+      );
+      const key = valueLockKey('firmware_uuid', 'A');
+      expect(Number.isInteger(key)).toBe(true);
+      expect(key).toBeGreaterThanOrEqual(-(2 ** 31));
+      expect(key).toBeLessThan(2 ** 31);
+    });
+
+    it('takes no lock when the registration has no values', async () => {
+      await service.lock(tx, signals(null, null, null, null));
+
+      expect(tx.$executeRaw).not.toHaveBeenCalled();
+    });
   });
 });

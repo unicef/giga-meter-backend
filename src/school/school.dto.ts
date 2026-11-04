@@ -216,7 +216,7 @@ export class DeactivateDeviceDto {
   @ApiProperty({
     required: false,
     description:
-      "The app's own registration (its schoolUserId). When given, only that registration is deactivated, so other Windows users on the PC stay registered.",
+      "The app's own registration (its schoolUserId), sent when the PC has no firmware UUID. When given, only that registration is deactivated.",
   })
   user_id?: string;
 }

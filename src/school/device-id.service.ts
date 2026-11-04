@@ -12,7 +12,8 @@ import {
  *
  * A PC is recognised by three hardware values: the firmware UUID (stored in
  * device_hardware_id), the motherboard serial and the disk serial. The Windows
- * install ID (MachineGuid) is used only when none of the three can be read.
+ * install ID (MachineGuid) is used only when none of the three can be used:
+ * none can be read, or each one that can is shared with other PCs.
  *
  * The ID is not a hash of the values: a hash would change when one value
  * changes (a new disk), while the rules below say it is the same PC. The server
@@ -31,6 +32,8 @@ export const HARDWARE_FIELDS: SignalField[] = [
   'baseboard_serial',
   'disk_serial',
 ];
+
+const ALL_FIELDS: SignalField[] = [...HARDWARE_FIELDS, 'machine_guid'];
 
 /** The dailycheckapp_school column that holds each value. */
 export const SIGNAL_COLUMNS: Record<
@@ -61,8 +64,21 @@ export interface DeviceAssignment {
   device_id_flags: string[];
 }
 
-/** Lock key for pg_advisory_xact_lock: one device ID decision at a time. */
+/**
+ * First half of each pg_advisory_xact_lock key, so these locks can't collide
+ * with other advisory locks; the second half comes from one value.
+ */
 export const DEVICE_ID_LOCK_KEY = 8828;
+
+/** A 32-bit key (FNV-1a) for one value, for the second half of a lock key. */
+export function valueLockKey(field: SignalField, value: string): number {
+  let hash = 0x811c9dc5;
+  for (const char of `${field}:${value}`) {
+    hash ^= char.codePointAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash | 0;
+}
 
 /**
  * The values a registration sent, cleaned: blank values, known placeholders and
@@ -85,26 +101,39 @@ export function cleanSignals(input: {
 }
 
 /**
- * The values a registration is matched on: the three hardware values it has,
- * or the Windows install ID when none of them could be read.
+ * The values a registration is matched on: the hardware values it has that
+ * aren't shared with other PCs, or the Windows install ID when there are none
+ * (nothing readable, or every readable value shared).
  */
-export function matchFields(signals: DeviceSignals): SignalField[] {
-  const readable = HARDWARE_FIELDS.filter((field) => signals[field] != null);
-  if (readable.length > 0) {
-    return readable;
+export function matchFields(
+  signals: DeviceSignals,
+  shared: Set<SignalField> = new Set(),
+): SignalField[] {
+  const usable = HARDWARE_FIELDS.filter(
+    (field) => signals[field] != null && !shared.has(field),
+  );
+  if (usable.length > 0) {
+    return usable;
   }
-  return signals.machine_guid != null ? ['machine_guid'] : [];
+  return signals.machine_guid != null && !shared.has('machine_guid')
+    ? ['machine_guid']
+    : [];
 }
 
+/**
+ * Exact, as the database lookups compare. The app sends each value from the
+ * same source every time (systeminformation lowercases the firmware UUID).
+ */
 function sameValue(a: string | null, b: string | null): boolean {
-  return a != null && b != null && a.toLowerCase() === b.toLowerCase();
+  return a != null && a === b;
 }
 
 /**
  * Decides which earlier PC, if any, a registration belongs to.
  *
  * - A value that already belongs to more than one PC (`shared`) doesn't count,
- *   because it can't tell PCs apart.
+ *   because it can't tell PCs apart. When no hardware value counts, the
+ *   Windows install ID is used instead, if it isn't shared.
  * - Only values present on both sides are compared; a missing value is ignored.
  * - It's the same PC when at least one value matches and no more values changed
  *   than matched. Each changed value is flagged.
@@ -121,13 +150,19 @@ export function decideDevice(
     flags.push('nothing_readable');
   }
 
-  const fields = matchFields(signals).filter((field) => {
-    if (shared.has(field)) {
+  // The Windows install ID is only looked at when no hardware value counts.
+  const looked = HARDWARE_FIELDS.some(
+    (field) => signals[field] != null && !shared.has(field),
+  )
+    ? HARDWARE_FIELDS
+    : ALL_FIELDS;
+  for (const field of looked) {
+    if (signals[field] != null && shared.has(field)) {
       flags.push(`${field}_shared`);
-      return false;
     }
-    return true;
-  });
+  }
+
+  const fields = matchFields(signals, shared);
   if (fields.length === 0) {
     return { device_id: null, flags };
   }
@@ -177,12 +212,26 @@ export function decideDevice(
 @Injectable()
 export class DeviceIdService {
   /**
-   * Takes the device ID lock for the rest of the transaction, so two
-   * registrations of the same new PC arriving together don't get two IDs.
-   * Registrations are few, so one lock for all of them is enough.
+   * Locks each value the registration sent, for the rest of the transaction,
+   * so two registrations of the same PC arriving together don't get two IDs or
+   * two rows. Every lookup here is by one of these values, so registrations
+   * that share none don't wait for each other, and one with no values takes no
+   * lock. Keys are taken in sorted order, so two registrations can't deadlock.
    */
-  async lock(tx: Prisma.TransactionClient): Promise<void> {
-    await tx.$executeRaw`SELECT pg_advisory_xact_lock(${DEVICE_ID_LOCK_KEY})`;
+  async lock(
+    tx: Prisma.TransactionClient,
+    signals: DeviceSignals,
+  ): Promise<void> {
+    const keys = [
+      ...new Set(
+        ALL_FIELDS.filter((field) => signals[field] != null).map((field) =>
+          valueLockKey(field, signals[field]),
+        ),
+      ),
+    ].sort((a, b) => a - b);
+    for (const key of keys) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${DEVICE_ID_LOCK_KEY}::int4, ${key}::int4)`;
+    }
   }
 
   /**
@@ -196,14 +245,23 @@ export class DeviceIdService {
     tx: Prisma.TransactionClient,
     signals: DeviceSignals,
   ): Promise<DeviceAssignment> {
-    const fields = matchFields(signals);
     const shared = new Set<SignalField>();
-    for (const field of fields) {
-      if (await this.isShared(tx, field, signals[field])) {
+    for (const field of HARDWARE_FIELDS) {
+      if (
+        signals[field] != null &&
+        (await this.isShared(tx, field, signals[field]))
+      ) {
         shared.add(field);
       }
     }
-    const counting = fields.filter((field) => !shared.has(field));
+    // The Windows install ID only counts when no hardware value does.
+    if (
+      matchFields(signals, shared)[0] === 'machine_guid' &&
+      (await this.isShared(tx, 'machine_guid', signals.machine_guid))
+    ) {
+      shared.add('machine_guid');
+    }
+    const counting = matchFields(signals, shared);
     const candidates = counting.length
       ? await this.candidates(tx, signals, counting)
       : [];
