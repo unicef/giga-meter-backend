@@ -72,6 +72,14 @@ export interface DeviceAssignment {
  */
 export const DEVICE_ID_LOCK_KEY = 8828;
 
+/**
+ * How long a registration waits for another one's lock before giving up. The
+ * transaction's own time limit can't interrupt a query waiting on a lock, so a
+ * stuck lock would otherwise hold a registration as long as it lasts. Giving
+ * up here makes the registration fall back to being saved without a device ID.
+ */
+export const LOCK_WAIT = '5s';
+
 /** A 32-bit key (FNV-1a) for one value, for the second half of a lock key. */
 export function valueLockKey(field: SignalField, value: string): number {
   let hash = 0x811c9dc5;
@@ -231,6 +239,9 @@ export class DeviceIdService {
         ),
       ),
     ].sort((a, b) => a - b);
+    if (keys.length > 0) {
+      await tx.$queryRaw`SELECT set_config('lock_timeout', ${LOCK_WAIT}, true)`;
+    }
     for (const key of keys) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(${DEVICE_ID_LOCK_KEY}::int4, ${key}::int4)`;
     }

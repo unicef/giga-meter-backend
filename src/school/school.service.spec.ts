@@ -3,12 +3,15 @@ import { SchoolService } from './school.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { DeviceIdService } from './device-id.service';
+import * as Sentry from '@sentry/node';
 import {
   mockCountryModel,
   mockSchoolDto,
   mockSchoolMasterModel,
   mockSchoolModel,
 } from '../common/mock-objects';
+
+jest.mock('@sentry/node', () => ({ captureException: jest.fn() }));
 
 describe('SchoolService', () => {
   let service: SchoolService;
@@ -375,18 +378,12 @@ describe('SchoolService', () => {
       expect(updateManySpy).not.toHaveBeenCalled();
     });
 
-    it('should not run the geolocation work for a duplicate', async () => {
-      // The distance calculation is a school lookup plus a computation whose
-      // result is discarded once the registration turns out to exist.
-      const existing = {
-        ...mockSchoolModel[0],
-        device_hardware_id: 'hardware-1',
-        device_id: 'device-1',
-        disk_serial: 'disk-1',
-      };
+    it('should work out the distance to the school before the transaction', async () => {
+      // The distance query uses its own connection, so running it inside the
+      // transaction would hold one connection while waiting for another.
       jest
-        .spyOn(prisma.dailycheckapp_school, 'findFirst')
-        .mockResolvedValue(existing);
+        .spyOn(prisma.dailycheckapp_school, 'create')
+        .mockResolvedValue(mockSchoolModel[0]);
 
       await service.createSchool({
         ...mockSchoolDto[0],
@@ -394,7 +391,99 @@ describe('SchoolService', () => {
         geolocation: { location: { lat: 1, lng: 2 }, accuracy: 10 },
       });
 
-      expect(geolocation.calculateDistanceAndSetFlag).not.toHaveBeenCalled();
+      const distance = geolocation.calculateDistanceAndSetFlag as jest.Mock;
+      expect(distance).toHaveBeenCalled();
+      expect(distance.mock.invocationCallOrder[0]).toBeLessThan(
+        (prisma.$transaction as jest.Mock).mock.invocationCallOrder[0],
+      );
+    });
+
+    it('should give the transaction the wait of an ordinary query', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'create')
+        .mockResolvedValue(mockSchoolModel[0]);
+
+      await service.createSchool({
+        ...mockSchoolDto[0],
+        device_hardware_id: 'hardware-1',
+      });
+
+      expect(prisma.$transaction).toHaveBeenCalledWith(expect.any(Function), {
+        maxWait: 10_000,
+        timeout: 20_000,
+      });
+    });
+
+    describe('when working out the device ID fails', () => {
+      beforeEach(() => (Sentry.captureException as jest.Mock).mockClear());
+
+      it('should still save the registration, without a device ID', async () => {
+        mockDeviceIdService.assign.mockRejectedValueOnce(new Error('boom'));
+        const createSpy = jest
+          .spyOn(prisma.dailycheckapp_school, 'create')
+          .mockResolvedValue(mockSchoolModel[0]);
+
+        const response = await service.createSchool({
+          ...mockSchoolDto[0],
+          device_hardware_id: 'hardware-1',
+          disk_serial: 'disk-1',
+        });
+
+        expect(response.user_id).toBe(mockSchoolModel[0].user_id);
+        expect(createSpy).toHaveBeenCalledTimes(1);
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            device_hardware_id: 'hardware-1',
+            disk_serial: 'disk-1',
+            device_id: null,
+            device_id_flags: ['device_id_failed'],
+          }),
+        });
+        expect(Sentry.captureException).toHaveBeenCalled();
+      });
+
+      it('should still save it when the transaction itself fails', async () => {
+        // For example no connection free in time at a busy moment.
+        (prisma.$transaction as jest.Mock).mockRejectedValueOnce(
+          new Error('Transaction API error: Unable to start a transaction'),
+        );
+        const createSpy = jest
+          .spyOn(prisma.dailycheckapp_school, 'create')
+          .mockResolvedValue(mockSchoolModel[0]);
+
+        await service.createSchool({
+          ...mockSchoolDto[0],
+          device_hardware_id: 'hardware-1',
+        });
+
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({ device_id_flags: ['device_id_failed'] }),
+        });
+      });
+
+      it('should return the existing registration on a repeat, as before 2.0.4', async () => {
+        mockDeviceIdService.assign.mockRejectedValueOnce(new Error('boom'));
+        const findFirstSpy = jest
+          .spyOn(prisma.dailycheckapp_school, 'findFirst')
+          .mockResolvedValue({ ...mockSchoolModel[0], user_id: 'existing' });
+        const createSpy = jest.spyOn(prisma.dailycheckapp_school, 'create');
+
+        const response = await service.createSchool({
+          ...mockSchoolDto[0],
+          device_hardware_id: 'hardware-1',
+        });
+
+        expect(response.user_id).toBe('existing');
+        expect(createSpy).not.toHaveBeenCalled();
+        expect(findFirstSpy).toHaveBeenCalledWith({
+          where: {
+            giga_id_school: 'gigaid1',
+            device_hardware_id: 'hardware-1',
+            OR: [{ is_active: null }, { is_active: true }],
+          },
+          orderBy: { id: 'asc' },
+        });
+      });
     });
 
     it('should register again when the device only has a deactivated row', async () => {

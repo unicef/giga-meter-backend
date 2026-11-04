@@ -9,6 +9,7 @@ import {
   isHardwareIdBlocked,
 } from '../common/hardware-id.utils';
 import { normalizeGigaId } from '../utility/utility';
+import * as Sentry from '@sentry/node';
 import {
   cleanSignals,
   DeviceAssignment,
@@ -17,6 +18,17 @@ import {
 } from './device-id.service';
 
 const ACTIVE = [{ is_active: null }, { is_active: true }];
+
+/**
+ * Limits for the registration transaction (TECH-8828). Prisma's defaults (2 s
+ * to get a connection, 5 s in all) are much shorter than an ordinary query's
+ * wait for a connection, so a busy pool would fail registrations that today
+ * only get slower.
+ */
+const REGISTRATION_TRANSACTION = { maxWait: 10_000, timeout: 20_000 };
+
+/** Flag on a registration saved without a device ID because working it out failed. */
+const DEVICE_ID_FAILED = 'device_id_failed';
 
 /** The hardware values a registration request carries. */
 interface HardwareValues {
@@ -170,9 +182,9 @@ export class SchoolService {
     // at-least-once delivery can still double-submit, so the insert cannot be
     // unconditional.
     //
-    // Resolved before the geolocation block below: on a repeat submission that
-    // block is a school lookup and a distance calculation whose result is
-    // thrown away.
+    // The distance to the school is worked out first, outside the transaction
+    // below, so the transaction never waits on a second connection. On a repeat
+    // submission the result is not used.
     //
     // The stored row is returned as it stands, with none of the device context
     // the payload carries copied onto it. Every measurement already reports its
@@ -192,9 +204,33 @@ export class SchoolService {
     // are no longer taken for one. Every Windows user on a PC shares its
     // registration, as automatic registration does.
     const key = this.registrationKey(schoolDto);
-    const { school, repeat } = await this.withDevice(
-      schoolDto,
-      async (tx, device) => {
+    await this.addGeolocation(schoolDto);
+    const { school, repeat } = await this.registerWithDevice(schoolDto, key);
+    if (repeat) {
+      console.warn(
+        `Duplicate registration absorbed for giga_id_school ${key.giga_id_school}, ` +
+          `device_hardware_id ${key.device_hardware_id}: returning user_id ${school.user_id}`,
+      );
+    }
+
+    return {
+      user_id: school.user_id,
+      is_verified: await this.resolveIsVerified(school.giga_id_school),
+    };
+  }
+
+  /**
+   * Finds this PC's registration for the school or stores a new one, with its
+   * device ID (TECH-8828). If working out the device ID fails for any reason,
+   * the registration is still saved the way it was before 2.0.4, without a
+   * device ID, so the device ID can only be missing, never block a school.
+   */
+  private async registerWithDevice(
+    schoolDto: SchoolDto,
+    key: { giga_id_school?: string; device_hardware_id?: string },
+  ): Promise<{ school: School; repeat: boolean }> {
+    try {
+      return await this.withDevice(schoolDto, async (tx, device) => {
         const pc = samePc(device);
         const existing =
           key.giga_id_school && pc
@@ -214,7 +250,6 @@ export class SchoolService {
           };
         }
 
-        await this.addGeolocation(schoolDto);
         return {
           school: await this.insertRegistration(
             tx,
@@ -223,25 +258,57 @@ export class SchoolService {
           ),
           repeat: false,
         };
-      },
-    );
-    if (repeat) {
-      console.warn(
-        `Duplicate registration absorbed for giga_id_school ${key.giga_id_school}, ` +
-          `device_hardware_id ${key.device_hardware_id}: returning user_id ${school.user_id}`,
+      });
+    } catch (error) {
+      console.error(
+        `Device ID failed for giga_id_school ${key.giga_id_school}; ` +
+          'saving the registration without one:',
+        error,
       );
+      Sentry.captureException(error);
+      return this.registerWithoutDevice(schoolDto, key);
     }
-
-    return {
-      user_id: school.user_id,
-      is_verified: await this.resolveIsVerified(school.giga_id_school),
-    };
   }
 
   /**
-   * Adds the distance between the PC and the school to a new registration.
-   * Only for new registrations: on a repeat the result would be thrown away.
+   * The registration as before 2.0.4: a repeat is an active registration with
+   * the same hardware ID for the same school. The hardware values are still
+   * stored, so the device ID can be worked out later.
    */
+  private async registerWithoutDevice(
+    schoolDto: SchoolDto,
+    key: { giga_id_school?: string; device_hardware_id?: string },
+  ): Promise<{ school: School; repeat: boolean }> {
+    const existing =
+      key.giga_id_school && key.device_hardware_id
+        ? await this.prisma.dailycheckapp_school.findFirst({
+            where: {
+              giga_id_school: key.giga_id_school,
+              device_hardware_id: key.device_hardware_id,
+              OR: ACTIVE,
+            },
+            // Oldest first: the identity the device has been reporting all along.
+            orderBy: { id: 'asc' },
+          })
+        : null;
+    if (existing) {
+      return { school: existing, repeat: true };
+    }
+    const signals = cleanSignals(schoolDto);
+    const school = await this.prisma.dailycheckapp_school.create({
+      data: {
+        ...this.toModel(schoolDto),
+        baseboard_serial: signals.baseboard_serial,
+        disk_serial: signals.disk_serial,
+        machine_guid: signals.machine_guid,
+        device_id: null,
+        device_id_flags: [DEVICE_ID_FAILED],
+      },
+    });
+    return { school, repeat: false };
+  }
+
+  /** Adds the distance between the PC and the school to the registration. */
   private async addGeolocation(schoolDto: SchoolDto): Promise<void> {
     if (schoolDto.geolocation &&
       schoolDto.geolocation.location &&
@@ -285,7 +352,7 @@ export class SchoolService {
       await this.deviceIdService.lock(tx, signals);
       const device = await this.deviceIdService.assign(tx, signals);
       return register(tx, { ...device, signals });
-    });
+    }, REGISTRATION_TRANSACTION);
   }
 
   /** Stores a new registration with its hardware values and device ID. */

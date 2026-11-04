@@ -435,5 +435,18 @@ describe('DeviceIdService.assign', () => {
 
       expect(tx.$executeRaw).not.toHaveBeenCalled();
     });
+
+    it('waits at most 5 s for another registration, for this transaction only', async () => {
+      await service.lock(tx, signals('A', null, null, null));
+
+      const [strings, ...values] = tx.$queryRaw.mock.calls[0];
+      expect(strings.join('?')).toBe(
+        "SELECT set_config('lock_timeout', ?, true)",
+      );
+      expect(values).toEqual(['5s']);
+      expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+        tx.$executeRaw.mock.invocationCallOrder[0],
+      );
+    });
   });
 });
