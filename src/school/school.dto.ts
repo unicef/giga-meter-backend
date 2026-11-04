@@ -77,6 +77,73 @@ export class SchoolDto {
 
   @ApiProperty({ required: false })
   is_verified?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description: 'Motherboard serial. Stored, never returned.',
+  })
+  baseboard_serial?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Internal disk serial. Stored, never returned.',
+  })
+  disk_serial?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Windows install ID (MachineGuid). Stored, never returned; used to match a PC only when none of the hardware values can be read.',
+  })
+  machine_guid?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'The physical PC this registration belongs to, given by the server.',
+  })
+  device_id?: string;
+
+  @ApiProperty({ required: false, description: 'manual or auto' })
+  registration_type?: string;
+}
+
+export class AutoRegisterDto {
+  @ApiProperty({ description: 'Firmware UUID of the PC' })
+  device_hardware_id: string;
+
+  @ApiProperty({ required: false })
+  baseboard_serial?: string;
+
+  @ApiProperty({ required: false })
+  disk_serial?: string;
+
+  @ApiProperty({ required: false })
+  machine_guid?: string;
+
+  @ApiProperty({ required: false })
+  mac_address?: string;
+
+  @ApiProperty({ required: false })
+  os?: string;
+
+  @ApiProperty({ required: false })
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  created?: string;
+
+  @ApiProperty({ required: false })
+  ip_address?: string;
+
+  @ApiProperty({ required: false })
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  wifi_connections?: any[];
 }
 
 export class CheckNotifyDto {
@@ -137,11 +204,21 @@ export class CreateSchoolResponseDto {
 }
 
 export class DeactivateDeviceDto {
-  @ApiProperty()
-  device_hardware_id: string;
+  @ApiProperty({
+    required: false,
+    description: 'Needed when user_id is not given',
+  })
+  device_hardware_id?: string;
 
   @ApiProperty()
   giga_id_school: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "The app's own registration (its schoolUserId). When given, only that registration is deactivated, so other Windows users on the PC stay registered.",
+  })
+  user_id?: string;
 }
 
 export class DeactivateDeviceResponseDto {

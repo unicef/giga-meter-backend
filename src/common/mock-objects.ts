@@ -158,6 +158,12 @@ export const mockSchoolModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    baseboard_serial: null,
+    disk_serial: null,
+    machine_guid: null,
+    device_id: null,
+    registration_type: null,
+    device_id_flags: [],
   },
   {
     id: toBigInt(2),
@@ -183,6 +189,12 @@ export const mockSchoolModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    baseboard_serial: null,
+    disk_serial: null,
+    machine_guid: null,
+    device_id: null,
+    registration_type: null,
+    device_id_flags: [],
   },
 ];
 

@@ -26,6 +26,7 @@ import {
   ApiSuccessResponseDto,
 } from '../common/common.dto';
 import {
+  AutoRegisterDto,
   CheckNotifyDto,
   CheckExistingInstallationDto,
   CheckDeviceStatusDto,
@@ -371,6 +372,51 @@ export class SchoolController {
     };
   }
 
+  @Get('checkRegistrationStatus/:user_id')
+  @ApiOperation({
+    summary:
+      "Check whether the app's own registration (its user_id) is still active",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Returns whether the registration is active or has been deactivated',
+    type: CheckDeviceStatusDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiParam({
+    name: 'user_id',
+    description:
+      "The user_id the registration returned (the app's schoolUserId)",
+    required: true,
+    type: 'string',
+  })
+  async checkRegistrationStatus(
+    @Param('user_id') user_id: string,
+  ): Promise<ApiSuccessResponseDto<CheckDeviceStatusDto>> {
+    if (!user_id || user_id.trim().length === 0) {
+      throw new HttpException('user_id is null/empty', HttpStatus.BAD_REQUEST);
+    }
+
+    const result = await this.schoolService.checkRegistrationStatus(
+      user_id.trim(),
+    );
+
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: result.message,
+    };
+  }
+
   @Get('checkNotify/:user_id')
   @ApiExcludeEndpoint()
   @ApiOperation({
@@ -434,6 +480,48 @@ export class SchoolController {
     };
   }
 
+  @Post('autoRegister')
+  @ApiOperation({
+    summary:
+      'Register this PC automatically for the school its firmware UUID is already registered at',
+  })
+  @ApiResponse({
+    status: 201,
+    description:
+      "exists=false when there is nothing to register from; otherwise the new (or this Windows user's existing) registration, in the checkExistingInstallation shape",
+    type: CheckExistingInstallationDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; Missing or invalid parameters',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  async autoRegister(
+    @Body() autoRegisterDto: AutoRegisterDto,
+  ): Promise<ApiSuccessResponseDto<CheckExistingInstallationDto>> {
+    if (
+      !autoRegisterDto?.device_hardware_id ||
+      autoRegisterDto.device_hardware_id.trim().length === 0
+    ) {
+      throw new HttpException(
+        'device_hardware_id is null/empty',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.schoolService.autoRegister(autoRegisterDto);
+
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: 'success',
+    };
+  }
+
   @Put('deactivate')
   @ApiOperation({
     summary: 'Deactivate a device by setting is_active to false',
@@ -454,6 +542,21 @@ export class SchoolController {
   async deactivateDevice(
     @Body() deactivateDto: DeactivateDeviceDto,
   ): Promise<ApiSuccessResponseDto<DeactivateDeviceResponseDto>> {
+    const userId = deactivateDto.user_id?.trim();
+    if (userId) {
+      const own = await this.schoolService.deactivateDevice(
+        deactivateDto.device_hardware_id,
+        deactivateDto.giga_id_school,
+        userId,
+      );
+      return {
+        success: true,
+        data: own,
+        timestamp: new Date().toISOString(),
+        message: own.message || 'success',
+      };
+    }
+
     if (
       !deactivateDto.device_hardware_id ||
       deactivateDto.device_hardware_id.trim().length === 0

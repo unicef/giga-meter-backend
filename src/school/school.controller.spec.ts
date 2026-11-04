@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import { DeviceIdService } from './device-id.service';
 
 describe('SchoolController', () => {
   let controller: SchoolController;
@@ -46,6 +47,7 @@ describe('SchoolController', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: ConnectivityService, useValue: mockConnectivityService },
         { provide: GeolocationUtility, useValue: mockGeolocationUtility },
+        { provide: DeviceIdService, useValue: {} },
         {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager,
@@ -257,6 +259,77 @@ describe('SchoolController', () => {
         giga_id_school: mockSchoolDto[0].giga_id_school,
         is_verified: false,
       });
+    });
+  });
+  describe('AutoRegister', () => {
+    it('should pass the request to the service', async () => {
+      const result = {
+        exists: true,
+        user_id: 'new-registration',
+        giga_id_school: 'gigaid1',
+        source: 'auto_registration',
+      };
+      const spy = jest.spyOn(service, 'autoRegister').mockResolvedValue(result);
+
+      const response = await controller.autoRegister({
+        device_hardware_id: 'uuid-a',
+        disk_serial: 'disk-c',
+      });
+
+      expect(spy).toHaveBeenCalledWith({
+        device_hardware_id: 'uuid-a',
+        disk_serial: 'disk-c',
+      });
+      expect(response.data).toStrictEqual(result);
+    });
+
+    it('should reject a request without a firmware UUID', async () => {
+      await expect(
+        controller.autoRegister({ device_hardware_id: ' ' }),
+      ).rejects.toThrow('device_hardware_id is null/empty');
+    });
+  });
+
+  describe('CheckRegistrationStatus', () => {
+    it('should return the status of that registration', async () => {
+      const spy = jest.spyOn(service, 'checkRegistrationStatus').mockResolvedValue({
+        is_active: false,
+        message: 'Registration has been deactivated',
+        exists: true,
+      });
+
+      const response = await controller.checkRegistrationStatus(' user-1 ');
+
+      expect(spy).toHaveBeenCalledWith('user-1');
+      expect(response.data.is_active).toBe(false);
+      expect(response.message).toBe('Registration has been deactivated');
+    });
+
+    it('should reject an empty user_id', async () => {
+      await expect(controller.checkRegistrationStatus(' ')).rejects.toThrow(
+        'user_id is null/empty',
+      );
+    });
+  });
+
+  describe('DeactivateDevice', () => {
+    it('should log out only the registration given by user_id, without a hardware ID', async () => {
+      const spy = jest
+        .spyOn(service, 'deactivateDevice')
+        .mockResolvedValue({ deactivated: true, message: 'ok' });
+
+      await controller.deactivateDevice({
+        giga_id_school: 'gigaid1',
+        user_id: 'user-1',
+      });
+
+      expect(spy).toHaveBeenCalledWith(undefined, 'gigaid1', 'user-1');
+    });
+
+    it('should still need a hardware ID without a user_id', async () => {
+      await expect(
+        controller.deactivateDevice({ giga_id_school: 'gigaid1' }),
+      ).rejects.toThrow('device_hardware_id is null/empty');
     });
   });
 });
