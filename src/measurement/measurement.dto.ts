@@ -749,6 +749,13 @@ export class MeasurementDto {
   })
   scheduled_at?: Date;
 
+  @ApiProperty({
+    required: false,
+    description:
+      "M-Lab's own clock as reported by ndt7, independent of the device clock. Null when the client could not read it",
+  })
+  server_timestamp?: Date;
+
   @ApiProperty({ required: false, description: 'Device name' })
   device_name?: string;
 
