@@ -43,26 +43,10 @@ interface RegistrationDevice extends DeviceAssignment {
   signals: DeviceSignals;
 }
 
-/**
- * This PC's registrations: those with its device ID, and those from before
- * 2.0.4 (no device ID yet) with its hardware ID. Null when the PC can't be
- * recognised (no device ID and no usable hardware ID): then no registration is
- * this PC's.
- */
-function samePc(
-  device: RegistrationDevice,
-): Prisma.dailycheckapp_schoolWhereInput | null {
-  const rows: Prisma.dailycheckapp_schoolWhereInput[] = [];
-  if (device.device_id) {
-    rows.push({ device_id: device.device_id });
-  }
-  if (device.signals.firmware_uuid) {
-    rows.push({
-      device_id: null,
-      device_hardware_id: device.signals.firmware_uuid,
-    });
-  }
-  return rows.length > 0 ? { OR: rows } : null;
+/** The school and hardware ID a registration is for, as stored. */
+interface RegistrationKey {
+  giga_id_school?: string;
+  device_hardware_id?: string;
 }
 
 @Injectable()
@@ -195,14 +179,11 @@ export class SchoolService {
     // writing: mac_address is Capacitor's Device.getId(), regenerated on every
     // app relaunch, and an os that really changed under the same hardware id
     // means a different machine, not a field to overwrite in place. The one
-    // exception is a registration from before 2.0.4, which gets the hardware
-    // values and device ID (fillInDevice).
+    // exception is a registration without a device ID yet, which gets the
+    // hardware values and device ID (fillInDevice).
     //
-    // A repeat is the same PC for the same school while that registration is
-    // active, as before, but the PC is now recognised by its device ID
-    // (TECH-8828), so PCs copied from one disk image that share a firmware UUID
-    // are no longer taken for one. Every Windows user on a PC shares its
-    // registration, as automatic registration does.
+    // The device ID (TECH-8828) is worked out and stored, but nothing acts on
+    // it yet: a repeat is decided as before (findRepeat).
     const key = this.registrationKey(schoolDto);
     await this.addGeolocation(schoolDto);
     const { school, repeat } = await this.registerWithDevice(schoolDto, key);
@@ -220,29 +201,18 @@ export class SchoolService {
   }
 
   /**
-   * Finds this PC's registration for the school or stores a new one, with its
-   * device ID (TECH-8828). If working out the device ID fails for any reason,
-   * the registration is still saved the way it was before 2.0.4, without a
-   * device ID, so the device ID can only be missing, never block a school.
+   * Returns the repeat or stores a new registration, with its device ID
+   * (TECH-8828). If working out the device ID fails for any reason, the
+   * registration is still saved, without a device ID, so the device ID can only
+   * be missing, never block a school.
    */
   private async registerWithDevice(
     schoolDto: SchoolDto,
-    key: { giga_id_school?: string; device_hardware_id?: string },
+    key: RegistrationKey,
   ): Promise<{ school: School; repeat: boolean }> {
     try {
       return await this.withDevice(schoolDto, async (tx, device) => {
-        const pc = samePc(device);
-        const existing =
-          key.giga_id_school && pc
-            ? await tx.dailycheckapp_school.findFirst({
-                where: {
-                  giga_id_school: key.giga_id_school,
-                  AND: [{ OR: ACTIVE }, pc],
-                },
-                // Oldest first: the identity the device has been reporting all along.
-                orderBy: { id: 'asc' },
-              })
-            : null;
+        const existing = await this.findRepeat(tx, key);
         if (existing) {
           return {
             school: await this.fillInDevice(tx, existing, device),
@@ -271,26 +241,14 @@ export class SchoolService {
   }
 
   /**
-   * The registration as before 2.0.4: a repeat is an active registration with
-   * the same hardware ID for the same school. The hardware values are still
+   * The registration without a device ID. The hardware values are still
    * stored, so the device ID can be worked out later.
    */
   private async registerWithoutDevice(
     schoolDto: SchoolDto,
-    key: { giga_id_school?: string; device_hardware_id?: string },
+    key: RegistrationKey,
   ): Promise<{ school: School; repeat: boolean }> {
-    const existing =
-      key.giga_id_school && key.device_hardware_id
-        ? await this.prisma.dailycheckapp_school.findFirst({
-            where: {
-              giga_id_school: key.giga_id_school,
-              device_hardware_id: key.device_hardware_id,
-              OR: ACTIVE,
-            },
-            // Oldest first: the identity the device has been reporting all along.
-            orderBy: { id: 'asc' },
-          })
-        : null;
+    const existing = await this.findRepeat(this.prisma, key);
     if (existing) {
       return { school: existing, repeat: true };
     }
@@ -306,6 +264,37 @@ export class SchoolService {
       },
     });
     return { school, repeat: false };
+  }
+
+  /**
+   * The active registration this device already has for this school, if any,
+   * as before 2.0.4: same school, same hardware ID. The device ID isn't used
+   * here; nothing acts on it yet.
+   *
+   * Keyed on device_hardware_id: mac_address is not a hardware address but
+   * Capacitor's Device.getId(), which is regenerated on every app relaunch, so
+   * it cannot identify a device. registrationKey() has already nulled out the
+   * blocked generic ids, so a null here means "cannot be identified" and a new
+   * row is the only safe answer. Deactivated rows are ignored, matching
+   * checkExistingInstallation: logging out and registering again is a new
+   * installation.
+   */
+  private async findRepeat(
+    client: Prisma.TransactionClient,
+    key: RegistrationKey,
+  ): Promise<School | null> {
+    if (!key.giga_id_school || !key.device_hardware_id) {
+      return null;
+    }
+    return client.dailycheckapp_school.findFirst({
+      where: {
+        giga_id_school: key.giga_id_school,
+        device_hardware_id: key.device_hardware_id,
+        OR: ACTIVE,
+      },
+      // Oldest first: the identity the device has been reporting all along.
+      orderBy: { id: 'asc' },
+    });
   }
 
   /** Adds the distance between the PC and the school to the registration. */
@@ -337,8 +326,8 @@ export class SchoolService {
   /**
    * Runs a registration in one transaction, under a lock on its hardware
    * values: works out the device ID first, then hands it to `register`, which
-   * looks for this PC's registration or stores a new one. Two requests for the
-   * same PC therefore can't both decide there is none.
+   * looks for a repeat or stores a new registration. Two requests for the same
+   * PC therefore can't both decide there is none.
    */
   private async withDevice<T>(
     values: HardwareValues,
@@ -374,10 +363,13 @@ export class SchoolService {
   }
 
   /**
-   * A registration from before 2.0.4 that this PC is using again gets the
-   * hardware values and device ID it now sends, so its tests and pings count
-   * under the device ID from now on. Any other registration is returned as it
-   * stands.
+   * A repeat that has no device ID yet (from before 2.0.4, or saved when
+   * working one out failed) gets the hardware values and device ID this PC now
+   * sends, so its tests and pings count under the device ID from now on. So
+   * does one that assign() has just linked to this PC, which has the device ID
+   * but not yet the values, or still the failed flag. Any other registration
+   * is returned as it stands: the repeat is found by hardware ID, so one with
+   * another device ID may be another PC's with the same firmware UUID.
    */
   private async fillInDevice(
     tx: Prisma.TransactionClient,
@@ -388,7 +380,12 @@ export class SchoolService {
       row.baseboard_serial != null ||
       row.disk_serial != null ||
       row.machine_guid != null;
-    if (row.device_id != null && hasValues) {
+    const complete =
+      hasValues && !(row.device_id_flags ?? []).includes(DEVICE_ID_FAILED);
+    const needsDevice =
+      row.device_id == null ||
+      (row.device_id === device.device_id && !complete);
+    if (!needsDevice) {
       return row;
     }
     return tx.dailycheckapp_school.update({

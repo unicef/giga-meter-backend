@@ -271,38 +271,41 @@ describe('SchoolService', () => {
         is_verified: false,
       });
       expect(createSpy).not.toHaveBeenCalled();
-      // Same school, active, and this PC: its device ID, or its hardware ID
-      // on a registration from before 2.0.4.
+      // As before 2.0.4: same school, same hardware ID, active. The device ID
+      // is stored but not used for this.
       expect(findFirstSpy).toHaveBeenCalledWith({
         where: {
           giga_id_school: 'gigaid1',
-          AND: [
-            { OR: [{ is_active: null }, { is_active: true }] },
-            {
-              OR: [
-                { device_id: 'device-1' },
-                { device_id: null, device_hardware_id: 'hardware-1' },
-              ],
-            },
-          ],
+          device_hardware_id: 'hardware-1',
+          OR: [{ is_active: null }, { is_active: true }],
         },
         orderBy: { id: 'asc' },
       });
     });
 
     it('should look for the repeat inside the locked transaction', async () => {
-      const findFirstSpy = jest.spyOn(prisma.dailycheckapp_school, 'findFirst');
-      jest
-        .spyOn(prisma.dailycheckapp_school, 'create')
-        .mockResolvedValue(mockSchoolModel[0]);
+      // On the transaction's own connection, after the lock, so two requests
+      // for the same PC can't both find none.
+      const tx = {
+        dailycheckapp_school: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue(mockSchoolModel[0]),
+        },
+      };
+      (prisma.$transaction as jest.Mock).mockImplementationOnce((fn: any) =>
+        fn(tx),
+      );
+      const outsideSpy = jest.spyOn(prisma.dailycheckapp_school, 'findFirst');
 
       await service.createSchool({
         ...mockSchoolDto[0],
         device_hardware_id: 'hardware-1',
       });
 
+      expect(outsideSpy).not.toHaveBeenCalled();
+      expect(tx.dailycheckapp_school.findFirst).toHaveBeenCalled();
       expect(mockDeviceIdService.lock.mock.invocationCallOrder[0]).toBeLessThan(
-        findFirstSpy.mock.invocationCallOrder[0],
+        tx.dailycheckapp_school.findFirst.mock.invocationCallOrder[0],
       );
     });
 
@@ -376,6 +379,90 @@ describe('SchoolService', () => {
 
       expect(updateSpy).not.toHaveBeenCalled();
       expect(updateManySpy).not.toHaveBeenCalled();
+    });
+
+    it("should not give a repeat with another PC's device ID this PC's", async () => {
+      // The repeat is found by hardware ID, so with a firmware UUID shared by
+      // PCs copied from one disk image it can be another PC's registration.
+      jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue({
+        ...mockSchoolModel[0],
+        user_id: 'other_pc',
+        device_hardware_id: 'hardware-1',
+        device_id: 'device-9',
+      });
+      const updateSpy = jest.spyOn(prisma.dailycheckapp_school, 'update');
+
+      const response = await service.createSchool({
+        ...mockSchoolDto[0],
+        device_hardware_id: 'hardware-1',
+        disk_serial: 'disk-1',
+      });
+
+      expect(response.user_id).toBe('other_pc');
+      expect(updateSpy).not.toHaveBeenCalled();
+    });
+
+    it('should add the values to an older registration just linked to this PC', async () => {
+      // assign() gave the older registration this PC's device ID, without the
+      // values; the repeat stores them, so the PC can be matched by them later.
+      jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue({
+        ...mockSchoolModel[0],
+        id: BigInt(42),
+        user_id: 'old_user_id',
+        device_hardware_id: 'hardware-1',
+        device_id: 'device-1',
+      });
+      const updateSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'update')
+        .mockImplementation(
+          ({ data }: any) =>
+            ({ ...mockSchoolModel[0], user_id: 'old_user_id', ...data }) as any,
+        );
+
+      await service.createSchool({
+        ...mockSchoolDto[0],
+        device_hardware_id: 'hardware-1',
+        disk_serial: 'disk-1',
+      });
+
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { id: BigInt(42) },
+        data: expect.objectContaining({
+          disk_serial: 'disk-1',
+          device_id: 'device-1',
+        }),
+      });
+    });
+
+    it('should clear the failed flag on a registration saved without a device ID', async () => {
+      // Saved by the fallback, then given this PC's device ID by assign().
+      jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue({
+        ...mockSchoolModel[0],
+        id: BigInt(43),
+        device_hardware_id: 'hardware-1',
+        device_id: 'device-1',
+        disk_serial: 'disk-1',
+        device_id_flags: ['device_id_failed'],
+      });
+      const updateSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'update')
+        .mockImplementation(
+          ({ data }: any) => ({ ...mockSchoolModel[0], ...data }) as any,
+        );
+
+      await service.createSchool({
+        ...mockSchoolDto[0],
+        device_hardware_id: 'hardware-1',
+        disk_serial: 'disk-1',
+      });
+
+      expect(updateSpy).toHaveBeenCalledWith({
+        where: { id: BigInt(43) },
+        data: expect.objectContaining({
+          device_id: 'device-1',
+          device_id_flags: [],
+        }),
+      });
     });
 
     it('should work out the distance to the school before the transaction', async () => {
@@ -500,9 +587,10 @@ describe('SchoolService', () => {
         device_hardware_id: 'hardware-1',
       });
 
-      expect(findFirstSpy.mock.calls[0][0].where.AND[0]).toEqual({
-        OR: [{ is_active: null }, { is_active: true }],
-      });
+      expect(findFirstSpy.mock.calls[0][0].where.OR).toEqual([
+        { is_active: null },
+        { is_active: true },
+      ]);
       expect(createSpy).toHaveBeenCalled();
       expect(response).toEqual({
         user_id: mockSchoolDto[0].user_id,
@@ -510,48 +598,25 @@ describe('SchoolService', () => {
       });
     });
 
-    it('should match a repeat by device ID alone when there is no usable hardware id', async () => {
+    it('should not deduplicate when the device has no usable hardware id', async () => {
       // sanitizeHardwareId() nulls out the generic ids shared by hundreds of
-      // machines, so without one only the device ID can say it's the same PC.
-      // A PC with no values at all gets a new device ID every time, so it is
-      // never a repeat.
+      // machines; without a hardware id the device cannot be identified, so a
+      // new row is the only safe answer. The device ID doesn't change that.
       const findFirstSpy = jest.spyOn(prisma.dailycheckapp_school, 'findFirst');
-      jest
+      const createSpy = jest
         .spyOn(prisma.dailycheckapp_school, 'create')
         .mockResolvedValue(mockSchoolModel[0]);
 
       const response = await service.createSchool({
         ...mockSchoolDto[0],
         device_hardware_id: '03000200-0400-0500-0006-000700080009',
+        disk_serial: 'disk-1',
       });
 
       expect(response).toEqual({
         user_id: mockSchoolDto[0].user_id,
         is_verified: false,
       });
-      expect(findFirstSpy.mock.calls[0][0].where.AND[1]).toEqual({
-        OR: [{ device_id: 'device-1' }],
-      });
-    });
-
-    it('should never treat a PC it cannot recognise as a repeat', async () => {
-      // No device ID (nothing usable) and no usable firmware UUID: matching on
-      // "no device ID" would pick up other PCs' registrations with the same
-      // Windows account name, so there is no repeat lookup at all.
-      mockDeviceIdService.assign.mockResolvedValueOnce({
-        device_id: null,
-        device_id_flags: ['nothing_readable'],
-      });
-      const findFirstSpy = jest.spyOn(prisma.dailycheckapp_school, 'findFirst');
-      const createSpy = jest
-        .spyOn(prisma.dailycheckapp_school, 'create')
-        .mockResolvedValue(mockSchoolModel[0]);
-
-      await service.createSchool({
-        ...mockSchoolDto[0],
-        device_hardware_id: '03000200-0400-0500-0006-000700080009',
-      });
-
       expect(findFirstSpy).not.toHaveBeenCalled();
       expect(createSpy).toHaveBeenCalled();
     });
@@ -708,22 +773,25 @@ describe('SchoolService', () => {
         expect(response.user_id).toBe('first-user-registration');
       });
 
-      it('treats another PC with the same firmware UUID as a new registration', async () => {
+      it('gives another PC with the same firmware UUID the same registration, as before', async () => {
         // PCs copied from one disk image: same placeholder UUID, different
-        // serials, so a different device ID. The
-        // repeat must have this PC's device ID; the real-database run checks
-        // the other PC's row isn't returned.
+        // serials, so a different device ID. Nothing acts on the device ID
+        // yet, so the repeat check goes by hardware ID as before.
         mockDeviceIdService.assign.mockResolvedValueOnce({
           device_id: 'device-2',
           device_id_flags: [],
         });
-        const findFirstSpy = jest.spyOn(
-          prisma.dailycheckapp_school,
-          'findFirst',
-        );
+        jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue({
+          ...mockSchoolModel[0],
+          user_id: 'first-pc',
+          device_hardware_id: 'uuid-shared',
+          baseboard_serial: 'board-1',
+          disk_serial: 'disk-1',
+          device_id: 'device-1',
+        });
         const createSpy = createdRow();
 
-        await service.createSchool({
+        const response = await service.createSchool({
           ...mockSchoolDto[0],
           device_hardware_id: 'uuid-shared',
           windows_username: 'student',
@@ -731,15 +799,8 @@ describe('SchoolService', () => {
           disk_serial: 'disk-2',
         });
 
-        expect(findFirstSpy.mock.calls[0][0].where.AND[1]).toEqual({
-          OR: [
-            { device_id: 'device-2' },
-            { device_id: null, device_hardware_id: 'uuid-shared' },
-          ],
-        });
-        expect(createSpy).toHaveBeenCalledWith({
-          data: expect.objectContaining({ device_id: 'device-2' }),
-        });
+        expect(createSpy).not.toHaveBeenCalled();
+        expect(response.user_id).toBe('first-pc');
       });
 
       it('still absorbs a repeat from the same machine', async () => {
