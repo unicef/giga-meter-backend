@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PrismaService } from './prisma/prisma.service';
+import { PrismaModule } from './prisma/prisma.module';
 import { MessagesService } from './messages/messages.service';
 import { MessagesController } from './messages/messages.controller';
 import { FlaggedSchoolService } from './flagged-school/flagged-school.service';
@@ -47,6 +47,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
 
 @Module({
   imports: [
+    PrismaModule,
     HttpModule,
     ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
     CacheModule.register({
@@ -84,7 +85,6 @@ import { SchedulerService } from './scheduler/scheduler.service';
   ],
   providers: [
     AppService,
-    PrismaService,
     MessagesService,
     FlaggedSchoolService,
     SchoolService,
