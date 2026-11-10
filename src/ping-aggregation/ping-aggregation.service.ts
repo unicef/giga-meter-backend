@@ -12,6 +12,7 @@ import {
 } from './ping-aggregation.dto';
 import { plainToInstance } from 'class-transformer';
 import redisClient from 'src/utils/redis.client';
+import { normalizeGigaId } from 'src/utility/utility';
 
 @Injectable()
 export class PingAggregationService {
@@ -29,7 +30,7 @@ export class PingAggregationService {
           : 'completed';
 
       const where: Prisma.ConnectivityPingChecksDailyAggrWhereInput = {};
-      if (giga_id_school) where.giga_id_school = giga_id_school;
+      if (giga_id_school) where.giga_id_school = normalizeGigaId(giga_id_school);
 
       if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime()))
         where.timestamp_date = {
@@ -107,6 +108,12 @@ export class PingAggregationService {
 
         if (data.length === 0) break;
 
+        // Looked up before the delete below, so a failure here leaves the
+        // existing summary rows in place.
+        const deviceIds = await this.deviceIdsFor(
+          data.map((item) => item.device_id),
+        );
+
         // To ensure idempotency, we check for and delete any existing aggregated data
         // for the target date and the specific school/device combinations before inserting
         // the new aggregations. This prevents duplicate records if the job is run multiple times.
@@ -143,6 +150,7 @@ export class PingAggregationService {
             timestamp_date: insertStart,
             giga_id_school: record.giga_id_school,
             browser_id: record.device_id || null,
+            device_id: deviceIds.get(record.device_id) ?? null,
             is_connected_true,
             is_connected_all,
             uptime,
@@ -173,6 +181,32 @@ export class PingAggregationService {
     }
   }
 
+  /**
+   * The device ID (TECH-8828) of each browser_id's registration, so the summary
+   * can count one PC once even when several Windows users registered it. A
+   * browser_id without one (registered before 2.0.4) is left out.
+   */
+  private async deviceIdsFor(
+    browserIds: (string | null)[],
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(browserIds.filter(Boolean))];
+    const deviceIds = new Map<string, string>();
+    if (ids.length === 0) {
+      return deviceIds;
+    }
+    const registrations = await this.prisma.dailycheckapp_school.findMany({
+      where: { user_id: { in: ids }, device_id: { not: null } },
+      select: { user_id: true, device_id: true },
+      orderBy: { id: 'desc' },
+    });
+    for (const registration of registrations ?? []) {
+      if (!deviceIds.has(registration.user_id)) {
+        deviceIds.set(registration.user_id, registration.device_id);
+      }
+    }
+    return deviceIds;
+  }
+
   async getRawPingConnectivity(query: GetRawPingConnectivityDto) {
     try {
       if (!query?.size) {
@@ -184,7 +218,7 @@ export class PingAggregationService {
       );
 
       const where: Prisma.connectivity_ping_checksWhereInput = {};
-      if (giga_id_school) where.giga_id_school = giga_id_school;
+      if (giga_id_school) where.giga_id_school = normalizeGigaId(giga_id_school);
 
       if (!isNaN(new Date(from).getTime()) && !isNaN(new Date(to).getTime())) {
         const fromDate = new Date(from);

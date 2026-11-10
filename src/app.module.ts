@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PrismaService } from './prisma/prisma.service';
+import { PrismaModule } from './prisma/prisma.module';
 import { MessagesService } from './messages/messages.service';
 import { MessagesController } from './messages/messages.controller';
 import { FlaggedSchoolService } from './flagged-school/flagged-school.service';
 import { FlaggedSchoolController } from './flagged-school/flagged-school.controller';
 import { SchoolController } from './school/school.controller';
 import { SchoolService } from './school/school.service';
+import { DeviceIdService } from './school/device-id.service';
 import { CountryController } from './country/country.controller';
 import { CountryService } from './country/country.service';
 import { AdminController } from './admin/admin.controller';
@@ -55,6 +56,7 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
 
 @Module({
   imports: [
+    PrismaModule,
     HttpModule,
     ThrottlerModule.forRoot([defaultRateLimitConfig.default]),
     CacheModule.register({
@@ -97,10 +99,10 @@ import { ProtocolConfigService } from './protocol-config/protocol-config.service
   ],
   providers: [
     AppService,
-    PrismaService,
     MessagesService,
     FlaggedSchoolService,
     SchoolService,
+    DeviceIdService,
     SchoolMasterService,
     CountryService,
     MeasurementService,

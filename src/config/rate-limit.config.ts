@@ -23,7 +23,9 @@ export const RATE_LIMIT_CONFIG: RateLimitConfig = {
   models: {
     measurements: defaultRateLimitConfig,
     countries: defaultRateLimitConfig,
-    schools: defaultRateLimitConfig
+    schools: defaultRateLimitConfig,
+    // Proxies a paid third-party API, so an unthrottled caller costs money.
+    geolocation: defaultRateLimitConfig
   }
 };
 

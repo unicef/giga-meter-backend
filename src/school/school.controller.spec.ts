@@ -11,6 +11,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
+import { DeviceIdService } from './device-id.service';
 
 describe('SchoolController', () => {
   let controller: SchoolController;
@@ -46,6 +47,7 @@ describe('SchoolController', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: ConnectivityService, useValue: mockConnectivityService },
         { provide: GeolocationUtility, useValue: mockGeolocationUtility },
+        { provide: DeviceIdService, useValue: {} },
         {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager,

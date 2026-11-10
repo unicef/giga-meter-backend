@@ -15,11 +15,13 @@ import { filterSwaggerDocByCategory } from './common/swagger/swagger-filter';
 dotenv.config();
 
 async function bootstrap() {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.APP_ENV,
-    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
-  });
+  if (process.env.SENTRY_DSN) {
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.SENTRY_ENVIRONMENT,
+      tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
+    });
+  }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 

@@ -255,7 +255,10 @@ export class PublicService {
       annotation: measurement.annotation,
       Download: measurement.download,
       Upload: measurement.upload,
-      Latency: parseInt(measurement.latency.toString()),
+      Latency:
+        measurement.latency == null
+          ? null
+          : parseInt(measurement.latency.toString()),
       Results: cleanResults
         ? plainToInstance(PublicResultsDto, cleanResults)
         : undefined,

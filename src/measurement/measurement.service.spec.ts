@@ -56,6 +56,17 @@ describe('MeasurementService', () => {
       );
     });
 
+    it('should return a null latency for a row without one', async () => {
+      // latency is nullable: a test whose server sent no measurement has none.
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue([{ ...mockMeasurementModel[0], latency: null }]);
+
+      const [measurement] = await service.measurements(0, 5, 'timestamp');
+
+      expect(measurement.Latency).toBeNull();
+    });
+
     it('should lowercase the giga_id_school filter', async () => {
       // measurements.giga_id_school is always persisted lowercase, so the
       // filter has to be normalised or the usage page stays empty for clients
@@ -232,6 +243,16 @@ describe('MeasurementService', () => {
       );
     });
 
+    it('should return a null latency for a row without one', async () => {
+      jest
+        .spyOn(prisma.measurements, 'findMany')
+        .mockResolvedValue([{ ...mockMeasurementModel[0], latency: null }]);
+
+      const [measurement] = await service.measurementsV2(0, 5, 'timestamp');
+
+      expect(measurement.latency).toBeNull();
+    });
+
     it('should return measurements with timestamp filter', async () => {
       jest
         .spyOn(prisma.dailycheckapp_country, 'findFirst')
@@ -299,6 +320,18 @@ describe('MeasurementService', () => {
       expect(await service.measurementsFailed()).toMatchObject(
         mockMeasurementFailedDto,
       );
+    });
+
+    it('should return a null latency for a row without one', async () => {
+      jest
+        .spyOn(prisma.measurements_failed, 'findMany')
+        .mockResolvedValue([
+          { ...mockMeasurementFailedModel[0], latency: null },
+        ]);
+
+      const [measurement] = await service.measurementsFailed();
+
+      expect(measurement.Latency).toBeNull();
     });
 
     it('should handle empty result set', async () => {
@@ -442,17 +475,10 @@ describe('MeasurementService', () => {
 
       expect(response).toEqual('');
       expect(schoolSpy).toHaveBeenCalledWith({
-        where: {
-          giga_id_school: { equals: 'TZ-TEST-88001', mode: 'insensitive' },
-        },
+        where: { giga_id_school: 'tz-test-88001' },
       });
       expect(mappingSpy).toHaveBeenCalledWith({
-        where: {
-          giga_id_school_wrong: {
-            equals: 'TZ-TEST-88001',
-            mode: 'insensitive',
-          },
-        },
+        where: { giga_id_school_wrong: 'tz-test-88001' },
       });
     });
 
@@ -473,9 +499,7 @@ describe('MeasurementService', () => {
       });
 
       expect(schoolSpy).toHaveBeenCalledWith({
-        where: {
-          giga_id_school: { equals: 'tz-test-88001', mode: 'insensitive' },
-        },
+        where: { giga_id_school: 'tz-test-88001' },
       });
     });
 
@@ -560,7 +584,7 @@ describe('MeasurementService', () => {
       });
     });
 
-    it('should persist upload_failed and schedule context sent by the app', async () => {
+    it('should persist offline_synced and schedule context sent by the app', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
         .mockResolvedValue(mockSchoolModel[0]);
@@ -574,21 +598,21 @@ describe('MeasurementService', () => {
       const scheduledAt = new Date('2026-08-14T08:23:00.000Z');
       await service.createMeasurement({
         ...mockAddMeasurementDto[0],
-        upload_failed: true,
-        scheduled_slot: 'A',
+        offline_synced: true,
+        scheduled_slot: 'morning',
         scheduled_at: scheduledAt,
       });
 
       expect(createSpy).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          upload_failed: true,
-          scheduled_slot: 'A',
+          offline_synced: true,
+          scheduled_slot: 'morning',
           scheduled_at: scheduledAt,
         }),
       });
     });
 
-    it('should default upload_failed and schedule context when the app omits them', async () => {
+    it('should default offline_synced and schedule context when the app omits them', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
         .mockResolvedValue(mockSchoolModel[0]);
@@ -603,7 +627,7 @@ describe('MeasurementService', () => {
 
       expect(createSpy).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          upload_failed: false,
+          offline_synced: false,
           scheduled_slot: null,
           scheduled_at: null,
         }),

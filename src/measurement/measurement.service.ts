@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeGigaId } from '../utility/utility';
 import {
-  Prisma,
   measurements as Measurement,
   measurements_failed as MeasurementFailed,
 } from '@prisma/client';
@@ -17,6 +17,11 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import {
+  sanitizeDeviceContext,
+  sanitizeSsidSource,
+  sanitizeWifiUnavailableReason,
+} from '../common/device-context.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 
 @Injectable()
@@ -319,15 +324,9 @@ export class MeasurementService {
   private async processMeasurement(
     dto: AddMeasurementDto,
   ): Promise<string | null> {
-    // giga_id_school is lowercased whenever a device registers through the API
-    // (SchoolService.toModel), but rows also land in these tables through
-    // hand-written SQL, so the stored casing cannot be trusted. The client
-    // sends the id exactly as the schools master returned it, which for the
-    // Android test schools is uppercase ("TZ-TEST-88001"); an exact match then
-    // rejected every upload with SCHOOL_DOESNT_EXIST_ERR.
-    // A null/undefined id is passed through unchanged to keep the previous
-    // behaviour for measurements submitted without a giga_id_school.
-    const gigaIdFilter = this.caseInsensitiveGigaId(dto.giga_id_school);
+    // Stored giga ids are lowercase. A null/undefined id is passed through
+    // unchanged so a measurement submitted without one keeps the previous filter.
+    const gigaIdFilter = this.normalizedGigaId(dto.giga_id_school);
 
     const existingRecord = await this.prisma.dailycheckapp_school.findFirst({
       where: { giga_id_school: gigaIdFilter },
@@ -352,19 +351,17 @@ export class MeasurementService {
   }
 
   /**
-   * Builds a case-insensitive equality filter for a giga_id_school column.
-   *
    * Returns the value untouched when it is null/undefined so Prisma keeps
    * treating it the same way it did before (undefined drops the filter,
    * null matches NULL rows).
    */
-  private caseInsensitiveGigaId(
+  private normalizedGigaId(
     giga_id_school?: string,
-  ): Prisma.StringNullableFilter | string | null | undefined {
+  ): string | null | undefined {
     if (giga_id_school == null) {
       return giga_id_school;
     }
-    return { equals: giga_id_school.trim(), mode: 'insensitive' };
+    return normalizeGigaId(giga_id_school);
   }
 
   private applyFilter(
@@ -380,7 +377,7 @@ export class MeasurementService {
       // so normalising the incoming value keeps the lookup on the plain
       // b-tree index instead of falling back to an ILIKE scan of a table
       // that is orders of magnitude larger than dailycheckapp_school.
-      giga_id_school: giga_id_school?.toLowerCase().trim(),
+      giga_id_school: giga_id_school == null ? giga_id_school : normalizeGigaId(giga_id_school),
       country_code: {
         in: countries,
       },
@@ -468,7 +465,10 @@ export class MeasurementService {
       annotation: measurement.annotation,
       Download: measurement.download,
       Upload: measurement.upload,
-      Latency: parseInt(measurement.latency.toString()),
+      Latency:
+        measurement.latency == null
+          ? null
+          : parseInt(measurement.latency.toString()),
       Results: cleanResults
         ? plainToInstance(ResultsDto, cleanResults)
         : undefined,
@@ -498,7 +498,7 @@ export class MeasurementService {
       wifi_connections: measurement.wifi_connections
         ? JSON.parse(JSON.stringify(measurement.wifi_connections))
         : undefined,
-      upload_failed: measurement.upload_failed,
+      offline_synced: measurement.offline_synced,
       scheduled_slot: measurement.scheduled_slot,
       scheduled_at: measurement.scheduled_at,
       server_timestamp: measurement.server_timestamp,
@@ -506,7 +506,12 @@ export class MeasurementService {
       device_model: measurement.device_model,
       device_manufacturer: measurement.device_manufacturer,
       app_build_number: measurement.app_build_number,
-      sdk_version: measurement.sdk_version,
+      os_version: measurement.os_version,
+      wifi_unavailable_reason: measurement.wifi_unavailable_reason,
+      ssid_source: measurement.ssid_source,
+      device_context: measurement.device_context
+        ? JSON.parse(JSON.stringify(measurement.device_context))
+        : undefined,
       protocol: measurement.protocol,
       download_latency: measurement.download_latency ?? undefined,
       upload_latency: measurement.upload_latency ?? undefined,
@@ -562,7 +567,10 @@ export class MeasurementService {
       school_id: measurement.school_id,
       download: measurement.download,
       upload: measurement.upload,
-      latency: parseInt(measurement.latency.toString()),
+      latency:
+        measurement.latency == null
+          ? null
+          : parseInt(measurement.latency.toString()),
       giga_id_school: measurement.giga_id_school,
       country_code:
         measurement.source.toLowerCase() === 'mlab'
@@ -597,7 +605,10 @@ export class MeasurementService {
       annotation: measurement.annotation,
       Download: measurement.download,
       Upload: measurement.upload,
-      Latency: parseInt(measurement.latency.toString()),
+      Latency:
+        measurement.latency == null
+          ? null
+          : parseInt(measurement.latency.toString()),
       DataDownloaded: measurement.data_downloaded
         ? parseInt(measurement.data_downloaded.toString())
         : undefined,
@@ -643,7 +654,10 @@ export class MeasurementService {
       data_usage: measurement?.DataUsage,
       latency: measurement.Latency,
       results: measurement.Results,
-      giga_id_school: measurement.giga_id_school?.toLowerCase().trim(),
+      giga_id_school:
+        measurement.giga_id_school == null
+          ? measurement.giga_id_school
+          : normalizeGigaId(measurement.giga_id_school),
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
@@ -657,7 +671,7 @@ export class MeasurementService {
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections,
-      upload_failed: measurement.upload_failed ?? false,
+      offline_synced: measurement.offline_synced ?? false,
       scheduled_slot: measurement.scheduled_slot ?? null,
       scheduled_at: measurement.scheduled_at ?? null,
       server_timestamp: measurement.server_timestamp ?? null,
@@ -665,7 +679,14 @@ export class MeasurementService {
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
-      sdk_version: measurement.sdk_version ?? null,
+      os_version: measurement.os_version ?? null,
+      wifi_unavailable_reason: sanitizeWifiUnavailableReason(
+        measurement.wifi_unavailable_reason,
+      ),
+      ssid_source: sanitizeSsidSource(measurement.ssid_source),
+      device_context: sanitizeDeviceContext(
+        measurement.device_context,
+      ),
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
       upload_latency: measurement.upload_latency ?? null,
@@ -692,7 +713,10 @@ export class MeasurementService {
       upload: measurement.Upload,
       latency: measurement.Latency,
       results: measurement.Results,
-      giga_id_school: measurement.giga_id_school?.toLowerCase().trim(),
+      giga_id_school:
+        measurement.giga_id_school == null
+          ? measurement.giga_id_school
+          : normalizeGigaId(measurement.giga_id_school),
       country_code: measurement.country_code,
       ip_address: measurement.ip_address,
       app_version: measurement.app_version,
@@ -710,7 +734,14 @@ export class MeasurementService {
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,
       app_build_number: measurement.app_build_number ?? null,
-      sdk_version: measurement.sdk_version ?? null,
+      os_version: measurement.os_version ?? null,
+      wifi_unavailable_reason: sanitizeWifiUnavailableReason(
+        measurement.wifi_unavailable_reason,
+      ),
+      ssid_source: sanitizeSsidSource(measurement.ssid_source),
+      device_context: sanitizeDeviceContext(
+        measurement.device_context,
+      ),
     };
   }
 }

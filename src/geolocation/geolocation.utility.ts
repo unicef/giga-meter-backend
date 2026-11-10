@@ -1,4 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
+import { normalizeGigaId } from '../utility/utility';
 import { Injectable } from '@nestjs/common';
 
 /**
@@ -28,7 +29,7 @@ export class GeolocationUtility {
           ST_Y(geopoint::geometry) as latitude,
           ST_X(geopoint::geometry) as longitude
         FROM school 
-        WHERE giga_id_school = ${giga_id_school?.toLowerCase().trim()}
+        WHERE giga_id_school = ${normalizeGigaId(giga_id_school)}
         AND geopoint IS NOT NULL
         LIMIT 1
       `;
