@@ -752,7 +752,7 @@ export class MeasurementDto {
   @ApiProperty({
     required: false,
     description:
-      "M-Lab's own clock as reported by ndt7, independent of the device clock. Null when the client could not read it",
+      "M-Lab's clock when the test started, independent of the device clock. Read-only: derived from ConnectionInfo.StartTime in Results, never taken from the request. Null when the ndt7 server sent no measurement",
   })
   server_timestamp?: Date;
 

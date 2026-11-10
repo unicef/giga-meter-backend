@@ -634,7 +634,7 @@ describe('MeasurementService', () => {
       });
     });
 
-    it('should persist the server timestamp reported by ndt7', async () => {
+    it('should derive the server timestamp from the ndt7 results, ignoring the client value', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
         .mockResolvedValue(mockSchoolModel[0]);
@@ -645,20 +645,26 @@ describe('MeasurementService', () => {
         .spyOn(prisma.measurements, 'create')
         .mockResolvedValue(mockMeasurementModel[0]);
 
-      const serverTimestamp = new Date('2026-08-24T10:30:00.000Z');
       await service.createMeasurement({
         ...mockAddMeasurementDto[0],
-        server_timestamp: serverTimestamp,
+        Results: {
+          'NDTResult.S2C': {
+            LastServerMeasurement: {
+              ConnectionInfo: { StartTime: '2026-11-10T12:16:36.535855158Z' },
+            },
+          },
+        } as any,
+        server_timestamp: new Date('2001-01-01T00:00:00.000Z'),
       });
 
       expect(createSpy).toHaveBeenCalledWith({
         data: expect.objectContaining({
-          server_timestamp: serverTimestamp,
+          server_timestamp: new Date('2026-11-10T12:16:36.535Z'),
         }),
       });
     });
 
-    it('should store a null server timestamp when the app omits it', async () => {
+    it('should store a null server timestamp without an ndt7 server measurement', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
         .mockResolvedValue(mockSchoolModel[0]);
