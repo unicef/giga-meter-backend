@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { IpMetadataService } from './ip-metadata.service';
 import { IpMetadataController } from './ip-metadata.controller';
-import { PrismaService } from 'src/prisma/prisma.service';
 
 /**
  * Upper bound for each IPInfo / GeoJS call. axios waits forever by default, and
@@ -14,6 +13,6 @@ export const IP_METADATA_API_TIMEOUT_MS = 5_000;
 @Module({
   imports: [HttpModule.register({ timeout: IP_METADATA_API_TIMEOUT_MS })],
   controllers: [IpMetadataController],
-  providers: [IpMetadataService, PrismaService],
+  providers: [IpMetadataService],
 })
 export class IpMetadataModule {}

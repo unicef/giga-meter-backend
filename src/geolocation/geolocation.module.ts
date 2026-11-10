@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { GeolocationController } from './geolocation.controller';
 import { GeolocationUtility } from './geolocation.utility';
-import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationCircuit } from './geolocation.circuit';
+import { GeolocationCache, GEOLOCATION_REDIS } from './geolocation.cache';
 
 /**
  * Upper bound for each call this module makes to Google. axios waits forever by
@@ -16,7 +16,17 @@ export const GOOGLE_API_TIMEOUT_MS = 8_000;
 @Module({
   imports: [HttpModule.register({ timeout: GOOGLE_API_TIMEOUT_MS })],
   controllers: [GeolocationController],
-  providers: [GeolocationUtility, PrismaService, GeolocationCircuit],
+  providers: [
+    GeolocationUtility,
+    GeolocationCircuit,
+    GeolocationCache,
+    {
+      provide: GEOLOCATION_REDIS,
+      // The shared client connects when it is imported: load it only when the
+      // provider is built, so tests that replace it never open a connection.
+      useFactory: async () => (await import('../utils/redis.client')).default,
+    },
+  ],
   exports: [GeolocationUtility],
 })
 export class GeolocationModule {}

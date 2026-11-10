@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { of, throwError } from 'rxjs';
 import { GeolocationController } from './geolocation.controller';
+import { GeolocationCache } from './geolocation.cache';
 import { GeolocationCircuit } from './geolocation.circuit';
 import { AuthGuard } from '../auth/auth.guard';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
@@ -21,6 +22,7 @@ describe('GeolocationController', () => {
       controllers: [GeolocationController],
       providers: [
         GeolocationCircuit,
+        { provide: GeolocationCache, useValue: {} },
         {
           provide: HttpService,
           useValue: {
