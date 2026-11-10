@@ -749,6 +749,13 @@ export class MeasurementDto {
   })
   scheduled_at?: Date;
 
+  @ApiProperty({
+    required: false,
+    description:
+      "M-Lab's clock when the test started, independent of the device clock. Read-only: derived from ConnectionInfo.StartTime in Results, never taken from the request. Null when the ndt7 server sent no measurement",
+  })
+  server_timestamp?: Date;
+
   @ApiProperty({ required: false, description: 'Device name' })
   device_name?: string;
 

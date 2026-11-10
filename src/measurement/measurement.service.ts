@@ -23,6 +23,7 @@ import {
   sanitizeWifiUnavailableReason,
 } from '../common/device-context.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
+import { ndt7ServerStartTime } from './ndt7-server-time';
 
 @Injectable()
 export class MeasurementService {
@@ -501,6 +502,7 @@ export class MeasurementService {
       offline_synced: measurement.offline_synced,
       scheduled_slot: measurement.scheduled_slot,
       scheduled_at: measurement.scheduled_at,
+      server_timestamp: measurement.server_timestamp,
       device_name: measurement.device_name,
       device_model: measurement.device_model,
       device_manufacturer: measurement.device_manufacturer,
@@ -673,6 +675,8 @@ export class MeasurementService {
       offline_synced: measurement.offline_synced ?? false,
       scheduled_slot: measurement.scheduled_slot ?? null,
       scheduled_at: measurement.scheduled_at ?? null,
+      // Read from the ndt7 server's own messages, never from a client field.
+      server_timestamp: ndt7ServerStartTime(measurement.Results),
       device_name: measurement.device_name ?? null,
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,
