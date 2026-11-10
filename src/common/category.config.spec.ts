@@ -106,6 +106,15 @@ describe('GIGA_METER_APP category', () => {
       ['GET', '/api/v1/ip-metadata'],
       ['GET', '/api/v1/ip-metadata/203.0.113.7'],
       ['POST', '/api/v1/geolocation/geolocate'],
+      ['GET', '/api/v2/health'],
+      ['GET', '/api/v2/health/giga-id/hf-1'],
+      ['POST', '/api/v2/measurements'],
+      ['POST', '/api/v2/measurements/batch'],
+      ['POST', '/api/v2/connectivity'],
+      ['POST', '/api/v2/registration'],
+      ['GET', '/api/v2/registration/existing'],
+      ['GET', '/api/v2/registration/status'],
+      ['POST', '/api/v2/registration/deactivate'],
     ])('allows %s %s', async (method, path) => {
       expect(await canCall(method, path)).toBe(true);
     });
@@ -136,6 +145,9 @@ describe('GIGA_METER_APP category', () => {
       ['GET', '/api/v1/ping-aggregation/raw-ping-records'],
       ['GET', '/api/v1/category-config'],
       ['GET', '/api/v1/messages'],
+      ['GET', '/api/v2/measurements/facility'],
+      ['GET', '/api/v2/connectivity'],
+      ['POST', '/api/v1/registration'],
     ])('denies %s %s', async (method, path) => {
       expect(await canCall(method, path)).toBe(false);
     });

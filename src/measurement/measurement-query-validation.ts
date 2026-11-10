@@ -49,3 +49,37 @@ export function validateMeasurementListProtocol(protocol?: string): void {
     );
   }
 }
+
+export function validateGetMeasurementsParams(
+  orderBy?: string,
+  country_iso3_code?: string,
+  filterBy?: string,
+  filterCondition?: string,
+  filterValue?: Date,
+  write_access?: boolean,
+  countries_iso3?: string[],
+  protocol?: string,
+) {
+  validateMeasurementListOrderBy(orderBy);
+  validateMeasurementListFilterBy(filterBy);
+  validateMeasurementListProtocol(protocol);
+  if (filterBy && !filterCondition) {
+    throw new HttpException(
+      'Please provide a valid filterCondition with filterBy column ${filterBy}',
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+  if (filterBy && filterCondition && filterValue == null) {
+    throw new HttpException(
+      'No filterValue provided with filterBy and filterCondition values',
+      HttpStatus.BAD_REQUEST,
+    );
+  }
+  if (
+    !write_access &&
+    country_iso3_code &&
+    !countries_iso3?.includes(country_iso3_code)
+  ) {
+    throw new HttpException('not authorized to access', HttpStatus.BAD_REQUEST);
+  }
+}

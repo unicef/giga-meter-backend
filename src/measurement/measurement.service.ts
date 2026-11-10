@@ -1,14 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { normalizeGigaId } from '../utility/utility';
+import { normalizeGigaId, normalizeHealthId } from '../utility/utility';
+import { v1SchoolScope } from '../common/facility-scope';
 import {
   measurements as Measurement,
   measurements_failed as MeasurementFailed,
 } from '@prisma/client';
 import {
   AddMeasurementDto,
+  AddMeasurementV2Dto,
+  AddMeasurementFacilityV2Dto,
   ClientInfoDto,
   MeasurementDto,
+  MeasurementEntityV2Dto,
+  MeasurementFacilityV2Dto,
   MeasurementFailedDto,
   MeasurementV2Dto,
   ResultsDto,
@@ -23,12 +28,24 @@ import {
   sanitizeWifiUnavailableReason,
 } from '../common/device-context.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
+import { RegistrationService } from '../registration/registration.service';
+import { HealthService } from '../health/health.service';
+import { facilityGigaId } from '../facility-type/facility-ids';
+import { parseRegistrationId } from '../registration/registration-id';
+import { buildMeasurementV2Row } from './measurement-v2.mapper';
 
 @Injectable()
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService, private geolocationUtility: GeolocationUtility) {}
+  constructor(
+    private prisma: PrismaService,
+    private geolocationUtility: GeolocationUtility,
+    private facilityTypeService: FacilityTypeService,
+    private healthService: HealthService,
+    private registrationService: RegistrationService,
+  ) {}
 
   async measurements(
     skip?: number,
@@ -170,6 +187,7 @@ export class MeasurementService {
       where: {
         id,
         country_code: { in: countries },
+        AND: [v1SchoolScope()],
       },
     };
     if (write_access) {
@@ -191,6 +209,7 @@ export class MeasurementService {
       where: {
         school_id,
         country_code: { in: countries },
+        AND: [v1SchoolScope()],
       },
     };
     if (write_access) {
@@ -364,6 +383,326 @@ export class MeasurementService {
     return normalizeGigaId(giga_id_school);
   }
 
+  // ---------------------------------------------------------------------------
+  // V2 entity-aware methods
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /api/v1/measurements/v2
+   * Entity-aware measurement submission for health (and school) devices.
+   */
+  async createMeasurementV2(dto: AddMeasurementV2Dto): Promise<string> {
+    // 1. Validate: at least one entity ID must be present
+    if (!dto.giga_id_school && !dto.giga_id_health) {
+      throw new BadRequestException(
+        'At least one of giga_id_school or giga_id_health must be provided',
+      );
+    }
+
+    // 2. Resolve entity_type_id
+    const facilityType = await this.facilityTypeService.getByCode(dto.entity_type);
+    if (!facilityType) {
+      throw new BadRequestException(
+        `Unknown entity_type "${dto.entity_type}"`,
+      );
+    }
+
+    // 3. The id must match the facility type, and the facility must exist.
+    //    Schools also get the v1 wrong-id/country check.
+    const gigaId = facilityGigaId(facilityType.code, dto);
+    if (facilityType.code === 'health') {
+      const healthFacility = await this.healthService.findActiveById(gigaId);
+      if (!healthFacility) {
+        throw new BadRequestException(
+          `Health facility "${dto.giga_id_health}" not found`,
+        );
+      }
+    } else {
+      await this.assertSchoolForIngest(gigaId, dto.country_code);
+    }
+
+    // 4. If registration_id provided: verify it exists and is not blocked
+    // Typed as a number, but it arrives as JSON: a string, or '' from clients
+    // that have no registration yet.
+    const rawRegistrationId: unknown = dto.registration_id;
+    let registrationId: bigint | null =
+      rawRegistrationId != null && rawRegistrationId !== ''
+        ? parseRegistrationId(rawRegistrationId)
+        : null;
+    if (registrationId != null) {
+      const registration = await this.prisma.registration.findFirst({
+        where: { id: registrationId },
+      });
+      if (!registration) {
+        throw new BadRequestException(
+          `Registration "${dto.registration_id}" not found`,
+        );
+      }
+      if (registration.is_blocked) {
+        throw new BadRequestException(
+          `Registration "${dto.registration_id}" is blocked`,
+        );
+      }
+    } else {
+      // Self-heal for legacy installs that never stored a registration_id
+      // (v1 never returned one) and whose reconciliation call failed: resolve
+      // it — or lazily create it from a valid giga_id — instead of rejecting.
+      // Best-effort — an unresolved registration stays null.
+      registrationId = await this.registrationService.resolveForIngest({
+        installation_id: dto.installation_id,
+        device_hardware_id: dto.device_hardware_id,
+        giga_id_school: dto.giga_id_school,
+        giga_id_health: dto.giga_id_health,
+        browser_id: dto.BrowserID,
+        country_code: dto.country_code,
+      });
+    }
+
+    // 5. Resolve the detected-location verdict (school only — see below)
+    const detectedLocation = await this.resolveDetectedLocationV2(dto);
+
+    // 6. Write the measurement
+    await this.prisma.measurements.create({
+      data: buildMeasurementV2Row(dto, {
+        facilityTypeId: facilityType.id,
+        registrationId,
+        detectedLocation,
+      }),
+    });
+
+    return '';
+  }
+
+  /**
+   * Distance/accuracy/flag for a v2 measurement.
+   *
+   * Only resolvable for schools today: the geolocation utility looks the
+   * reference coordinates up from the school table. Health facilities carry
+   * lat/lng too, so this is where that support would slot in — until then a
+   * health measurement stores the reported coordinates with a null verdict
+   * rather than a misleading `is_flagged`.
+   */
+  private async resolveDetectedLocationV2(
+    dto: AddMeasurementV2Dto,
+  ): Promise<{
+    distance: number | null;
+    accuracy: number | null;
+    isFlagged: boolean | null;
+  } | null> {
+    const location = dto.geolocation?.location;
+    const accuracy = dto.geolocation?.accuracy;
+    if (!location || !accuracy || !dto.giga_id_school) {
+      return null;
+    }
+
+    try {
+      return await this.geolocationUtility.calculateDistanceAndSetFlag(
+        dto.giga_id_school,
+        location,
+        accuracy,
+      );
+    } catch (error) {
+      console.error('Error processing geolocation data (v2):', error);
+      return null;
+    }
+  }
+
+  /**
+   * v2 counterpart of the v1 checks in processMeasurement. The school must be
+   * in the school master (v2 installs register against it, not against
+   * dailycheckapp_school), and an id listed in giga_id_school_mapping_fix is
+   * rejected when the country does not match, as in v1.
+   */
+  private async assertSchoolForIngest(
+    gigaIdSchool: string,
+    countryCode?: string,
+  ): Promise<void> {
+    const school = await this.prisma.school.findFirst({
+      where: { giga_id_school: gigaIdSchool, deleted: null },
+      select: { id: true },
+    });
+    if (!school) {
+      throw new BadRequestException(this.SCHOOL_DOESNT_EXIST_ERR);
+    }
+
+    const mapping = await this.prisma.giga_id_school_mapping_fix.findFirst({
+      where: { giga_id_school_wrong: gigaIdSchool },
+    });
+    if (
+      mapping &&
+      mapping.correct_country?.toLowerCase() !== countryCode?.toLowerCase()
+    ) {
+      throw new BadRequestException(this.WRONG_COUNTRY_CODE_ERR);
+    }
+  }
+
+  /** POST /api/v2/measurements — facility-aware measurement submission */
+  async createMeasurementFacilityV2(
+    dto: AddMeasurementFacilityV2Dto,
+  ): Promise<string> {
+    return this.createMeasurementV2({
+      ...dto,
+      entity_type: dto.facility_type,
+    });
+  }
+
+
+  /** GET /api/v2/measurements/facility — facility-aware measurement list */
+  async measurementsV2Facility(
+    skip: number,
+    take: number,
+    order_by: string,
+    facility_type?: string,
+    giga_id_health?: string,
+    giga_id_school?: string,
+    country_iso3_code?: string,
+    filter_by?: string,
+    filter_condition?: string,
+    filter_value?: Date,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<MeasurementFacilityV2Dto[]> {
+    const rows = await this.measurementsV2Entity(
+      skip,
+      take,
+      order_by,
+      facility_type,
+      giga_id_health,
+      giga_id_school,
+      country_iso3_code,
+      filter_by,
+      filter_condition,
+      filter_value,
+      write_access,
+      countries,
+    );
+    return rows.map((row) => {
+      const { entity_type, ...rest } = row;
+      return { ...rest, facility_type: entity_type };
+    });
+  }
+
+  /**
+   * GET /api/v1/measurements/v2/entity
+   * Entity-aware measurement list — returns a plain array (no wrapper).
+   */
+  async measurementsV2Entity(
+    skip: number,
+    take: number,
+    order_by: string,
+    entity_type?: string,
+    giga_id_health?: string,
+    giga_id_school?: string,
+    country_iso3_code?: string,
+    filter_by?: string,
+    filter_condition?: string,
+    filter_value?: Date,
+    write_access?: boolean,
+    countries?: string[],
+  ): Promise<MeasurementEntityV2Dto[]> {
+    const filter: Record<string, any> = {};
+
+    // Country access filter. Same rule as the v1 lists: a key without write
+    // access sees only its countries, and none when it has none.
+    if (!write_access) {
+      filter.country_code = { in: countries ?? [] };
+    }
+
+    if (country_iso3_code) {
+      const dbCountry = await this.prisma.dailycheckapp_country.findFirst({
+        where: { code_iso3: country_iso3_code },
+      });
+      if (
+        !dbCountry?.code ||
+        (!write_access && !countries?.includes(dbCountry.code))
+      ) {
+        return [];
+      }
+      filter.country_code = { in: [dbCountry.code] };
+    }
+
+    if (giga_id_school) {
+      filter.giga_id_school = normalizeGigaId(giga_id_school);
+    }
+    if (giga_id_health) {
+      filter.giga_id_health = normalizeHealthId(giga_id_health);
+    }
+
+    // Resolve entity_type filter: string name → entity_type_id
+    if (entity_type) {
+      const ft = await this.facilityTypeService.getByCode(entity_type);
+      if (!ft) {
+        return [];
+      }
+      filter.facility_type_id = ft.id;
+    }
+
+    // Date filter
+    if (filter_by && filter_condition && filter_value != null) {
+      const parsedDate = new Date(filter_value);
+      const formattedDate = parsedDate.toISOString();
+      const hasTime =
+        parsedDate.getUTCHours() > 0 ||
+        parsedDate.getUTCMinutes() > 0 ||
+        parsedDate.getUTCSeconds() > 0 ||
+        parsedDate.getUTCMilliseconds() > 0;
+      const endOfDay = new Date(filter_value);
+      endOfDay.setUTCHours(23, 59, 59, 999);
+
+      switch (filter_condition) {
+        case 'lt': filter[filter_by] = { lt: hasTime ? formattedDate : parsedDate.toISOString() }; break;
+        case 'lte': filter[filter_by] = { lte: hasTime ? formattedDate : endOfDay.toISOString() }; break;
+        case 'gt': filter[filter_by] = { gt: hasTime ? formattedDate : endOfDay.toISOString() }; break;
+        case 'gte': filter[filter_by] = { gte: hasTime ? formattedDate : parsedDate.toISOString() }; break;
+        case 'eq':
+          filter[filter_by] = hasTime
+            ? { equals: formattedDate }
+            : { gte: parsedDate, lte: endOfDay };
+          break;
+      }
+    }
+
+    const orderField = order_by.replace('-', '');
+    const orderDir: 'asc' | 'desc' = order_by.startsWith('-') ? 'desc' : 'asc';
+
+    const rows = await this.prisma.measurements.findMany({
+      where: filter,
+      skip,
+      take,
+      orderBy: { [orderField]: orderDir },
+    });
+
+    return Promise.all(rows.map(async (m) => this.toEntityV2Dto(m)));
+  }
+
+  private async toEntityV2Dto(m: Measurement): Promise<MeasurementEntityV2Dto> {
+    // Resolve entity_type name (from cache — no extra DB round-trip)
+    let facilityTypeName = 'school';
+    if (m.facility_type_id != null) {
+      const ft = await this.facilityTypeService.getById(m.facility_type_id);
+      if (ft) facilityTypeName = ft.name;
+    }
+
+    return {
+      timestamp: m.timestamp,
+      browserId: m.browser_id,
+      download: m.download,
+      upload: m.upload,
+      latency: m.latency != null ? parseInt(m.latency.toString()) : null,
+      entity_type: facilityTypeName,
+      school_id: m.school_id ?? null,
+      giga_id_school: m.giga_id_school ?? null,
+      giga_id_health: m.giga_id_health ?? null,
+      registration_id: m.registration_id != null ? m.registration_id.toString() : null,
+      country_code: m.country_code,
+      ip_address: m.ip_address,
+      app_version: m.app_version,
+      source: m.source,
+      created_at: m.created_at,
+      device_hardware_id: m.device_hardware_id,
+    };
+  }
+
   private applyFilter(
     giga_id_school?: string,
     filter_by?: string,
@@ -381,6 +720,7 @@ export class MeasurementService {
       country_code: {
         in: countries,
       },
+      AND: [v1SchoolScope()],
     };
 
     if (!giga_id_school) {

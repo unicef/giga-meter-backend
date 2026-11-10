@@ -1,4 +1,6 @@
 import {
+  IsArray,
+  IsBoolean,
   IsNumber,
   IsObject,
   IsOptional,
@@ -920,6 +922,503 @@ export class MeasurementV2Dto {
 export class AddMeasurementDto extends MeasurementDto {
   @ApiProperty()
   school_id: string;
+}
+
+// ---------------------------------------------------------------------------
+// V2 entity-aware DTOs
+// ---------------------------------------------------------------------------
+
+/** Input for POST /api/v1/measurements/v2 */
+/**
+ * Telemetry and diagnostics shared by both v2 ingest DTOs.
+ *
+ * Split out so the entity- and facility-flavoured payloads cannot drift apart:
+ * every column the v2 write path persists beyond identity + core speed metrics
+ * is declared here exactly once.
+ */
+export class MeasurementV2TelemetryDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  DeviceType?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  Notes?: string;
+
+  @ApiProperty({ required: false, type: ClientInfoDto })
+  @IsOptional()
+  ClientInfo?: ClientInfoDto;
+
+  @ApiProperty({ required: false, type: ServerInfoDto })
+  @IsOptional()
+  ServerInfo?: ServerInfoDto;
+
+  @ApiProperty({ required: false, description: 'Raw speed-test result blob' })
+  @IsOptional()
+  Results?: ResultsDto | ResultsNdt7Dto | Record<string, any>;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  annotation?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Legacy casing accepted from the desktop client',
+  })
+  @IsOptional()
+  @IsString()
+  Annotation?: string;
+
+  @ApiProperty({ required: false, description: 'Bytes downloaded' })
+  @IsOptional()
+  @IsNumber()
+  DataDownloaded?: number;
+
+  @ApiProperty({ required: false, description: 'Bytes uploaded' })
+  @IsOptional()
+  @IsNumber()
+  DataUploaded?: number;
+
+  @ApiProperty({ required: false, description: 'Total bytes moved' })
+  @IsOptional()
+  @IsNumber()
+  DataUsage?: number;
+
+  @ApiProperty({
+    required: false,
+    enum: ['mlab', 'cloudflare'],
+    description:
+      'Measurement provider. Quality metrics below are derived from Results for cloudflare and stored as null for mlab.',
+  })
+  @IsOptional()
+  @IsString()
+  protocol?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  download_latency?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  upload_latency?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  download_jitter?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  upload_jitter?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  jitter?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  packet_loss?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  network_quality_score?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  detected_location_accuracy?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  detected_location_distance?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  detected_location_is_flagged?: boolean;
+
+  // Scheduling and device fields, same meaning as on POST /api/v1/measurements.
+
+  @ApiProperty({
+    required: false,
+    description:
+      'true = the record arrived via the offline sync queue instead of the realtime upload',
+  })
+  @IsOptional()
+  @IsBoolean()
+  offline_synced?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Planned slot: 'morning' | 'afternoon' | 'evening' | 'startup'; null for manual runs",
+  })
+  @IsOptional()
+  @IsString()
+  scheduled_slot?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Originally planned run time of the scheduled test',
+  })
+  @IsOptional()
+  scheduled_at?: Date;
+
+  @ApiProperty({ required: false, description: 'Device name' })
+  @IsOptional()
+  @IsString()
+  device_name?: string;
+
+  @ApiProperty({ required: false, description: 'Device model' })
+  @IsOptional()
+  @IsString()
+  device_model?: string;
+
+  @ApiProperty({ required: false, description: 'Device manufacturer' })
+  @IsOptional()
+  @IsString()
+  device_manufacturer?: string;
+
+  @ApiProperty({ required: false, description: 'Client app build number' })
+  @IsOptional()
+  @IsString()
+  app_build_number?: string;
+
+  @ApiProperty({ required: false, description: 'Operating system version' })
+  @IsOptional()
+  @IsString()
+  os_version?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Why wifi_connections came back empty: 'no_adapter' | 'wlan_service_off' | " +
+      "'location_disabled' | 'unknown'. Unknown values are stored as null",
+  })
+  @IsOptional()
+  wifi_unavailable_reason?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      "Where the reported SSID came from: 'wlan' or 'nlm'. Unknown values are stored as null",
+  })
+  @IsOptional()
+  ssid_source?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Network/system context captured next to the test. Keys outside the ' +
+      'allowed list are dropped on write, as on POST /api/v1/measurements',
+  })
+  @IsOptional()
+  device_context?: Record<string, any>;
+}
+
+export class AddMeasurementV2Dto extends MeasurementV2TelemetryDto {
+  @ApiProperty({ required: false, description: 'Giga ID of the school (required for school entity)' })
+  @IsOptional()
+  @IsString()
+  giga_id_school?: string;
+
+  @ApiProperty({ required: false, description: 'Platform installation ID' })
+  @IsOptional()
+  @IsString()
+  installation_id?: string;
+
+  @ApiProperty({ required: false, description: 'Legacy school_id (optional for school entity)' })
+  @IsOptional()
+  @IsString()
+  school_id?: string;
+
+  @ApiProperty({ required: false, description: 'Giga ID of the health facility (required for health entity)' })
+  @IsOptional()
+  @IsString()
+  giga_id_health?: string;
+
+  @ApiProperty({ enum: ['school', 'health'], description: 'Entity type submitting the measurement' })
+  @IsString()
+  entity_type: 'school' | 'health';
+
+  @ApiProperty({ required: false, description: 'Registration ID (BigInt — send as number)' })
+  @IsOptional()
+  registration_id?: number | bigint;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Timestamp?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Download?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Upload?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Latency?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  ip_address?: string;
+
+  @ApiProperty({ required: false, type: GeoLocationDto })
+  @IsOptional()
+  geolocation?: GeoLocationDto;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  BrowserID?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  UUID?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  wifi_connections?: any[];
+}
+
+/** Single row returned by GET /api/v1/measurements/v2/entity — plain array, no wrapper */
+export class MeasurementEntityV2Dto {
+  @ApiProperty()
+  timestamp?: Date;
+
+  @ApiProperty()
+  browserId?: string;
+
+  @ApiProperty()
+  download?: number;
+
+  @ApiProperty()
+  upload?: number;
+
+  @ApiProperty()
+  latency?: number;
+
+  @ApiProperty({ description: 'Resolved entity type name: "school" or "health"' })
+  entity_type: string;
+
+  @ApiProperty({ nullable: true })
+  school_id: string | null;
+
+  @ApiProperty({ nullable: true })
+  giga_id_school: string | null;
+
+  @ApiProperty({ nullable: true })
+  giga_id_health: string | null;
+
+  @ApiProperty({ nullable: true, description: 'Registration ID serialised as string (BigInt)' })
+  registration_id: string | null;
+
+  @ApiProperty({ required: false })
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  ip_address?: string;
+
+  @ApiProperty({ required: false })
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  source?: string;
+
+  @ApiProperty({ required: false })
+  created_at?: Date;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
+}
+
+// ---------------------------------------------------------------------------
+// V2 facility-aware DTOs (api/v2/measurements)
+// ---------------------------------------------------------------------------
+
+/** Input for POST /api/v2/measurements */
+export class AddMeasurementFacilityV2Dto extends MeasurementV2TelemetryDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  giga_id_school?: string;
+
+  @ApiProperty({ required: false, description: 'Platform installation ID' })
+  @IsOptional()
+  @IsString()
+  installation_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  school_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  giga_id_health?: string;
+
+  @ApiProperty({ enum: ['school', 'health'] })
+  @IsString()
+  facility_type: 'school' | 'health';
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  registration_id?: number | bigint;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Timestamp?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Download?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Upload?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  Latency?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  ip_address?: string;
+
+  @ApiProperty({ required: false, type: GeoLocationDto })
+  @IsOptional()
+  geolocation?: GeoLocationDto;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  BrowserID?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  UUID?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  device_hardware_id?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  windows_username?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  installed_path?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  wifi_connections?: any[];
+}
+
+/** Single row returned by GET /api/v2/measurements/facility */
+export class MeasurementFacilityV2Dto {
+  @ApiProperty()
+  timestamp?: Date;
+
+  @ApiProperty()
+  browserId?: string;
+
+  @ApiProperty()
+  download?: number;
+
+  @ApiProperty()
+  upload?: number;
+
+  @ApiProperty()
+  latency?: number;
+
+  @ApiProperty({ description: 'Resolved facility type name: "school" or "health"' })
+  facility_type: string;
+
+  @ApiProperty({ nullable: true })
+  school_id: string | null;
+
+  @ApiProperty({ nullable: true })
+  giga_id_school: string | null;
+
+  @ApiProperty({ nullable: true })
+  giga_id_health: string | null;
+
+  @ApiProperty({ nullable: true })
+  registration_id: string | null;
+
+  @ApiProperty({ required: false })
+  country_code?: string;
+
+  @ApiProperty({ required: false })
+  ip_address?: string;
+
+  @ApiProperty({ required: false })
+  app_version?: string;
+
+  @ApiProperty({ required: false })
+  source?: string;
+
+  @ApiProperty({ required: false })
+  created_at?: Date;
+
+  @ApiProperty({ required: false })
+  device_hardware_id?: string;
 }
 
 export class MeasurementFailedDto extends AddMeasurementDto {
