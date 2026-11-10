@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ConnectivityService } from './connectivity.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -128,6 +128,197 @@ describe('ConnectivityService', () => {
       await expect(
         service.createMany([record('a')], giga_id_school),
       ).rejects.toThrow(failure);
+    });
+
+    describe('without a school id', () => {
+      const browserId = record('a').browserId;
+
+      const deviceRegisteredTo = (...schools: (string | null)[]) =>
+        jest
+          .spyOn(prisma.dailycheckapp_school, 'findMany')
+          .mockResolvedValue(
+            schools.map((school) => ({ giga_id_school: school })) as any,
+          );
+
+      it.each(['undefined', 'null', '', ' Undefined '])(
+        'stores the batch under the school its device is registered to (%p)',
+        async (missingId) => {
+          schoolExists(true);
+          deviceRegisteredTo(giga_id_school);
+          jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+          const createMany = jest
+            .spyOn(prisma.connectivity_ping_checks, 'createMany')
+            .mockResolvedValue({ count: 2 });
+
+          const records = [record('a'), record('b')];
+          await expect(service.createMany(records, missingId)).resolves.toEqual(
+            records,
+          );
+
+          expect(prisma.dailycheckapp_school.findMany).toHaveBeenCalledWith({
+            where: { user_id: browserId },
+            select: { giga_id_school: true },
+          });
+          expect(createMany).toHaveBeenCalledWith({
+            data: [
+              expect.objectContaining({ app_local_uuid: 'a', giga_id_school }),
+              expect.objectContaining({ app_local_uuid: 'b', giga_id_school }),
+            ],
+            skipDuplicates: true,
+          });
+        },
+      );
+
+      const DAY = 24 * 60 * 60 * 1000;
+      const takenDaysAgo = (days: number) => (r: CreateConnectivityDto) => ({
+        ...r,
+        timestamp: new Date(Date.now() - days * DAY),
+      });
+      const recent = takenDaysAgo(1);
+      const old = takenDaysAgo(31);
+
+      it('rejects a recent batch whose device is not registered', async () => {
+        schoolExists(true);
+        deviceRegisteredTo();
+
+        await expect(
+          service.createMany([recent(record('a'))], 'undefined'),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+      });
+
+      it('rejects a recent batch whose device is registered to two schools', async () => {
+        schoolExists(true);
+        deviceRegisteredTo(giga_id_school, 'another-school');
+
+        await expect(
+          service.createMany([recent(record('a'))], 'undefined'),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+      });
+
+      it('rejects a recent batch from more than one device without looking them up', async () => {
+        schoolExists(true);
+        const findMany = deviceRegisteredTo(giga_id_school);
+        const other = { ...record('b'), browserId: 'another-device' };
+
+        await expect(
+          service.createMany([record('a'), other].map(recent), 'undefined'),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+        expect(findMany).not.toHaveBeenCalled();
+      });
+
+      it('rejects a recent batch with no browserId without looking it up', async () => {
+        schoolExists(true);
+        const findMany = deviceRegisteredTo(giga_id_school);
+
+        await expect(
+          service.createMany(
+            [recent({ ...record('a'), browserId: null })],
+            'undefined',
+          ),
+        ).rejects.toThrow(new BadRequestException('School does not exist'));
+        expect(findMany).not.toHaveBeenCalled();
+      });
+
+      it('rejects an empty batch', async () => {
+        schoolExists(true);
+
+        await expect(service.createMany([], 'undefined')).rejects.toThrow(
+          new BadRequestException('School does not exist'),
+        );
+      });
+
+      describe('older than the app keeps queued pings', () => {
+        let warn: jest.SpyInstance;
+        let createMany: jest.SpyInstance;
+
+        beforeEach(() => {
+          schoolExists(true);
+          warn = jest
+            .spyOn(Logger.prototype, 'warn')
+            .mockImplementation(() => undefined);
+          createMany = jest
+            .spyOn(prisma.connectivity_ping_checks, 'createMany')
+            .mockResolvedValue({ count: 0 });
+        });
+
+        it.each([
+          ['is not registered', [record('a')], []],
+          [
+            'is registered to two schools',
+            [record('a')],
+            [giga_id_school, 'x'],
+          ],
+          [
+            'cannot be told apart',
+            [record('a'), { ...record('b'), browserId: 'another-device' }],
+            [giga_id_school],
+          ],
+          ['has no browserId', [{ ...record('a'), browserId: null }], []],
+        ])(
+          'accepts and drops a batch whose device %s',
+          async (_, records, schools) => {
+            deviceRegisteredTo(...schools);
+            const batch = records.map(old);
+
+            await expect(
+              service.createMany(batch, 'undefined'),
+            ).resolves.toEqual(batch);
+
+            expect(createMany).not.toHaveBeenCalled();
+            expect(warn).toHaveBeenCalledWith(
+              expect.stringContaining(
+                `Dropped ${batch.length} connectivity checks`,
+              ),
+            );
+          },
+        );
+
+        it('still stores the batch when its device has one school', async () => {
+          deviceRegisteredTo(giga_id_school);
+
+          await service.createMany([old(record('a'))], 'undefined');
+
+          expect(createMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+              data: [expect.objectContaining({ giga_id_school })],
+            }),
+          );
+        });
+
+        it('rejects the batch if any ping is still within that time', async () => {
+          deviceRegisteredTo();
+
+          await expect(
+            service.createMany(
+              [old(record('a')), recent(record('b'))],
+              'undefined',
+            ),
+          ).rejects.toThrow(new BadRequestException('School does not exist'));
+        });
+
+        it('rejects the batch if any ping has no timestamp', async () => {
+          deviceRegisteredTo();
+
+          await expect(
+            service.createMany(
+              [old(record('a')), { ...record('b'), timestamp: null }],
+              'undefined',
+            ),
+          ).rejects.toThrow(new BadRequestException('School does not exist'));
+        });
+      });
+    });
+
+    it('rejects an unknown given school id without looking up the device, even for old pings', async () => {
+      schoolExists(false);
+      const findMany = jest.spyOn(prisma.dailycheckapp_school, 'findMany');
+
+      await expect(
+        service.createMany([record('a')], giga_id_school),
+      ).rejects.toThrow(new BadRequestException('School does not exist'));
+      expect(findMany).not.toHaveBeenCalled();
     });
   });
 

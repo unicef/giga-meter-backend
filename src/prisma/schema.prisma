@@ -77,8 +77,21 @@ model dailycheckapp_school {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  // Device ID (TECH-8828). device_hardware_id above holds the app's hardware ID:
+  // the firmware UUID, or on a PC without one the Windows install ID or PC serial.
+  baseboard_serial    String?   // motherboard serial
+  disk_serial         String?   // internal disk serial
+  machine_guid        String?   // Windows install ID, matched only when none of the three hardware values can be read
+  device_id           String?   // one physical PC across registrations, given by the server
+  device_id_flags     String[]  @default([])
   @@index([giga_id_school])
   @@index([giga_id_school, device_hardware_id])
+  @@index([device_hardware_id])
+  @@index([baseboard_serial])
+  @@index([disk_serial])
+  @@index([machine_guid])
+  @@index([device_id])
+  @@index([user_id])
 }
 
 model school {
@@ -737,6 +750,7 @@ model ConnectivityPingChecksDailyAggr {
   timestamp_date       DateTime
   giga_id_school       String
   browser_id           String?
+  device_id            String?
   is_connected_true    Int
   is_connected_all     Int
   uptime               Float

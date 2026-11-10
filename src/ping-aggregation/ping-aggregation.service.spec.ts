@@ -24,6 +24,9 @@ describe('PingAggregationService', () => {
       deleteMany: jest.fn(),
       createMany: jest.fn(),
     },
+    dailycheckapp_school: {
+      findMany: jest.fn(),
+    },
     $queryRaw: jest.fn(),
   };
 
@@ -42,6 +45,7 @@ describe('PingAggregationService', () => {
     prisma = module.get<PrismaService>(PrismaService);
     (redisClient.get as jest.Mock).mockResolvedValue(null);
     (redisClient.set as jest.Mock).mockResolvedValue('OK');
+    mockPrismaService.dailycheckapp_school.findMany.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -226,6 +230,7 @@ describe('PingAggregationService', () => {
             timestamp_date: targetDate,
             giga_id_school: 'school-1',
             browser_id: 'device-1',
+            device_id: null,
             is_connected_true: 80,
             is_connected_all: 100,
             uptime: 80,
@@ -250,6 +255,60 @@ describe('PingAggregationService', () => {
       expect(sql).toContain('giga_id_school IS NOT NULL');
       expect(sql).toContain("facility_type_id IS NULL OR facility_type_id IN (SELECT id FROM facility_type WHERE code = 'school')");
       expect(sql).toContain("COALESCE(browser_id, 'registration:' || registration_id::text)");
+    });
+
+    it("should carry each registration's device ID", async () => {
+      // Two Windows users registered the same PC: two browser_ids, one device.
+      const targetDate = new Date('2025-01-01T00:00:00.000Z');
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          giga_id_school: 'school-1',
+          device_id: 'browser-a',
+          isconnectedtruesum: 8,
+          isconnectedallsum: 10,
+          latencyavg: 50,
+        },
+        {
+          giga_id_school: 'school-1',
+          device_id: 'browser-b',
+          isconnectedtruesum: 5,
+          isconnectedallsum: 10,
+          latencyavg: 40,
+        },
+        {
+          giga_id_school: 'school-1',
+          device_id: 'browser-old',
+          isconnectedtruesum: 1,
+          isconnectedallsum: 1,
+          latencyavg: 30,
+        },
+      ]);
+      mockPrismaService.connectivityPingChecksDailyAggr.findMany.mockResolvedValue(
+        [],
+      );
+      mockPrismaService.dailycheckapp_school.findMany.mockResolvedValue([
+        { user_id: 'browser-a', device_id: 'pc-1' },
+        { user_id: 'browser-b', device_id: 'pc-1' },
+      ]);
+
+      await service.aggregateDailyPingData(targetDate);
+
+      expect(prisma.dailycheckapp_school.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            user_id: { in: ['browser-a', 'browser-b', 'browser-old'] },
+            device_id: { not: null },
+          },
+        }),
+      );
+      const rows = (
+        prisma.connectivityPingChecksDailyAggr.createMany as jest.Mock
+      ).mock.calls[0][0].data;
+      expect(rows.map((row) => [row.browser_id, row.device_id])).toEqual([
+        ['browser-a', 'pc-1'],
+        ['browser-b', 'pc-1'],
+        ['browser-old', null],
+      ]);
     });
 
     it('should delete existing data before inserting new data', async () => {
@@ -280,6 +339,31 @@ describe('PingAggregationService', () => {
           },
         },
       });
+    });
+
+    it('should keep the existing summary when the device ID lookup fails', async () => {
+      const targetDate = new Date('2025-01-01T00:00:00.000Z');
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          giga_id_school: 'school-1',
+          device_id: 'device-1',
+          isconnectedtruesum: 80,
+          isconnectedallsum: 100,
+          latencyavg: 50,
+        },
+      ]);
+      mockPrismaService.connectivityPingChecksDailyAggr.findMany.mockResolvedValue(
+        [{ id: 'existing-id' }],
+      );
+      mockPrismaService.dailycheckapp_school.findMany.mockRejectedValue(
+        new Error('connection lost'),
+      );
+
+      await service.aggregateDailyPingData(targetDate).catch(() => undefined);
+
+      expect(
+        prisma.connectivityPingChecksDailyAggr.deleteMany,
+      ).not.toHaveBeenCalled();
     });
 
     it('should handle aggregation for the previous day if no date is provided', async () => {

@@ -26,6 +26,35 @@ const isDuplicateRecord = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError &&
   error.code === UNIQUE_CONSTRAINT_VIOLATION;
 
+/**
+ * The app builds the upload URL from the school id it holds at upload time.
+ * Some start-up paths clear that id but keep the queue of pings not yet
+ * uploaded, so the queue arrives with the id as the text "undefined".
+ */
+const isMissingSchoolId = (giga_id_school?: string | null) =>
+  ['', 'undefined', 'null'].includes(
+    (giga_id_school ?? '').trim().toLowerCase(),
+  );
+
+/** How long the app keeps a queued ping before deleting it (cleanupOldRecords). */
+const APP_PING_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * The app only runs that cleanup after every batch uploads, and it uploads the
+ * oldest batch first and stops at the first failure. A batch we reject is
+ * therefore never cleaned up, and it blocks every newer ping on the device.
+ */
+const isPastAppRetention = (records: CreateConnectivityDto[] = []) => {
+  const cutoff = Date.now() - APP_PING_RETENTION_MS;
+  return (
+    records.length > 0 &&
+    records.every(
+      (record) =>
+        !!record.timestamp && new Date(record.timestamp).getTime() < cutoff,
+    )
+  );
+};
+
 @Injectable()
 export class ConnectivityService {
   private readonly logger = new Logger(ConnectivityService.name);
@@ -72,9 +101,27 @@ export class ConnectivityService {
     createConnectivityDto: CreateConnectivityDto[],
     giga_id_school: string,
   ) {
-    if ((await existSchool(this.prisma, giga_id_school)) === false)
+    const schoolId = isMissingSchoolId(giga_id_school)
+      ? await this.schoolOfDevice(createConnectivityDto)
+      : giga_id_school;
+    // Only reachable without a school id: a given id is used as it is.
+    if (!schoolId && isPastAppRetention(createConnectivityDto)) {
+      const browserIds = new Set(createConnectivityDto.map((r) => r.browserId));
+      this.logger.warn(
+        `Dropped ${createConnectivityDto.length} connectivity checks sent without a school id: ` +
+          `browserId ${[...browserIds].join(', ')} is not registered to one school, ` +
+          `and all are older than the app keeps them`,
+      );
+      return createConnectivityDto;
+    }
+    if (!schoolId || (await existSchool(this.prisma, schoolId)) === false)
       throw new BadRequestException('School does not exist');
-    const storedSchoolId = this.storedSchoolId(giga_id_school);
+    if (schoolId !== giga_id_school)
+      this.logger.warn(
+        `${createConnectivityDto.length} connectivity checks sent without a school id; ` +
+          `storing them under ${schoolId}, the school their browserId is registered to`,
+      );
+    const storedSchoolId = this.storedSchoolId(schoolId);
     try {
       await this.prisma.connectivity_ping_checks.createMany({
         data: createConnectivityDto.map((record) => ({
@@ -88,7 +135,7 @@ export class ConnectivityService {
       return createConnectivityDto;
     } catch (error) {
       this.logger.error(
-        `Failed to store connectivity checks for ${giga_id_school}`,
+        `Failed to store connectivity checks for ${schoolId}`,
         error,
       );
       throw error;
@@ -180,6 +227,32 @@ export class ConnectivityService {
     });
 
     return { success: true, accepted: result.count };
+  }
+
+  /**
+   * The school the batch's device is registered to. Each ping carries the
+   * device's registration id as browserId (the app's schoolUserId, stored as
+   * dailycheckapp_school.user_id). A logged-out registration still counts: the
+   * pings were taken before the logout. Null unless the whole batch comes from
+   * one device registered to exactly one school.
+   */
+  private async schoolOfDevice(
+    records: CreateConnectivityDto[] = [],
+  ): Promise<string | null> {
+    const browserIds = new Set(
+      records.map((record) => record.browserId?.trim()),
+    );
+    const [browserId] = browserIds;
+    if (browserIds.size !== 1 || !browserId) return null;
+
+    const registrations = await this.prisma.dailycheckapp_school.findMany({
+      where: { user_id: browserId },
+      select: { giga_id_school: true },
+    });
+    const schools = new Set(
+      registrations.map((r) => r.giga_id_school).filter(Boolean),
+    );
+    return schools.size === 1 ? [...schools][0] : null;
   }
 
   async findAll(query: GetConnectivityRecordsWithSchoolDto) {

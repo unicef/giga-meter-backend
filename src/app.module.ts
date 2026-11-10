@@ -9,6 +9,7 @@ import { FlaggedSchoolService } from './flagged-school/flagged-school.service';
 import { FlaggedSchoolController } from './flagged-school/flagged-school.controller';
 import { SchoolController } from './school/school.controller';
 import { SchoolService } from './school/school.service';
+import { DeviceIdService } from './school/device-id.service';
 import { CountryController } from './country/country.controller';
 import { CountryV2Controller } from './country/country.v2.controller';
 import { CountryService } from './country/country.service';
@@ -115,6 +116,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     MessagesService,
     FlaggedSchoolService,
     SchoolService,
+    DeviceIdService,
     SchoolMasterService,
     CountryService,
     MeasurementService,
