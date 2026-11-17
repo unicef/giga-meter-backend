@@ -320,6 +320,7 @@ model measurements {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  detected_location_resolved_at DateTime? @db.Timestamptz(6) // when the app worked out the detected location (geolocation.timestamp); device clock, so compare with timestamp, not created_at
   protocol                    String    @default("mlab") @db.VarChar(32)
   download_latency            Float?
   upload_latency              Float?
@@ -375,6 +376,7 @@ model measurements_failed {
   detected_location_accuracy  Float?    // Accuracy from geolocation API in meters
   detected_location_distance  Float?    // Distance between school location and detected location
   detected_location_is_flagged Boolean?  @default(false) // Flag if distance > X & accuracy > Y
+  detected_location_resolved_at DateTime? @db.Timestamptz(6) // when the app worked out the detected location (geolocation.timestamp); device clock, so compare with timestamp, not created_at
   device_name                 String?
   device_model                String?
   device_manufacturer         String?

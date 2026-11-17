@@ -679,6 +679,152 @@ describe('MeasurementService', () => {
         }),
       });
     });
+
+    describe('detected_location_resolved_at', () => {
+      const resolvedMs = Date.UTC(2026, 10, 17, 8, 30, 0);
+      const location = { lat: -25.9692, lng: 32.5732 };
+
+      const mockSchoolFound = () => {
+        jest
+          .spyOn(prisma.dailycheckapp_school, 'findFirst')
+          .mockResolvedValue(mockSchoolModel[0]);
+        jest
+          .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+          .mockResolvedValue(null);
+        return jest
+          .spyOn(prisma.measurements, 'create')
+          .mockResolvedValue(mockMeasurementModel[0]);
+      };
+
+      beforeEach(() => {
+        // The mocked distance calculation returns nothing, so the service
+        // logs and carries on; keep that out of the test output.
+        jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      });
+
+      afterEach(() => {
+        jest.restoreAllMocks();
+      });
+
+      it('stores the geolocation timestamp sent with a location', async () => {
+        const createSpy = mockSchoolFound();
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          geolocation: { location, accuracy: 25, timestamp: resolvedMs },
+        });
+
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            detected_latitude: location.lat,
+            detected_longitude: location.lng,
+            detected_location_resolved_at: new Date(resolvedMs),
+          }),
+        });
+      });
+
+      it('stores it even when there is no accuracy to work out the distance', async () => {
+        const createSpy = mockSchoolFound();
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          geolocation: { location, timestamp: resolvedMs },
+        });
+
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            detected_location_resolved_at: new Date(resolvedMs),
+          }),
+        });
+      });
+
+      it('stores null when geolocation is null', async () => {
+        const createSpy = mockSchoolFound();
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          geolocation: null,
+        });
+
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            detected_location_resolved_at: null,
+          }),
+        });
+      });
+
+      it('stores null when geolocation has no location', async () => {
+        const createSpy = mockSchoolFound();
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          geolocation: { timestamp: resolvedMs },
+        });
+
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            detected_latitude: null,
+            detected_location_resolved_at: null,
+          }),
+        });
+      });
+
+      it('stores null for a bad timestamp and still saves the measurement', async () => {
+        const createSpy = mockSchoolFound();
+
+        const response = await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          geolocation: {
+            location,
+            accuracy: 25,
+            timestamp: 'not a time' as unknown as number,
+          },
+        });
+
+        expect(response).toEqual('');
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            detected_latitude: location.lat,
+            detected_location_resolved_at: null,
+          }),
+        });
+      });
+
+      it('stores it on a failed measurement too', async () => {
+        jest
+          .spyOn(prisma.dailycheckapp_school, 'findFirst')
+          .mockResolvedValue(null);
+        const failedSpy = jest
+          .spyOn(prisma.measurements_failed, 'create')
+          .mockResolvedValue(mockMeasurementFailedModel[0]);
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          geolocation: { location, accuracy: 25, timestamp: resolvedMs },
+        });
+
+        expect(failedSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            detected_location_resolved_at: new Date(resolvedMs),
+          }),
+        });
+      });
+
+      it('returns it when reading a measurement', async () => {
+        jest.spyOn(prisma.measurements, 'findMany').mockResolvedValue([
+          {
+            ...mockMeasurementModel[0],
+            detected_location_resolved_at: new Date(resolvedMs),
+          },
+        ]);
+
+        const [measurement] = await service.measurementsById(1, true);
+
+        expect(measurement.detected_location_resolved_at).toEqual(
+          new Date(resolvedMs),
+        );
+      });
+    });
   });
   describe('createMultipleMeasurement', () => {
     it('should create multiple measurements', async () => {

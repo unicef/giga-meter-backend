@@ -782,6 +782,13 @@ export class PublicMeasurementDto {
     description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'When the device worked out the detected location (device clock; compare with Timestamp, not created_at)',
+  })
+  detected_location_resolved_at?: Date;
   @ApiProperty({ required: false })
   device_hardware_id?: string;
 
