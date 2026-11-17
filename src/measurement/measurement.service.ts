@@ -23,6 +23,7 @@ import {
   sanitizeWifiUnavailableReason,
 } from '../common/device-context.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
+import { detectedLocationResolvedAt } from '../common/geolocation-timestamp.utils';
 
 @Injectable()
 export class MeasurementService {
@@ -493,6 +494,7 @@ export class MeasurementService {
       detected_location_distance: measurement.detected_location_distance,
       detected_location_accuracy: measurement.detected_location_accuracy,
       detected_location_is_flagged: measurement.detected_location_is_flagged,
+      detected_location_resolved_at: measurement.detected_location_resolved_at,
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections
@@ -666,6 +668,9 @@ export class MeasurementService {
       detected_location_accuracy: measurement.detected_location_accuracy ?? null,
       detected_location_distance: measurement.detected_location_distance ?? null,
       detected_location_is_flagged: measurement.detected_location_is_flagged ?? null,
+      detected_location_resolved_at: detectedLocationResolvedAt(
+        measurement.geolocation,
+      ),
       device_hardware_id: sanitizeHardwareId(measurement.device_hardware_id),
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
@@ -728,6 +733,9 @@ export class MeasurementService {
         measurement.detected_location_distance || null,
       detected_location_is_flagged:
         measurement.detected_location_is_flagged || false,
+      detected_location_resolved_at: detectedLocationResolvedAt(
+        measurement.geolocation,
+      ),
       device_name: measurement.device_name ?? null,
       device_model: measurement.device_model ?? null,
       device_manufacturer: measurement.device_manufacturer ?? null,

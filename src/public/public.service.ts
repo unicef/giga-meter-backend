@@ -283,6 +283,7 @@ export class PublicService {
       detected_location_distance: measurement.detected_location_distance,
       detected_location_accuracy: measurement.detected_location_accuracy,
       detected_location_is_flagged: measurement.detected_location_is_flagged,
+      detected_location_resolved_at: measurement.detected_location_resolved_at,
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
       wifi_connections: measurement.wifi_connections

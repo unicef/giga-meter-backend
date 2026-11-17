@@ -276,6 +276,14 @@ export class GeoLocationDto {
     example: 741820.5619146812,
   })
   accuracy?: number;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'When the device worked out this location, in Unix epoch milliseconds from the device clock. Unchanged when the app re-sends a saved location after a failed lookup.',
+    example: 1763380800000,
+  })
+  timestamp?: number;
 }
 
 export class ASNDto {
@@ -717,6 +725,13 @@ export class MeasurementDto {
     description: 'Flag if distance > X & accuracy > Y',
   })
   detected_location_is_flagged?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'When the device worked out the detected location (device clock; compare with Timestamp, not created_at)',
+  })
+  detected_location_resolved_at?: Date;
   @ApiProperty({ required: false })
   device_hardware_id?: string;
 
