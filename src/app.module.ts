@@ -19,6 +19,7 @@ import { MeasurementV2Controller } from './measurement/measurement.v2.controller
 import { MeasurementService } from './measurement/measurement.service';
 import { SchoolMasterController } from './school-master/school-master.controller';
 import { SchoolMasterService } from './school-master/school-master.service';
+import { FeatureFlagV2Controller } from './school-master/feature-flag.v2.controller';
 import { DataFixController } from './data-fix/data-fix.controller';
 import { PrometheusModule } from '@willsoto/nestjs-prometheus';
 import { MetricsController } from './metrics/metrics.controller';
@@ -85,6 +86,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     FlaggedSchoolController,
     SchoolController,
     SchoolMasterController,
+    FeatureFlagV2Controller,
     CountryController,
     CountryV2Controller,
     MeasurementController,

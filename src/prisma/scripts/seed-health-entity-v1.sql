@@ -42,11 +42,11 @@ ON CONFLICT (code) DO NOTHING;
 -- ============================================================
 -- 1.  country — FK required by health, school, and whitelist
 -- ============================================================
-INSERT INTO country (code, name, iso3_format, is_active)
+INSERT INTO country (code, name, iso3_format)
 VALUES
-  ('KE', 'Kenya',        'KEN', true),
-  ('UZ', 'Uzbekistan',   'UZB', true),
-  ('ZA', 'South Africa', 'ZAF', true)
+  ('KE', 'Kenya',        'KEN'),
+  ('UZ', 'Uzbekistan',   'UZB'),
+  ('ZA', 'South Africa', 'ZAF')
 ON CONFLICT (code) DO NOTHING;
 
 -- ============================================================
@@ -193,8 +193,7 @@ INSERT INTO school (
   geopoint,
   created,
   modified,
-  deleted,
-  is_active
+  deleted
 ) VALUES (
   -- ── KE school ───────────────────────────────────────────────
   -- Used in: POST /api/v1/registration (school request body)
@@ -210,8 +209,7 @@ INSERT INTO school (
   ST_SetSRID(ST_MakePoint(36.8220, -1.2919), 4326)::geography,
   NOW(),
   NOW(),
-  NULL,
-  true
+  NULL
 )
 ON CONFLICT (id) DO NOTHING;
 

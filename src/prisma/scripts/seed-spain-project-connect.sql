@@ -58,12 +58,11 @@ ON CONFLICT (code) DO NOTHING;
 -- ============================================================
 -- 1.  country (ES) — FK target for whitelist / school / health
 -- ============================================================
-INSERT INTO country (name, code, iso3_format, is_active)
-VALUES ('Spain', 'ES', 'ESP', true)
+INSERT INTO country (name, code, iso3_format)
+VALUES ('Spain', 'ES', 'ESP')
 ON CONFLICT (code) DO UPDATE
 SET name        = EXCLUDED.name,
-    iso3_format = EXCLUDED.iso3_format,
-    is_active   = true;
+    iso3_format = EXCLUDED.iso3_format;
 
 -- ============================================================
 -- 2.  dailycheckapp_country (ES) — backs the country dropdown
@@ -95,14 +94,14 @@ ON CONFLICT (country_code, facility_type_id) DO NOTHING;
 -- ============================================================
 -- 4.  school — Spain test school (SCHOOL flow)
 -- ============================================================
--- Looked up by external_id (case-insensitive) + country_code + is_active
+-- Looked up by external_id (case-insensitive) + country_code
 -- + deleted IS NULL. geopoint is PostGIS geography(Point,4326):
 -- ST_MakePoint(longitude, latitude) — argument order matters.
 INSERT INTO school (
   id, external_id, giga_id_school, name,
   country_id, country_code, address,
   admin_1_name, education_level,
-  geopoint, is_active, created, modified, deleted
+  geopoint, created, modified, deleted
 ) VALUES (
   900001,
   'ES-TEST-SCHOOL-01',
@@ -111,7 +110,7 @@ INSERT INTO school (
   216, 'ES', 'Calle de Prueba 1, Madrid',
   'Madrid', 'Primary',
   ST_SetSRID(ST_MakePoint(-3.7038, 40.4168), 4326)::geography,
-  true, NOW(), NOW(), NULL
+  NOW(), NOW(), NULL
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -164,7 +163,7 @@ COMMIT;
 -- Verification — quick sanity check after seed
 -- ============================================================
 SELECT 'country (ES)'                 AS "check", COUNT(*)::int AS rows
-  FROM country WHERE code = 'ES' AND is_active
+  FROM country WHERE code = 'ES'
 UNION ALL
 SELECT 'dailycheckapp_country (ES)',  COUNT(*)::int
   FROM dailycheckapp_country WHERE code = 'ES'
@@ -177,7 +176,7 @@ SELECT 'whitelist ES (both flows)',   COUNT(*)::int
 UNION ALL
 SELECT 'school ES-TEST-SCHOOL-01',    COUNT(*)::int
   FROM school WHERE external_id = 'ES-TEST-SCHOOL-01' AND country_code = 'ES'
-             AND is_active AND deleted IS NULL
+             AND deleted IS NULL
 UNION ALL
 SELECT 'health ES-TEST-HEALTH-01',    COUNT(*)::int
   FROM health WHERE dhis2_id = 'ES-TEST-HEALTH-01' AND country_code = 'ES'

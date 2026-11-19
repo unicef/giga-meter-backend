@@ -38,6 +38,7 @@ Endpoints added for the multi-facility desktop client:
 | `POST` | `/api/v2/measurements/batch` | Auth. Array body, same record shape as the single POST. Tolerant: per-record errors reported in `data.errors`, valid records still stored. |
 | `POST` | `/api/v2/connectivity` | Auth. Body `{ registration_id?, facility_type, giga_id_school?/giga_id_health?, installation_id?, records: [...] }`. `app_local_uuid` duplicates skipped (idempotent retries). |
 | `GET` | `/api/v2/countries` | Public, cached. `[ { country_code, name, supported_facility_types } ]` — whitelist-driven; enabling a facility type per country needs no deploy. |
+| `GET` | `/api/v2/feature-flags?installation_id=` | Public. Flat `{ flagKey: boolean }`. A school install gets the same flags as `GET /api/v1/schools/features_flags/{giga_id_school}`; any other install, or one not registered yet, gets the defaults (`pingService: true`). |
 
 **Ingest self-heal:** `POST /api/v2/measurements` (single and batch) and
 `POST /api/v2/connectivity` resolve the registration server-side via the same
