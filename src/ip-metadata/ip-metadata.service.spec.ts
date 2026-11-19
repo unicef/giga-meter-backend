@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HttpService } from '@nestjs/axios';
 import { of, throwError } from 'rxjs';
+import { register } from 'prom-client';
 import { PrismaService } from '../prisma/prisma.service';
 import { IpMetadataService } from 'src/ip-metadata/ip-metadata.service';
+import { IpInfoRefreshBudget } from './ip-metadata.refresh-budget';
 
 describe('IpMetadataService', () => {
   let service: IpMetadataService;
@@ -14,6 +16,7 @@ describe('IpMetadataService', () => {
       update: jest.Mock;
     };
   };
+  let refreshBudget: { tryTake: jest.Mock };
 
   // What gets stored when the response has no ISP, company or privacy details.
   const noDetails = {
@@ -41,11 +44,14 @@ describe('IpMetadataService', () => {
         update: jest.fn(),
       },
     };
+    // Budget left unless a test says otherwise.
+    refreshBudget = { tryTake: jest.fn().mockResolvedValue(true) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         IpMetadataService,
         { provide: HttpService, useValue: { get: jest.fn() } },
         { provide: PrismaService, useValue: prismaMock },
+        { provide: IpInfoRefreshBudget, useValue: refreshBudget },
       ],
     }).compile();
 
@@ -376,6 +382,79 @@ describe('IpMetadataService', () => {
       expect(result).not.toHaveProperty('source');
       expect(result).not.toHaveProperty('created_at');
       expect(result).not.toHaveProperty('updated_at');
+      expect(refreshBudget.tryTake).toHaveBeenCalledTimes(1);
+    });
+
+    it("should serve the saved record without calling IPInfo once the hour's refresh budget is used up", async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(cachedRecord(31));
+      refreshBudget.tryTake.mockResolvedValue(false);
+
+      const result = await service.getIpInfo('1.2.3.4');
+
+      expect(httpService.get).not.toHaveBeenCalled();
+      expect(prismaMock.ipMetadata.upsert).not.toHaveBeenCalled();
+      // Not a failed refresh: it may try again on the next lookup.
+      expect(prismaMock.ipMetadata.update).not.toHaveBeenCalled();
+      expect(result.city).toBe('Old City');
+      expect(result).not.toHaveProperty('updated_at');
+      expect(result).not.toHaveProperty('retry_after');
+    });
+
+    it('should not use the refresh budget for an IP it has never seen', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(null);
+      refreshBudget.tryTake.mockResolvedValue(false);
+      (httpService.get as jest.Mock).mockReturnValue(of(freshApiResponse));
+      prismaMock.ipMetadata.upsert.mockResolvedValue({
+        ...cachedRecord(0),
+        ...freshData,
+      });
+
+      const result = await service.getIpInfo('1.2.3.4');
+
+      expect(refreshBudget.tryTake).not.toHaveBeenCalled();
+      expect(httpService.get).toHaveBeenCalledTimes(1);
+      expect(result.city).toBe('New City');
+    });
+
+    it('should not use the refresh budget for a record that is still fresh', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(cachedRecord(29));
+
+      await service.getIpInfo('1.2.3.4');
+
+      expect(refreshBudget.tryTake).not.toHaveBeenCalled();
+    });
+
+    it('should count IPInfo calls by reason and outcome', async () => {
+      const count = async (reason: string, outcome: string) => {
+        const metric = await register
+          .getSingleMetric('ip_metadata_ipinfo_requests_total')
+          .get();
+        return (
+          metric.values.find(
+            (v) => v.labels.reason === reason && v.labels.outcome === outcome,
+          )?.value ?? 0
+        );
+      };
+      const newOkBefore = await count('new', 'ok');
+      const refreshFailedBefore = await count('refresh', 'failed');
+
+      // An IP never seen, answered by IPInfo.
+      prismaMock.ipMetadata.findUnique.mockResolvedValueOnce(null);
+      (httpService.get as jest.Mock).mockReturnValueOnce(of(freshApiResponse));
+      prismaMock.ipMetadata.upsert.mockResolvedValueOnce({ ...freshData });
+      await service.getIpInfo('1.2.3.4');
+
+      // A saved record past its age, IPInfo unreachable (GeoJS fails too).
+      prismaMock.ipMetadata.findUnique
+        .mockResolvedValueOnce(cachedRecord(45))
+        .mockResolvedValueOnce(null);
+      (httpService.get as jest.Mock).mockImplementation(() =>
+        throwError(() => new Error('down')),
+      );
+      await service.getIpInfo('1.2.3.4');
+
+      expect((await count('new', 'ok')) - newOkBefore).toBe(1);
+      expect((await count('refresh', 'failed')) - refreshFailedBefore).toBe(1);
     });
 
     it('should read the maximum age from IPINFO_CACHE_MAX_AGE_DAYS', async () => {

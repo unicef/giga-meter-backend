@@ -4,6 +4,18 @@ import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { Counter, register } from 'prom-client';
+import { IpInfoRefreshBudget } from './ip-metadata.refresh-budget';
+
+const ipInfoRequests: Counter<'reason' | 'outcome'> =
+  (register.getSingleMetric(
+    'ip_metadata_ipinfo_requests_total',
+  ) as Counter<'reason' | 'outcome'>) ??
+  new Counter({
+    name: 'ip_metadata_ipinfo_requests_total',
+    help: 'Calls to IPInfo by reason (new: IP never seen, refresh: saved record past its age) and outcome (ok, failed)',
+    labelNames: ['reason', 'outcome'],
+  });
 
 // Stored for our own analysis, never returned to the app.
 export interface IpMetadataDetails {
@@ -73,16 +85,27 @@ export class IpMetadataService {
   constructor(
     private readonly httpService: HttpService,
     private readonly prisma: PrismaService,
+    private readonly refreshBudget: IpInfoRefreshBudget,
   ) {}
 
-  private async fetchIpInfoFromAPI(ip: string): Promise<IpMetadata> {
+  private async fetchIpInfoFromAPI(
+    ip: string,
+    reason: 'new' | 'refresh' = 'new',
+  ): Promise<IpMetadata> {
     const ipInfoToken = process.env.IPINFO_TOKEN;
     try {
-      const response = await firstValueFrom(
-        this.httpService.get(
-          `https://ipinfo.io/${ip}/json?token=${ipInfoToken}`,
-        ),
-      );
+      let response;
+      try {
+        response = await firstValueFrom(
+          this.httpService.get(
+            `https://ipinfo.io/${ip}/json?token=${ipInfoToken}`,
+          ),
+        );
+      } catch (error) {
+        ipInfoRequests.inc({ reason, outcome: 'failed' });
+        throw error;
+      }
+      ipInfoRequests.inc({ reason, outcome: 'ok' });
       const { data } = response;
       const { asn, org } = data;
 
@@ -212,7 +235,14 @@ export class IpMetadataService {
       return this.toResponse(cached);
     }
 
-    const ipData = await this.fetchIpInfoFromAPI(ip);
+    // A saved record past its age is refreshed only while this hour's budget
+    // lasts, so refreshes are spread out instead of using up the IPInfo quota.
+    // Otherwise it is served as it is and refreshed on a later lookup.
+    if (cached && !(await this.refreshBudget.tryTake())) {
+      return this.toResponse(cached);
+    }
+
+    const ipData = await this.fetchIpInfoFromAPI(ip, cached ? 'refresh' : 'new');
     console.log('IP Data:', ipData);
 
     // IPInfo could not be reached: a stale IPInfo record beats GeoJS or an error.
