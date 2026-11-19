@@ -500,6 +500,48 @@ model connectivity_ping_checks {
 }
 
 model IpMetadata {
+  id           Int       @id @default(autoincrement())
+  ip           String
+  hostname     String?
+  city         String?
+  region       String?
+  country      String?
+  loc          String?
+  org          String?
+  postal       String?
+  timezone     String?
+  asn          String?
+  source       String?
+  // Details from IPInfo for our own analysis; never returned to the app.
+  asn_name     String? // the network's name, without the "AS1234" prefix
+  asn_type     String? // isp | hosting | business | education
+  asn_route    String? // the network block the IP belongs to, e.g. "203.0.113.0/24"
+  company_name String?
+  company_type String?
+  is_vpn       Boolean?
+  is_proxy     Boolean?
+  is_tor       Boolean?
+  is_relay     Boolean?
+  is_hosting   Boolean?
+  // The full response from the source (IPInfo or GeoJS), for fields without a column.
+  raw          Json?
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  // Last successful fetch. Set by the service rather than @updatedAt, so that
+  // recording a failed refresh in retry_after doesn't make the record look fresh.
+  updated_at   DateTime  @default(now()) @db.Timestamptz(6)
+  retry_after  DateTime? @db.Timestamptz(6)
+  // When the IP was last looked up, written at most once a day; empty for rows
+  // copied from the old table. Not returned to the app.
+  last_seen_at DateTime? @db.Timestamptz(6)
+
+  @@unique([ip, source])
+  @@map("ip_metadata")
+}
+
+// The previous IP cache, kept as a backup and no longer read by the code.
+// Listed here so that a future `prisma migrate dev` doesn't generate a DROP for
+// it; @@ignore leaves it out of the Prisma client.
+model IpMetadataOld {
   id       Int     @id @default(autoincrement())
   ip       String
   hostname String?
@@ -514,6 +556,8 @@ model IpMetadata {
   source   String?
 
   @@unique([ip, source])
+  @@map("IpMetadata")
+  @@ignore
 }
 
 model Users {
