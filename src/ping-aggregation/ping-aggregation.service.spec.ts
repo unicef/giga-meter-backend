@@ -11,6 +11,8 @@ jest.mock('src/utils/redis.client', () => ({
   },
 }));
 
+import { Prisma } from '@prisma/client';
+
 describe('PingAggregationService', () => {
   let service: PingAggregationService;
   let prisma: PrismaService;
@@ -232,6 +234,22 @@ describe('PingAggregationService', () => {
         ],
         skipDuplicates: true,
       });
+    });
+
+    it('aggregates school pings only, keyed by registration when there is no browser id', async () => {
+      mockPrismaService.$queryRaw.mockResolvedValue([]);
+
+      await service.aggregateDailyPingData(new Date('2025-01-01T00:00:00.000Z'));
+
+      const sql = Prisma.join(
+        [mockPrismaService.$queryRaw.mock.calls[0][0]].map(
+          (strings: TemplateStringsArray) =>
+            Prisma.sql(strings, ...mockPrismaService.$queryRaw.mock.calls[0].slice(1)),
+        ),
+      ).sql;
+      expect(sql).toContain('giga_id_school IS NOT NULL');
+      expect(sql).toContain("facility_type_id IS NULL OR facility_type_id IN (SELECT id FROM facility_type WHERE code = 'school')");
+      expect(sql).toContain("COALESCE(browser_id, 'registration:' || registration_id::text)");
     });
 
     it('should delete existing data before inserting new data', async () => {

@@ -8,6 +8,9 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { CategoryConfigProvider } from '../common/category-config.provider';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
+import { HealthService } from '../health/health.service';
+import { RegistrationService } from '../registration/registration.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import {
   mockAddMeasurementDto,
@@ -46,6 +49,12 @@ describe('MeasurementController', () => {
         MeasurementService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: GeolocationUtility, useValue: mockGeolocationUtility },
+        { provide: FacilityTypeService, useValue: { getByCode: jest.fn() } },
+        { provide: HealthService, useValue: { findActiveById: jest.fn() } },
+        {
+          provide: RegistrationService,
+          useValue: { resolveForIngest: jest.fn() },
+        },
         {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager,

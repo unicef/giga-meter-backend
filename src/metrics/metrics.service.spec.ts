@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MetricsService } from './metrics.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { mockMetricsDto } from '../common/mock-objects';
+import { Prisma } from '@prisma/client';
+import { v1SchoolScope } from '../common/facility-scope';
 
 describe('MetricsService', () => {
   let service: MetricsService;
@@ -35,6 +37,25 @@ describe('MetricsService', () => {
     //   const metrics = await service.get();
     //   expect(metrics).toEqual(mockMetricsDto);
     // });
+
+    it('counts countries and measurements from school rows only', async () => {
+      const queryRawMock = jest.fn().mockResolvedValue([{ count: BigInt(2) }]);
+      prisma.$queryRaw = queryRawMock;
+      prisma.dailycheckapp_school.groupBy = jest.fn().mockResolvedValue([]);
+      const countMock = jest.fn().mockResolvedValue(5);
+      prisma.measurements.count = countMock;
+
+      await service.get();
+
+      const [strings, ...values] = queryRawMock.mock.calls[0];
+      const sql = Prisma.sql(strings, ...values).sql;
+      expect(sql).toContain(
+        "facility_type_id IS NULL OR facility_type_id IN (SELECT id FROM facility_type WHERE code = 'school')",
+      );
+      expect(countMock.mock.calls[0][0].where).toEqual(
+        expect.objectContaining({ AND: [v1SchoolScope()] }),
+      );
+    });
 
     it('should handle database error for country', async () => {
       // Mock the raw query for countries
