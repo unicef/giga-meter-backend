@@ -522,6 +522,28 @@ model IpMetadata {
   @@map("ip_metadata")
 }
 
+// The previous IP cache, kept as a backup and no longer read by the code.
+// Listed here so that a future `prisma migrate dev` doesn't generate a DROP for
+// it; @@ignore leaves it out of the Prisma client.
+model IpMetadataOld {
+  id       Int     @id @default(autoincrement())
+  ip       String
+  hostname String?
+  city     String?
+  region   String?
+  country  String?
+  loc      String?
+  org      String?
+  postal   String?
+  timezone String?
+  asn      String?
+  source   String?
+
+  @@unique([ip, source])
+  @@map("IpMetadata")
+  @@ignore
+}
+
 model Users {
   id            Int       @id @default(autoincrement())
   first_name    String?
