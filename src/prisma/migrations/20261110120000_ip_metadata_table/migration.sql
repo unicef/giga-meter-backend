@@ -2,6 +2,10 @@
 -- tracks when each record was fetched. The new table starts empty: every IP is
 -- fetched from IPInfo again on its first lookup after the deploy.
 --
+-- Besides the fields the app gets back, it keeps the ISP, company and privacy
+-- details IPInfo returns (VPN, proxy, Tor, relay, hosting) and the full
+-- response in "raw". These are for our own analysis and are not sent to the app.
+--
 -- The old "IpMetadata" table is kept, untouched, as a backup. The code no
 -- longer reads it, and instances still running the previous version keep
 -- working while the deploy rolls out. Drop it in a later cleanup.
@@ -20,6 +24,17 @@ CREATE TABLE "ip_metadata" (
     "timezone" TEXT,
     "asn" TEXT,
     "source" TEXT,
+    "asn_name" TEXT,
+    "asn_type" TEXT,
+    "asn_route" TEXT,
+    "company_name" TEXT,
+    "company_type" TEXT,
+    "is_vpn" BOOLEAN,
+    "is_proxy" BOOLEAN,
+    "is_tor" BOOLEAN,
+    "is_relay" BOOLEAN,
+    "is_hosting" BOOLEAN,
+    "raw" JSONB,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "retry_after" TIMESTAMPTZ(6),

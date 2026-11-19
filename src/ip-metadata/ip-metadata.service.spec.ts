@@ -15,6 +15,20 @@ describe('IpMetadataService', () => {
     };
   };
 
+  // What gets stored when the response has no ISP, company or privacy details.
+  const noDetails = {
+    asn_name: null,
+    asn_type: null,
+    asn_route: null,
+    company_name: null,
+    company_type: null,
+    is_vpn: null,
+    is_proxy: null,
+    is_tor: null,
+    is_relay: null,
+    is_hosting: null,
+  };
+
   beforeAll(() => {
     process.env.IPINFO_TOKEN = 'test-token';
   });
@@ -92,8 +106,8 @@ describe('IpMetadataService', () => {
     };
     (httpService.get as jest.Mock).mockReturnValue(of(apiResponse));
 
-    // this is exactly what the service will pass into prisma.upsert
-    const expectedCreateData = {
+    // what the app gets back
+    const expectedResponse = {
       ip: '1.2.3.4',
       city: 'City',
       region: 'Region',
@@ -103,8 +117,14 @@ describe('IpMetadataService', () => {
       postal: '12345',
       timezone: 'Zone/Here',
       asn: 'AS99999',
-      source: 'ipinfo',
       hostname: undefined,
+    };
+    // this is exactly what the service will pass into prisma.upsert
+    const expectedCreateData = {
+      ...expectedResponse,
+      source: 'ipinfo',
+      ...noDetails,
+      raw: apiResponse.data,
       updated_at: expect.any(Date),
       retry_after: null,
     };
@@ -119,16 +139,12 @@ describe('IpMetadataService', () => {
     expect(httpService.get).toHaveBeenCalledWith(
       `https://ipinfo.io/1.2.3.4/json?token=${process.env.IPINFO_TOKEN}`,
     );
-    console.log('expectedCreateData', expectedCreateData);
     expect(prismaMock.ipMetadata.upsert).toHaveBeenCalledWith({
       where: { ip_source: { ip: '1.2.3.4', source: 'ipinfo' } },
       create: expectedCreateData,
       update: expectedCreateData,
     });
-    delete expectedCreateData.source; // remove source for comparison
-    delete expectedCreateData.updated_at;
-    delete expectedCreateData.retry_after;
-    expect(result).toEqual(expectedCreateData);
+    expect(result).toEqual(expectedResponse);
   });
 
   it('should fetch from primary API and parse ASN from org if asn.asn is missing', async () => {
@@ -149,7 +165,7 @@ describe('IpMetadataService', () => {
     };
     (httpService.get as jest.Mock).mockReturnValue(of(apiResponse));
 
-    const expectedCreateData = {
+    const expectedResponse = {
       ip: '5.6.7.8',
       city: 'Other City',
       region: 'Other Region',
@@ -160,7 +176,12 @@ describe('IpMetadataService', () => {
       timezone: 'Other/Zone',
       asn: 'AS123',
       hostname: undefined,
+    };
+    const expectedCreateData = {
+      ...expectedResponse,
       source: 'ipinfo',
+      ...noDetails,
+      raw: apiResponse.data,
       updated_at: expect.any(Date),
       retry_after: null,
     };
@@ -180,37 +201,31 @@ describe('IpMetadataService', () => {
       update: expectedCreateData,
     });
     expect(result.asn).toBe('AS123');
-    delete expectedCreateData.source; // remove source for comparison
-    delete expectedCreateData.updated_at;
-    delete expectedCreateData.retry_after;
-    expect(result).toEqual(expectedCreateData);
+    expect(result).toEqual(expectedResponse);
   });
 
   it('should fall back to GeoJS API when primary API fails', async () => {
     prismaMock.ipMetadata.findUnique.mockResolvedValue(null);
 
+    const geoJsData = {
+      ip: '9.10.11.12',
+      city: 'Fallback City',
+      region: 'Fallback Region',
+      country_code: 'FB',
+      latitude: 12.34,
+      longitude: 56.78,
+      organization_name: 'Fallback Org',
+      organization: 'AS00000 Fallback Org',
+      area_code: '00000',
+      timezone: 'Fallback/Zone',
+    };
     // primary call fails
     (httpService.get as jest.Mock)
       .mockImplementationOnce(() => throwError(() => new Error('fail')))
       // fallback succeeds
-      .mockReturnValueOnce(
-        of({
-          data: {
-            ip: '9.10.11.12',
-            city: 'Fallback City',
-            region: 'Fallback Region',
-            country_code: 'FB',
-            latitude: 12.34,
-            longitude: 56.78,
-            organization_name: 'Fallback Org',
-            organization: 'AS00000 Fallback Org',
-            area_code: '00000',
-            timezone: 'Fallback/Zone',
-          },
-        }),
-      );
+      .mockReturnValueOnce(of({ data: geoJsData }));
 
-    const expectedCreateData = {
+    const expectedResponse = {
       ip: '9.10.11.12',
       city: 'Fallback City',
       region: 'Fallback Region',
@@ -221,7 +236,12 @@ describe('IpMetadataService', () => {
       timezone: 'Fallback/Zone',
       asn: 'AS00000',
       hostname: '',
+    };
+    const expectedCreateData = {
+      ...expectedResponse,
       source: 'geojs',
+      ...noDetails,
+      raw: geoJsData,
       updated_at: expect.any(Date),
       retry_after: null,
     };
@@ -243,10 +263,7 @@ describe('IpMetadataService', () => {
       create: expectedCreateData,
       update: expectedCreateData,
     });
-    delete expectedCreateData.source; // remove source for comparison
-    delete expectedCreateData.updated_at;
-    delete expectedCreateData.retry_after;
-    expect(result).toEqual(expectedCreateData);
+    expect(result).toEqual(expectedResponse);
   });
 
   it('fetchIpInfoFromAPI should return an error‐object when both APIs fail', async () => {
@@ -321,6 +338,8 @@ describe('IpMetadataService', () => {
       asn: 'AS22222',
       hostname: undefined,
       source: 'ipinfo',
+      ...noDetails,
+      raw: freshApiResponse.data,
       updated_at: expect.any(Date),
       retry_after: null,
     };
@@ -455,6 +474,146 @@ describe('IpMetadataService', () => {
         update: freshData,
       });
       expect(result.city).toBe('New City');
+    });
+  });
+
+  describe('ISP, company and privacy details', () => {
+    // The shape IPInfo returns on plans with these sections (example values).
+    const fullApiData = {
+      ip: '203.0.113.17',
+      hostname: '17.example-isp.net',
+      city: 'Test City',
+      region: 'Test Region',
+      country: 'TC',
+      loc: '10.0000,20.0000',
+      org: 'AS64500 EXAMPLE TELECOM S.A.',
+      postal: '00000',
+      timezone: 'Test/Zone',
+      asn: {
+        asn: 'AS64500',
+        name: 'EXAMPLE TELECOM S.A.',
+        domain: 'example.net',
+        route: '203.0.113.0/24',
+        type: 'isp',
+      },
+      company: {
+        name: 'Example Telecom SA',
+        domain: 'example.net',
+        type: 'isp',
+      },
+      privacy: {
+        vpn: true,
+        proxy: false,
+        tor: false,
+        relay: false,
+        hosting: false,
+        service: 'Example VPN',
+      },
+      abuse: {
+        address: 'Example Street 1',
+        country: 'TC',
+        email: 'abuse@example.net',
+        name: 'Example Abuse Team',
+        network: '203.0.112.0/22',
+        phone: '',
+      },
+      domains: { page: 0, total: 0, domains: [] },
+    };
+
+    // Exactly the fields the app got before these details were stored.
+    const appResponse = {
+      id: 1,
+      ip: '203.0.113.17',
+      hostname: '17.example-isp.net',
+      city: 'Test City',
+      region: 'Test Region',
+      country: 'TC',
+      loc: '10.0000,20.0000',
+      org: 'AS64500 EXAMPLE TELECOM S.A.',
+      postal: '00000',
+      timezone: 'Test/Zone',
+      asn: 'AS64500',
+    };
+
+    const details = {
+      asn_name: 'EXAMPLE TELECOM S.A.',
+      asn_type: 'isp',
+      asn_route: '203.0.113.0/24',
+      company_name: 'Example Telecom SA',
+      company_type: 'isp',
+      is_vpn: true,
+      is_proxy: false,
+      is_tor: false,
+      is_relay: false,
+      is_hosting: false,
+    };
+
+    it('should store the details and the full response', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(null);
+      (httpService.get as jest.Mock).mockReturnValue(of({ data: fullApiData }));
+      prismaMock.ipMetadata.upsert.mockImplementation(async ({ create }) => ({
+        id: 1,
+        ...create,
+        created_at: new Date(),
+      }));
+
+      await service.getIpInfo('203.0.113.17');
+
+      const stored = prismaMock.ipMetadata.upsert.mock.calls[0][0].create;
+      expect(stored).toMatchObject(details);
+      expect(stored.raw).toEqual(fullApiData);
+      expect(prismaMock.ipMetadata.upsert.mock.calls[0][0].update).toEqual(
+        stored,
+      );
+    });
+
+    it('should not send the details to the app', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(null);
+      (httpService.get as jest.Mock).mockReturnValue(of({ data: fullApiData }));
+      prismaMock.ipMetadata.upsert.mockImplementation(async ({ create }) => ({
+        id: 1,
+        ...create,
+        created_at: new Date(),
+      }));
+
+      const result = await service.getIpInfo('203.0.113.17');
+
+      expect(result).toEqual(appResponse);
+    });
+
+    it('should not send the details of a cached record to the app', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue({
+        ...appResponse,
+        source: 'ipinfo',
+        ...details,
+        raw: fullApiData,
+        created_at: new Date(),
+        updated_at: new Date(),
+        retry_after: null,
+      });
+
+      const result = await service.getIpInfo('203.0.113.17');
+
+      expect(httpService.get).not.toHaveBeenCalled();
+      expect(result).toEqual(appResponse);
+    });
+
+    it('should store no details when they come back in an unexpected shape', async () => {
+      prismaMock.ipMetadata.findUnique.mockResolvedValue(null);
+      const oddData = {
+        ...fullApiData,
+        asn: 'AS64500',
+        company: 'Example Telecom SA',
+        privacy: { vpn: 'true', hosting: 1 },
+      };
+      (httpService.get as jest.Mock).mockReturnValue(of({ data: oddData }));
+      prismaMock.ipMetadata.upsert.mockResolvedValue({ id: 1 });
+
+      await service.getIpInfo('203.0.113.17');
+
+      const stored = prismaMock.ipMetadata.upsert.mock.calls[0][0].create;
+      expect(stored).toMatchObject({ ...noDetails, asn: 'AS64500' });
+      expect(stored.raw).toEqual(oddData);
     });
   });
 });

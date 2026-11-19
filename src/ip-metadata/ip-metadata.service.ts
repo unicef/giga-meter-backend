@@ -3,8 +3,47 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
-export interface IpMetadata {
+// Stored for our own analysis, never returned to the app.
+export interface IpMetadataDetails {
+  asn_name?: string | null;
+  asn_type?: string | null;
+  asn_route?: string | null;
+  company_name?: string | null;
+  company_type?: string | null;
+  is_vpn?: boolean | null;
+  is_proxy?: boolean | null;
+  is_tor?: boolean | null;
+  is_relay?: boolean | null;
+  is_hosting?: boolean | null;
+  raw?: Prisma.JsonValue | null;
+}
+
+const DETAIL_FIELDS: (keyof IpMetadataDetails)[] = [
+  'asn_name',
+  'asn_type',
+  'asn_route',
+  'company_name',
+  'company_type',
+  'is_vpn',
+  'is_proxy',
+  'is_tor',
+  'is_relay',
+  'is_hosting',
+  'raw',
+];
+
+const textOrNull = (value: unknown): string | null =>
+  typeof value === 'string' && value !== '' ? value : null;
+const flagOrNull = (value: unknown): boolean | null =>
+  typeof value === 'boolean' ? value : null;
+const objectOrEmpty = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+export interface IpMetadata extends IpMetadataDetails {
   ip?: string;
   city?: string;
   region?: string;
@@ -57,9 +96,25 @@ export class IpMetadataService {
         asnValue = match ? match[0] : '';
       }
 
+      // On plans that return them: ISP, company and privacy (VPN, proxy, ...) details.
+      const asnDetails = objectOrEmpty(asn);
+      const company = objectOrEmpty(data.company);
+      const privacy = objectOrEmpty(data.privacy);
+
       return {
         ...data,
         asn: asnValue,
+        asn_name: textOrNull(asnDetails.name),
+        asn_type: textOrNull(asnDetails.type),
+        asn_route: textOrNull(asnDetails.route),
+        company_name: textOrNull(company.name),
+        company_type: textOrNull(company.type),
+        is_vpn: flagOrNull(privacy.vpn),
+        is_proxy: flagOrNull(privacy.proxy),
+        is_tor: flagOrNull(privacy.tor),
+        is_relay: flagOrNull(privacy.relay),
+        is_hosting: flagOrNull(privacy.hosting),
+        raw: data,
         source: 'ipinfo',
         new: true, // Indicating this is a new record
       };
@@ -119,6 +174,7 @@ export class IpMetadataService {
         typeof response?.data?.organization === 'string'
           ? response.data.organization.match(/^(AS\d+)/)?.[1] ?? ''
           : '',
+      raw: response?.data ?? null,
       source: 'geojs',
       new: true, // Indicating this is a new record
     };
@@ -133,13 +189,17 @@ export class IpMetadataService {
     return Date.now() - record.updated_at.getTime() > maxAgeDays * DAY_MS;
   }
 
-  // Keep the response shape the clients already know: no source, no timestamps.
+  // Keep the response shape the clients already know: no source, no timestamps,
+  // none of the stored details.
   private toResponse(record: IpMetadata): IpMetadata {
     const response = { ...record };
     delete response.source;
     delete response.created_at;
     delete response.updated_at;
     delete response.retry_after;
+    for (const field of DETAIL_FIELDS) {
+      delete response[field];
+    }
     return response;
   }
 
@@ -180,6 +240,20 @@ export class IpMetadataService {
       asn: ipData.asn,
       hostname: ipData.hostname,
       source: ipData.source,
+      asn_name: ipData.asn_name ?? null,
+      asn_type: ipData.asn_type ?? null,
+      asn_route: ipData.asn_route ?? null,
+      company_name: ipData.company_name ?? null,
+      company_type: ipData.company_type ?? null,
+      is_vpn: ipData.is_vpn ?? null,
+      is_proxy: ipData.is_proxy ?? null,
+      is_tor: ipData.is_tor ?? null,
+      is_relay: ipData.is_relay ?? null,
+      is_hosting: ipData.is_hosting ?? null,
+      raw:
+        ipData.raw == null
+          ? Prisma.DbNull
+          : (ipData.raw as Prisma.InputJsonValue),
       updated_at: new Date(),
       retry_after: null,
     };
