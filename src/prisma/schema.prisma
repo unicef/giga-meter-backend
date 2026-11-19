@@ -530,6 +530,9 @@ model IpMetadata {
   // recording a failed refresh in retry_after doesn't make the record look fresh.
   updated_at   DateTime  @default(now()) @db.Timestamptz(6)
   retry_after  DateTime? @db.Timestamptz(6)
+  // When the IP was last looked up, written at most once a day; empty for rows
+  // copied from the old table. Not returned to the app.
+  last_seen_at DateTime? @db.Timestamptz(6)
 
   @@unique([ip, source])
   @@map("ip_metadata")

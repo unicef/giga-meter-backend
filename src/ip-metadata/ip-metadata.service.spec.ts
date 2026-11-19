@@ -133,6 +133,7 @@ describe('IpMetadataService', () => {
       raw: apiResponse.data,
       updated_at: expect.any(Date),
       retry_after: null,
+      last_seen_at: expect.any(Date),
     };
     prismaMock.ipMetadata.upsert.mockResolvedValue({ ...expectedCreateData });
 
@@ -190,6 +191,7 @@ describe('IpMetadataService', () => {
       raw: apiResponse.data,
       updated_at: expect.any(Date),
       retry_after: null,
+      last_seen_at: expect.any(Date),
     };
     prismaMock.ipMetadata.upsert.mockResolvedValue({ ...expectedCreateData });
 
@@ -250,6 +252,7 @@ describe('IpMetadataService', () => {
       raw: geoJsData,
       updated_at: expect.any(Date),
       retry_after: null,
+      last_seen_at: expect.any(Date),
     };
     prismaMock.ipMetadata.upsert.mockResolvedValue({ ...expectedCreateData });
 
@@ -316,6 +319,7 @@ describe('IpMetadataService', () => {
       created_at: daysAgo(400),
       updated_at: daysAgo(updatedDaysAgo),
       retry_after: retryAfter,
+      last_seen_at: new Date(),
     });
 
     const freshApiResponse = {
@@ -348,6 +352,7 @@ describe('IpMetadataService', () => {
       raw: freshApiResponse.data,
       updated_at: expect.any(Date),
       retry_after: null,
+      last_seen_at: expect.any(Date),
     };
 
     it('should keep using a record younger than the default 30 days', async () => {
@@ -457,6 +462,104 @@ describe('IpMetadataService', () => {
       expect((await count('refresh', 'failed')) - refreshFailedBefore).toBe(1);
     });
 
+    describe('recording when an IP was last seen', () => {
+      const seenUpdate = (id: number) => ({
+        where: { id },
+        data: { last_seen_at: expect.any(Date) },
+      });
+
+      it('should record a saved IP as seen when it was last seen over a day ago', async () => {
+        prismaMock.ipMetadata.findUnique.mockResolvedValue({
+          ...cachedRecord(1),
+          last_seen_at: daysAgo(2),
+        });
+
+        const result = await service.getIpInfo('1.2.3.4');
+
+        expect(prismaMock.ipMetadata.update).toHaveBeenCalledTimes(1);
+        expect(prismaMock.ipMetadata.update).toHaveBeenCalledWith(
+          seenUpdate(7),
+        );
+        expect(result.city).toBe('Old City');
+        expect(result).not.toHaveProperty('last_seen_at');
+      });
+
+      it('should not write again when the IP was already seen in the last day', async () => {
+        prismaMock.ipMetadata.findUnique.mockResolvedValue({
+          ...cachedRecord(1),
+          last_seen_at: new Date(Date.now() - DAY_MS / 24),
+        });
+
+        await service.getIpInfo('1.2.3.4');
+
+        expect(prismaMock.ipMetadata.update).not.toHaveBeenCalled();
+      });
+
+      it('should record a row copied from the old table, which has no last_seen_at yet', async () => {
+        prismaMock.ipMetadata.findUnique.mockResolvedValue({
+          ...cachedRecord(1),
+          last_seen_at: null,
+        });
+
+        await service.getIpInfo('1.2.3.4');
+
+        expect(prismaMock.ipMetadata.update).toHaveBeenCalledWith(
+          seenUpdate(7),
+        );
+      });
+
+      it("should record a stale record as seen when the hour's refresh budget is used up", async () => {
+        prismaMock.ipMetadata.findUnique.mockResolvedValue({
+          ...cachedRecord(31),
+          last_seen_at: daysAgo(3),
+        });
+        refreshBudget.tryTake.mockResolvedValue(false);
+
+        await service.getIpInfo('1.2.3.4');
+
+        expect(httpService.get).not.toHaveBeenCalled();
+        expect(prismaMock.ipMetadata.update).toHaveBeenCalledWith(
+          seenUpdate(7),
+        );
+      });
+
+      it('should record a saved GeoJS record as seen when it answers', async () => {
+        prismaMock.ipMetadata.findUnique
+          .mockResolvedValueOnce(null) // no IPInfo record
+          .mockResolvedValueOnce({
+            ...cachedRecord(1),
+            id: 9,
+            source: 'geojs',
+            city: 'GeoJS City',
+            last_seen_at: daysAgo(5),
+          });
+        (httpService.get as jest.Mock).mockImplementation(() =>
+          throwError(() => new Error('IPInfo down')),
+        );
+
+        const result = await service.getIpInfo('1.2.3.4');
+
+        expect(prismaMock.ipMetadata.update).toHaveBeenCalledWith(
+          seenUpdate(9),
+        );
+        expect(result.city).toBe('GeoJS City');
+        expect(result).not.toHaveProperty('last_seen_at');
+      });
+
+      it('should still answer when recording the lookup fails', async () => {
+        jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+        prismaMock.ipMetadata.findUnique.mockResolvedValue({
+          ...cachedRecord(1),
+          last_seen_at: daysAgo(2),
+        });
+        prismaMock.ipMetadata.update.mockRejectedValue(new Error('db busy'));
+
+        const result = await service.getIpInfo('1.2.3.4');
+
+        expect(result.city).toBe('Old City');
+      });
+    });
+
     it('should read the maximum age from IPINFO_CACHE_MAX_AGE_DAYS', async () => {
       process.env.IPINFO_CACHE_MAX_AGE_DAYS = '7';
       prismaMock.ipMetadata.findUnique.mockResolvedValue(cachedRecord(8));
@@ -495,7 +598,10 @@ describe('IpMetadataService', () => {
       expect(prismaMock.ipMetadata.upsert).not.toHaveBeenCalled();
       expect(prismaMock.ipMetadata.update).toHaveBeenCalledWith({
         where: { ip_source: { ip: '1.2.3.4', source: 'ipinfo' } },
-        data: { retry_after: expect.any(Date) },
+        data: {
+          retry_after: expect.any(Date),
+          last_seen_at: expect.any(Date),
+        },
       });
       const retryAfter: Date =
         prismaMock.ipMetadata.update.mock.calls[0][0].data.retry_after;

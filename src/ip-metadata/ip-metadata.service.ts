@@ -56,6 +56,7 @@ const objectOrEmpty = (value: unknown): Record<string, unknown> =>
     : {};
 
 export interface IpMetadata extends IpMetadataDetails {
+  id?: number;
   ip?: string;
   city?: string;
   region?: string;
@@ -72,6 +73,7 @@ export interface IpMetadata extends IpMetadataDetails {
   created_at?: Date;
   updated_at?: Date;
   retry_after?: Date | null;
+  last_seen_at?: Date | null;
 }
 
 // Cached IPInfo records older than this are fetched again.
@@ -79,6 +81,8 @@ const DEFAULT_CACHE_MAX_AGE_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
 // After a failed refresh, keep serving the cached record this long before trying again.
 const REFRESH_RETRY_DELAY_MS = DAY_MS;
+// last_seen_at is written at most this often per IP, not on every lookup.
+const LAST_SEEN_INTERVAL_MS = DAY_MS;
 
 @Injectable()
 export class IpMetadataService {
@@ -220,10 +224,37 @@ export class IpMetadataService {
     delete response.created_at;
     delete response.updated_at;
     delete response.retry_after;
+    delete response.last_seen_at;
     for (const field of DETAIL_FIELDS) {
       delete response[field];
     }
     return response;
+  }
+
+  /**
+   * Records that a saved IP was looked up, at most once a day per IP, so we can
+   * tell which IPs are still in use without a write on every lookup. A failure
+   * here never fails the lookup.
+   */
+  private async markSeen(record: IpMetadata): Promise<void> {
+    if (record.id == null) {
+      return;
+    }
+    const lastSeen = record.last_seen_at?.getTime() ?? 0;
+    if (Date.now() - lastSeen < LAST_SEEN_INTERVAL_MS) {
+      return;
+    }
+    try {
+      await this.prisma.ipMetadata.update({
+        where: { id: record.id },
+        data: { last_seen_at: new Date() },
+      });
+    } catch (error) {
+      console.warn(
+        'Could not record when an IP was last seen:',
+        error instanceof Error ? error.message : error,
+      );
+    }
   }
 
   async getIpInfo(ip: string): Promise<IpMetadata> {
@@ -232,6 +263,7 @@ export class IpMetadataService {
       where: { ip_source: { ip, source: 'ipinfo' } },
     });
     if (cached && !this.isStale(cached)) {
+      await this.markSeen(cached);
       return this.toResponse(cached);
     }
 
@@ -239,6 +271,7 @@ export class IpMetadataService {
     // lasts, so refreshes are spread out instead of using up the IPInfo quota.
     // Otherwise it is served as it is and refreshed on a later lookup.
     if (cached && !(await this.refreshBudget.tryTake())) {
+      await this.markSeen(cached);
       return this.toResponse(cached);
     }
 
@@ -250,11 +283,16 @@ export class IpMetadataService {
     if (cached && ipData.source !== 'ipinfo') {
       await this.prisma.ipMetadata.update({
         where: { ip_source: { ip, source: 'ipinfo' } },
-        data: { retry_after: new Date(Date.now() + REFRESH_RETRY_DELAY_MS) },
+        data: {
+          retry_after: new Date(Date.now() + REFRESH_RETRY_DELAY_MS),
+          last_seen_at: new Date(),
+        },
       });
       return this.toResponse(cached);
     }
     if (!ipData.new) {
+      // A saved GeoJS record (or the error answer, which has no id).
+      await this.markSeen(ipData);
       return this.toResponse(ipData);
     }
 
@@ -286,6 +324,7 @@ export class IpMetadataService {
           : (ipData.raw as Prisma.InputJsonValue),
       updated_at: new Date(),
       retry_after: null,
+      last_seen_at: new Date(),
     };
     const saved = await this.prisma.ipMetadata.upsert({
       where: { ip_source: { ip: ipData.ip, source: ipData.source } },
