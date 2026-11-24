@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 import { SchoolService } from './school.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
@@ -233,6 +234,21 @@ describe('SchoolService', () => {
       expect(countryId).toEqual({
         user_id: mockSchoolDto[0].user_id,
         is_verified: false,
+      });
+    });
+
+    it('should store a null wifi_connections as SQL NULL, not as JSON null', async () => {
+      const createSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'create')
+        .mockResolvedValue(mockSchoolModel[0]);
+
+      await service.createSchool({
+        ...mockSchoolDto[0],
+        wifi_connections: null,
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({ wifi_connections: Prisma.DbNull }),
       });
     });
 

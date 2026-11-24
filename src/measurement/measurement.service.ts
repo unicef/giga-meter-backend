@@ -22,6 +22,7 @@ import {
   sanitizeSsidSource,
   sanitizeWifiUnavailableReason,
 } from '../common/device-context.utils';
+import { jsonColumn } from '../common/json-column.utils';
 import { enrichMeasurementForPersistence } from './measurement-quality-metrics';
 
 @Injectable()
@@ -643,8 +644,8 @@ export class MeasurementService {
       school_id: measurement.school_id,
       device_type: measurement.DeviceType,
       notes: measurement.Notes,
-      client_info: measurement.ClientInfo,
-      server_info: measurement.ServerInfo,
+      client_info: jsonColumn(measurement.ClientInfo),
+      server_info: jsonColumn(measurement.ServerInfo),
       annotation: measurement.annotation,
       download: measurement.Download,
       upload: measurement.Upload,
@@ -652,7 +653,7 @@ export class MeasurementService {
       data_uploaded: measurement?.DataUploaded,
       data_usage: measurement?.DataUsage,
       latency: measurement.Latency,
-      results: measurement.Results,
+      results: jsonColumn(measurement.Results),
       giga_id_school:
         measurement.giga_id_school == null
           ? measurement.giga_id_school
@@ -669,7 +670,7 @@ export class MeasurementService {
       device_hardware_id: sanitizeHardwareId(measurement.device_hardware_id),
       windows_username: measurement.windows_username,
       installed_path: measurement.installed_path,
-      wifi_connections: measurement.wifi_connections,
+      wifi_connections: jsonColumn(measurement.wifi_connections),
       offline_synced: measurement.offline_synced ?? false,
       scheduled_slot: measurement.scheduled_slot ?? null,
       scheduled_at: measurement.scheduled_at ?? null,
@@ -682,8 +683,8 @@ export class MeasurementService {
         measurement.wifi_unavailable_reason,
       ),
       ssid_source: sanitizeSsidSource(measurement.ssid_source),
-      device_context: sanitizeDeviceContext(
-        measurement.device_context,
+      device_context: jsonColumn(
+        sanitizeDeviceContext(measurement.device_context),
       ),
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
@@ -704,13 +705,13 @@ export class MeasurementService {
       school_id: measurement.school_id,
       device_type: measurement.DeviceType,
       notes: measurement.Notes,
-      client_info: measurement.ClientInfo,
-      server_info: measurement.ServerInfo,
+      client_info: jsonColumn(measurement.ClientInfo),
+      server_info: jsonColumn(measurement.ServerInfo),
       annotation: measurement.annotation,
       download: measurement.Download,
       upload: measurement.Upload,
       latency: measurement.Latency,
-      results: measurement.Results,
+      results: jsonColumn(measurement.Results),
       giga_id_school:
         measurement.giga_id_school == null
           ? measurement.giga_id_school
@@ -737,8 +738,8 @@ export class MeasurementService {
         measurement.wifi_unavailable_reason,
       ),
       ssid_source: sanitizeSsidSource(measurement.ssid_source),
-      device_context: sanitizeDeviceContext(
-        measurement.device_context,
+      device_context: jsonColumn(
+        sanitizeDeviceContext(measurement.device_context),
       ),
     };
   }

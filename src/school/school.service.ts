@@ -9,6 +9,7 @@ import {
   isHardwareIdBlocked,
 } from '../common/hardware-id.utils';
 import { normalizeGigaId } from '../utility/utility';
+import { jsonColumn } from '../common/json-column.utils';
 import * as Sentry from '@sentry/node';
 import {
   cleanSignals,
@@ -768,7 +769,7 @@ export class SchoolService {
       is_active: school.is_active,
       windows_username: school.windows_username,
       installed_path: school.installed_path,
-      wifi_connections: school.wifi_connections,
+      wifi_connections: jsonColumn(school.wifi_connections),
     };
   }
 }
