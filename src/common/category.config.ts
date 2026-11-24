@@ -52,6 +52,7 @@ export const GIGA_METER_APP_ALLOWED_APIS: CategoryApiEndpoint[] = [
   { url: '/api/v1/ip-metadata', methods: ['GET'] },
   { url: '/api/v1/ip-metadata/{ip}', methods: ['GET'] },
   { url: '/api/v1/geolocation/geolocate', methods: ['POST'] },
+  { url: '/api/v1/mlab/locate-token', methods: ['GET'] },
 ];
 
 export const GIGA_METER_APP_RESPONSE_FILTERS: CategoryResponseFilters = {
