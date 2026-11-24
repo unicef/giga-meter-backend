@@ -106,6 +106,7 @@ describe('GIGA_METER_APP category', () => {
       ['GET', '/api/v1/ip-metadata'],
       ['GET', '/api/v1/ip-metadata/203.0.113.7'],
       ['POST', '/api/v1/geolocation/geolocate'],
+      ['GET', '/api/v1/mlab/locate-token'],
     ])('allows %s %s', async (method, path) => {
       expect(await canCall(method, path)).toBe(true);
     });
