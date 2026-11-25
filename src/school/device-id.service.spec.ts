@@ -560,6 +560,91 @@ describe('DeviceIdService.assign', () => {
     expect(looked.flat()).not.toContain('M1');
   });
 
+  describe('resolve', () => {
+    // What a measurement gets: the ID by the same rules, with nothing stored.
+    const ALL: SignalField[] = [
+      'firmware_uuid',
+      'baseboard_serial',
+      'disk_serial',
+    ];
+
+    it("gives a matched PC's ID, compared with its latest registration", async () => {
+      tx.dailycheckapp_school.findMany
+        .mockResolvedValueOnce([{ device_id: 'X' }])
+        .mockResolvedValueOnce([
+          {
+            device_id: 'X',
+            device_hardware_id: 'A',
+            baseboard_serial: 'B',
+            disk_serial: 'C',
+            machine_guid: null,
+          },
+        ]);
+
+      // A serial that can't be read this time is ignored, not a change.
+      const result = await service.resolve(tx, signals('A', 'B', null));
+
+      expect(result.device_id).toBe('X');
+      expect(result.flags).toEqual([]);
+      expect(tx.dailycheckapp_school.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('gives the hash a new PC would get, without storing anything', async () => {
+      const result = await service.resolve(tx, signals('A', 'B', 'C'));
+
+      expect(result.device_id).toBe(hashDeviceId(signals('A', 'B', 'C'), ALL));
+      expect(tx.dailycheckapp_school.updateMany).not.toHaveBeenCalled();
+    });
+
+    it("gives none, flagged, when the hash is already another PC's", async () => {
+      tx.dailycheckapp_school.findFirst.mockResolvedValue({ id: 7 });
+
+      const result = await service.resolve(tx, signals('A', 'B', 'C'));
+
+      expect(result.device_id).toBeNull();
+      expect(result.flags).toEqual([DUPLICATE_VALUES_FLAG]);
+    });
+
+    it('gives none when there is nothing to hash', async () => {
+      const result = await service.resolve(tx, signals(null, null, null));
+
+      expect(result.device_id).toBeNull();
+      expect(result.flags).toEqual(['nothing_readable']);
+    });
+
+    it("treats it as a new PC when two PCs qualify and the firmware UUID can't tell", async () => {
+      tx.dailycheckapp_school.findMany
+        .mockResolvedValueOnce([{ device_id: 'X' }, { device_id: 'Y' }])
+        .mockResolvedValueOnce([
+          {
+            device_id: 'X',
+            device_hardware_id: null,
+            baseboard_serial: 'B',
+            disk_serial: null,
+            machine_guid: null,
+          },
+          {
+            device_id: 'Y',
+            device_hardware_id: null,
+            baseboard_serial: null,
+            disk_serial: 'C',
+            machine_guid: null,
+          },
+        ]);
+
+      const result = await service.resolve(tx, signals(null, 'B', 'C'));
+
+      // As for a registration: a new PC, with the hash of its values.
+      expect(result.device_id).toBe(
+        hashDeviceId(signals(null, 'B', 'C'), [
+          'baseboard_serial',
+          'disk_serial',
+        ]),
+      );
+      expect(result.flags).toEqual(['conflict']);
+    });
+  });
+
   describe('lock', () => {
     const lockKeys = () =>
       tx.$executeRaw.mock.calls.map(([strings, ...values]: any[]) => {

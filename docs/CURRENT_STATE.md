@@ -43,6 +43,11 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 ## Device ID (TECH-8828)
 
 - Each registration in `dailycheckapp_school` stores the firmware UUID (`device_hardware_id`), `baseboard_serial`, `disk_serial` and `machine_guid`, with the server-given `device_id` and `device_id_flags` (`school/device-id.service.ts`).
+- `measurements.device_id` is worked out when the measurement is stored, from its own hardware values (`device_hardware_id`, and the serials and `machine_guid` in `device_context`), by the same rules as registrations (`DeviceIdService.resolve`), without creating random IDs.
+  - Its registration (`browser_id` = `user_id`) is completed first when it has no device ID yet and the same firmware UUID: a pre-2.0.4 registration gets the PC's values and device ID.
+  - A measurement without any hardware value takes its registration's device ID.
+  - Measurements stored before the column existed have none.
+- `connectivity_ping_checks_daily_aggr.device_id` is the device ID of the registration the pings came from (`browser_id` = its `user_id`): pings carry no hardware values.
 - A new PC's `device_id` is a hash (v5 UUID) of those values. Shared values are left out, and the Windows install ID is used only when no hardware value counts. Later registrations keep the ID while no more values changed than still match. When most of them change, it is a new PC and gets the hash of its new values.
 - A value on two or more PCs is shared and doesn't count (`<field>_shared`). A hash that is already another PC's ID gives a random ID, flagged `duplicate_values`. Other flags: `<field>_changed`, `conflict`, `nothing_readable`, `device_id_failed`.
 
