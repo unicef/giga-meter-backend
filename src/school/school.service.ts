@@ -1,6 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, dailycheckapp_school as School } from '@prisma/client';
+import { isUUID } from 'class-validator';
 import { SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
@@ -8,6 +13,42 @@ import {
   sanitizeHardwareId,
   isHardwareIdBlocked,
 } from '../common/hardware-id.utils';
+
+const ACTIVE = [{ is_active: null }, { is_active: true }];
+
+/** The school, hardware ID and app instance a registration is for, as stored. */
+interface RegistrationKey {
+  giga_id_school?: string;
+  device_hardware_id?: string;
+  app_instance_id?: string;
+}
+
+/** How the app came to register: the values registration_source can hold. */
+const REGISTRATION_SOURCES = ['manual', 'auto'];
+
+/**
+ * The app instance ID a registration sent, lowercased, or undefined when it
+ * sent none (apps before app instances). Anything else is refused, rather than
+ * quietly treated as none, because then the registration would be matched by
+ * the old rule instead of by its instance.
+ */
+function appInstanceId(value: unknown): string | undefined {
+  if (value == null || value === '') {
+    return undefined;
+  }
+  if (typeof value !== 'string' || !isUUID(value.trim())) {
+    throw new BadRequestException('app_instance_id must be a UUID');
+  }
+  return value.trim().toLowerCase();
+}
+
+/** A unique index refused the insert: here, only app_instance_id's. */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2002'
+  );
+}
 
 @Injectable()
 export class SchoolService {
@@ -134,12 +175,19 @@ export class SchoolService {
     // writing: mac_address is Capacitor's Device.getId(), regenerated on every
     // app relaunch, and an os that really changed under the same hardware id
     // means a different machine, not a field to overwrite in place.
+    //
+    // An app that sends an app instance ID gets a row of its own for every app
+    // instance, with that instance's own context, including when it registers
+    // by itself on a PC that already has a registration at the school.
     const key = this.registrationKey(schoolDto);
     const existing = await this.findExistingRegistration(key);
     if (existing) {
       console.warn(
         `Duplicate registration absorbed for giga_id_school ${key.giga_id_school}, ` +
-          `device_hardware_id ${key.device_hardware_id}: returning user_id ${existing.user_id}`,
+          (key.app_instance_id
+            ? `app_instance_id ${key.app_instance_id}`
+            : `device_hardware_id ${key.device_hardware_id}`) +
+          `: returning user_id ${existing.user_id}`,
       );
       return existing.user_id;
     }
@@ -167,15 +215,37 @@ export class SchoolService {
         console.error('Error processing geolocation data:', error);
       }
     }
-    const school = await this.prisma.dailycheckapp_school.create({
-      data: this.toModel(schoolDto),
-    });
-
-    return school.user_id;
+    try {
+      const school = await this.prisma.dailycheckapp_school.create({
+        data: this.toModel(schoolDto),
+      });
+      return school.user_id;
+    } catch (error) {
+      // The unique app_instance_id refused it: another request from the same
+      // app instance (a retry, a double tap) stored it first, and that row is
+      // the answer.
+      if (key.app_instance_id && isUniqueViolation(error)) {
+        const stored = await this.findExistingRegistration(key);
+        if (stored) {
+          return stored.user_id;
+        }
+      }
+      throw error;
+    }
   }
 
   /**
-   * The active registration this device already has for this school, if any.
+   * The registration a request repeats, if any.
+   *
+   * With an app instance ID, it's that instance's registration: the same app
+   * instance registering again (a retry, a double tap). Any other registration
+   * of the PC at the school isn't a repeat: it's another app instance (another
+   * Windows user, a reinstall, a login after a logout), which gets its own row.
+   * The same instance at another school is refused with a 409: the app makes a
+   * new instance ID when the user picks another school.
+   *
+   * Without one (apps before app instances), the active registration this
+   * device already has for this school, if any.
    *
    * Keyed on device_hardware_id: mac_address is not a hardware address but
    * Capacitor's Device.getId(), which is regenerated on every app relaunch, so
@@ -185,10 +255,20 @@ export class SchoolService {
    * checkExistingInstallation: logging out and registering again is a new
    * installation.
    */
-  private async findExistingRegistration(key: {
-    giga_id_school?: string;
-    device_hardware_id?: string;
-  }) {
+  private async findExistingRegistration(
+    key: RegistrationKey,
+  ): Promise<School | null> {
+    if (key.app_instance_id) {
+      const own = await this.prisma.dailycheckapp_school.findUnique({
+        where: { app_instance_id: key.app_instance_id },
+      });
+      if (own && own.giga_id_school !== (key.giga_id_school ?? null)) {
+        throw new ConflictException(
+          'This app instance is already registered at another school',
+        );
+      }
+      return own;
+    }
     if (!key.giga_id_school || !key.device_hardware_id) {
       return null;
     }
@@ -216,16 +296,15 @@ export class SchoolService {
   }
 
   /**
-   * The (school, device) pair a payload identifies, normalized exactly the way
-   * toModel() stores it so the lookup and the insert cannot drift apart.
+   * The school, device and app instance a payload identifies, normalized
+   * exactly the way toModel() stores them so the lookup and the insert cannot
+   * drift apart.
    */
-  private registrationKey(school: SchoolDto): {
-    giga_id_school?: string;
-    device_hardware_id?: string;
-  } {
+  private registrationKey(school: SchoolDto): RegistrationKey {
     return {
       giga_id_school: school.giga_id_school?.toLowerCase().trim(),
       device_hardware_id: sanitizeHardwareId(school.device_hardware_id),
+      app_instance_id: appInstanceId(school.app_instance_id),
     };
   }
 
@@ -253,13 +332,40 @@ export class SchoolService {
       };
     }
 
+    // The app registers this PC at the school it returns, by itself. When the
+    // hardware ID has active registrations at two or more schools, it can't say
+    // which one this PC is at: one firmware UUID on several PCs, or a PC moved
+    // without logging out. Nothing is returned then, and the user picks the
+    // school.
+    const schools = await this.prisma.dailycheckapp_school.findMany({
+      where: {
+        device_hardware_id,
+        giga_id_school: { not: null },
+        OR: ACTIVE,
+      },
+      distinct: ['giga_id_school'],
+      select: { giga_id_school: true },
+      take: 2,
+    });
+    if (schools.length > 1) {
+      console.warn(
+        `Hardware ID ${device_hardware_id} is active at more than one school; ` +
+          'not returning a registration',
+      );
+      return {
+        exists: false,
+      };
+    }
+
     // First check in dailycheckapp_school table
-    // Include records where is_active is NOT false (true, null, or undefined)
+    // Include records where is_active is NOT false (true, null, or undefined).
+    // A PC has a registration per app instance: the newest is the one in use.
     const school = await this.prisma.dailycheckapp_school.findFirst({
       where: {
         device_hardware_id,
         OR: [{ is_active: null }, { is_active: true }],
       },
+      orderBy: { id: 'desc' },
     });
     if (school) {
       // Fetch school information from the school table
@@ -529,6 +635,11 @@ export class SchoolService {
       windows_username: school.windows_username,
       installed_path: school.installed_path,
       wifi_connections: school.wifi_connections,
+      registration_source: REGISTRATION_SOURCES.includes(
+        school.registration_source,
+      )
+        ? school.registration_source
+        : null,
     };
   }
 }
