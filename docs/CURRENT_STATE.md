@@ -1,6 +1,6 @@
 # Current state — giga-meter-backend
 
-_Last reviewed: 2026-06-02_
+_Last reviewed: 2026-11-24_
 
 > **Maintainers:** update this file when merging PRs. Do not store PR narratives here — use `/prs/{number}-{slug}.md`. This file is a link-first index, not a full narrative — see [How to keep this current](#how-to-keep-this-current).
 
@@ -21,6 +21,7 @@ _Last reviewed: 2026-06-02_
 | `connectivity`, `ping-aggregation` | Router ping snapshots and aggregation |
 | `public` | Public/category-filtered read APIs |
 | `scheduler` | Cron jobs (`@nestjs/schedule`) |
+| `mlab` | Tokens for M-Lab's priority server lookup ([ADR 002](./adr/002-mlab-priority-locate-token.md)) |
 
 ## Measurements & protocols
 
@@ -38,6 +39,13 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 - Resolution: school override → country → default (`protocol-config.service.ts`).
 - Endpoints: `GET /api/v1/protocol-config/resolve`; admin `PUT`/`DELETE` on country and school paths (`protocol-config.controller.ts`).
 - **Legacy removed:** `country_config` table, `MeasurementProvider` enum, and `/api/v1/country-config/*` (Nest module deleted). Do not add a `country-config` module — use `protocol-config` only.
+
+## M-Lab priority server lookup
+
+See [ADR 002](./adr/002-mlab-priority-locate-token.md).
+
+- `GET /api/v1/mlab/locate-token` (app key): exchanges `MLAB_API_KEY` at M-Lab for a 20 s token on each call; nulls when unset or on any failure, and the app then uses the public lookup.
+- Env: `MLAB_API_KEY`, `MLAB_TOKEN_EXCHANGE_URL` (default M-Lab production), `MLAB_LOCATE_URL` (optional).
 
 ## Local data
 
