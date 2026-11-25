@@ -46,6 +46,12 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 - A new PC's `device_id` is a hash (v5 UUID) of those values. Shared values are left out, and the Windows install ID is used only when no hardware value counts. Later registrations keep the ID while no more values changed than still match. When most of them change, it is a new PC and gets the hash of its new values.
 - A value on two or more PCs is shared and doesn't count (`<field>_shared`). A hash that is already another PC's ID gives a random ID, flagged `duplicate_values`. Other flags: `<field>_changed`, `conflict`, `nothing_readable`, `device_id_failed`.
 
+## Registrations (app instances)
+
+- Each row in `dailycheckapp_school` is one app instance: the app installed under one Windows user, for one registration. The app generates `app_instance_id` (unique) and sends `registration_source`: `manual` when the user picked the school, `auto` when the app registered by itself at the school of the PC's existing registration (`school/school.service.ts`).
+- `POST /api/v1/dailycheckapp_schools` with an `app_instance_id` returns that instance's row if it exists (409 if it's at another school), otherwise stores a new row, even when the PC already has one at the school. Without one (older apps), same school + same `device_hardware_id` + active returns the existing row, as before.
+- `GET checkExistingInstallation/:device_hardware_id` returns the newest active registration, and nothing when the hardware ID is active at two or more schools.
+
 ## M-Lab priority server lookup
 
 See [ADR 002](./adr/002-mlab-priority-locate-token.md).
