@@ -341,9 +341,17 @@ export class SchoolController {
     required: true,
     type: 'string',
   })
+  @ApiQuery({
+    name: 'app_instance_id',
+    description:
+      "The asking app instance's ID: device_id is then its own registration's",
+    required: false,
+    type: 'string',
+  })
   async checkDeviceStatus(
     @Param('device_hardware_id') device_hardware_id: string,
     @Param('giga_id_school') giga_id_school: string,
+    @Query('app_instance_id') app_instance_id?: string,
   ): Promise<ApiSuccessResponseDto<CheckDeviceStatusDto>> {
     if (!device_hardware_id || device_hardware_id.trim().length === 0) {
       throw new HttpException(
@@ -362,6 +370,7 @@ export class SchoolController {
     const result = await this.schoolService.checkDeviceStatus(
       device_hardware_id,
       giga_id_school,
+      app_instance_id,
     );
 
     return {

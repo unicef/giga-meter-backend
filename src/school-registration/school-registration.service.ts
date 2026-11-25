@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AnalyticsService } from '../analytics/analytics.service';
 import {
   CreateSchoolRegistrationDto,
   RejectSchoolRegistrationDto,
@@ -16,6 +17,7 @@ export class SchoolRegistrationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly httpService: HttpService,
+    @Optional() private readonly analytics?: AnalyticsService,
   ) {}
 
   async createRegistration(
@@ -60,6 +62,19 @@ export class SchoolRegistrationService {
         },
       });
 
+    // A school that was not in Giga's list, asked for from the app. Whether
+    // it could be sent on for verification is only known here.
+    this.analytics?.captureSchoolEvent(
+      'server_registration_request_created',
+      refreshedRegistration.giga_id_school,
+      null,
+      {
+        verification_status: refreshedRegistration.verification_status ?? null,
+        dispatch_failed: !!refreshedRegistration.verification_error,
+        country_iso3: registrationDto.country_iso3_code ?? null,
+      },
+    );
+
     return this.toResponseDto(refreshedRegistration);
   }
 
@@ -92,6 +107,13 @@ export class SchoolRegistrationService {
             verification_status: 'REJECTED',
           },
         });
+
+      this.analytics?.captureSchoolEvent(
+        'server_registration_rejected',
+        gigaId,
+        null,
+        { country_iso3: updatedRegistration.country_iso3_code ?? null },
+      );
 
       return this.toResponseDto(updatedRegistration);
     } else {

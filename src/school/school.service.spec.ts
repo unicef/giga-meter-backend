@@ -239,6 +239,8 @@ describe('SchoolService', () => {
       expect(countryId).toEqual({
         user_id: mockSchoolDto[0].user_id,
         is_verified: false,
+        // No device ID in the mocked rows.
+        device_id: null,
       });
     });
 
@@ -275,6 +277,8 @@ describe('SchoolService', () => {
       expect(response).toEqual({
         user_id: 'existing_user_id',
         is_verified: false,
+        // The repeat answers with the device ID the PC already has.
+        device_id: 'device-1',
       });
       expect(createSpy).not.toHaveBeenCalled();
       // As before 2.0.4: same school, same hardware ID, active. The device ID
@@ -601,6 +605,8 @@ describe('SchoolService', () => {
       expect(response).toEqual({
         user_id: mockSchoolDto[0].user_id,
         is_verified: false,
+        // No device ID in the mocked rows.
+        device_id: null,
       });
     });
 
@@ -622,6 +628,8 @@ describe('SchoolService', () => {
       expect(response).toEqual({
         user_id: mockSchoolDto[0].user_id,
         is_verified: false,
+        // No device ID in the mocked rows.
+        device_id: null,
       });
       expect(findFirstSpy).not.toHaveBeenCalled();
       expect(createSpy).toHaveBeenCalled();
