@@ -4,10 +4,11 @@ import {
   HttpException,
   Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, dailycheckapp_school as School } from '@prisma/client';
-import { isUUID } from 'class-validator';
+import { normalizeAppInstanceId } from '../common/app-instance.utils';
 import { CreateSchoolResponseDto, SchoolDto } from './school.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
@@ -70,10 +71,11 @@ function appInstanceId(value: unknown): string | undefined {
   if (value == null || value === '') {
     return undefined;
   }
-  if (typeof value !== 'string' || !isUUID(value.trim())) {
+  const normalized = normalizeAppInstanceId(value);
+  if (normalized == null) {
     throw new BadRequestException('app_instance_id must be a UUID');
   }
-  return value.trim().toLowerCase();
+  return normalized;
 }
 
 /** A unique index refused the insert: here, only app_instance_id's. */
@@ -760,6 +762,73 @@ export class SchoolService {
       message: 'Device is active',
       exists: true,
     };
+  }
+
+  /**
+   * Gives the registration with this user_id this app instance's ID: for an
+   * install registered before app instances, which has a registration but no
+   * ID and doesn't register again. Repeating the same claim is fine.
+   *
+   * 409 when the registration already has another app instance's ID (older
+   * apps copied one registration to every Windows user of a PC, and the first
+   * of them to claim it keeps it; the others register on their own), or when
+   * this ID already belongs to another registration. 404 when there's no
+   * registration with this user_id.
+   */
+  async claimAppInstance(
+    user_id: string,
+    app_instance_id: string,
+  ): Promise<{ user_id: string; app_instance_id: string }> {
+    const instanceId = appInstanceId(app_instance_id);
+    const userId = user_id?.trim();
+    if (!userId || !instanceId) {
+      throw new BadRequestException('user_id and app_instance_id are required');
+    }
+    const claimed = { user_id: userId, app_instance_id: instanceId };
+
+    const registration = await this.prisma.dailycheckapp_school.findFirst({
+      where: { user_id: userId },
+      orderBy: { id: 'desc' },
+      select: { id: true, app_instance_id: true },
+    });
+    if (!registration) {
+      throw new NotFoundException('No registration with this user_id');
+    }
+    if (registration.app_instance_id === instanceId) {
+      return claimed;
+    }
+    if (registration.app_instance_id != null) {
+      throw new ConflictException(
+        'This registration belongs to another app instance',
+      );
+    }
+
+    try {
+      // Only while it has none: two instances claiming at once can't both win.
+      const { count } = await this.prisma.dailycheckapp_school.updateMany({
+        where: { id: registration.id, app_instance_id: null },
+        data: { app_instance_id: instanceId },
+      });
+      if (count === 0) {
+        const now = await this.prisma.dailycheckapp_school.findUnique({
+          where: { id: registration.id },
+          select: { app_instance_id: true },
+        });
+        if (now?.app_instance_id !== instanceId) {
+          throw new ConflictException(
+            'This registration belongs to another app instance',
+          );
+        }
+      }
+    } catch (error) {
+      if (isUniqueViolation(error)) {
+        throw new ConflictException(
+          'This app instance ID belongs to another registration',
+        );
+      }
+      throw error;
+    }
+    return claimed;
   }
 
   async deactivateDevice(

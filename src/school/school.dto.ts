@@ -193,6 +193,19 @@ export class DeactivateDeviceResponseDto {
   message?: string;
 }
 
+export class ClaimAppInstanceDto {
+  @ApiProperty({
+    description:
+      "The registration's user_id: the schoolUserId the app already holds.",
+  })
+  user_id: string;
+
+  @ApiProperty({
+    description: 'The UUID this app instance generated for itself.',
+  })
+  app_instance_id: string;
+}
+
 export class CheckDeviceStatusDto {
   @ApiProperty({
     description:
