@@ -1,6 +1,6 @@
 # Current state — giga-meter-backend
 
-_Last reviewed: 2026-11-24_
+_Last reviewed: 2026-11-25_
 
 > **Maintainers:** update this file when merging PRs. Do not store PR narratives here — use `/prs/{number}-{slug}.md`. This file is a link-first index, not a full narrative — see [How to keep this current](#how-to-keep-this-current).
 
@@ -39,6 +39,12 @@ Documented in [ADR 001](./adr/001-dual-protocol-measurements-and-config.md).
 - Resolution: school override → country → default (`protocol-config.service.ts`).
 - Endpoints: `GET /api/v1/protocol-config/resolve`; admin `PUT`/`DELETE` on country and school paths (`protocol-config.controller.ts`).
 - **Legacy removed:** `country_config` table, `MeasurementProvider` enum, and `/api/v1/country-config/*` (Nest module deleted). Do not add a `country-config` module — use `protocol-config` only.
+
+## Device ID (TECH-8828)
+
+- Each registration in `dailycheckapp_school` stores the firmware UUID (`device_hardware_id`), `baseboard_serial`, `disk_serial` and `machine_guid`, with the server-given `device_id` and `device_id_flags` (`school/device-id.service.ts`).
+- A new PC's `device_id` is a hash (v5 UUID) of those values. Shared values are left out, and the Windows install ID is used only when no hardware value counts. Later registrations keep the ID while no more values changed than still match. When most of them change, it is a new PC and gets the hash of its new values.
+- A value on two or more PCs is shared and doesn't count (`<field>_shared`). A hash that is already another PC's ID gives a random ID, flagged `duplicate_values`. Other flags: `<field>_changed`, `conflict`, `nothing_readable`, `device_id_failed`.
 
 ## M-Lab priority server lookup
 
