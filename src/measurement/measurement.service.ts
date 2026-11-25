@@ -1,5 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  AnalyticsService,
+  accuracyBand,
+  distanceBand,
+  rejectionReasonCode,
+} from '../analytics/analytics.service';
 import { normalizeGigaId } from '../utility/utility';
 import {
   measurements as Measurement,
@@ -53,7 +59,54 @@ export class MeasurementService {
     private prisma: PrismaService,
     private geolocationUtility: GeolocationUtility,
     private deviceIdService: DeviceIdService,
+    @Optional() private readonly analytics?: AnalyticsService,
   ) {}
+
+  /**
+   * Sends a server-side analytics event about the device and app instance a
+   * measurement came from. Not awaited: the measurement never waits for it,
+   * and with analytics off nothing runs at all. `deviceId` is the one stored
+   * with the measurement when there is one; otherwise (a rejected measurement
+   * isn't stored in measurements) it's its registration's, found the way a
+   * stored measurement finds its own (registrationOf): by app_instance_id,
+   * else BrowserID. Only used for the rare problem events, so that lookup
+   * stays off the normal path.
+   */
+  private reportDeviceEvent(
+    event: string,
+    dto: AddMeasurementDto,
+    properties: Record<string, any>,
+    deviceId?: string | null,
+  ): void {
+    if (!this.analytics?.isEnabled()) {
+      return;
+    }
+    const appInstanceId = normalizeAppInstanceId(dto.app_instance_id);
+    const lookup: Promise<string | null> =
+      deviceId !== undefined
+        ? Promise.resolve(deviceId)
+        : this.registrationOf({
+            app_instance_id: appInstanceId,
+            browser_id: dto.BrowserID,
+          })
+            .then((registration) => registration?.device_id ?? null)
+            .catch((error) => {
+              console.warn('[Analytics] device ID lookup failed:', error);
+              return null;
+            });
+    void lookup.then((resolved) =>
+      this.analytics.captureDeviceEvent(
+        event,
+        {
+          deviceId: resolved,
+          gigaId: dto.giga_id_school,
+          countryCode: dto.country_code,
+          appInstanceId,
+        },
+        properties,
+      ),
+    );
+  }
 
   async measurements(
     skip?: number,
@@ -242,6 +295,19 @@ export class MeasurementService {
           processedResponse,
         );
         await this.prisma.measurements_failed.create({ data: failedModel });
+        // The app only hears about this when every record of a batch is
+        // refused (POST /multiple answers success otherwise).
+        this.reportDeviceEvent(
+          'server_measurement_rejected',
+          measurementDto,
+          {
+            reason: rejectionReasonCode(processedResponse),
+            upload_protocol: uploadProtocol ?? 'mlab',
+            app_version: measurementDto.app_version ?? null,
+            notes: measurementDto.Notes ?? null,
+            offline_synced: measurementDto.offline_synced ?? null,
+          },
+        );
         return processedResponse;
       }
 
@@ -276,7 +342,26 @@ export class MeasurementService {
         await this.prisma.measurements.create({
           data: model,
         });
-        
+        // Flagged: too far from the school, or the location too vague. Sent
+        // once stored, with the device ID stored with it.
+        if (measurementDto.detected_location_is_flagged === true) {
+          this.reportDeviceEvent(
+            'server_measurement_flagged',
+            measurementDto,
+            {
+              distance_band: distanceBand(
+                measurementDto.detected_location_distance,
+              ),
+              accuracy_band: accuracyBand(
+                measurementDto.detected_location_accuracy,
+              ),
+              app_version: measurementDto.app_version ?? null,
+              notes: measurementDto.Notes ?? null,
+            },
+            model.device_id ?? null,
+          );
+        }
+
         return '';
       }
     }

@@ -5,8 +5,13 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  AnalyticsService,
+  DEVICE_REGISTRATIONS_ANOMALY,
+} from '../analytics/analytics.service';
 import { Prisma, dailycheckapp_school as School } from '@prisma/client';
 import { normalizeAppInstanceId } from '../common/app-instance.utils';
 import { CreateSchoolResponseDto, SchoolDto } from './school.dto';
@@ -92,6 +97,7 @@ export class SchoolService {
     private prisma: PrismaService,
     private readonly geolocationUtility: GeolocationUtility,
     private readonly deviceIdService: DeviceIdService,
+    @Optional() private readonly analytics?: AnalyticsService,
   ) {}
 
   async schools(
@@ -239,10 +245,69 @@ export class SchoolService {
       );
     }
 
+    this.reportRegistration(school, schoolDto, repeat);
+
     return {
       user_id: school.user_id,
       is_verified: await this.resolveIsVerified(school.giga_id_school),
+      // The app identifies itself in analytics by it (one PostHog person per
+      // physical PC). Null when it could not be worked out.
+      device_id: school.device_id ?? null,
     };
+  }
+
+  /**
+   * server_device_registered: one app instance (this registration row) on a
+   * device, manual or automatic. Carries the device ID's flags and how many
+   * app instances map to the device, all and still active;
+   * DEVICE_REGISTRATIONS_ANOMALY or more in all is flagged as an anomaly
+   * (likely several PCs sharing one hardware signature). Not awaited.
+   */
+  private reportRegistration(
+    school: School,
+    schoolDto: SchoolDto,
+    repeat: boolean,
+  ): void {
+    if (!this.analytics?.isEnabled()) {
+      return;
+    }
+    const deviceId = school.device_id ?? null;
+    const counts: Promise<[number, number] | null> = deviceId
+      ? Promise.all([
+          this.prisma.dailycheckapp_school.count({
+            where: { device_id: deviceId },
+          }),
+          this.prisma.dailycheckapp_school.count({
+            where: { device_id: deviceId, OR: ACTIVE },
+          }),
+        ]).catch(() => null)
+      : Promise.resolve(null);
+    void counts.then((found) => {
+      const [instances, active] = found ?? [null, null];
+      this.analytics.captureDeviceEvent(
+        'server_device_registered',
+        {
+          deviceId,
+          gigaId: school.giga_id_school,
+          countryCode: school.country_code ?? schoolDto.country_code,
+          appInstanceId: school.app_instance_id,
+        },
+        {
+          // Rows from apps before app instances have none: this links them.
+          registration_user_id: school.user_id ?? null,
+          registration_source: school.registration_source ?? null,
+          repeat,
+          has_device_id: !!deviceId,
+          device_id_flags: school.device_id_flags ?? [],
+          app_instances_for_device: instances,
+          active_app_instances_for_device: active,
+          anomaly:
+            typeof instances === 'number' &&
+            instances >= DEVICE_REGISTRATIONS_ANOMALY,
+          app_version: schoolDto.app_version ?? null,
+        },
+      );
+    });
   }
 
   /**
@@ -710,7 +775,13 @@ export class SchoolService {
   async checkDeviceStatus(
     device_hardware_id: string,
     giga_id_school: string,
-  ): Promise<{ is_active: boolean; message: string; exists: boolean }> {
+    app_instance_id?: string,
+  ): Promise<{
+    is_active: boolean;
+    message: string;
+    exists: boolean;
+    device_id?: string | null;
+  }> {
     // If the hardware ID is blocked/generic, treat as active (allow operation)
     if (isHardwareIdBlocked(device_hardware_id)) {
       console.warn(
@@ -753,15 +824,45 @@ export class SchoolService {
         is_active: false,
         message: 'Device has been deactivated',
         exists: true,
+        device_id: school.device_id ?? null,
       };
     }
 
-    // Device is active (is_active is true, null, or undefined)
+    // Device is active (is_active is true, null, or undefined). The app checks
+    // this at every start, which is how an existing installation learns its
+    // device ID without registering again, and a new one when its registration
+    // got one later (completed by a measurement). Only the device ID comes
+    // from the app instance's own row: the status stays as it was.
     return {
       is_active: true,
       message: 'Device is active',
       exists: true,
+      device_id: await this.deviceIdOfInstance(app_instance_id, school),
     };
+  }
+
+  /**
+   * The device ID of the asking app instance's own registration. Several PCs
+   * can share a firmware UUID, so the latest registration for the hardware ID
+   * and school can be another PC's: its own row is the one that says which PC
+   * this is. The latest registration's when the app sent no app instance ID
+   * (or one without a row yet).
+   */
+  private async deviceIdOfInstance(
+    app_instance_id: string | undefined,
+    latest: School,
+  ): Promise<string | null> {
+    const instanceId = normalizeAppInstanceId(app_instance_id);
+    if (instanceId && instanceId !== latest.app_instance_id) {
+      const own = await this.prisma.dailycheckapp_school.findUnique({
+        where: { app_instance_id: instanceId },
+        select: { device_id: true },
+      });
+      if (own) {
+        return own.device_id ?? null;
+      }
+    }
+    return latest.device_id ?? null;
   }
 
   /**
@@ -846,6 +947,23 @@ export class SchoolService {
     //   };
     // }
 
+    // The device ID for the analytics event, read before the rows change.
+    const deviceRow = this.analytics?.isEnabled()
+      ? await this.prisma.dailycheckapp_school
+          .findFirst({
+            where: {
+              device_hardware_id,
+              giga_id_school:
+                giga_id_school == null
+                  ? giga_id_school
+                  : normalizeGigaId(giga_id_school),
+            },
+            orderBy: { id: 'desc' },
+            select: { device_id: true, country_code: true },
+          })
+          .catch(() => null)
+      : null;
+
     // Find the record where hardware_id + giga_id_school + is_active is true (or null/undefined)
     const result = await this.prisma.dailycheckapp_school.updateMany({
       where: {
@@ -860,6 +978,24 @@ export class SchoolService {
         is_active: false,
       },
     });
+
+    // The server side of the app's logout: deactivated=false means the app
+    // logged out but the backend still counts the device as active. It works
+    // on the PC at the school, not on one app instance: more than one row
+    // means other app instances there (other Windows users) were logged out
+    // too, and they reset at their next start (device_deactivated_remotely).
+    this.analytics?.captureDeviceEvent(
+      'server_device_deactivated',
+      {
+        deviceId: deviceRow?.device_id ?? null,
+        gigaId: giga_id_school,
+        countryCode: deviceRow?.country_code ?? null,
+      },
+      {
+        deactivated: result.count > 0,
+        app_instances_deactivated: result.count,
+      },
+    );
 
     if (result.count > 0) {
       return {
