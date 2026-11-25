@@ -4,6 +4,8 @@ import {
   decideDevice,
   DeviceIdService,
   DeviceSignals,
+  DUPLICATE_VALUES_FLAG,
+  hashDeviceId,
   matchFields,
   SignalField,
   valueLockKey,
@@ -224,6 +226,50 @@ describe('matchFields', () => {
   });
 });
 
+describe('hashDeviceId', () => {
+  const HARDWARE: SignalField[] = [
+    'firmware_uuid',
+    'baseboard_serial',
+    'disk_serial',
+  ];
+
+  it('gives the same values the same ID, as a version 5 UUID', () => {
+    const id = hashDeviceId(signals('A', 'B', 'C'), HARDWARE);
+
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(hashDeviceId(signals('A', 'B', 'C'), HARDWARE)).toBe(id);
+  });
+
+  it('gives different values a different ID', () => {
+    expect(hashDeviceId(signals('A', 'B', 'D'), HARDWARE)).not.toBe(
+      hashDeviceId(signals('A', 'B', 'C'), HARDWARE),
+    );
+  });
+
+  it('hashes only the given fields', () => {
+    expect(
+      hashDeviceId(signals('A', 'B', 'C'), ['firmware_uuid', 'disk_serial']),
+    ).toBe(
+      hashDeviceId(signals('A', 'other', 'C'), [
+        'firmware_uuid',
+        'disk_serial',
+      ]),
+    );
+  });
+
+  it('tells apart the same value in different fields', () => {
+    expect(
+      hashDeviceId(signals(null, 'X', null), ['baseboard_serial']),
+    ).not.toBe(hashDeviceId(signals(null, null, 'X'), ['disk_serial']));
+  });
+
+  it('has nothing to hash without fields', () => {
+    expect(hashDeviceId(signals('A', 'B', 'C'), [])).toBeNull();
+  });
+});
+
 describe('cleanSignals', () => {
   it('drops blank values, placeholders and blocked generic UUIDs', () => {
     expect(
@@ -270,18 +316,101 @@ describe('DeviceIdService.assign', () => {
       $executeRaw: jest.fn(),
       dailycheckapp_school: {
         findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
     };
   });
 
-  it('gives a new PC a random ID', async () => {
-    const first = await service.assign(tx, signals('A', 'B', 'C'));
-    const second = await service.assign(tx, signals('A', 'B', 'C'));
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-    expect(first.device_id).toMatch(/^[0-9a-f-]{36}$/);
-    expect(second.device_id).not.toEqual(first.device_id);
-    expect(first.device_id_flags).toEqual([]);
+  it('gives a new PC the hash of its values', async () => {
+    const result = await service.assign(tx, signals('A', 'B', 'C'));
+
+    expect(result).toEqual({
+      device_id: hashDeviceId(signals('A', 'B', 'C'), [
+        'firmware_uuid',
+        'baseboard_serial',
+        'disk_serial',
+      ]),
+      device_id_flags: [],
+    });
+    expect(tx.dailycheckapp_school.findFirst).toHaveBeenCalledWith({
+      where: { device_id: result.device_id },
+      select: { id: true },
+    });
+  });
+
+  it('hashes only the values that can be read', async () => {
+    const result = await service.assign(tx, signals('A', null, 'C'));
+
+    expect(result.device_id).toBe(
+      hashDeviceId(signals('A', null, 'C'), ['firmware_uuid', 'disk_serial']),
+    );
+  });
+
+  it('leaves a shared value out of the hash', async () => {
+    tx.$queryRaw.mockImplementation(
+      async (strings: TemplateStringsArray, ...values: any[]) =>
+        values.includes('A')
+          ? [{ devices: 2, old_schools: 0 }]
+          : [{ devices: 0, old_schools: 0 }],
+    );
+
+    const first = await service.assign(tx, signals('A', 'B', 'C'));
+    const second = await service.assign(tx, signals('A', 'E', 'F'));
+
+    expect(first).toEqual({
+      device_id: hashDeviceId(signals('A', 'B', 'C'), [
+        'baseboard_serial',
+        'disk_serial',
+      ]),
+      device_id_flags: ['firmware_uuid_shared'],
+    });
+    expect(second.device_id).not.toBe(first.device_id);
+  });
+
+  it('hashes the Windows install ID when no hardware value counts', async () => {
+    tx.$queryRaw.mockImplementation(
+      async (strings: TemplateStringsArray, ...values: any[]) =>
+        values.includes('A')
+          ? [{ devices: 2, old_schools: 0 }]
+          : [{ devices: 0, old_schools: 0 }],
+    );
+
+    const result = await service.assign(tx, signals('A', null, null, 'M1'));
+
+    expect(result).toEqual({
+      device_id: hashDeviceId(signals('A', null, null, 'M1'), ['machine_guid']),
+      device_id_flags: ['firmware_uuid_shared'],
+    });
+  });
+
+  it("gives a random ID, flagged, when the hash is already another PC's", async () => {
+    // Another PC was first seen with these values, and they no longer match it.
+    tx.dailycheckapp_school.findFirst.mockResolvedValue({ id: 7 });
+
+    const result = await service.assign(tx, signals('A', 'B', 'C'));
+
+    expect(result.device_id).toMatch(UUID);
+    expect(result.device_id).not.toBe(
+      hashDeviceId(signals('A', 'B', 'C'), [
+        'firmware_uuid',
+        'baseboard_serial',
+        'disk_serial',
+      ]),
+    );
+    expect(result.device_id_flags).toEqual([DUPLICATE_VALUES_FLAG]);
+  });
+
+  it('gives a random ID when there is nothing to hash', async () => {
+    const first = await service.assign(tx, signals(null, null, null));
+    const second = await service.assign(tx, signals(null, null, null));
+
+    expect(first.device_id).toMatch(UUID);
+    expect(second.device_id).not.toBe(first.device_id);
+    expect(first.device_id_flags).toEqual(['nothing_readable']);
+    expect(tx.dailycheckapp_school.findFirst).not.toHaveBeenCalled();
   });
 
   it("keeps an earlier PC's ID, compared with its latest registration", async () => {
@@ -307,7 +436,42 @@ describe('DeviceIdService.assign', () => {
 
     const result = await service.assign(tx, signals('A', 'B', 'D'));
 
+    // Not the hash of A, B, D: the PC keeps the ID it already has.
     expect(result).toEqual({ device_id: 'X', device_id_flags: [] });
+    expect(tx.dailycheckapp_school.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('keeps the ID when one value of three changed, and not when two did', async () => {
+    const earlier = [
+      {
+        device_id: 'X',
+        device_hardware_id: 'A',
+        baseboard_serial: 'B',
+        disk_serial: 'C',
+        machine_guid: null,
+      },
+    ];
+    tx.dailycheckapp_school.findMany
+      .mockResolvedValueOnce([{ device_id: 'X' }])
+      .mockResolvedValueOnce(earlier)
+      .mockResolvedValueOnce([{ device_id: 'X' }])
+      .mockResolvedValueOnce(earlier);
+
+    const newBoard = await service.assign(tx, signals('A', 'E', 'C'));
+    const newBoardAndDisk = await service.assign(tx, signals('A', 'E', 'F'));
+
+    expect(newBoard).toEqual({
+      device_id: 'X',
+      device_id_flags: ['baseboard_serial_changed'],
+    });
+    expect(newBoardAndDisk).toEqual({
+      device_id: hashDeviceId(signals('A', 'E', 'F'), [
+        'firmware_uuid',
+        'baseboard_serial',
+        'disk_serial',
+      ]),
+      device_id_flags: [],
+    });
   });
 
   it('gives older registrations with the same firmware UUID the same ID', async () => {
