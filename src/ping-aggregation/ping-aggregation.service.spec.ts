@@ -195,7 +195,9 @@ describe('PingAggregationService', () => {
   });
 
   describe('aggregateDailyPingData', () => {
-    it('should carry each app instance', async () => {
+    it("should carry each app instance, and its registration's device ID", async () => {
+      // browser-a's pings come from an app that sends its app instance ID;
+      // browser-old's from an older one, found through browser_id instead.
       const targetDate = new Date('2025-01-01T00:00:00.000Z');
       mockPrismaService.$queryRaw.mockResolvedValue([
         {
@@ -206,18 +208,41 @@ describe('PingAggregationService', () => {
           isconnectedallsum: 10,
           latencyavg: 50,
         },
+        {
+          giga_id_school: 'school-1',
+          device_id: 'browser-old',
+          app_instance_id: null,
+          isconnectedtruesum: 1,
+          isconnectedallsum: 1,
+          latencyavg: 30,
+        },
       ]);
       mockPrismaService.connectivityPingChecksDailyAggr.findMany.mockResolvedValue(
         [],
       );
+      mockPrismaService.dailycheckapp_school.findMany
+        .mockResolvedValueOnce([
+          { app_instance_id: 'instance-a', device_id: 'pc-1' },
+        ])
+        .mockResolvedValueOnce([{ user_id: 'browser-old', device_id: 'pc-2' }]);
 
       await service.aggregateDailyPingData(targetDate);
 
+      expect(prisma.dailycheckapp_school.findMany).toHaveBeenNthCalledWith(1, {
+        where: {
+          app_instance_id: { in: ['instance-a'] },
+          device_id: { not: null },
+        },
+        select: { app_instance_id: true, device_id: true },
+      });
       const rows = (
         prisma.connectivityPingChecksDailyAggr.createMany as jest.Mock
       ).mock.calls[0][0].data;
-      expect(rows.map((row) => [row.browser_id, row.app_instance_id])).toEqual([
-        ['browser-a', 'instance-a'],
+      expect(
+        rows.map((row) => [row.browser_id, row.app_instance_id, row.device_id]),
+      ).toEqual([
+        ['browser-a', 'instance-a', 'pc-1'],
+        ['browser-old', null, 'pc-2'],
       ]);
     });
 

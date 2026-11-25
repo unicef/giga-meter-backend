@@ -716,6 +716,63 @@ describe('MeasurementService', () => {
         expect(stored()).toBe('device-1');
       });
 
+      describe('app instance', () => {
+        const INSTANCE = '6f1c2b8e-4d3a-4f5e-9a7b-1c2d3e4f5a6b';
+        let findUnique: jest.SpyInstance;
+
+        beforeEach(() => {
+          findUnique = jest.spyOn(prisma.dailycheckapp_school, 'findUnique');
+          deviceIdService.assign.mockResolvedValue({
+            device_id: 'device-new',
+            device_id_flags: [],
+          });
+        });
+
+        it('finds its registration by app instance, not by browser ID', async () => {
+          findUnique.mockResolvedValue({
+            id: BigInt(9),
+            device_id: null,
+            device_hardware_id: 'uuid-a',
+          });
+
+          await service.createMeasurement({
+            ...withValues,
+            app_instance_id: INSTANCE,
+          });
+
+          expect(findUnique).toHaveBeenCalledWith({
+            where: { app_instance_id: INSTANCE },
+            select: { id: true, device_id: true, device_hardware_id: true },
+          });
+          // Only the school check went by giga ID; none by user_id.
+          expect(schoolSpy).toHaveBeenCalledTimes(1);
+          expect(tx.dailycheckapp_school.update).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: BigInt(9) } }),
+          );
+          expect(stored()).toBe('device-new');
+        });
+
+        it("goes by browser ID while its instance's registration isn't stored yet", async () => {
+          findUnique.mockResolvedValue(null);
+          schoolSpy.mockResolvedValueOnce({
+            id: BigInt(7),
+            device_id: 'reg-device',
+            device_hardware_id: null,
+          });
+
+          await service.createMeasurement({
+            ...mockAddMeasurementDto[0],
+            BrowserID: browserId,
+            app_instance_id: INSTANCE,
+          });
+
+          expect(schoolSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { user_id: browserId } }),
+          );
+          expect(stored()).toBe('reg-device');
+        });
+      });
+
       it('stores none when its values give none', async () => {
         schoolSpy.mockResolvedValueOnce(null);
         deviceIdService.resolve.mockResolvedValue({

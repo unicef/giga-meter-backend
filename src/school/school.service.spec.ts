@@ -61,7 +61,9 @@ describe('SchoolService', () => {
       .mockImplementation((fn: any) => fn(prisma));
     jest.spyOn(prisma.school, 'findFirst').mockResolvedValue(null);
     // No registration found unless a test says otherwise.
-    jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue(null);
+    jest
+      .spyOn(prisma.dailycheckapp_school, 'findFirst')
+      .mockResolvedValue(null);
   });
 
   it('should be defined', () => {
@@ -575,7 +577,9 @@ describe('SchoolService', () => {
         });
 
         expect(createSpy).toHaveBeenCalledWith({
-          data: expect.objectContaining({ device_id_flags: ['device_id_failed'] }),
+          data: expect.objectContaining({
+            device_id_flags: ['device_id_failed'],
+          }),
         });
       });
 
@@ -1018,7 +1022,10 @@ describe('SchoolService', () => {
           machine_guid: 'guid-m',
         };
         expect(mockDeviceIdService.lock).toHaveBeenCalledWith(prisma, signals);
-        expect(mockDeviceIdService.assign).toHaveBeenCalledWith(prisma, signals);
+        expect(mockDeviceIdService.assign).toHaveBeenCalledWith(
+          prisma,
+          signals,
+        );
         expect(createSpy).toHaveBeenCalledWith({
           data: expect.objectContaining({
             device_hardware_id: 'uuid-a',
