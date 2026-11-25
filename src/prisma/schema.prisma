@@ -343,10 +343,12 @@ model measurements {
   wifi_unavailable_reason     String?   @db.VarChar(32) // why wifi_connections came back empty: no_adapter | wlan_service_off | location_disabled | unknown
   ssid_source                 String?   @db.VarChar(16) // where the reported SSID came from: wlan (netsh) | nlm (Get-NetConnectionProfile fallback)
   device_context              Json?     // volatile network/system context captured next to the test; keys are whitelisted on write
+  device_id                   String?   // the PC (TECH-8828) of the registration it was made under (browser_id = its user_id), looked up when stored
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
   @@index([protocol])
+  @@index([device_id])
 }
 
 model measurements_failed {

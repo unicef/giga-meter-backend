@@ -68,6 +68,15 @@ export interface DeviceAssignment {
   device_id_flags: string[];
 }
 
+/** What resolve() makes of a set of values. */
+export interface DeviceResolution {
+  /** The PC's device ID, or null when the values can't give one. */
+  device_id: string | null;
+  flags: string[];
+  /** The values it was matched on (matchFields). */
+  counting: SignalField[];
+}
+
 /**
  * First half of each pg_advisory_xact_lock key, so these locks can't collide
  * with other advisory locks; the second half comes from one value.
@@ -284,13 +293,60 @@ export class DeviceIdService {
   }
 
   /**
+   * The device ID these values belong to, by the rules registrations follow,
+   * without storing anything: the matched PC's ID, or for a new PC the hash of
+   * its values (hashDeviceId); two PCs qualifying that the firmware UUID can't
+   * tell apart count as a new PC too (flagged conflict). Null when there is
+   * nothing to hash (nothing readable, or every value shared), or when the
+   * hash is already another PC's ID (flagged duplicate_values).
+   *
+   * A measurement uses it as it is; a registration uses it through assign().
+   */
+  async resolve(
+    client: Prisma.TransactionClient,
+    signals: DeviceSignals,
+  ): Promise<DeviceResolution> {
+    const shared = new Set<SignalField>();
+    for (const field of HARDWARE_FIELDS) {
+      if (
+        signals[field] != null &&
+        (await this.isShared(client, field, signals[field]))
+      ) {
+        shared.add(field);
+      }
+    }
+    // The Windows install ID only counts when no hardware value does.
+    if (
+      matchFields(signals, shared)[0] === 'machine_guid' &&
+      (await this.isShared(client, 'machine_guid', signals.machine_guid))
+    ) {
+      shared.add('machine_guid');
+    }
+    const counting = matchFields(signals, shared);
+    const candidates = counting.length
+      ? await this.candidates(client, signals, counting)
+      : [];
+
+    const decision = decideDevice(signals, candidates, shared);
+    const flags = [...decision.flags];
+    if (decision.device_id != null) {
+      return { device_id: decision.device_id, flags, counting };
+    }
+    const hashed = hashDeviceId(signals, counting);
+    if (hashed != null && (await this.isTaken(client, hashed))) {
+      flags.push(DUPLICATE_VALUES_FLAG);
+      return { device_id: null, flags, counting };
+    }
+    return { device_id: hashed, flags, counting };
+  }
+
+  /**
    * Works out the device ID for a registration about to be stored. Call it
    * inside a transaction, after lock().
    *
-   * A new PC gets the hash of its values (hashDeviceId). It gets a random ID
-   * instead when there is nothing to hash (nothing readable, or every value
-   * shared), or when the hash is already another PC's ID (flagged
-   * duplicate_values).
+   * The ID resolve() gives. Where it gives none, a registration still gets an
+   * ID: a random one, with the flags saying why (nothing readable, every value
+   * shared, or duplicate_values).
    *
    * When the firmware UUID counts, older registrations with the same UUID and no
    * device ID (made before 2.0.4) get the same ID, so the PC isn't counted twice.
@@ -299,41 +355,12 @@ export class DeviceIdService {
     tx: Prisma.TransactionClient,
     signals: DeviceSignals,
   ): Promise<DeviceAssignment> {
-    const shared = new Set<SignalField>();
-    for (const field of HARDWARE_FIELDS) {
-      if (
-        signals[field] != null &&
-        (await this.isShared(tx, field, signals[field]))
-      ) {
-        shared.add(field);
-      }
-    }
-    // The Windows install ID only counts when no hardware value does.
-    if (
-      matchFields(signals, shared)[0] === 'machine_guid' &&
-      (await this.isShared(tx, 'machine_guid', signals.machine_guid))
-    ) {
-      shared.add('machine_guid');
-    }
-    const counting = matchFields(signals, shared);
-    const candidates = counting.length
-      ? await this.candidates(tx, signals, counting)
-      : [];
-
-    const decision = decideDevice(signals, candidates, shared);
-    const flags = [...decision.flags];
-    let device_id = decision.device_id;
-    if (device_id == null) {
-      const hashed = hashDeviceId(signals, counting);
-      if (hashed == null) {
-        device_id = uuidv4();
-      } else if (await this.isTaken(tx, hashed)) {
-        flags.push(DUPLICATE_VALUES_FLAG);
-        device_id = uuidv4();
-      } else {
-        device_id = hashed;
-      }
-    }
+    const {
+      device_id: resolved,
+      flags,
+      counting,
+    } = await this.resolve(tx, signals);
+    const device_id = resolved ?? uuidv4();
 
     if (counting.includes('firmware_uuid')) {
       await tx.dailycheckapp_school.updateMany({

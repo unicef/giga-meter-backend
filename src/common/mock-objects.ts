@@ -657,6 +657,7 @@ export const mockMeasurementModel = [
     wifi_unavailable_reason: null,
     ssid_source: null,
     device_context: null,
+    device_id: null,
   },
   {
     id: toBigInt(2),
@@ -710,6 +711,7 @@ export const mockMeasurementModel = [
     wifi_unavailable_reason: null,
     ssid_source: null,
     device_context: null,
+    device_id: null,
   },
   {
     id: toBigInt(3),
@@ -763,6 +765,7 @@ export const mockMeasurementModel = [
     wifi_unavailable_reason: null,
     ssid_source: null,
     device_context: null,
+    device_id: null,
   },
 ];
 
