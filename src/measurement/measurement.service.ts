@@ -246,7 +246,10 @@ export class MeasurementService {
         }
 
         enrichMeasurementForPersistence(measurementDto, uploadProtocol);
-        const model = this.toModel(measurementDto);
+        const model = {
+          ...this.toModel(measurementDto),
+          device_id: await this.deviceIdFor(measurementDto.BrowserID),
+        };
         await this.prisma.measurements.create({
           data: model,
         });
@@ -319,6 +322,34 @@ export class MeasurementService {
     }
 
     return allResponse;
+  }
+
+  /**
+   * The device ID (TECH-8828) of the registration the measurement was made
+   * under: the app sends that registration's user_id as BrowserID, the same
+   * link the daily ping summary uses. It's looked up when the measurement is
+   * stored, so a registration that gets its device ID later doesn't change
+   * measurements stored before. Null when there is none, and when the lookup
+   * fails: the measurement is stored either way.
+   */
+  private async deviceIdFor(browserId?: string | null): Promise<string | null> {
+    if (!browserId) {
+      return null;
+    }
+    try {
+      const registration = await this.prisma.dailycheckapp_school.findFirst({
+        where: { user_id: browserId, device_id: { not: null } },
+        select: { device_id: true },
+        orderBy: { id: 'desc' },
+      });
+      return registration?.device_id ?? null;
+    } catch (error) {
+      console.error(
+        'Looking up the device ID for a measurement failed:',
+        error,
+      );
+      return null;
+    }
   }
 
   private async processMeasurement(

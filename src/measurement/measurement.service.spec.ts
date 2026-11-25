@@ -557,6 +557,85 @@ describe('MeasurementService', () => {
       ).rejects.toThrow('Database error');
     });
 
+    describe('device ID (TECH-8828)', () => {
+      const browserId = 'registration-user-id';
+      let schoolSpy: jest.SpyInstance;
+      let createSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        // First the school check, then the registration's device ID.
+        schoolSpy = jest
+          .spyOn(prisma.dailycheckapp_school, 'findFirst')
+          .mockResolvedValueOnce(mockSchoolModel[0]);
+        jest
+          .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+          .mockResolvedValue(null);
+        createSpy = jest
+          .spyOn(prisma.measurements, 'create')
+          .mockResolvedValue(mockMeasurementModel[0]);
+      });
+
+      it('stores the device ID of the registration it was made under', async () => {
+        schoolSpy.mockResolvedValueOnce({ device_id: 'device-1' } as any);
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          BrowserID: browserId,
+        });
+
+        expect(schoolSpy).toHaveBeenCalledWith({
+          where: { user_id: browserId, device_id: { not: null } },
+          select: { device_id: true },
+          orderBy: { id: 'desc' },
+        });
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({
+            browser_id: browserId,
+            device_id: 'device-1',
+          }),
+        });
+      });
+
+      it('stores none when the registration has no device ID', async () => {
+        schoolSpy.mockResolvedValueOnce(null);
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          BrowserID: browserId,
+        });
+
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({ device_id: null }),
+        });
+      });
+
+      it('still stores the measurement when the lookup fails', async () => {
+        schoolSpy.mockRejectedValueOnce(new Error('connection lost'));
+
+        const response = await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          BrowserID: browserId,
+        });
+
+        expect(response).toEqual('');
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({ device_id: null }),
+        });
+      });
+
+      it('does not look it up without a browser ID', async () => {
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          BrowserID: undefined,
+        });
+
+        expect(schoolSpy).toHaveBeenCalledTimes(1);
+        expect(createSpy).toHaveBeenCalledWith({
+          data: expect.objectContaining({ device_id: null }),
+        });
+      });
+    });
+
     it('should persist mlab protocol with null quality metrics by default', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
