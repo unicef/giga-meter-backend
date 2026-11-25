@@ -101,7 +101,8 @@ export class PingAggregationService {
           any[]
         >`SELECT giga_id_school, browser_id as device_id, 
       SUM( CASE WHEN is_connected = TRUE THEN 1 ELSE 0 END ) AS isConnectedTrueSum,
-       count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg 
+       count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg,
+       MAX(app_instance_id) AS app_instance_id
        FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} 
        GROUP BY giga_id_school, browser_id order by giga_id_school asc LIMIT ${limit} OFFSET ${offset}`;
 
@@ -143,6 +144,7 @@ export class PingAggregationService {
             timestamp_date: insertStart,
             giga_id_school: record.giga_id_school,
             browser_id: record.device_id || null,
+            app_instance_id: record.app_instance_id || null,
             is_connected_true,
             is_connected_all,
             uptime,

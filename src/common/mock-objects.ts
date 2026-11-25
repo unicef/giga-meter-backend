@@ -156,6 +156,8 @@ export const mockSchoolModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    app_instance_id: null,
+    registration_source: null,
   },
   {
     id: toBigInt(2),
@@ -181,6 +183,8 @@ export const mockSchoolModel = [
     windows_username: null,
     installed_path: null,
     wifi_connections: null,
+    app_instance_id: null,
+    registration_source: null,
   },
 ];
 
@@ -629,6 +633,7 @@ export const mockMeasurementModel = [
     wifi_unavailable_reason: null,
     ssid_source: null,
     device_context: null,
+    app_instance_id: null,
   },
   {
     id: toBigInt(2),
@@ -674,6 +679,7 @@ export const mockMeasurementModel = [
     wifi_unavailable_reason: null,
     ssid_source: null,
     device_context: null,
+    app_instance_id: null,
   },
   {
     id: toBigInt(3),
@@ -719,6 +725,7 @@ export const mockMeasurementModel = [
     wifi_unavailable_reason: null,
     ssid_source: null,
     device_context: null,
+    app_instance_id: null,
   },
 ];
 

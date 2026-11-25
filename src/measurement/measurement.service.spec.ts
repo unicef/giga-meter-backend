@@ -406,6 +406,31 @@ describe('MeasurementService', () => {
   });
 
   describe('CreateMeasurement', () => {
+    it('should store the app instance ID it sends, lowercased, and none for a bad one', async () => {
+      const INSTANCE = '6f1c2b8e-4d3a-4f5e-9a7b-1c2d3e4f5a6b';
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        app_instance_id: INSTANCE.toUpperCase(),
+      });
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        app_instance_id: 'not-a-uuid',
+      });
+
+      expect(createSpy.mock.calls[0][0].data.app_instance_id).toBe(INSTANCE);
+      expect(createSpy.mock.calls[1][0].data.app_instance_id).toBeNull();
+    });
+
     it('should create measurement', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')

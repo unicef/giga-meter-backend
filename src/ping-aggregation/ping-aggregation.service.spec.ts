@@ -191,6 +191,32 @@ describe('PingAggregationService', () => {
   });
 
   describe('aggregateDailyPingData', () => {
+    it('should carry each app instance', async () => {
+      const targetDate = new Date('2025-01-01T00:00:00.000Z');
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          giga_id_school: 'school-1',
+          device_id: 'browser-a',
+          app_instance_id: 'instance-a',
+          isconnectedtruesum: 8,
+          isconnectedallsum: 10,
+          latencyavg: 50,
+        },
+      ]);
+      mockPrismaService.connectivityPingChecksDailyAggr.findMany.mockResolvedValue(
+        [],
+      );
+
+      await service.aggregateDailyPingData(targetDate);
+
+      const rows = (
+        prisma.connectivityPingChecksDailyAggr.createMany as jest.Mock
+      ).mock.calls[0][0].data;
+      expect(rows.map((row) => [row.browser_id, row.app_instance_id])).toEqual([
+        ['browser-a', 'instance-a'],
+      ]);
+    });
+
     it('should aggregate ping data for a specific date', async () => {
       const targetDate = new Date('2025-01-01T00:00:00.000Z');
       const queryResult = [
@@ -224,6 +250,7 @@ describe('PingAggregationService', () => {
             timestamp_date: targetDate,
             giga_id_school: 'school-1',
             browser_id: 'device-1',
+            app_instance_id: null,
             is_connected_true: 80,
             is_connected_all: 100,
             uptime: 80,
