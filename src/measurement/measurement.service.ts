@@ -23,12 +23,36 @@ import {
   sanitizeSsidSource,
   sanitizeWifiUnavailableReason,
 } from '../common/device-context.utils';
+import {
+  cleanSignals,
+  DeviceIdService,
+  DeviceSignals,
+} from '../school/device-id.service';
+
+/**
+ * Limits for completing a registration's device ID from a measurement: the
+ * same as a registration's own transaction (school.service.ts), longer than
+ * Prisma's defaults so a busy pool makes it slower rather than failing it.
+ */
+const DEVICE_TRANSACTION = { maxWait: 10_000, timeout: 20_000 };
+
+/** The fields of a stored measurement its device ID is worked out from. */
+interface MeasurementDeviceFields {
+  browser_id?: string | null;
+  app_instance_id?: string | null;
+  device_hardware_id?: string | null;
+  device_context?: Record<string, unknown> | null;
+}
 
 @Injectable()
 export class MeasurementService {
   SCHOOL_DOESNT_EXIST_ERR = 'PCDC school does not exist';
   WRONG_COUNTRY_CODE_ERR = 'Wrong country code';
-  constructor(private prisma: PrismaService, private geolocationUtility: GeolocationUtility) {}
+  constructor(
+    private prisma: PrismaService,
+    private geolocationUtility: GeolocationUtility,
+    private deviceIdService: DeviceIdService,
+  ) {}
 
   async measurements(
     skip?: number,
@@ -233,6 +257,7 @@ export class MeasurementService {
         }
 
         const model = this.toModel(measurementDto);
+        model.device_id = await this.deviceIdFor(model);
         await this.prisma.measurements.create({
           data: model,
         });
@@ -305,6 +330,130 @@ export class MeasurementService {
     }
 
     return allResponse;
+  }
+
+  /**
+   * The registration a measurement was made under: its app instance's, found
+   * by app_instance_id. Without one (older apps), or before the instance's own
+   * registration is stored, the registration BrowserID names (its user_id).
+   */
+  private async registrationOf(measurement: MeasurementDeviceFields) {
+    const select = { id: true, device_id: true, device_hardware_id: true };
+    if (measurement.app_instance_id) {
+      const own = await this.prisma.dailycheckapp_school.findUnique({
+        where: { app_instance_id: measurement.app_instance_id },
+        select,
+      });
+      if (own) {
+        return own;
+      }
+    }
+    if (!measurement.browser_id) {
+      return null;
+    }
+    return this.prisma.dailycheckapp_school.findFirst({
+      where: { user_id: measurement.browser_id },
+      orderBy: { id: 'desc' },
+      select,
+    });
+  }
+
+  /**
+   * The device ID (TECH-8828) of the PC a measurement came from, worked out
+   * from the hardware values the measurement carries by the rules
+   * registrations follow (DeviceIdService.resolve): the ID the PC has, or for a
+   * PC no registration matches, the ID it would get if it registered now.
+   *
+   * The registration the measurement was made under (registrationOf) is
+   * completed first when it has no device ID yet and the same firmware UUID:
+   * a registration from before 2.0.4, whose PC only updated the app and
+   * doesn't register again. It gets this PC's values
+   * and device ID, as when its PC registers again, so the PC's later
+   * measurements match it whatever they manage to read.
+   *
+   * A measurement without any hardware value (an app older than hardware
+   * IDs) takes its registration's device ID. Null when nothing gives one, and
+   * when working it out fails: the measurement is stored either way. It's
+   * decided when the measurement is stored and not changed afterwards.
+   */
+  private async deviceIdFor(
+    measurement: MeasurementDeviceFields,
+  ): Promise<string | null> {
+    try {
+      const context = measurement.device_context ?? {};
+      const signals = cleanSignals({
+        device_hardware_id: measurement.device_hardware_id,
+        baseboard_serial: context.baseboard_serial as string,
+        disk_serial: context.disk_serial as string,
+        machine_guid: context.machine_guid as string,
+      });
+      const registration = await this.registrationOf(measurement);
+
+      if (Object.values(signals).every((value) => value == null)) {
+        return registration?.device_id ?? null;
+      }
+
+      if (
+        registration &&
+        registration.device_id == null &&
+        signals.firmware_uuid != null &&
+        cleanSignals(registration).firmware_uuid === signals.firmware_uuid
+      ) {
+        const completed = await this.completeRegistration(
+          registration.id,
+          signals,
+        );
+        if (completed != null) {
+          return completed;
+        }
+      }
+
+      const { device_id } = await this.deviceIdService.resolve(
+        this.prisma,
+        signals,
+      );
+      return device_id;
+    } catch (error) {
+      console.error(
+        'Working out the device ID for a measurement failed:',
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Gives a registration without a device ID this PC's hardware values and
+   * device ID, as DeviceIdService.assign() decides it for a registration,
+   * under the same locks. Null when another measurement completed it
+   * meanwhile, or it's gone: the caller then matches as for any measurement.
+   */
+  private completeRegistration(
+    id: bigint,
+    signals: DeviceSignals,
+  ): Promise<string | null> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.deviceIdService.lock(tx, signals);
+      const row = await tx.dailycheckapp_school.findUnique({
+        where: { id },
+        select: { device_id: true },
+      });
+      if (!row || row.device_id != null) {
+        return null;
+      }
+      const device = await this.deviceIdService.assign(tx, signals);
+      await tx.dailycheckapp_school.update({
+        where: { id },
+        data: {
+          baseboard_serial: signals.baseboard_serial,
+          disk_serial: signals.disk_serial,
+          machine_guid: signals.machine_guid,
+          device_id: device.device_id,
+          device_id_flags: device.device_id_flags,
+        },
+      });
+      return device.device_id;
+    }, DEVICE_TRANSACTION);
   }
 
   private async processMeasurement(

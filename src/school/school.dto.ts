@@ -89,6 +89,32 @@ export class SchoolDto {
       'manual: the user picked the school. auto: the app took the school from the registration this PC already has.',
   })
   registration_source?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Motherboard serial. Stored, never returned.',
+  })
+  baseboard_serial?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Internal disk serial. Stored, never returned.',
+  })
+  disk_serial?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Windows install ID (MachineGuid). Stored, never returned; used to match a PC only when none of the hardware values can be used.',
+  })
+  machine_guid?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'The physical PC this registration belongs to, given by the server.',
+  })
+  device_id?: string;
 }
 
 export class CheckNotifyDto {
