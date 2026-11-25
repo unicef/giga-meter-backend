@@ -140,4 +140,67 @@ export class GeolocationUtility {
       };
     }
   }
+
+  /**
+   * Finds coordinates to backfill from an existing measurement taken at the
+   * same school and connected to the same Wi-Fi access point (BSSID). Used to
+   * fill geolocation for legacy uploads that predate the geolocation feature.
+   *
+   * Matches on the primary Wi-Fi connection (wifi_connections[0].bssid) and the
+   * measurement's giga_id_school (always persisted lower-cased/trimmed). When
+   * several candidates exist, the most accurate one wins.
+   *
+   * @param giga_id_school The GIGA ID of the school
+   * @param bssid Lower-cased BSSID of the incoming measurement's primary Wi-Fi
+   * @returns Donor coordinates + accuracy, or null when none found
+   */
+  async findDonorLocationByBssid(
+    giga_id_school: string,
+    bssid: string,
+  ): Promise<{
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+  } | null> {
+    try {
+      const giga = giga_id_school?.toLowerCase().trim();
+      if (!giga || !bssid) {
+        return null;
+      }
+
+      const result = await this.prisma.$queryRaw<
+        { latitude: number; longitude: number; accuracy: number | null }[]
+      >`
+        SELECT detected_latitude          AS latitude,
+               detected_longitude         AS longitude,
+               detected_location_accuracy AS accuracy
+        FROM measurements
+        WHERE giga_id_school = ${giga}
+          AND detected_latitude  IS NOT NULL
+          AND detected_longitude IS NOT NULL
+          AND lower(wifi_connections -> 0 ->> 'bssid') = ${bssid}
+        ORDER BY detected_location_accuracy ASC NULLS LAST
+        LIMIT 1
+      `;
+
+      if (
+        result.length > 0 &&
+        result[0].latitude != null &&
+        result[0].longitude != null
+      ) {
+        return {
+          latitude: result[0].latitude,
+          longitude: result[0].longitude,
+          accuracy: result[0].accuracy ?? null,
+        };
+      }
+    } catch (error) {
+      console.error(
+        `Error finding donor location by BSSID for ${giga_id_school}:`,
+        error,
+      );
+    }
+
+    return null;
+  }
 }
