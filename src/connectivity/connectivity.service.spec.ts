@@ -49,6 +49,67 @@ describe('ConnectivityService', () => {
       .spyOn(prisma.dailycheckapp_school, 'findFirst')
       .mockResolvedValue(exists ? ({ giga_id_school } as any) : null);
 
+  describe('app instance', () => {
+    const INSTANCE = '6f1c2b8e-4d3a-4f5e-9a7b-1c2d3e4f5a6b';
+
+    it("stores each ping's app instance ID, lowercased", async () => {
+      schoolExists(true);
+      const createMany = jest
+        .spyOn(prisma.connectivity_ping_checks, 'createMany')
+        .mockResolvedValue({ count: 2 });
+
+      await service.createMany(
+        [
+          { ...record('a'), app_instance_id: INSTANCE.toUpperCase() },
+          record('b'),
+        ],
+        giga_id_school,
+      );
+
+      const rows = createMany.mock.calls[0][0].data as any[];
+      expect(rows.map((row) => row.app_instance_id)).toEqual([INSTANCE, null]);
+    });
+
+    it('stores none for an ID that is not a UUID, and keeps the ping', async () => {
+      schoolExists(true);
+      const create = jest
+        .spyOn(prisma.connectivity_ping_checks, 'create')
+        .mockResolvedValue({} as any);
+
+      await service.create({ ...record('a'), app_instance_id: 'not-a-uuid' });
+
+      expect(create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          app_local_uuid: 'a',
+          app_instance_id: null,
+        }),
+      });
+    });
+
+    it('stores only the columns pings have, so a newer field cannot fail the batch', async () => {
+      schoolExists(true);
+      const createMany = jest
+        .spyOn(prisma.connectivity_ping_checks, 'createMany')
+        .mockResolvedValue({ count: 1 });
+
+      await service.createMany(
+        [{ ...record('a'), some_future_field: 'x' } as any],
+        giga_id_school,
+      );
+
+      expect(Object.keys(createMany.mock.calls[0][0].data[0]).sort()).toEqual([
+        'app_instance_id',
+        'app_local_uuid',
+        'browserId',
+        'errorMessage',
+        'giga_id_school',
+        'isConnected',
+        'latency',
+        'timestamp',
+      ]);
+    });
+  });
+
   describe('createMany', () => {
     it('rejects a batch for a school that does not exist', async () => {
       schoolExists(false);

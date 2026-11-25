@@ -17,6 +17,7 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import { normalizeAppInstanceId } from '../common/app-instance.utils';
 import {
   sanitizeDeviceContext,
   sanitizeSsidSource,
@@ -688,6 +689,7 @@ export class MeasurementService {
       device_context: sanitizeDeviceContext(
         measurement.device_context,
       ),
+      app_instance_id: normalizeAppInstanceId(measurement.app_instance_id),
     };
   }
 

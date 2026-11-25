@@ -7,7 +7,11 @@ import {
   mockSchoolDto,
   mockSchoolModel,
 } from '../common/mock-objects';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 describe('SchoolService', () => {
@@ -621,6 +625,110 @@ describe('SchoolService', () => {
       expect(findUniqueSpy).not.toHaveBeenCalled();
       expect(createSpy).not.toHaveBeenCalled();
       expect(response).toBe('pc-registration');
+    });
+  });
+
+  describe('claimAppInstance', () => {
+    const INSTANCE = '6f1c2b8e-4d3a-4f5e-9a7b-1c2d3e4f5a6b';
+    let findFirst: jest.SpyInstance;
+    let updateMany: jest.SpyInstance;
+
+    beforeEach(() => {
+      findFirst = jest.spyOn(prisma.dailycheckapp_school, 'findFirst');
+      updateMany = jest
+        .spyOn(prisma.dailycheckapp_school, 'updateMany')
+        .mockResolvedValue({ count: 1 });
+    });
+
+    it("gives a registration without one this install's ID", async () => {
+      findFirst.mockResolvedValue({ id: BigInt(5), app_instance_id: null });
+
+      const result = await service.claimAppInstance(
+        ' user-1 ',
+        INSTANCE.toUpperCase(),
+      );
+
+      expect(result).toEqual({ user_id: 'user-1', app_instance_id: INSTANCE });
+      expect(findFirst).toHaveBeenCalledWith({
+        where: { user_id: 'user-1' },
+        orderBy: { id: 'desc' },
+        select: { id: true, app_instance_id: true },
+      });
+      // Only while it still has none.
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: BigInt(5), app_instance_id: null },
+        data: { app_instance_id: INSTANCE },
+      });
+    });
+
+    it('accepts the same claim again', async () => {
+      findFirst.mockResolvedValue({ id: BigInt(5), app_instance_id: INSTANCE });
+
+      await expect(
+        service.claimAppInstance('user-1', INSTANCE),
+      ).resolves.toEqual({ user_id: 'user-1', app_instance_id: INSTANCE });
+      expect(updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses a registration that has another app instance', async () => {
+      // Older apps copied one registration to every Windows user of a PC: the
+      // first to claim it keeps it, and the others register on their own.
+      findFirst.mockResolvedValue({
+        id: BigInt(5),
+        app_instance_id: '0b8f7e6d-5c4b-4a39-8281-7f6e5d4c3b2a',
+      });
+
+      await expect(
+        service.claimAppInstance('user-1', INSTANCE),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(updateMany).not.toHaveBeenCalled();
+    });
+
+    it('refuses when another instance claimed it at the same moment', async () => {
+      findFirst.mockResolvedValue({ id: BigInt(5), app_instance_id: null });
+      updateMany.mockResolvedValue({ count: 0 });
+      jest.spyOn(prisma.dailycheckapp_school, 'findUnique').mockResolvedValue({
+        app_instance_id: '0b8f7e6d-5c4b-4a39-8281-7f6e5d4c3b2a',
+      } as any);
+
+      await expect(
+        service.claimAppInstance('user-1', INSTANCE),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('refuses an ID that belongs to another registration', async () => {
+      findFirst.mockResolvedValue({ id: BigInt(5), app_instance_id: null });
+      updateMany.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError(
+          'Unique constraint failed on the fields: (`app_instance_id`)',
+          { code: 'P2002', clientVersion: 'test' },
+        ),
+      );
+
+      await expect(
+        service.claimAppInstance('user-1', INSTANCE),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('answers 404 without a registration with that user_id', async () => {
+      findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.claimAppInstance('user-1', INSTANCE),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('refuses a missing user_id or an ID that is not a UUID', async () => {
+      await expect(
+        service.claimAppInstance('', INSTANCE),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.claimAppInstance('user-1', 'not-a-uuid'),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.claimAppInstance('user-1', undefined),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(findFirst).not.toHaveBeenCalled();
     });
   });
 });
