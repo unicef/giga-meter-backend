@@ -644,6 +644,7 @@ export const mockMeasurementModel = [
     ssid_source: null,
     device_context: null,
     app_instance_id: null,
+    device_id: null,
   },
   {
     id: toBigInt(2),
@@ -690,6 +691,7 @@ export const mockMeasurementModel = [
     ssid_source: null,
     device_context: null,
     app_instance_id: null,
+    device_id: null,
   },
   {
     id: toBigInt(3),
@@ -736,6 +738,7 @@ export const mockMeasurementModel = [
     ssid_source: null,
     device_context: null,
     app_instance_id: null,
+    device_id: null,
   },
 ];
 

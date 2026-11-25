@@ -272,11 +272,13 @@ model measurements {
   ssid_source                 String?   @db.VarChar(16) // where the reported SSID came from: wlan (netsh) | nlm (Get-NetConnectionProfile fallback)
   device_context              Json?     // volatile network/system context captured next to the test; keys are whitelisted on write
   app_instance_id             String?   // the app instance it came from (the UUID the app generated for its install), as the app sends it
+  device_id                   String?   // the PC (TECH-8828) of the registration it was made under (browser_id = its user_id), looked up when stored
 
   @@index([giga_id_school])
   @@index([country_code])
   @@index([timestamp])
   @@index([app_instance_id])
+  @@index([device_id])
 }
 
 model measurements_failed {
