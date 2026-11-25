@@ -41,6 +41,7 @@ import { GeolocationModule } from './geolocation/geolocation.module';
 import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
 import * as redisStore from 'cache-manager-redis-store';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
@@ -70,6 +71,7 @@ import { SchedulerService } from './scheduler/scheduler.service';
     IpMetadataModule,
     MlabModule,
     GeolocationModule,
+    AnalyticsModule,
   ],
   controllers: [
     AppController,

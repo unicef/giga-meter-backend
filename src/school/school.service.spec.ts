@@ -283,6 +283,28 @@ describe('SchoolService', () => {
       );
     });
 
+    it('should answer the registration with its device ID', async () => {
+      // What the controller sends: the app reads user_id, and uses the device
+      // ID as its analytics identity.
+      jest.spyOn(prisma.dailycheckapp_school, 'findFirst').mockResolvedValue({
+        ...mockSchoolModel[0],
+        user_id: 'existing_user_id',
+        device_hardware_id: 'hardware-1',
+        device_id: 'device-1',
+        disk_serial: 'disk-1',
+      });
+
+      const response = await service.createRegistration({
+        ...mockSchoolDto[0],
+        device_hardware_id: 'hardware-1',
+      });
+
+      expect(response).toEqual({
+        user_id: 'existing_user_id',
+        device_id: 'device-1',
+      });
+    });
+
     it('should look for the repeat inside the locked transaction', async () => {
       // On the transaction's own connection, after the lock, so two requests
       // for the same PC can't both find none.

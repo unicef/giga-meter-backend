@@ -163,6 +163,19 @@ export class CheckExistingInstallationDto {
   is_active?: boolean;
 }
 
+export class CreateSchoolResponseDto {
+  @ApiProperty()
+  user_id: string;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description:
+      'Device ID (TECH-8828) of this registration (app instance): the physical PC it is on. Null when it could not be worked out',
+  })
+  device_id?: string | null;
+}
+
 export class DeactivateDeviceDto {
   @ApiProperty()
   device_hardware_id: string;
@@ -209,4 +222,12 @@ export class CheckDeviceStatusDto {
     description: 'Whether the device exists in the database',
   })
   exists: boolean;
+
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description:
+      "Device ID (TECH-8828): the physical PC. The asking app instance's own registration's when app_instance_id is given and found, otherwise the latest matching registration's; absent when the device is not found",
+  })
+  device_id?: string | null;
 }
