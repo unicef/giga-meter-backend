@@ -20,7 +20,11 @@ import {
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthGuard } from '../auth/auth.guard';
 import { getRateLimitConfig } from '../config/rate-limit.config';
-import { GeolocateBodyDto, WifiAccessPointDto } from './geolocation.dto';
+import {
+  GeolocateBodyDto,
+  MAX_WIFI_ACCESS_POINTS,
+  WifiAccessPointDto,
+} from './geolocation.dto';
 import { GeolocationCircuit } from './geolocation.circuit';
 import {
   GeolocateResult,
@@ -32,6 +36,34 @@ import { LocationNotFoundException } from './location-not-found.exception';
 
 /** Provider 403 reasons that mean "over quota", not "bad key". */
 const QUOTA_REASONS = ['dailyLimitExceeded', 'userRateLimitExceeded', 'rateLimitExceeded'];
+
+/**
+ * The `limit` access points with the strongest signal, strongest first. A
+ * missing strength counts as the weakest, and equal strengths keep the order
+ * they came in. A list within the limit is returned as it is.
+ */
+export function strongestAccessPoints<T extends { signalStrength?: number }>(
+  accessPoints: T[],
+  limit: number,
+): T[] {
+  if (accessPoints.length <= limit) {
+    return accessPoints;
+  }
+  const strength = (ap: T): number => {
+    const value = ap.signalStrength;
+    return typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : -Infinity;
+  };
+  // Array.prototype.sort is stable, so equal strengths keep their order.
+  return [...accessPoints]
+    .sort((a, b) => {
+      const sa = strength(a);
+      const sb = strength(b);
+      return sa === sb ? 0 : sa > sb ? -1 : 1;
+    })
+    .slice(0, limit);
+}
 
 @ApiTags('geolocation')
 @Controller('api/v1/geolocation')
@@ -91,7 +123,15 @@ export class GeolocationController {
         accessPoints.set(mac, { ...ap, macAddress: mac });
       }
     }
-    const macs = [...accessPoints.keys()].sort();
+
+    // A scan in a dense building can see more networks than the provider
+    // needs. Only the strongest are kept, before the cache lookup, so that the
+    // cache key is the set the provider is asked about.
+    const wifiAccessPoints = strongestAccessPoints(
+      [...accessPoints.values()],
+      MAX_WIFI_ACCESS_POINTS,
+    );
+    const macs = wifiAccessPoints.map((ap) => ap.macAddress).sort();
 
     // The provider needs two distinct access points and answers 404 below
     // that: skip the call, and the answer is the same one it would give.
@@ -111,7 +151,7 @@ export class GeolocationController {
     const flightKey = macs.join(',');
     let flight = this.inFlight.get(flightKey);
     if (!flight) {
-      flight = this.resolveAndCache(apiKey, macs, [...accessPoints.values()]).finally(
+      flight = this.resolveAndCache(apiKey, macs, wifiAccessPoints).finally(
         () => this.inFlight.delete(flightKey),
       );
       this.inFlight.set(flightKey, flight);
