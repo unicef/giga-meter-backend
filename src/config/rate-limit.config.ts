@@ -25,7 +25,9 @@ export const RATE_LIMIT_CONFIG: RateLimitConfig = {
     countries: defaultRateLimitConfig,
     schools: defaultRateLimitConfig,
     // Proxies a paid third-party API, so an unthrottled caller costs money.
-    geolocation: defaultRateLimitConfig
+    geolocation: defaultRateLimitConfig,
+    // Each call is one call to M-Lab's token exchange.
+    mlab: defaultRateLimitConfig
   }
 };
 
