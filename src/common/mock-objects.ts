@@ -163,6 +163,8 @@ export const mockSchoolModel = [
     machine_guid: null,
     device_id: null,
     device_id_flags: [],
+    app_instance_id: null,
+    registration_source: null,
   },
   {
     id: toBigInt(2),
@@ -193,6 +195,8 @@ export const mockSchoolModel = [
     machine_guid: null,
     device_id: null,
     device_id_flags: [],
+    app_instance_id: null,
+    registration_source: null,
   },
 ];
 
@@ -654,6 +658,7 @@ export const mockMeasurementModel = [
     ssid_source: null,
     device_context: null,
     device_id: null,
+    app_instance_id: null,
   },
   {
     id: toBigInt(2),
@@ -708,6 +713,7 @@ export const mockMeasurementModel = [
     ssid_source: null,
     device_context: null,
     device_id: null,
+    app_instance_id: null,
   },
   {
     id: toBigInt(3),
@@ -762,6 +768,7 @@ export const mockMeasurementModel = [
     ssid_source: null,
     device_context: null,
     device_id: null,
+    app_instance_id: null,
   },
 ];
 

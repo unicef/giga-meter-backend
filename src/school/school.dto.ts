@@ -103,6 +103,21 @@ export class SchoolDto {
       'The physical PC this registration belongs to, given by the server.',
   })
   device_id?: string;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'UUID the app generates for this app instance (one install under one Windows user, for one registration). Registering again with the same one returns the same registration.',
+  })
+  app_instance_id?: string;
+
+  @ApiProperty({
+    required: false,
+    enum: ['manual', 'auto'],
+    description:
+      'manual: the user picked the school. auto: the app took the school from the registration this PC already has.',
+  })
+  registration_source?: string;
 }
 
 export class CheckNotifyDto {
@@ -176,6 +191,19 @@ export class DeactivateDeviceResponseDto {
 
   @ApiProperty({ required: false })
   message?: string;
+}
+
+export class ClaimAppInstanceDto {
+  @ApiProperty({
+    description:
+      "The registration's user_id: the schoolUserId the app already holds.",
+  })
+  user_id: string;
+
+  @ApiProperty({
+    description: 'The UUID this app instance generated for itself.',
+  })
+  app_instance_id: string;
 }
 
 export class CheckDeviceStatusDto {

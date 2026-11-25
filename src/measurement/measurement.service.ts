@@ -17,6 +17,7 @@ import {
 import { plainToInstance } from 'class-transformer';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { sanitizeHardwareId } from '../common/hardware-id.utils';
+import { normalizeAppInstanceId } from '../common/app-instance.utils';
 import {
   sanitizeDeviceContext,
   sanitizeSsidSource,
@@ -39,6 +40,7 @@ const DEVICE_TRANSACTION = { maxWait: 10_000, timeout: 20_000 };
 /** The fields of a stored measurement its device ID is worked out from. */
 interface MeasurementDeviceFields {
   browser_id?: string | null;
+  app_instance_id?: string | null;
   device_hardware_id?: string | null;
   device_context?: Record<string, unknown> | null;
 }
@@ -346,15 +348,41 @@ export class MeasurementService {
   }
 
   /**
+   * The registration a measurement was made under: its app instance's, found
+   * by app_instance_id. Without one (older apps), or before the instance's own
+   * registration is stored, the registration BrowserID names (its user_id).
+   */
+  private async registrationOf(measurement: MeasurementDeviceFields) {
+    const select = { id: true, device_id: true, device_hardware_id: true };
+    if (measurement.app_instance_id) {
+      const own = await this.prisma.dailycheckapp_school.findUnique({
+        where: { app_instance_id: measurement.app_instance_id },
+        select,
+      });
+      if (own) {
+        return own;
+      }
+    }
+    if (!measurement.browser_id) {
+      return null;
+    }
+    return this.prisma.dailycheckapp_school.findFirst({
+      where: { user_id: measurement.browser_id },
+      orderBy: { id: 'desc' },
+      select,
+    });
+  }
+
+  /**
    * The device ID (TECH-8828) of the PC a measurement came from, worked out
    * from the hardware values the measurement carries by the rules
    * registrations follow (DeviceIdService.resolve): the ID the PC has, or for a
    * PC no registration matches, the ID it would get if it registered now.
    *
-   * The registration the measurement was made under (BrowserID is that
-   * registration's user_id) is completed first when it has no device ID yet
-   * and the same firmware UUID: a registration from before 2.0.4, whose PC
-   * only updated the app and doesn't register again. It gets this PC's values
+   * The registration the measurement was made under (registrationOf) is
+   * completed first when it has no device ID yet and the same firmware UUID:
+   * a registration from before 2.0.4, whose PC only updated the app and
+   * doesn't register again. It gets this PC's values
    * and device ID, as when its PC registers again, so the PC's later
    * measurements match it whatever they manage to read.
    *
@@ -374,13 +402,7 @@ export class MeasurementService {
         disk_serial: context.disk_serial as string,
         machine_guid: context.machine_guid as string,
       });
-      const registration = measurement.browser_id
-        ? await this.prisma.dailycheckapp_school.findFirst({
-            where: { user_id: measurement.browser_id },
-            orderBy: { id: 'desc' },
-            select: { id: true, device_id: true, device_hardware_id: true },
-          })
-        : null;
+      const registration = await this.registrationOf(measurement);
 
       if (Object.values(signals).every((value) => value == null)) {
         return registration?.device_id ?? null;
@@ -813,6 +835,7 @@ export class MeasurementService {
       device_context: sanitizeDeviceContext(
         measurement.device_context,
       ),
+      app_instance_id: normalizeAppInstanceId(measurement.app_instance_id),
       protocol: measurement.protocol ?? 'mlab',
       download_latency: measurement.download_latency ?? null,
       upload_latency: measurement.upload_latency ?? null,

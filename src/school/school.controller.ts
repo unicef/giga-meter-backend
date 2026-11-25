@@ -29,6 +29,7 @@ import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
   CheckDeviceStatusDto,
+  ClaimAppInstanceDto,
   CreateSchoolResponseDto,
   DeactivateDeviceDto,
   SchoolDto,
@@ -484,6 +485,49 @@ export class SchoolController {
       data: result,
       timestamp: new Date().toISOString(),
       message: result.message || 'success',
+    };
+  }
+
+  @Put('app-instance')
+  @ApiOperation({
+    summary:
+      'Give the registration with this user_id the app instance ID of the install using it',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The registration has this app instance ID',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; user_id missing or app_instance_id not a UUID',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No registration with this user_id',
+  })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The registration has another app instance ID, or this ID belongs to another registration',
+  })
+  async claimAppInstance(
+    @Body() claimDto: ClaimAppInstanceDto,
+  ): Promise<
+    ApiSuccessResponseDto<{ user_id: string; app_instance_id: string }>
+  > {
+    const result = await this.schoolService.claimAppInstance(
+      claimDto?.user_id,
+      claimDto?.app_instance_id,
+    );
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: 'success',
     };
   }
 }
