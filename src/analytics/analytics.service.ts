@@ -30,9 +30,12 @@ import { normalizeGigaId } from '../utility/utility';
  * request.
  *
  * Environment:
- *   POSTHOG_API_KEY  project API key (the same project as the app's builds
- *                    for this environment)
- *   POSTHOG_HOST     defaults to the EU cloud, like the app
+ *   POSTHOG_API_KEY   project API key (the same project as the app's builds)
+ *   POSTHOG_HOST      defaults to the EU cloud, like the app
+ *   POSTHOG_APP_MODE  prod / stg / dev, sent as app_mode like the app's own
+ *                     events: production and staging share one PostHog
+ *                     project, and dashboards filter on app_mode. Worked out
+ *                     from SENTRY_ENVIRONMENT or NODE_ENV when unset.
  */
 @Injectable()
 export class AnalyticsService implements OnModuleDestroy {
@@ -127,6 +130,7 @@ export class AnalyticsService implements OnModuleDestroy {
         properties: {
           ...properties,
           source: 'backend',
+          app_mode: backendAppMode(),
           backend_env:
             process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || null,
         },
@@ -143,6 +147,29 @@ export class AnalyticsService implements OnModuleDestroy {
  * batch-imaged machines) rather than a PC's own Windows users and logins.
  */
 export const DEVICE_REGISTRATIONS_ANOMALY = 5;
+
+/**
+ * This backend's environment in the app's terms (app_mode: prod, stg or dev).
+ * Production and staging send to one PostHog project, and every dashboard
+ * filters on app_mode, so a production backend whose app_mode came out wrong
+ * would drop out of them: set POSTHOG_APP_MODE there.
+ */
+export function backendAppMode(env: NodeJS.ProcessEnv = process.env): string {
+  const explicit = env.POSTHOG_APP_MODE?.trim().toLowerCase();
+  if (explicit) {
+    return explicit;
+  }
+  const name = (env.SENTRY_ENVIRONMENT || env.NODE_ENV || '')
+    .trim()
+    .toLowerCase();
+  if (name.startsWith('prod')) {
+    return 'prod';
+  }
+  if (name.startsWith('stg') || name.startsWith('stag')) {
+    return 'stg';
+  }
+  return 'dev';
+}
 
 function schoolDistinctId(gigaId: string | null | undefined): string {
   const key = normalizeGigaId(gigaId);

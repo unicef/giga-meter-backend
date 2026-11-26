@@ -2,6 +2,7 @@ import { PostHog } from 'posthog-node';
 import {
   AnalyticsService,
   accuracyBand,
+  backendAppMode,
   distanceBand,
   rejectionReasonCode,
 } from './analytics.service';
@@ -36,6 +37,20 @@ describe('AnalyticsService', () => {
     expect(rejectionReasonCode('something else')).toBe('other');
   });
 
+  it("names this backend's environment as the app does (app_mode)", () => {
+    expect(backendAppMode({ POSTHOG_APP_MODE: 'PROD' })).toBe('prod');
+    expect(
+      backendAppMode({
+        POSTHOG_APP_MODE: 'stg',
+        SENTRY_ENVIRONMENT: 'production',
+      }),
+    ).toBe('stg');
+    expect(backendAppMode({ SENTRY_ENVIRONMENT: 'production' })).toBe('prod');
+    expect(backendAppMode({ SENTRY_ENVIRONMENT: 'staging' })).toBe('stg');
+    expect(backendAppMode({ NODE_ENV: 'development' })).toBe('dev');
+    expect(backendAppMode({})).toBe('dev');
+  });
+
   it('does nothing without POSTHOG_API_KEY', () => {
     delete process.env.POSTHOG_API_KEY;
     const service = new AnalyticsService();
@@ -62,11 +77,20 @@ describe('AnalyticsService', () => {
     });
 
     it("sends a device event on the device ID's person, in its school and country groups", () => {
-      new AnalyticsService().captureDeviceEvent(
-        'server_measurement_rejected',
-        { deviceId: DEVICE_ID, gigaId: ' GigaID1 ', countryCode: 'es' },
-        { reason: 'school_doesnt_exist' },
-      );
+      const originalMode = process.env.POSTHOG_APP_MODE;
+      process.env.POSTHOG_APP_MODE = 'prod';
+      try {
+        new AnalyticsService().captureDeviceEvent(
+          'server_measurement_rejected',
+          { deviceId: DEVICE_ID, gigaId: ' GigaID1 ', countryCode: 'es' },
+          { reason: 'school_doesnt_exist' },
+        );
+      } finally {
+        process.env.POSTHOG_APP_MODE = originalMode;
+        if (originalMode === undefined) {
+          delete process.env.POSTHOG_APP_MODE;
+        }
+      }
 
       expect(capture).toHaveBeenCalledWith({
         distinctId: DEVICE_ID,
@@ -75,6 +99,8 @@ describe('AnalyticsService', () => {
         properties: expect.objectContaining({
           reason: 'school_doesnt_exist',
           source: 'backend',
+          // Production and staging share one project: dashboards filter on it.
+          app_mode: 'prod',
         }),
       });
     });
