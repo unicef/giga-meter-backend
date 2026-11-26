@@ -22,14 +22,13 @@ import {
 } from '@nestjs/swagger';
 import { SchoolService } from './school.service';
 import { AuthGuard } from '../auth/auth.guard';
-import {
-  AddRecordResponseDto,
-  ApiSuccessResponseDto,
-} from '../common/common.dto';
+import { ApiSuccessResponseDto } from '../common/common.dto';
 import {
   CheckNotifyDto,
   CheckExistingInstallationDto,
   CheckDeviceStatusDto,
+  ClaimAppInstanceDto,
+  CreateSchoolResponseDto,
   DeactivateDeviceDto,
   DeactivateDeviceResponseDto,
   SchoolDto,
@@ -340,9 +339,17 @@ export class SchoolController {
     required: true,
     type: 'string',
   })
+  @ApiQuery({
+    name: 'app_instance_id',
+    description:
+      "The asking app instance's ID: device_id is then its own registration's",
+    required: false,
+    type: 'string',
+  })
   async checkDeviceStatus(
     @Param('device_hardware_id') device_hardware_id: string,
     @Param('giga_id_school') giga_id_school: string,
+    @Query('app_instance_id') app_instance_id?: string,
   ): Promise<ApiSuccessResponseDto<CheckDeviceStatusDto>> {
     if (!device_hardware_id || device_hardware_id.trim().length === 0) {
       throw new HttpException(
@@ -361,6 +368,7 @@ export class SchoolController {
     const result = await this.schoolService.checkDeviceStatus(
       device_hardware_id,
       giga_id_school,
+      app_instance_id,
     );
 
     return {
@@ -414,8 +422,9 @@ export class SchoolController {
   })
   @ApiResponse({
     status: 201,
-    description: 'Returns Id of school created',
-    type: String,
+    description:
+      'Returns the user_id of the registration, and the device ID of the PC it is on',
+    type: CreateSchoolResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -423,12 +432,13 @@ export class SchoolController {
   })
   async createSchool(
     @Body() schoolDto: SchoolDto,
-  ): Promise<ApiSuccessResponseDto<AddRecordResponseDto>> {
-    const schoolId = await this.schoolService.createSchool(schoolDto);
+  ): Promise<ApiSuccessResponseDto<CreateSchoolResponseDto>> {
+    // Apps read data.user_id; device_id is for the app's analytics identity.
+    const registration = await this.schoolService.createRegistration(schoolDto);
 
     return {
       success: true,
-      data: { user_id: schoolId },
+      data: registration,
       timestamp: new Date().toISOString(),
       message: 'success',
     };
@@ -484,6 +494,49 @@ export class SchoolController {
       data: result,
       timestamp: new Date().toISOString(),
       message: result.message || 'success',
+    };
+  }
+
+  @Put('app-instance')
+  @ApiOperation({
+    summary:
+      'Give the registration with this user_id the app instance ID of the install using it',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The registration has this app instance ID',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request; user_id missing or app_instance_id not a UUID',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized; Invalid api key provided',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No registration with this user_id',
+  })
+  @ApiResponse({
+    status: 409,
+    description:
+      'The registration has another app instance ID, or this ID belongs to another registration',
+  })
+  async claimAppInstance(
+    @Body() claimDto: ClaimAppInstanceDto,
+  ): Promise<
+    ApiSuccessResponseDto<{ user_id: string; app_instance_id: string }>
+  > {
+    const result = await this.schoolService.claimAppInstance(
+      claimDto?.user_id,
+      claimDto?.app_instance_id,
+    );
+    return {
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString(),
+      message: 'success',
     };
   }
 }

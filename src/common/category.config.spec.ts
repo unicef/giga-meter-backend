@@ -115,6 +115,7 @@ describe('GIGA_METER_APP category', () => {
       ['GET', '/api/v2/registration/existing'],
       ['GET', '/api/v2/registration/status'],
       ['POST', '/api/v2/registration/deactivate'],
+      ['GET', '/api/v1/mlab/locate-token'],
     ])('allows %s %s', async (method, path) => {
       expect(await canCall(method, path)).toBe(true);
     });

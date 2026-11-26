@@ -15,8 +15,25 @@ import { existSchool } from 'src/utility/utility';
 import { facilityGigaId } from 'src/facility-type/facility-ids';
 import { parseRegistrationId } from 'src/registration/registration-id';
 import { toV1PingRecord, v1SchoolScope } from 'src/common/facility-scope';
+import { normalizeAppInstanceId } from 'src/common/app-instance.utils';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
+
+/**
+ * The columns a ping is stored with, listed one by one instead of spreading
+ * the request: a field the database doesn't have (one a newer app sends)
+ * would otherwise make Prisma refuse the whole record.
+ */
+const toRow = (record: CreateConnectivityDto, giga_id_school: string) => ({
+  timestamp: record.timestamp,
+  isConnected: record.isConnected,
+  errorMessage: record.errorMessage,
+  giga_id_school,
+  app_local_uuid: record.app_local_uuid,
+  browserId: record.browserId,
+  latency: record.latency,
+  app_instance_id: normalizeAppInstanceId(record.app_instance_id),
+});
 
 const isDuplicateRecord = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -68,9 +85,10 @@ export class ConnectivityService {
       throw new BadRequestException('School does not exist');
     try {
       await this.prisma.connectivity_ping_checks.create({
-        data: {
-          ...createConnectivityDto,
-        },
+        data: toRow(
+          createConnectivityDto,
+          createConnectivityDto.giga_id_school,
+        ),
       });
       return createConnectivityDto;
     } catch (error) {
@@ -111,10 +129,7 @@ export class ConnectivityService {
       );
     try {
       await this.prisma.connectivity_ping_checks.createMany({
-        data: createConnectivityDto.map((record) => ({
-          ...record,
-          giga_id_school: schoolId,
-        })),
+        data: createConnectivityDto.map((record) => toRow(record, schoolId)),
         // A batch the client already delivered would otherwise fail as a whole
         // on app_local_uuid and stay queued on the device forever.
         skipDuplicates: true,

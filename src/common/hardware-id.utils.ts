@@ -60,3 +60,53 @@ export function isHardwareIdBlocked(
     (blockedId) => blockedId.toLowerCase() === trimmedId.toLowerCase(),
   );
 }
+
+/**
+ * Filler text board and disk makers leave in serial fields. Many PCs share
+ * these, so they can't tell one PC from another. Mirrors the app's list in
+ * electron/src/device-context.ts.
+ */
+export const GENERIC_SERIAL_VALUES = [
+  '0',
+  'none',
+  'null',
+  'n/a',
+  'na',
+  'unknown',
+  'invalid',
+  'default string',
+  'to be filled by o.e.m.',
+  'to be filled by oem',
+  'system serial number',
+  'base board serial number',
+  'not applicable',
+  'not specified',
+  'not available',
+  'oem',
+];
+
+const MAX_SIGNAL_LENGTH = 128;
+
+/**
+ * Cleans one hardware value sent with a registration: trimmed, or null when it
+ * is empty, a known placeholder, a single repeated character ("0000000") or
+ * too long to be an identifier.
+ */
+export function cleanDeviceSignal(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > MAX_SIGNAL_LENGTH) {
+    return null;
+  }
+  const normalized = trimmed.toLowerCase();
+  if (
+    GENERIC_SERIAL_VALUES.includes(normalized) ||
+    isHardwareIdBlocked(trimmed) ||
+    /^(.)\1+$/.test(normalized.replace(/-/g, ''))
+  ) {
+    return null;
+  }
+  return trimmed;
+}

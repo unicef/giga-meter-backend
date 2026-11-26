@@ -1,0 +1,458 @@
+import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
+import {
+  cleanDeviceSignal,
+  sanitizeHardwareId,
+} from '../common/hardware-id.utils';
+
+/**
+ * Device ID (TECH-8828): one ID for one physical PC across all its
+ * registrations (reinstalls, Windows users, logouts).
+ *
+ * A PC is recognised by three hardware values: the firmware UUID (stored in
+ * device_hardware_id, which on a PC without one holds the Windows install ID or
+ * the PC serial instead, as before), the motherboard serial and the disk
+ * serial. The Windows
+ * install ID (MachineGuid) is used only when none of the three can be used:
+ * none can be read, or each one that can is shared with other PCs.
+ *
+ * A new PC's ID is a hash of those values (hashDeviceId). After that the PC
+ * keeps the ID as long as no more of its readable values change than still
+ * match (decideDevice): a new disk alone keeps it. When most of them change,
+ * the registration counts as a new PC and gets the hash of its new values. So
+ * the ID is not worked out again from the values each time: a PC whose disk
+ * was replaced keeps the ID it got with the old disk.
+ */
+
+export type SignalField =
+  | 'firmware_uuid'
+  | 'baseboard_serial'
+  | 'disk_serial'
+  | 'machine_guid';
+
+export const HARDWARE_FIELDS: SignalField[] = [
+  'firmware_uuid',
+  'baseboard_serial',
+  'disk_serial',
+];
+
+const ALL_FIELDS: SignalField[] = [...HARDWARE_FIELDS, 'machine_guid'];
+
+/** The dailycheckapp_school column that holds each value. */
+export const SIGNAL_COLUMNS: Record<
+  SignalField,
+  'device_hardware_id' | 'baseboard_serial' | 'disk_serial' | 'machine_guid'
+> = {
+  firmware_uuid: 'device_hardware_id',
+  baseboard_serial: 'baseboard_serial',
+  disk_serial: 'disk_serial',
+  machine_guid: 'machine_guid',
+};
+
+export type DeviceSignals = Record<SignalField, string | null>;
+
+/** An earlier PC, with the values of its latest registration. */
+export interface CandidateDevice extends DeviceSignals {
+  device_id: string;
+}
+
+export interface DeviceDecision {
+  /** The matched PC's ID, or null for a new PC. */
+  device_id: string | null;
+  flags: string[];
+}
+
+export interface DeviceAssignment {
+  device_id: string;
+  device_id_flags: string[];
+}
+
+/** What resolve() makes of a set of values. */
+export interface DeviceResolution {
+  /** The PC's device ID, or null when the values can't give one. */
+  device_id: string | null;
+  flags: string[];
+  /** The values it was matched on (matchFields). */
+  counting: SignalField[];
+}
+
+/**
+ * First half of each pg_advisory_xact_lock key, so these locks can't collide
+ * with other advisory locks; the second half comes from one value.
+ */
+export const DEVICE_ID_LOCK_KEY = 8828;
+
+/**
+ * How long a registration waits for another one's lock before giving up. The
+ * transaction's own time limit can't interrupt a query waiting on a lock, so a
+ * stuck lock would otherwise hold a registration as long as it lasts. Giving
+ * up here makes the registration fall back to being saved without a device ID.
+ */
+export const LOCK_WAIT = '5s';
+
+/** A 32-bit key (FNV-1a) for one value, for the second half of a lock key. */
+export function valueLockKey(field: SignalField, value: string): number {
+  let hash = 0x811c9dc5;
+  for (const char of `${field}:${value}`) {
+    hash ^= char.codePointAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash | 0;
+}
+
+/**
+ * The values a registration sent, cleaned: blank values, known placeholders and
+ * the blocked generic firmware UUIDs become null.
+ */
+export function cleanSignals(input: {
+  device_hardware_id?: string | null;
+  baseboard_serial?: string | null;
+  disk_serial?: string | null;
+  machine_guid?: string | null;
+}): DeviceSignals {
+  return {
+    firmware_uuid: cleanDeviceSignal(
+      sanitizeHardwareId(input?.device_hardware_id),
+    ),
+    baseboard_serial: cleanDeviceSignal(input?.baseboard_serial),
+    disk_serial: cleanDeviceSignal(input?.disk_serial),
+    machine_guid: cleanDeviceSignal(input?.machine_guid),
+  };
+}
+
+/**
+ * The values a registration is matched on: the hardware values it has that
+ * aren't shared with other PCs, or the Windows install ID when there are none
+ * (nothing readable, or every readable value shared).
+ */
+export function matchFields(
+  signals: DeviceSignals,
+  shared: Set<SignalField> = new Set(),
+): SignalField[] {
+  const usable = HARDWARE_FIELDS.filter(
+    (field) => signals[field] != null && !shared.has(field),
+  );
+  if (usable.length > 0) {
+    return usable;
+  }
+  return signals.machine_guid != null && !shared.has('machine_guid')
+    ? ['machine_guid']
+    : [];
+}
+
+/**
+ * Namespace of the name-based UUIDs hashDeviceId makes. It must never change:
+ * the same values would then give a PC a different ID than before.
+ */
+export const DEVICE_ID_NAMESPACE = '1b5a51e1-3e21-414b-a98b-5e4a44433f13';
+
+/**
+ * Flag for a new PC whose values hash to an ID another PC already has: another
+ * PC was first seen with exactly these values, so the hash can't tell them
+ * apart and the new PC gets a random ID instead.
+ */
+export const DUPLICATE_VALUES_FLAG = 'duplicate_values';
+
+/**
+ * A new PC's device ID: a hash (a version 5 UUID) of the values it is matched
+ * on (matchFields), each with its field name, so the same values always give
+ * the same ID and a disk serial can't pass for a motherboard serial. A value
+ * shared with other PCs is left out, as it is left out of the comparison,
+ * because putting it in would give every PC with it the same hash. Null when
+ * there is nothing to hash.
+ */
+export function hashDeviceId(
+  signals: DeviceSignals,
+  fields: SignalField[],
+): string | null {
+  if (fields.length === 0) {
+    return null;
+  }
+  return uuidv5(
+    JSON.stringify(fields.map((field) => [field, signals[field]])),
+    DEVICE_ID_NAMESPACE,
+  );
+}
+
+/**
+ * Exact, as the database lookups compare. The app sends each value from the
+ * same source every time (systeminformation lowercases the firmware UUID).
+ */
+function sameValue(a: string | null, b: string | null): boolean {
+  return a != null && a === b;
+}
+
+/**
+ * Decides which earlier PC, if any, a registration belongs to.
+ *
+ * - A value that already belongs to more than one PC (`shared`) doesn't count,
+ *   because it can't tell PCs apart. When no hardware value counts, the
+ *   Windows install ID is used instead, if it isn't shared.
+ * - Only values present on both sides are compared; a missing value is ignored.
+ * - It's the same PC when at least one value matches and no more values changed
+ *   than matched. Each changed value is flagged.
+ * - If two PCs qualify, follow the one with the same firmware UUID; otherwise
+ *   it's a new PC. Flagged either way.
+ */
+export function decideDevice(
+  signals: DeviceSignals,
+  candidates: CandidateDevice[],
+  shared: Set<SignalField>,
+): DeviceDecision {
+  const flags: string[] = [];
+  if (HARDWARE_FIELDS.every((field) => signals[field] == null)) {
+    flags.push('nothing_readable');
+  }
+
+  // The Windows install ID is only looked at when no hardware value counts.
+  const looked = HARDWARE_FIELDS.some(
+    (field) => signals[field] != null && !shared.has(field),
+  )
+    ? HARDWARE_FIELDS
+    : ALL_FIELDS;
+  for (const field of looked) {
+    if (signals[field] != null && shared.has(field)) {
+      flags.push(`${field}_shared`);
+    }
+  }
+
+  const fields = matchFields(signals, shared);
+  if (fields.length === 0) {
+    return { device_id: null, flags };
+  }
+
+  const qualifying: { candidate: CandidateDevice; changed: SignalField[] }[] =
+    [];
+  for (const candidate of candidates) {
+    let matched = 0;
+    const changed: SignalField[] = [];
+    for (const field of fields) {
+      if (candidate[field] == null) {
+        continue;
+      }
+      if (sameValue(candidate[field], signals[field])) {
+        matched++;
+      } else {
+        changed.push(field);
+      }
+    }
+    if (matched >= 1 && changed.length <= matched) {
+      qualifying.push({ candidate, changed });
+    }
+  }
+
+  if (qualifying.length === 0) {
+    return { device_id: null, flags };
+  }
+
+  let chosen = qualifying[0];
+  if (qualifying.length > 1) {
+    flags.push('conflict');
+    const byFirmware = fields.includes('firmware_uuid')
+      ? qualifying.filter((q) =>
+          sameValue(q.candidate.firmware_uuid, signals.firmware_uuid),
+        )
+      : [];
+    if (byFirmware.length !== 1) {
+      return { device_id: null, flags };
+    }
+    chosen = byFirmware[0];
+  }
+
+  flags.push(...chosen.changed.map((field) => `${field}_changed`));
+  return { device_id: chosen.candidate.device_id, flags };
+}
+
+@Injectable()
+export class DeviceIdService {
+  /**
+   * Locks each value the registration sent, for the rest of the transaction,
+   * so two registrations of the same PC arriving together don't get two IDs or
+   * two rows. Every lookup here is by one of these values, so registrations
+   * that share none don't wait for each other, and one with no values takes no
+   * lock. Keys are taken in sorted order, so two registrations can't deadlock.
+   */
+  async lock(
+    tx: Prisma.TransactionClient,
+    signals: DeviceSignals,
+  ): Promise<void> {
+    const keys = [
+      ...new Set(
+        ALL_FIELDS.filter((field) => signals[field] != null).map((field) =>
+          valueLockKey(field, signals[field]),
+        ),
+      ),
+    ].sort((a, b) => a - b);
+    if (keys.length > 0) {
+      await tx.$queryRaw`SELECT set_config('lock_timeout', ${LOCK_WAIT}, true)`;
+    }
+    for (const key of keys) {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${DEVICE_ID_LOCK_KEY}::int4, ${key}::int4)`;
+    }
+  }
+
+  /**
+   * The device ID these values belong to, by the rules registrations follow,
+   * without storing anything: the matched PC's ID, or for a new PC the hash of
+   * its values (hashDeviceId); two PCs qualifying that the firmware UUID can't
+   * tell apart count as a new PC too (flagged conflict). Null when there is
+   * nothing to hash (nothing readable, or every value shared), or when the
+   * hash is already another PC's ID (flagged duplicate_values).
+   *
+   * A measurement uses it as it is; a registration uses it through assign().
+   */
+  async resolve(
+    client: Prisma.TransactionClient,
+    signals: DeviceSignals,
+  ): Promise<DeviceResolution> {
+    const shared = new Set<SignalField>();
+    for (const field of HARDWARE_FIELDS) {
+      if (
+        signals[field] != null &&
+        (await this.isShared(client, field, signals[field]))
+      ) {
+        shared.add(field);
+      }
+    }
+    // The Windows install ID only counts when no hardware value does.
+    if (
+      matchFields(signals, shared)[0] === 'machine_guid' &&
+      (await this.isShared(client, 'machine_guid', signals.machine_guid))
+    ) {
+      shared.add('machine_guid');
+    }
+    const counting = matchFields(signals, shared);
+    const candidates = counting.length
+      ? await this.candidates(client, signals, counting)
+      : [];
+
+    const decision = decideDevice(signals, candidates, shared);
+    const flags = [...decision.flags];
+    if (decision.device_id != null) {
+      return { device_id: decision.device_id, flags, counting };
+    }
+    const hashed = hashDeviceId(signals, counting);
+    if (hashed != null && (await this.isTaken(client, hashed))) {
+      flags.push(DUPLICATE_VALUES_FLAG);
+      return { device_id: null, flags, counting };
+    }
+    return { device_id: hashed, flags, counting };
+  }
+
+  /**
+   * Works out the device ID for a registration about to be stored. Call it
+   * inside a transaction, after lock().
+   *
+   * The ID resolve() gives. Where it gives none, a registration still gets an
+   * ID: a random one, with the flags saying why (nothing readable, every value
+   * shared, or duplicate_values).
+   *
+   * When the firmware UUID counts, older registrations with the same UUID and no
+   * device ID (made before 2.0.4) get the same ID, so the PC isn't counted twice.
+   */
+  async assign(
+    tx: Prisma.TransactionClient,
+    signals: DeviceSignals,
+  ): Promise<DeviceAssignment> {
+    const {
+      device_id: resolved,
+      flags,
+      counting,
+    } = await this.resolve(tx, signals);
+    const device_id = resolved ?? uuidv4();
+
+    if (counting.includes('firmware_uuid')) {
+      await tx.dailycheckapp_school.updateMany({
+        where: { device_hardware_id: signals.firmware_uuid, device_id: null },
+        data: { device_id },
+      });
+    }
+
+    return { device_id, device_id_flags: flags };
+  }
+
+  /** Whether a registration already has this device ID. */
+  private async isTaken(
+    tx: Prisma.TransactionClient,
+    device_id: string,
+  ): Promise<boolean> {
+    const row = await tx.dailycheckapp_school.findFirst({
+      where: { device_id },
+      select: { id: true },
+    });
+    return row != null;
+  }
+
+  /**
+   * Whether a value already belongs to more than one PC. For the firmware UUID,
+   * registrations from before 2.0.4 (no device ID yet) at two or more schools
+   * count too.
+   */
+  private async isShared(
+    tx: Prisma.TransactionClient,
+    field: SignalField,
+    value: string,
+  ): Promise<boolean> {
+    // The column name comes from SIGNAL_COLUMNS, never from the request.
+    const column = Prisma.raw(`"${SIGNAL_COLUMNS[field]}"`);
+    const [counts] = await tx.$queryRaw<
+      { devices: number; old_schools: number }[]
+    >`
+      SELECT
+        count(DISTINCT device_id) FILTER (WHERE device_id IS NOT NULL)::int AS devices,
+        count(DISTINCT giga_id_school) FILTER (WHERE device_id IS NULL)::int AS old_schools
+      FROM dailycheckapp_school
+      WHERE ${column} = ${value}`;
+    if ((counts?.devices ?? 0) >= 2) {
+      return true;
+    }
+    return field === 'firmware_uuid' && (counts?.old_schools ?? 0) >= 2;
+  }
+
+  /** Earlier PCs sharing a counting value, each with its latest registration. */
+  private async candidates(
+    tx: Prisma.TransactionClient,
+    signals: DeviceSignals,
+    fields: SignalField[],
+  ): Promise<CandidateDevice[]> {
+    const matches = await tx.dailycheckapp_school.findMany({
+      where: {
+        device_id: { not: null },
+        OR: fields.map((field) => ({
+          [SIGNAL_COLUMNS[field]]: signals[field],
+        })),
+      },
+      distinct: ['device_id'],
+      select: { device_id: true },
+    });
+    const ids = matches.map((row) => row.device_id).filter(Boolean);
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const rows = await tx.dailycheckapp_school.findMany({
+      where: { device_id: { in: ids } },
+      orderBy: { id: 'desc' },
+      select: {
+        device_id: true,
+        device_hardware_id: true,
+        baseboard_serial: true,
+        disk_serial: true,
+        machine_guid: true,
+      },
+    });
+
+    const latest = new Map<string, CandidateDevice>();
+    for (const row of rows) {
+      if (latest.has(row.device_id)) {
+        continue;
+      }
+      latest.set(row.device_id, {
+        device_id: row.device_id,
+        ...cleanSignals(row),
+      });
+    }
+    return [...latest.values()];
+  }
+}

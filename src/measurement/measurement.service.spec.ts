@@ -5,6 +5,7 @@ import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { FacilityTypeService } from '../facility-type/facility-type.service';
 import { RegistrationService } from '../registration/registration.service';
 import { HealthService } from '../health/health.service';
+import { DeviceIdService } from '../school/device-id.service';
 import {
   mockAddMeasurementDto,
   mockCountryModel,
@@ -24,6 +25,11 @@ describe('MeasurementService', () => {
   let prisma: PrismaService;
   let facilityTypeService: FacilityTypeService;
   let registrationService: RegistrationService;
+  let deviceIdService: {
+    resolve: jest.Mock;
+    lock: jest.Mock;
+    assign: jest.Mock;
+  };
 
   beforeEach(async () => {
     const mockGeolocationUtility = {
@@ -49,6 +55,12 @@ describe('MeasurementService', () => {
       resolveForIngest: jest.fn(),
     };
 
+    deviceIdService = {
+      resolve: jest.fn(),
+      lock: jest.fn(),
+      assign: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MeasurementService, 
@@ -69,6 +81,7 @@ describe('MeasurementService', () => {
           provide: RegistrationService,
           useValue: mockRegistrationService,
         },
+        { provide: DeviceIdService, useValue: deviceIdService },
       ],
     }).compile();
 
@@ -607,6 +620,31 @@ describe('MeasurementService', () => {
   });
 
   describe('CreateMeasurement', () => {
+    it('should store the app instance ID it sends, lowercased, and none for a bad one', async () => {
+      const INSTANCE = '6f1c2b8e-4d3a-4f5e-9a7b-1c2d3e4f5a6b';
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        app_instance_id: INSTANCE.toUpperCase(),
+      });
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        app_instance_id: 'not-a-uuid',
+      });
+
+      expect(createSpy.mock.calls[0][0].data.app_instance_id).toBe(INSTANCE);
+      expect(createSpy.mock.calls[1][0].data.app_instance_id).toBeNull();
+    });
+
     it('should create measurement', async () => {
       jest
         .spyOn(prisma.dailycheckapp_school, 'findFirst')
@@ -675,10 +713,13 @@ describe('MeasurementService', () => {
 
       expect(response).toEqual('');
       // Lowercased exact match first: it can use the giga_id_school index.
-      expect(schoolSpy).toHaveBeenCalledTimes(1);
-      expect(schoolSpy).toHaveBeenCalledWith({
-        where: { giga_id_school: 'tz-test-88001' },
-      });
+      // (The other lookup is the registration the device ID is completed on.)
+      const schoolLookups = schoolSpy.mock.calls.filter(
+        ([args]: any) => args?.where?.giga_id_school !== undefined,
+      );
+      expect(schoolLookups).toEqual([
+        [{ where: { giga_id_school: 'tz-test-88001' } }],
+      ]);
       expect(mappingSpy).toHaveBeenCalledWith({
         where: {
           giga_id_school_wrong: {
@@ -791,6 +832,256 @@ describe('MeasurementService', () => {
       await expect(
         service.createMeasurement(mockAddMeasurementDto[0]),
       ).rejects.toThrow('Database error');
+    });
+
+    describe('device ID (TECH-8828)', () => {
+      const browserId = 'registration-user-id';
+      // The hardware values a 2.0.4 app sends with a measurement.
+      const withValues = {
+        ...mockAddMeasurementDto[0],
+        BrowserID: browserId,
+        device_hardware_id: 'uuid-a',
+        device_context: {
+          baseboard_serial: 'board-b',
+          disk_serial: 'disk-c',
+          machine_guid: 'guid-m',
+        },
+      };
+      const sent = {
+        firmware_uuid: 'uuid-a',
+        baseboard_serial: 'board-b',
+        disk_serial: 'disk-c',
+        machine_guid: 'guid-m',
+      };
+      let schoolSpy: jest.SpyInstance;
+      let createSpy: jest.SpyInstance;
+      let tx: any;
+
+      beforeEach(() => {
+        // First the school check, then the registration it was made under.
+        schoolSpy = jest
+          .spyOn(prisma.dailycheckapp_school, 'findFirst')
+          .mockResolvedValueOnce(mockSchoolModel[0]);
+        jest
+          .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+          .mockResolvedValue(null);
+        createSpy = jest
+          .spyOn(prisma.measurements, 'create')
+          .mockResolvedValue(mockMeasurementModel[0]);
+        deviceIdService.resolve.mockResolvedValue({
+          device_id: 'device-1',
+          flags: [],
+          counting: ['firmware_uuid', 'baseboard_serial', 'disk_serial'],
+        });
+        tx = {
+          dailycheckapp_school: {
+            findUnique: jest.fn().mockResolvedValue({ device_id: null }),
+            update: jest.fn(),
+          },
+        };
+        jest
+          .spyOn(prisma, '$transaction')
+          .mockImplementation((fn: any) => fn(tx));
+      });
+
+      const stored = () => createSpy.mock.calls[0][0].data.device_id;
+
+      it("matches the measurement's own values, by the registration rules", async () => {
+        schoolSpy.mockResolvedValueOnce({
+          id: BigInt(7),
+          device_id: 'device-1',
+          device_hardware_id: 'uuid-a',
+        });
+
+        await service.createMeasurement(withValues);
+
+        expect(schoolSpy).toHaveBeenCalledWith({
+          where: { user_id: browserId },
+          orderBy: { id: 'desc' },
+          select: { id: true, device_id: true, device_hardware_id: true },
+        });
+        expect(deviceIdService.resolve).toHaveBeenCalledWith(prisma, sent);
+        expect(stored()).toBe('device-1');
+      });
+
+      it("goes by its own values, not its registration's device ID", async () => {
+        // A registration an older app took over from another PC.
+        schoolSpy.mockResolvedValueOnce({
+          id: BigInt(7),
+          device_id: 'other-pc',
+          device_hardware_id: 'uuid-a',
+        });
+
+        await service.createMeasurement(withValues);
+
+        expect(stored()).toBe('device-1');
+      });
+
+      describe('app instance', () => {
+        const INSTANCE = '6f1c2b8e-4d3a-4f5e-9a7b-1c2d3e4f5a6b';
+        let findUnique: jest.SpyInstance;
+
+        beforeEach(() => {
+          findUnique = jest.spyOn(prisma.dailycheckapp_school, 'findUnique');
+          deviceIdService.assign.mockResolvedValue({
+            device_id: 'device-new',
+            device_id_flags: [],
+          });
+        });
+
+        it('finds its registration by app instance, not by browser ID', async () => {
+          findUnique.mockResolvedValue({
+            id: BigInt(9),
+            device_id: null,
+            device_hardware_id: 'uuid-a',
+          });
+
+          await service.createMeasurement({
+            ...withValues,
+            app_instance_id: INSTANCE,
+          });
+
+          expect(findUnique).toHaveBeenCalledWith({
+            where: { app_instance_id: INSTANCE },
+            select: { id: true, device_id: true, device_hardware_id: true },
+          });
+          // Only the school check went by giga ID; none by user_id.
+          expect(schoolSpy).toHaveBeenCalledTimes(1);
+          expect(tx.dailycheckapp_school.update).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { id: BigInt(9) } }),
+          );
+          expect(stored()).toBe('device-new');
+        });
+
+        it("goes by browser ID while its instance's registration isn't stored yet", async () => {
+          findUnique.mockResolvedValue(null);
+          schoolSpy.mockResolvedValueOnce({
+            id: BigInt(7),
+            device_id: 'reg-device',
+            device_hardware_id: null,
+          });
+
+          await service.createMeasurement({
+            ...mockAddMeasurementDto[0],
+            BrowserID: browserId,
+            app_instance_id: INSTANCE,
+          });
+
+          expect(schoolSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { user_id: browserId } }),
+          );
+          expect(stored()).toBe('reg-device');
+        });
+      });
+
+      it('stores none when its values give none', async () => {
+        schoolSpy.mockResolvedValueOnce(null);
+        deviceIdService.resolve.mockResolvedValue({
+          device_id: null,
+          flags: ['firmware_uuid_shared'],
+          counting: [],
+        });
+
+        await service.createMeasurement({
+          ...withValues,
+          device_context: undefined,
+        });
+
+        expect(stored()).toBeNull();
+      });
+
+      describe('a registration without a device ID (before 2.0.4)', () => {
+        beforeEach(() => {
+          schoolSpy.mockResolvedValueOnce({
+            id: BigInt(7),
+            device_id: null,
+            device_hardware_id: 'uuid-a',
+          });
+          deviceIdService.assign.mockResolvedValue({
+            device_id: 'device-new',
+            device_id_flags: [],
+          });
+        });
+
+        it('completes it with this PC: values and device ID, under the locks', async () => {
+          await service.createMeasurement(withValues);
+
+          expect(deviceIdService.lock).toHaveBeenCalledWith(tx, sent);
+          expect(deviceIdService.assign).toHaveBeenCalledWith(tx, sent);
+          expect(tx.dailycheckapp_school.update).toHaveBeenCalledWith({
+            where: { id: BigInt(7) },
+            data: {
+              baseboard_serial: 'board-b',
+              disk_serial: 'disk-c',
+              machine_guid: 'guid-m',
+              device_id: 'device-new',
+              device_id_flags: [],
+            },
+          });
+          expect(deviceIdService.resolve).not.toHaveBeenCalled();
+          expect(stored()).toBe('device-new');
+        });
+
+        it("doesn't when it has another firmware UUID", async () => {
+          await service.createMeasurement({
+            ...withValues,
+            device_hardware_id: 'uuid-other',
+          });
+
+          expect(prisma.$transaction).not.toHaveBeenCalled();
+          expect(deviceIdService.resolve).toHaveBeenCalled();
+          expect(stored()).toBe('device-1');
+        });
+
+        it('matches as usual when another measurement completed it meanwhile', async () => {
+          tx.dailycheckapp_school.findUnique.mockResolvedValue({
+            device_id: 'device-x',
+          });
+
+          await service.createMeasurement(withValues);
+
+          expect(deviceIdService.assign).not.toHaveBeenCalled();
+          expect(tx.dailycheckapp_school.update).not.toHaveBeenCalled();
+          expect(stored()).toBe('device-1');
+        });
+      });
+
+      it("takes its registration's device ID when it has no hardware value", async () => {
+        // An app older than hardware IDs.
+        schoolSpy.mockResolvedValueOnce({
+          id: BigInt(7),
+          device_id: 'reg-device',
+          device_hardware_id: null,
+        });
+
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          BrowserID: browserId,
+        });
+
+        expect(deviceIdService.resolve).not.toHaveBeenCalled();
+        expect(stored()).toBe('reg-device');
+      });
+
+      it('stores none without values or a browser ID', async () => {
+        await service.createMeasurement({
+          ...mockAddMeasurementDto[0],
+          BrowserID: undefined,
+        });
+
+        expect(schoolSpy).toHaveBeenCalledTimes(1);
+        expect(stored()).toBeNull();
+      });
+
+      it('still stores the measurement when working it out fails', async () => {
+        schoolSpy.mockResolvedValueOnce(null);
+        deviceIdService.resolve.mockRejectedValue(new Error('connection lost'));
+
+        const response = await service.createMeasurement(withValues);
+
+        expect(response).toEqual('');
+        expect(stored()).toBeNull();
+      });
     });
 
     it('should persist mlab protocol with null quality metrics by default', async () => {

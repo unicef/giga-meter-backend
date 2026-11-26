@@ -64,6 +64,7 @@ export const GIGA_METER_APP_ALLOWED_APIS: CategoryApiEndpoint[] = [
   { url: '/api/v2/registration/existing', methods: ['GET'] },
   { url: '/api/v2/registration/status', methods: ['GET'] },
   { url: '/api/v2/registration/deactivate', methods: ['POST'] },
+  { url: '/api/v1/mlab/locate-token', methods: ['GET'] },
 ];
 
 export const GIGA_METER_APP_RESPONSE_FILTERS: CategoryResponseFilters = {

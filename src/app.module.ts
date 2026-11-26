@@ -9,6 +9,7 @@ import { FlaggedSchoolService } from './flagged-school/flagged-school.service';
 import { FlaggedSchoolController } from './flagged-school/flagged-school.controller';
 import { SchoolController } from './school/school.controller';
 import { SchoolService } from './school/school.service';
+import { DeviceIdService } from './school/device-id.service';
 import { CountryController } from './country/country.controller';
 import { CountryV2Controller } from './country/country.v2.controller';
 import { CountryService } from './country/country.service';
@@ -32,6 +33,7 @@ import { CategoryConfigModule } from './category-config/category-config.module';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { AuthModule } from './auth/auth.module';
 import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
+import { MlabModule } from './mlab/mlab.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -43,6 +45,7 @@ import { GeolocationModule } from './geolocation/geolocation.module';
 import { PublicController } from './public/public.controller';
 import { PublicService } from './public/public.service';
 import * as redisStore from 'cache-manager-redis-store';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
@@ -74,11 +77,13 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
+    MlabModule,
     GeolocationModule,
     FacilityTypeModule,
     HealthModule,
     RegistrationModule,
     NearestFacilityModule,
+    AnalyticsModule,
   ],
   controllers: [
     AppController,
@@ -104,6 +109,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     MessagesService,
     FlaggedSchoolService,
     SchoolService,
+    DeviceIdService,
     SchoolMasterService,
     CountryService,
     MeasurementService,
