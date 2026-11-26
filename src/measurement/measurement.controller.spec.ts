@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MeasurementController } from './measurement.controller';
 import { MeasurementService } from './measurement.service';
+import { DeviceIdService } from '../school/device-id.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpModule } from '@nestjs/axios';
@@ -56,6 +57,7 @@ describe('MeasurementController', () => {
           provide: RegistrationService,
           useValue: { resolveForIngest: jest.fn() },
         },
+        { provide: DeviceIdService, useValue: {} },
         {
           provide: CACHE_MANAGER,
           useValue: mockCacheManager,

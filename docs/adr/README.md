@@ -15,3 +15,4 @@
 | ADR | Title | PR |
 | --- | --- | --- |
 | [001](./001-dual-protocol-measurements-and-config.md) | Dual-protocol measurements and protocol configuration | 321 |
+| [002](./002-mlab-priority-locate-token.md) | Backend hands out M-Lab priority lookup tokens | — |

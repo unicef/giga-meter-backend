@@ -798,6 +798,12 @@ export class MeasurementDto {
   })
   device_context?: Record<string, any>;
 
+  @ApiPropertyOptional({
+    description:
+      'The UUID the app generated for its install (one Windows user, one registration). Stored only when it is a UUID.',
+  })
+  app_instance_id?: string;
+
   @ApiPropertyOptional()
   protocol?: string;
 

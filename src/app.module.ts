@@ -32,6 +32,7 @@ import { CategoryConfigModule } from './category-config/category-config.module';
 import { CategoryConfigProvider } from './common/category-config.provider';
 import { AuthModule } from './auth/auth.module';
 import { IpMetadataModule } from './ip-metadata/ip-metadata.module';
+import { MlabModule } from './mlab/mlab.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { defaultRateLimitConfig } from './config/rate-limit.config';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -49,6 +50,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import { AdminMeterModule } from './admin-meter/admin-meter.module';
 import { TranslateModule } from './translate';
 import { FeatureFlagModule } from './admin-meter/feature-flag/feature-flag.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 import { PingAggregationController } from './ping-aggregation/ping-aggregation.controller';
 import { PingAggregationService } from './ping-aggregation/ping-aggregation.service';
@@ -82,6 +84,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     CategoryConfigModule,
     AuthModule,
     IpMetadataModule,
+    MlabModule,
     GeolocationModule,
     AdminMeterModule,
     TranslateModule,
@@ -90,6 +93,7 @@ import { NearestFacilityModule } from './nearest-facility/nearest-facility.modul
     HealthModule,
     RegistrationModule,
     NearestFacilityModule,
+    AnalyticsModule,
   ],
   controllers: [
     AppController,
