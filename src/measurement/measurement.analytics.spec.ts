@@ -4,6 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
 import { AnalyticsService } from '../analytics/analytics.service';
 import { DeviceIdService } from '../school/device-id.service';
+import { FacilityTypeService } from '../facility-type/facility-type.service';
+import { HealthService } from '../health/health.service';
+import { RegistrationService } from '../registration/registration.service';
 import {
   mockAddMeasurementDto,
   mockMeasurementFailedModel,
@@ -50,6 +53,9 @@ describe('MeasurementService analytics', () => {
         PrismaService,
         { provide: GeolocationUtility, useValue: geolocation },
         { provide: AnalyticsService, useValue: analytics },
+        { provide: FacilityTypeService, useValue: {} },
+        { provide: HealthService, useValue: {} },
+        { provide: RegistrationService, useValue: {} },
         {
           provide: DeviceIdService,
           useValue: {
