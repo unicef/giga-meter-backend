@@ -12,6 +12,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { dailycheckapp_country as Country } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { measurements as Measurement } from '@prisma/client';
+import { v1SchoolScope } from '../common/facility-scope';
 
 @Injectable()
 export class PublicService {
@@ -147,6 +148,7 @@ export class PublicService {
       country_code: {
         in: countries,
       },
+      AND: [v1SchoolScope()],
     };
 
     if (!giga_id_school) {
