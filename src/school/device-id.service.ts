@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
 import {
   cleanDeviceSignal,
   sanitizeHardwareId,
@@ -17,10 +17,12 @@ import {
  * install ID (MachineGuid) is used only when none of the three can be used:
  * none can be read, or each one that can is shared with other PCs.
  *
- * The ID is not a hash of the values: a hash would change when one value
- * changes (a new disk), while the rules below say it is the same PC. The server
- * gives a PC a random ID at its first registration, and later registrations
- * that match it keep that ID.
+ * A new PC's ID is a hash of those values (hashDeviceId). After that the PC
+ * keeps the ID as long as no more of its readable values change than still
+ * match (decideDevice): a new disk alone keeps it. When most of them change,
+ * the registration counts as a new PC and gets the hash of its new values. So
+ * the ID is not worked out again from the values each time: a PC whose disk
+ * was replaced keeps the ID it got with the old disk.
  */
 
 export type SignalField =
@@ -64,6 +66,15 @@ export interface DeviceDecision {
 export interface DeviceAssignment {
   device_id: string;
   device_id_flags: string[];
+}
+
+/** What resolve() makes of a set of values. */
+export interface DeviceResolution {
+  /** The PC's device ID, or null when the values can't give one. */
+  device_id: string | null;
+  flags: string[];
+  /** The values it was matched on (matchFields). */
+  counting: SignalField[];
 }
 
 /**
@@ -128,6 +139,40 @@ export function matchFields(
   return signals.machine_guid != null && !shared.has('machine_guid')
     ? ['machine_guid']
     : [];
+}
+
+/**
+ * Namespace of the name-based UUIDs hashDeviceId makes. It must never change:
+ * the same values would then give a PC a different ID than before.
+ */
+export const DEVICE_ID_NAMESPACE = '1b5a51e1-3e21-414b-a98b-5e4a44433f13';
+
+/**
+ * Flag for a new PC whose values hash to an ID another PC already has: another
+ * PC was first seen with exactly these values, so the hash can't tell them
+ * apart and the new PC gets a random ID instead.
+ */
+export const DUPLICATE_VALUES_FLAG = 'duplicate_values';
+
+/**
+ * A new PC's device ID: a hash (a version 5 UUID) of the values it is matched
+ * on (matchFields), each with its field name, so the same values always give
+ * the same ID and a disk serial can't pass for a motherboard serial. A value
+ * shared with other PCs is left out, as it is left out of the comparison,
+ * because putting it in would give every PC with it the same hash. Null when
+ * there is nothing to hash.
+ */
+export function hashDeviceId(
+  signals: DeviceSignals,
+  fields: SignalField[],
+): string | null {
+  if (fields.length === 0) {
+    return null;
+  }
+  return uuidv5(
+    JSON.stringify(fields.map((field) => [field, signals[field]])),
+    DEVICE_ID_NAMESPACE,
+  );
 }
 
 /**
@@ -248,8 +293,60 @@ export class DeviceIdService {
   }
 
   /**
+   * The device ID these values belong to, by the rules registrations follow,
+   * without storing anything: the matched PC's ID, or for a new PC the hash of
+   * its values (hashDeviceId); two PCs qualifying that the firmware UUID can't
+   * tell apart count as a new PC too (flagged conflict). Null when there is
+   * nothing to hash (nothing readable, or every value shared), or when the
+   * hash is already another PC's ID (flagged duplicate_values).
+   *
+   * A measurement uses it as it is; a registration uses it through assign().
+   */
+  async resolve(
+    client: Prisma.TransactionClient,
+    signals: DeviceSignals,
+  ): Promise<DeviceResolution> {
+    const shared = new Set<SignalField>();
+    for (const field of HARDWARE_FIELDS) {
+      if (
+        signals[field] != null &&
+        (await this.isShared(client, field, signals[field]))
+      ) {
+        shared.add(field);
+      }
+    }
+    // The Windows install ID only counts when no hardware value does.
+    if (
+      matchFields(signals, shared)[0] === 'machine_guid' &&
+      (await this.isShared(client, 'machine_guid', signals.machine_guid))
+    ) {
+      shared.add('machine_guid');
+    }
+    const counting = matchFields(signals, shared);
+    const candidates = counting.length
+      ? await this.candidates(client, signals, counting)
+      : [];
+
+    const decision = decideDevice(signals, candidates, shared);
+    const flags = [...decision.flags];
+    if (decision.device_id != null) {
+      return { device_id: decision.device_id, flags, counting };
+    }
+    const hashed = hashDeviceId(signals, counting);
+    if (hashed != null && (await this.isTaken(client, hashed))) {
+      flags.push(DUPLICATE_VALUES_FLAG);
+      return { device_id: null, flags, counting };
+    }
+    return { device_id: hashed, flags, counting };
+  }
+
+  /**
    * Works out the device ID for a registration about to be stored. Call it
    * inside a transaction, after lock().
+   *
+   * The ID resolve() gives. Where it gives none, a registration still gets an
+   * ID: a random one, with the flags saying why (nothing readable, every value
+   * shared, or duplicate_values).
    *
    * When the firmware UUID counts, older registrations with the same UUID and no
    * device ID (made before 2.0.4) get the same ID, so the PC isn't counted twice.
@@ -258,29 +355,12 @@ export class DeviceIdService {
     tx: Prisma.TransactionClient,
     signals: DeviceSignals,
   ): Promise<DeviceAssignment> {
-    const shared = new Set<SignalField>();
-    for (const field of HARDWARE_FIELDS) {
-      if (
-        signals[field] != null &&
-        (await this.isShared(tx, field, signals[field]))
-      ) {
-        shared.add(field);
-      }
-    }
-    // The Windows install ID only counts when no hardware value does.
-    if (
-      matchFields(signals, shared)[0] === 'machine_guid' &&
-      (await this.isShared(tx, 'machine_guid', signals.machine_guid))
-    ) {
-      shared.add('machine_guid');
-    }
-    const counting = matchFields(signals, shared);
-    const candidates = counting.length
-      ? await this.candidates(tx, signals, counting)
-      : [];
-
-    const decision = decideDevice(signals, candidates, shared);
-    const device_id = decision.device_id ?? uuidv4();
+    const {
+      device_id: resolved,
+      flags,
+      counting,
+    } = await this.resolve(tx, signals);
+    const device_id = resolved ?? uuidv4();
 
     if (counting.includes('firmware_uuid')) {
       await tx.dailycheckapp_school.updateMany({
@@ -289,7 +369,19 @@ export class DeviceIdService {
       });
     }
 
-    return { device_id, device_id_flags: decision.flags };
+    return { device_id, device_id_flags: flags };
+  }
+
+  /** Whether a registration already has this device ID. */
+  private async isTaken(
+    tx: Prisma.TransactionClient,
+    device_id: string,
+  ): Promise<boolean> {
+    const row = await tx.dailycheckapp_school.findFirst({
+      where: { device_id },
+      select: { id: true },
+    });
+    return row != null;
   }
 
   /**

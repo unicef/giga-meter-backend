@@ -102,14 +102,19 @@ export class PingAggregationService {
           any[]
         >`SELECT giga_id_school, browser_id as device_id, 
       SUM( CASE WHEN is_connected = TRUE THEN 1 ELSE 0 END ) AS isConnectedTrueSum,
-       count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg 
-       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`} 
+       count(DISTINCT app_local_uuid) as isConnectedAllSum, AVG(latency) AS latencyAvg,
+       MAX(app_instance_id) AS app_instance_id
+       FROM connectivity_ping_checks ${Prisma.sql`where timestamp BETWEEN ${start} AND ${end}`}
        GROUP BY giga_id_school, browser_id order by giga_id_school asc LIMIT ${limit} OFFSET ${offset}`;
 
         if (data.length === 0) break;
 
         // Looked up before the delete below, so a failure here leaves the
-        // existing summary rows in place.
+        // existing summary rows in place. By app instance first; by
+        // browser_id for pings from older apps, which send no app instance.
+        const deviceIdsByInstance = await this.deviceIdsForInstances(
+          data.map((item) => item.app_instance_id),
+        );
         const deviceIds = await this.deviceIdsFor(
           data.map((item) => item.device_id),
         );
@@ -150,7 +155,11 @@ export class PingAggregationService {
             timestamp_date: insertStart,
             giga_id_school: record.giga_id_school,
             browser_id: record.device_id || null,
-            device_id: deviceIds.get(record.device_id) ?? null,
+            app_instance_id: record.app_instance_id || null,
+            device_id:
+              deviceIdsByInstance.get(record.app_instance_id) ??
+              deviceIds.get(record.device_id) ??
+              null,
             is_connected_true,
             is_connected_all,
             uptime,
@@ -179,6 +188,28 @@ export class PingAggregationService {
     } finally {
       await redisClient.set('aggregation_scheduler_status', 'completed');
     }
+  }
+
+  /**
+   * The device ID (TECH-8828) of each app instance's registration. An
+   * instance whose registration has none, or isn't stored yet, is left out.
+   */
+  private async deviceIdsForInstances(
+    appInstanceIds: (string | null)[],
+  ): Promise<Map<string, string>> {
+    const ids = [...new Set(appInstanceIds.filter(Boolean))];
+    const deviceIds = new Map<string, string>();
+    if (ids.length === 0) {
+      return deviceIds;
+    }
+    const registrations = await this.prisma.dailycheckapp_school.findMany({
+      where: { app_instance_id: { in: ids }, device_id: { not: null } },
+      select: { app_instance_id: true, device_id: true },
+    });
+    for (const registration of registrations ?? []) {
+      deviceIds.set(registration.app_instance_id, registration.device_id);
+    }
+    return deviceIds;
   }
 
   /**
