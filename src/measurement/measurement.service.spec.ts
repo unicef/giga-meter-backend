@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 import { MeasurementService } from './measurement.service';
 import { AddMeasurementDto } from './measurement.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -962,6 +963,109 @@ describe('MeasurementService', () => {
           jitter: 3,
           packet_loss: null,
           network_quality_score: 20,
+        }),
+      });
+    });
+
+    it('should store absent Json values as SQL NULL, not as JSON null', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        ClientInfo: null,
+        ServerInfo: undefined,
+        Results: null,
+        wifi_connections: null,
+        device_context: undefined,
+      });
+
+      // A plain null in a Json? column is stored as 'null'::jsonb, which
+      // `IS NOT NULL` does not filter out.
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          client_info: Prisma.DbNull,
+          server_info: Prisma.DbNull,
+          results: Prisma.DbNull,
+          wifi_connections: Prisma.DbNull,
+          device_context: Prisma.DbNull,
+        }),
+      });
+    });
+
+    it('should store device_context as SQL NULL when no key survives the whitelist', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        device_context: { not_whitelisted: 'x' },
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({ device_context: Prisma.DbNull }),
+      });
+    });
+
+    it('should keep Json values that are present', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(mockSchoolModel[0]);
+      jest
+        .spyOn(prisma.giga_id_school_mapping_fix, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements, 'create')
+        .mockResolvedValue(mockMeasurementModel[0]);
+      const wifi = [{ ssid: 'school-wifi', signal: 80 }];
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        wifi_connections: wifi,
+        device_context: { connection_type: 'wifi' },
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          client_info: mockAddMeasurementDto[0].ClientInfo,
+          wifi_connections: wifi,
+          device_context: { connection_type: 'wifi' },
+        }),
+      });
+    });
+
+    it('should store absent Json values as SQL NULL on a failed measurement', async () => {
+      jest
+        .spyOn(prisma.dailycheckapp_school, 'findFirst')
+        .mockResolvedValue(null);
+      const createSpy = jest
+        .spyOn(prisma.measurements_failed, 'create')
+        .mockResolvedValue(mockMeasurementFailedModel[0]);
+
+      await service.createMeasurement({
+        ...mockAddMeasurementDto[0],
+        Results: null,
+        device_context: undefined,
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          results: Prisma.DbNull,
+          device_context: Prisma.DbNull,
         }),
       });
     });

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 import { SchoolService } from './school.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeolocationUtility } from '../geolocation/geolocation.utility';
@@ -8,7 +9,6 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import {
   mockCountryModel,
@@ -241,6 +241,21 @@ describe('SchoolService', () => {
         is_verified: false,
         // No device ID in the mocked rows.
         device_id: null,
+      });
+    });
+
+    it('should store a null wifi_connections as SQL NULL, not as JSON null', async () => {
+      const createSpy = jest
+        .spyOn(prisma.dailycheckapp_school, 'create')
+        .mockResolvedValue(mockSchoolModel[0]);
+
+      await service.createSchool({
+        ...mockSchoolDto[0],
+        wifi_connections: null,
+      });
+
+      expect(createSpy).toHaveBeenCalledWith({
+        data: expect.objectContaining({ wifi_connections: Prisma.DbNull }),
       });
     });
 
